@@ -23,3 +23,15 @@ class TestCase:
             if isinstance(e, exc):
                 return
             raise
+
+
+# Warning: this is not compliant, but at least an example of test
+# runner until we have globals()
+def main(test_classes):
+    for c in test_classes:
+        o = c()
+        for name in dir(o):
+            if name.startswith("test"):
+                m = getattr(o, name)
+                m()
+                print(name, "...ok")
