@@ -25,13 +25,15 @@ class TestCase:
             raise
 
 
-# Warning: this is not compliant, but at least an example of test
-# runner until we have globals()
-def main(test_classes):
-    for c in test_classes:
-        o = c()
-        for name in dir(o):
-            if name.startswith("test"):
-                m = getattr(o, name)
-                m()
-                print(name, "...ok")
+def main(module="__main__"):
+    m = __import__(module)
+    for tn in dir(m):
+        c = getattr(m, tn)
+        # workaround for isinstance(c, object) not working
+        if type(c) is type(object) and issubclass(c, TestCase):
+            o = c()
+            for name in dir(o):
+                if name.startswith("test"):
+                    m = getattr(o, name)
+                    m()
+                    print(name, "...ok")
