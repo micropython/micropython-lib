@@ -29,8 +29,7 @@ def main(module="__main__"):
     m = __import__(module)
     for tn in dir(m):
         c = getattr(m, tn)
-        # workaround for isinstance(c, object) not working
-        if type(c) is type(object) and issubclass(c, TestCase):
+        if isinstance(c, object) and issubclass(c, TestCase):
             o = c()
             for name in dir(o):
                 if name.startswith("test"):
