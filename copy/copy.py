@@ -49,9 +49,9 @@ __getstate__() and __setstate__().  See the documentation for module
 """
 
 import types
-import weakref
-from copyreg import dispatch_table
-import builtins
+#import weakref
+#from copyreg import dispatch_table
+#import builtins
 
 class Error(Exception):
     pass
@@ -80,6 +80,9 @@ def copy(x):
     if copier:
         return copier(x)
 
+    raise Error("un(shallow)copyable object of type %s" % cls)
+
+    dispatch_table = {}
     reductor = dispatch_table.get(cls)
     if reductor:
         rv = reductor(x)
@@ -102,17 +105,17 @@ _copy_dispatch = d = {}
 def _copy_immutable(x):
     return x
 for t in (type(None), int, float, bool, str, tuple,
-          frozenset, type, range,
+          type, range,
           types.BuiltinFunctionType, type(Ellipsis),
-          types.FunctionType, weakref.ref):
+          types.FunctionType):
     d[t] = _copy_immutable
 t = getattr(types, "CodeType", None)
 if t is not None:
     d[t] = _copy_immutable
-for name in ("complex", "unicode"):
-    t = getattr(builtins, name, None)
-    if t is not None:
-        d[t] = _copy_immutable
+#for name in ("complex", "unicode"):
+#    t = getattr(builtins, name, None)
+#    if t is not None:
+#        d[t] = _copy_immutable
 
 def _copy_with_constructor(x):
     return type(x)(x)
@@ -202,7 +205,7 @@ d[type] = _deepcopy_atomic
 d[range] = _deepcopy_atomic
 d[types.BuiltinFunctionType] = _deepcopy_atomic
 d[types.FunctionType] = _deepcopy_atomic
-d[weakref.ref] = _deepcopy_atomic
+#d[weakref.ref] = _deepcopy_atomic
 
 def _deepcopy_list(x, memo):
     y = []
