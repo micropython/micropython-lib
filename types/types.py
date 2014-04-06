@@ -11,9 +11,9 @@ import sys
 def _f(): pass
 FunctionType = type(_f)
 LambdaType = type(lambda: None)         # Same as FunctionType
-CodeType = type(_f.__code__)
-MappingProxyType = type(type.__dict__)
-SimpleNamespace = type(sys.implementation)
+CodeType = None  # TODO: Add better sentinel which can't match anything
+MappingProxyType = None  # TODO: Add better sentinel which can't match anything
+SimpleNamespace = None  # TODO: Add better sentinel which can't match anything
 
 def _g():
     yield 1
@@ -31,14 +31,14 @@ ModuleType = type(sys)
 try:
     raise TypeError
 except TypeError:
-    tb = sys.exc_info()[2]
-    TracebackType = type(tb)
-    FrameType = type(tb.tb_frame)
+#    tb = sys.exc_info()[2]
+    TracebackType = None  # TODO: Add better sentinel which can't match anything
+    FrameType = None  # TODO: Add better sentinel which can't match anything
     tb = None; del tb
 
 # For Jython, the following two types are identical
-GetSetDescriptorType = type(FunctionType.__code__)
-MemberDescriptorType = type(FunctionType.__globals__)
+GetSetDescriptorType = None  # TODO: Add better sentinel which can't match anything
+MemberDescriptorType = None  # TODO: Add better sentinel which can't match anything
 
 del sys, _f, _g, _C,                              # Not for export
 
