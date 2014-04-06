@@ -1,3 +1,7 @@
+import sys
+# Remove current dir from sys.path, otherwise distutils will peek up our
+# copy module instead of system.
+sys.path.pop(0)
 from distutils.core import setup
 
 setup(name='micropython-copy',
