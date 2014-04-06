@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(name='micropython-unittest',
-      version='0.0.1',
+      version='0.0.2',
       description='Reimplementation of unittest package for MicroPython',
       url='https://github.com/micropython/micropython/issues/405',
       author='MicroPython Developers',
