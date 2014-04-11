@@ -38,6 +38,12 @@ class PCREMatch:
     def group(self, n):
         return self.s[self.offsets[n*2]:self.offsets[n*2+1]]
 
+    def start(self, n=0):
+        return self.offsets[n*2]
+
+    def end(self, n=0):
+        return self.offsets[n*2+1]
+
     def span(self, n=0):
         return self.offsets[n*2], self.offsets[n*2+1]
 
