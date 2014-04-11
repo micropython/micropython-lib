@@ -47,7 +47,8 @@ class PCREPattern:
     def __init__(self, compiled_ptn):
         self.obj = compiled_ptn
 
-    def search(self, s, _flags=0):
+    def search(self, s, pos=0, endpos=-1, _flags=0):
+        assert pos == 0 and endpos == -1
         buf = bytes(4)
         pcre_fullinfo(self.obj, None, PCRE_INFO_CAPTURECOUNT, buf)
         cap_count = int.from_bytes(buf)
@@ -58,8 +59,8 @@ class PCREPattern:
             return None
         return PCREMatch(s, num, ov)
 
-    def match(self, s):
-        return self.search(s, PCRE_ANCHORED)
+    def match(self, s, pos=0, endpos=-1):
+        return self.search(s, pos, endpos, PCRE_ANCHORED)
 
     def sub(self, repl, s):
         if not callable(repl):
