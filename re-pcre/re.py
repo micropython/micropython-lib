@@ -38,6 +38,10 @@ class PCREMatch:
     def group(self, n):
         return self.s[self.offsets[n*2]:self.offsets[n*2+1]]
 
+    def groups(self, default=None):
+        assert default is None
+        return tuple(self.group(i + 1) for i in range(self.num - 1))
+
     def start(self, n=0):
         return self.offsets[n*2]
 
