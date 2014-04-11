@@ -98,6 +98,11 @@ def search(pattern, string, flags=0):
     return r.search(string)
 
 
+def match(pattern, string, flags=0):
+    r = compile(pattern, flags | PCRE_ANCHORED)
+    return r.search(string)
+
+
 def sub(pattern, repl, s, count=0, flags=0):
     r = compile(pattern, flags)
     return r.sub(repl, s)
