@@ -62,7 +62,8 @@ class PCREPattern:
         return self.search(s, PCRE_ANCHORED)
 
     def sub(self, repl, s):
-        assert "\\" not in repl, "Backrefs not implemented"
+        if not callable(repl):
+            assert "\\" not in repl, "Backrefs not implemented"
         res = ""
         while s:
             m = self.search(s)
@@ -70,8 +71,10 @@ class PCREPattern:
                 return res + s
             beg, end = m.span()
             res += s[:beg]
-            assert not callable(repl)
-            res += repl
+            if callable(repl):
+                res += repl(m)
+            else:
+                res += repl
             s = s[end:]
 
 
