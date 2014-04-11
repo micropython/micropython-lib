@@ -14,6 +14,12 @@ pcre_compile = pcre.func("p", "pcre_compile", "sipps")
 #            int options, int *ovector, int ovecsize);
 pcre_exec = pcre.func("i", "pcre_exec", "ppsiiipi")
 
+IGNORECASE = I = 1
+MULTILINE = M = 2
+DOTALL = S = 4
+VERBOSE = X = 8
+PCRE_ANCHORED = 0x10
+
 
 class PCREMatch:
 
@@ -31,13 +37,16 @@ class PCREPattern:
     def __init__(self, compiled_ptn):
         self.obj = compiled_ptn
 
-    def search(self, s):
+    def search(self, s, _flags=0):
         ov = array.array('i', [0, 0, 0] * 2)
-        num = pcre_exec(self.obj, None, s, len(s), 0, 0, ov, len(ov))
+        num = pcre_exec(self.obj, None, s, len(s), 0, _flags, ov, len(ov))
         if num == -1:
             # No match
             return None
         return PCREMatch(s, num, ov)
+
+    def match(self, s):
+        return self.search(s, PCRE_ANCHORED)
 
 
 def compile(pattern, flags=0):
