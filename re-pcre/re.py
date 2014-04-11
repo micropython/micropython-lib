@@ -67,7 +67,9 @@ class PCREPattern:
         if num == -1:
             # No match
             return None
-        return PCREMatch(s, num, ov)
+        # We don't care how many matching subexpressions we got, we
+        # care only about total # of capturing ones (including empty)
+        return PCREMatch(s, cap_count + 1, ov)
 
     def match(self, s, pos=0, endpos=-1):
         return self.search(s, pos, endpos, PCRE_ANCHORED)
