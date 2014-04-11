@@ -38,6 +38,9 @@ class PCREMatch:
     def group(self, n):
         return self.s[self.offsets[n*2]:self.offsets[n*2+1]]
 
+    def span(self, n=0):
+        return self.offsets[n*2], self.offsets[n*2+1]
+
 
 class PCREPattern:
 
@@ -58,6 +61,19 @@ class PCREPattern:
     def match(self, s):
         return self.search(s, PCRE_ANCHORED)
 
+    def sub(self, repl, s):
+        assert "\\" not in repl, "Backrefs not implemented"
+        res = ""
+        while s:
+            m = self.search(s)
+            if not m:
+                return res + s
+            beg, end = m.span()
+            res += s[:beg]
+            assert not callable(repl)
+            res += repl
+            s = s[end:]
+
 
 def compile(pattern, flags=0):
     errptr = bytes(4)
@@ -70,3 +86,8 @@ def compile(pattern, flags=0):
 def search(pattern, string, flags=0):
     r = compile(pattern, flags)
     return r.search(string)
+
+
+def sub(pattern, repl, s, count=0, flags=0):
+    r = compile(pattern, flags)
+    return r.sub(repl, s)
