@@ -54,12 +54,12 @@ class PCREPattern:
         self.obj = compiled_ptn
 
     def search(self, s, pos=0, endpos=-1, _flags=0):
-        assert pos == 0 and endpos == -1
+        assert endpos == -1, "pos: %d, endpos: %d" % (pos, endpos)
         buf = bytes(4)
         pcre_fullinfo(self.obj, None, PCRE_INFO_CAPTURECOUNT, buf)
         cap_count = int.from_bytes(buf)
         ov = array.array('i', [0, 0, 0] * (cap_count + 1))
-        num = pcre_exec(self.obj, None, s, len(s), 0, _flags, ov, len(ov))
+        num = pcre_exec(self.obj, None, s, len(s), pos, _flags, ov, len(ov))
         if num == -1:
             # No match
             return None
