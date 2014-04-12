@@ -1,7 +1,11 @@
+import sys
+# Remove current dir from sys.path, otherwise distutils will peek up our
+# module instead of system.
+sys.path.pop(0)
 from distutils.core import setup
 
 setup(name='micropython-re-pcre',
-      version='0.1',
+      version='0.1.1',
       description='re module for MicroPython, based on PCRE and FFI',
       url='https://github.com/micropython/micropython/issues/405',
       author='Paul Sokolovsky',
