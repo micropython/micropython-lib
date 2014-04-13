@@ -25,6 +25,10 @@ DOTALL = S = 4
 VERBOSE = X = 8
 PCRE_ANCHORED = 0x10
 
+# TODO. Note that Python3 has unicode by default
+ASCII = A = 0
+UNICODE = U = 0
+
 PCRE_INFO_CAPTURECOUNT = 2
 
 
