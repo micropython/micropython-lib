@@ -50,6 +50,7 @@ kwlist = [
 #--end keywords--
         ]
 
+frozenset = set
 iskeyword = frozenset(kwlist).__contains__
 
 def main():
