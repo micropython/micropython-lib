@@ -46,17 +46,20 @@ class EventLoop:
             delay = t - tnow
             if delay > 0:
                 self.wait(delay)
-            delay = 0
-            try:
-                ret = next(cb)
-#                print("ret:", ret)
-                if isinstance(ret, Sleep):
-                    delay = ret.args[0]
-            except StopIteration as e:
-                print(c, "finished")
-                continue
-            #self.q.append(c)
-            self.call_later(delay, cb, *args)
+            if callable(cb):
+                cb(*args)
+            else:
+                delay = 0
+                try:
+                    ret = next(cb)
+#                    print("ret:", ret)
+                    if isinstance(ret, Sleep):
+                        delay = ret.args[0]
+                except StopIteration as e:
+                    print(c, "finished")
+                    continue
+                #self.q.append(c)
+                self.call_later(delay, cb, *args)
 
     def run_until_complete(self, coro):
         val = None
