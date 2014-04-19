@@ -7,8 +7,11 @@ errno = libc.var("i", "errno")
 mkdir_ = libc.func("i", "mkdir", "si")
 
 
+def check_error(ret):
+    if ret == -1:
+        raise OSError(errno.get())
+
+
 def mkdir(name, mode=0o777):
     e = mkdir_(name, mode)
-    if not e:
-        return
-    raise OSError(errno.get())
+    check_error(e)
