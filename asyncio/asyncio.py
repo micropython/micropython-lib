@@ -6,10 +6,6 @@ def coroutine(f):
     return f
 
 
-def get_event_loop():
-    return EventLoop()
-
-
 class EventLoop:
 
     def __init__(self):
@@ -38,6 +34,10 @@ class EventLoop:
 #            c = self.q.pop(0)
 #            c[0](*c[1])
 
+    def wait(self, delay):
+#        print("Sleeping for:", delay)
+        time.sleep(delay)
+
     def run_forever(self):
         while self.q:
 #            t, cnt, cb, args = self.q.pop(0)
@@ -45,8 +45,7 @@ class EventLoop:
             tnow = self.time()
             delay = t - tnow
             if delay > 0:
-#                print("Sleeping for:", delay)
-                time.sleep(delay)
+                self.wait(delay)
             delay = 0
             try:
                 ret = next(cb)
@@ -74,6 +73,26 @@ class EventLoop:
     def close(self):
         pass
 
+import select
+
+class EpollEventLoop(EventLoop):
+
+    def __init__(self):
+        EventLoop.__init__(self)
+        self.poller = select.epoll(1)
+
+    def add_reader(self, fd, cb, *args):
+        self.poller.register(fd, select.EPOLLIN, (cb, args))
+
+    def add_writer(self, fd, cb, *args):
+        self.poller.register(fd, select.EPOLLOUT, (cb, args))
+
+    def wait(self, delay):
+        res = self.poller.poll(int(delay * 1000))
+        print("poll: ", res)
+        for cb, ev in res:
+            cb[0](*cb[1])
+
 
 class SysCall:
 
@@ -86,6 +105,9 @@ class Sleep(SysCall):
     def handle(self):
         time.sleep(self.args[0])
 
+
+def get_event_loop():
+    return EpollEventLoop()
 
 def sleep(secs):
     yield Sleep("sleep", secs)
