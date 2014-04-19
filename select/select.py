@@ -45,7 +45,7 @@ class Epoll:
         return res
 
 
-def epoll():
-    fd = epoll_create(4)
+def epoll(sizehint=4):
+    fd = epoll_create(sizehint)
     os.check_error(fd)
     return Epoll(fd)
