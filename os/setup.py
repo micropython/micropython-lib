@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(name='micropython-os',
-      version='0.0.1',
+      version='0.0.2',
       description='os module for MicroPython',
       url='https://github.com/micropython/micropython/issues/405',
       author='MicroPython Developers',
