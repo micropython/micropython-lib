@@ -151,3 +151,47 @@ def sleep2(secs):
         yield None
 #    print("Finished sleeping", secs)
 #    time.sleep(secs)
+
+
+import microsocket as _socket
+
+class StreamReader:
+
+    def __init__(self, s):
+        self.s = s
+
+    def readline(self):
+        print("readline")
+        s = yield IORead(self.s)
+        print("after IORead")
+        res = self.s.readline()
+        print("readline res:", res)
+        return res
+
+
+class StreamWriter:
+
+    def __init__(self, s):
+        self.s = s
+
+    def write(self, buf):
+        print("Write!")
+        res = self.s.write(buf)
+        print("write res:", res)
+        s = yield IOWrite(self.s)
+        print("returning write res:", res)
+
+
+def open_connection(host, port):
+    s = _socket.socket()
+    s.setblocking(False)
+    ai = _socket.getaddrinfo(host, port)
+    addr = ai[0][4]
+    try:
+        s.connect(addr)
+    except OSError as e:
+        print(e.args[0])
+    print("After connect")
+    s = yield IOWrite(s)
+    print("After iowait:", s)
+    return StreamReader(s), StreamWriter(s)
