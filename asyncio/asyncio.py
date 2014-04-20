@@ -55,12 +55,22 @@ class EventLoop:
             else:
                 delay = 0
                 try:
-                    ret = next(cb)
-#                    print("ret:", ret)
-                    if isinstance(ret, Sleep):
-                        delay = ret.args[0]
+                    if args == ():
+                        args = (None,)
+                    print("Send args:", args)
+                    ret = cb.send(*args)
+                    print("ret:", ret)
+                    if isinstance(ret, SysCall):
+                        if isinstance(ret, Sleep):
+                            delay = ret.args[0]
+                        elif isinstance(ret, IORead):
+                            self.add_reader(ret.obj.fileno(), lambda f: self.call_soon(cb, f), ret.obj)
+                            continue
+                        elif isinstance(ret, IOWrite):
+                            self.add_writer(ret.obj.fileno(), lambda f: self.call_soon(cb, f), ret.obj)
+                            continue
                 except StopIteration as e:
-                    print(c, "finished")
+                    print(cb, "finished")
                     continue
                 #self.q.append(c)
                 self.call_later(delay, cb, *args)
@@ -115,6 +125,16 @@ class Sleep(SysCall):
 
     def handle(self):
         time.sleep(self.args[0])
+
+class IORead(SysCall):
+
+    def __init__(self, obj):
+        self.obj = obj
+
+class IOWrite(SysCall):
+
+    def __init__(self, obj):
+        self.obj = obj
 
 
 def get_event_loop():
