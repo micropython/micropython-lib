@@ -99,9 +99,11 @@ class EpollEventLoop(EventLoop):
         self.poller = select.epoll(1)
 
     def add_reader(self, fd, cb, *args):
+        print("add_reader")
         self.poller.register(fd, select.EPOLLIN, (cb, args))
 
     def add_writer(self, fd, cb, *args):
+        print("add_writer")
         self.poller.register(fd, select.EPOLLOUT, (cb, args))
 
     def wait(self, delay):
@@ -112,6 +114,7 @@ class EpollEventLoop(EventLoop):
             res = self.poller.poll(int(delay * 1000))
         print("poll: ", res)
         for cb, ev in res:
+            print("Calling %s%s" % (cb[0], cb[1]))
             cb[0](*cb[1])
 
 
