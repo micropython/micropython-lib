@@ -95,7 +95,11 @@ class EpollEventLoop(EventLoop):
         self.poller.register(fd, select.EPOLLOUT, (cb, args))
 
     def wait(self, delay):
-        res = self.poller.poll(int(delay * 1000))
+        print("epoll.wait", delay)
+        if delay == -1:
+            res = self.poller.poll(-1)
+        else:
+            res = self.poller.poll(int(delay * 1000))
         print("poll: ", res)
         for cb, ev in res:
             cb[0](*cb[1])
