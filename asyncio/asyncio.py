@@ -39,13 +39,17 @@ class EventLoop:
         time.sleep(delay)
 
     def run_forever(self):
-        while self.q:
-#            t, cnt, cb, args = self.q.pop(0)
-            t, cnt, cb, args = heapq.heappop(self.q)
-            tnow = self.time()
-            delay = t - tnow
-            if delay > 0:
-                self.wait(delay)
+        while True:
+            if self.q:
+                t, cnt, cb, args = heapq.heappop(self.q)
+                tnow = self.time()
+                delay = t - tnow
+                if delay > 0:
+                    self.wait(delay)
+            else:
+                self.wait(-1)
+                # Assuming IO completion scheduled some tasks
+                continue
             if callable(cb):
                 cb(*args)
             else:
