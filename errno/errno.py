@@ -32,3 +32,4 @@ EMLINK  = 31  # Too many links
 EPIPE   = 32  # Broken pipe
 EDOM    = 33  # Math argument out of domain of func
 ERANGE  = 34  # Math result not representable
+EINPROGRESS = 115 # Operation now in progress
