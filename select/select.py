@@ -1,6 +1,7 @@
 import ffi
 import struct
 import os
+import errno
 
 
 libc = ffi.open("libc.so.6")
@@ -37,7 +38,7 @@ class Epoll:
             retval = fd
         s = struct.pack(self.epoll_event, eventmask, retval)
         r = epoll_ctl(self.epfd, EPOLL_CTL_ADD, fd, s)
-        if r == -1 and os.errno.get() == 17:
+        if r == -1 and os.errno.get() == errno.EEXIST:
             r = epoll_ctl(self.epfd, EPOLL_CTL_MOD, fd, s)
         os.check_error(r)
 
