@@ -12,11 +12,11 @@ pcre_compile = pcre.func("p", "pcre_compile", "sipps")
 #       int pcre_exec(const pcre *code, const pcre_extra *extra,
 #            const char *subject, int length, int startoffset,
 #            int options, int *ovector, int ovecsize);
-pcre_exec = pcre.func("i", "pcre_exec", "ppsiiipi")
+pcre_exec = pcre.func("i", "pcre_exec", "PPsiiipi")
 
 #       int pcre_fullinfo(const pcre *code, const pcre_extra *extra,
 #            int what, void *where);
-pcre_fullinfo = pcre.func("i", "pcre_fullinfo", "ppip")
+pcre_fullinfo = pcre.func("i", "pcre_fullinfo", "PPip")
 
 
 IGNORECASE = I = 1

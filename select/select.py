@@ -9,7 +9,7 @@ libc = ffi.open("libc.so.6")
 #int epoll_create(int size);
 epoll_create = libc.func("i", "epoll_create", "i")
 #int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);
-epoll_ctl = libc.func("i", "epoll_ctl", "iiip")
+epoll_ctl = libc.func("i", "epoll_ctl", "iiiP")
 #int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout);
 epoll_wait = libc.func("i", "epoll_wait", "ipii")
 

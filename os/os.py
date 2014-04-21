@@ -5,7 +5,7 @@ libc = ffi.open("libc.so.6")
 
 errno = libc.var("i", "errno")
 mkdir_ = libc.func("i", "mkdir", "si")
-read_ = libc.func("i", "read", "iPi")
+read_ = libc.func("i", "read", "ipi")
 write_ = libc.func("i", "write", "iPi")
 
 

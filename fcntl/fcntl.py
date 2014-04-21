@@ -4,9 +4,9 @@ import ffi
 libc = ffi.open("libc.so.6")
 
 fcntl_l = libc.func("i", "fcntl", "iil")
-fcntl_s = libc.func("i", "fcntl", "iis")
+fcntl_s = libc.func("i", "fcntl", "iip")
 ioctl_l = libc.func("i", "ioctl", "iil")
-ioctl_s = libc.func("i", "ioctl", "iis")
+ioctl_s = libc.func("i", "ioctl", "iip")
 
 
 def fcntl(fd, op, arg):
