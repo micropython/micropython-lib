@@ -7,6 +7,10 @@ import logging
 
 log = logging.getLogger("asyncio")
 
+IO_READ  = 1
+IO_WRITE = 2
+
+
 def coroutine(f):
     return f
 
@@ -77,6 +81,12 @@ class EventLoop:
                             continue
                         elif isinstance(ret, IOWrite):
                             self.add_writer(ret.obj.fileno(), lambda f: self.call_soon(cb, f), ret.obj)
+                            continue
+                        elif isinstance(ret, IODone):
+                            if ret.op == IO_READ:
+                                self.remove_reader(ret.obj.fileno())
+                            elif ret.op == IO_WRITE:
+                                self.remove_writer(ret.obj.fileno())
                             continue
                 except StopIteration as e:
                     log.debug("Gen finished: %s", cb)
@@ -156,6 +166,12 @@ class IOWrite(SysCall):
     def __init__(self, obj):
         self.obj = obj
 
+class IODone(SysCall):
+
+    def __init__(self, op, obj):
+        self.op = op
+        self.obj = obj
+
 
 def get_event_loop():
     return EpollEventLoop()
@@ -189,6 +205,8 @@ class StreamReader:
         s = yield IORead(self.s)
         log.debug("StreamReader.readline(): after IORead: %s", s)
         res = self.s.readline()
+        if not res:
+            yield IODone(IO_READ, self.s)
         log.debug("StreamReader.readline(): res: %s", res)
         return res
 
