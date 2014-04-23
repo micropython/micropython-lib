@@ -205,8 +205,8 @@ class StreamReader:
         s = yield IORead(self.s)
         log.debug("StreamReader.readline(): after IORead: %s", s)
         res = self.s.readline()
-        if not res:
-            yield IODone(IO_READ, self.s)
+#        if not res:
+#            yield IODone(IO_READ, self.s)
         log.debug("StreamReader.readline(): res: %s", res)
         return res
 

@@ -5,7 +5,8 @@ def print_http_headers(url):
     reader, writer = yield from asyncio.open_connection(url, 80)
     print(reader, writer)
     print("================")
-    query = "GET / HTTP/1.0\n\n"
+    query = "GET / HTTP/1.0\r\nHost: foo\r\n\r\n"
+#    query = "GET / HTTP/1.0\r\n\r\n"
     print(query.encode('latin-1'))
     yield from writer.write(query)
     while True:
