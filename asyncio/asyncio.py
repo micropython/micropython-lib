@@ -160,6 +160,10 @@ class IOWrite(SysCall):
 def get_event_loop():
     return EpollEventLoop()
 
+def async(coro):
+    # We don't have Task bloat, so op is null
+    return coro
+
 def sleep(secs):
     yield Sleep("sleep", secs)
 
