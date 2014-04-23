@@ -42,6 +42,11 @@ class Epoll:
             r = epoll_ctl(self.epfd, EPOLL_CTL_MOD, fd, s)
         os.check_error(r)
 
+    def unregister(self, fd):
+        # Pass dummy event structure, to workaround kernel bug
+        r = epoll_ctl(self.epfd, EPOLL_CTL_DEL, fd, self.evbuf)
+        os.check_error(r)
+
     def poll(self, timeout=-1):
         s = bytearray(self.evbuf)
         n = epoll_wait(self.epfd, s, 1, timeout)

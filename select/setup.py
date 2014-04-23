@@ -5,7 +5,7 @@ sys.path.pop(0)
 from setuptools import setup
 
 setup(name='micropython-select',
-      version='0.0.2',
+      version='0.0.3',
       description='select module to MicroPython',
       url='https://github.com/micropython/micropython/issues/405',
       author='Paul Sokolovsky',
