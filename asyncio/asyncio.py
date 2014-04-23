@@ -111,9 +111,17 @@ class EpollEventLoop(EventLoop):
         log.debug("add_reader%s", (fd, cb, args))
         self.poller.register(fd, select.EPOLLIN, (cb, args))
 
+    def remove_reader(self, fd):
+        log.debug("remove_reader(%s)", fd)
+        self.poller.unregister(fd)
+
     def add_writer(self, fd, cb, *args):
         log.debug("add_writer%s", (fd, cb, args))
         self.poller.register(fd, select.EPOLLOUT, (cb, args))
+
+    def remove_writer(self, fd):
+        log.debug("remove_writer(%s)", fd)
+        self.poller.unregister(fd)
 
     def wait(self, delay):
         log.debug("epoll.wait(%d)", delay)
