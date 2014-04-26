@@ -31,7 +31,7 @@ class Logger:
         return "LVL" + str(level)
 
     def log(self, level, msg, *args):
-        if level > self.level:
+        if level >= (self.level or _level):
             print(("%s:%s:" + msg) % ((self._level_str(level), self.name) + args))
 
     def debug(self, msg, *args):
@@ -50,6 +50,7 @@ class Logger:
         self.log(CRITICAL, msg, *args)
 
 
+_level = NOTSET
 _loggers = {}
 
 def getLogger(name):
@@ -59,5 +60,6 @@ def getLogger(name):
     _loggers[name] = l
     return l
 
-def basicConfig(level):
-    pass
+def basicConfig(level=DEBUG):
+    global _level
+    _level = level
