@@ -12,6 +12,8 @@ close_ = libc.func("i", "close", "i")
 fork_ = libc.func("i", "fork", "")
 pipe_ = libc.func("i", "pipe", "p")
 _exit_ = libc.func("v", "_exit", "i")
+getpid_ = libc.func("i", "getpid", "")
+waitpid_ = libc.func("i", "waitpid", "ipi")
 
 
 def check_error(ret):
@@ -53,3 +55,12 @@ def pipe():
 
 def _exit(n):
     _exit_(n)
+
+def getpid():
+    return getpid_()
+
+def waitpid(pid, opts):
+    a = array.array('i', [0])
+    r = waitpid_(pid, a, opts)
+    check_error(r)
+    return (r, a[0])
