@@ -21,12 +21,18 @@ class EventLoop:
         self.q = []
 
     def call_soon(self, c, *args):
-        self.q.append(c)
+        self.q.append((c, args))
+
+    def call_later(self, delay, c, *args):
+        def _delayed(c, args, delay):
+            yield from sleep(delay)
+            self.call_soon(c, *args)
+        Task(_delayed(c, args, delay))
 
     def run_forever(self):
         while self.q:
             c = self.q.pop(0)
-            c()
+            c[0](*c[1])
         # I mean, forever
         while True:
             time.sleep(1)
