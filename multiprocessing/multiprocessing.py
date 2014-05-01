@@ -62,12 +62,24 @@ def Pipe(duplex=True):
     return Connection(r), Connection(w)
 
 
+class AsyncResult:
+
+    def __init__(self, p, r):
+        self.p = p
+        self.r = r
+
+    def get(self):
+        res = self.r.recv()
+        self.p.join()
+        return res
+
+
 class Pool:
 
     def __init__(self, num):
         self.num = num
 
-    def apply(self, f, args=(), kwargs={}):
+    def _apply(self, f, args, kwargs):
         # This is pretty inefficient impl, doesn't really use pool worker
         def _exec(w):
             r = f(*args, **kwargs)
@@ -76,6 +88,15 @@ class Pool:
         p = Process(target=_exec, args=(w,))
         p.register_pipe(r, w)
         p.start()
-        r = r.recv()
+        return p, r
+
+
+    def apply(self, f, args=(), kwargs={}):
+        p, r = self._apply(f, args, kwargs)
+        res = r.recv()
         p.join()
-        return r
+        return res
+
+    def apply_async(self, f, args=(), kwargs={}, callback=None, errback=None):
+        p, r = self._apply(f, args, kwargs)
+        return AsyncResult(p, r)
