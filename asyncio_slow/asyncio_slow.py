@@ -6,9 +6,10 @@ log = logging.getLogger("asyncio")
 
 
 # Workaround for not being able to subclass builtin types
-DoneException = AssertionError
+class LoopStop(Exception):
+    pass
 
-class InvalidStateError:
+class InvalidStateError(Exception):
     pass
 
 # Object not matching any other object
@@ -32,21 +33,23 @@ class EventLoop:
     def run_forever(self):
         while self.q:
             c = self.q.pop(0)
-            c[0](*c[1])
+            try:
+                c[0](*c[1])
+            except LoopStop:
+                return
         # I mean, forever
         while True:
             time.sleep(1)
 
-    def run_until_complete(self, coro):
-        def _cb(val):
-            raise DoneException
+    def stop(self):
+        def _cb():
+            raise LoopStop
+        self.call_soon(_cb)
 
+    def run_until_complete(self, coro):
         t = async(coro)
-        t.add_done_callback(_cb)
-        try:
-            self.run_forever()
-        except DoneException:
-            pass
+        t.add_done_callback(lambda a: self.stop())
+        self.run_forever()
 
     def close(self):
         pass
