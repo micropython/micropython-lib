@@ -60,3 +60,22 @@ def Pipe(duplex=True):
     assert duplex == False
     r, w = os.pipe()
     return Connection(r), Connection(w)
+
+
+class Pool:
+
+    def __init__(self, num):
+        self.num = num
+
+    def apply(self, f, args=(), kwargs={}):
+        # This is pretty inefficient impl, doesn't really use pool worker
+        def _exec(w):
+            r = f(*args, **kwargs)
+            w.send(r)
+        r, w = Pipe(False)
+        p = Process(target=_exec, args=(w,))
+        p.register_pipe(r, w)
+        p.start()
+        r = r.recv()
+        p.join()
+        return r
