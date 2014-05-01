@@ -57,6 +57,9 @@ class Epoll:
             res.append((vals[1], vals[0]))
         return res
 
+    def close(self):
+        os.close(self.epfd)
+
 
 def epoll(sizehint=4):
     fd = epoll_create(sizehint)
