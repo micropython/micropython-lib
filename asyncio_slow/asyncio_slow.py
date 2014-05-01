@@ -43,7 +43,6 @@ class EventLoop:
 
         t = async(coro)
         t.add_done_callback(_cb)
-        self.call_soon(t)
         try:
             self.run_forever()
         except DoneException:
