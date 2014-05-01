@@ -1,5 +1,6 @@
 import os
 import pickle
+import select
 
 
 class Process:
@@ -67,11 +68,21 @@ class AsyncResult:
     def __init__(self, p, r):
         self.p = p
         self.r = r
+        self.ep = None
 
     def get(self):
         res = self.r.recv()
         self.p.join()
         return res
+
+    def ready(self):
+        if not self.ep:
+            self.ep = select.epoll()
+            self.ep.register(self.r.f.fileno(), select.EPOLLIN, None)
+        res = self.ep.poll(0)
+        if res:
+            self.ep.close()
+        return bool(res)
 
 
 class Pool:
