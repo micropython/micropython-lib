@@ -115,7 +115,7 @@ def async(coro):
     return Task(coro)
 
 
-class Wait(Future):
+class _Wait(Future):
 
     def __init__(self, n):
         Future.__init__(self)
@@ -133,12 +133,11 @@ class Wait(Future):
 
 def wait(coro_list, loop=_def_event_loop):
 
-    w = Wait(len(coro_list))
+    w = _Wait(len(coro_list))
 
     for c in coro_list:
         t = async(c)
         t.add_done_callback(lambda val: w._done())
-        loop.call_soon(t)
 
     return w
 
