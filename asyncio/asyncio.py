@@ -11,10 +11,6 @@ IO_READ  = 1
 IO_WRITE = 2
 
 
-def coroutine(f):
-    return f
-
-
 class EventLoop:
 
     def __init__(self):
@@ -31,20 +27,16 @@ class EventLoop:
         self.call_at(self.time() + delay, callback, *args)
 
     def call_at(self, time, callback, *args):
-#        self.q.append((callback, args))
-        # self.cnt is workaround per heapq docs
+        # Including self.cnt is a workaround per heapq docs
         log.debug("Scheduling %s", (time, self.cnt, callback, args))
         heapq.heappush(self.q, (time, self.cnt, callback, args))
 #        print(self.q)
         self.cnt += 1
 
-#    def run_forever(self):
-#        while self.q:
-#            c = self.q.pop(0)
-#            c[0](*c[1])
-
     def wait(self, delay):
-#        print("Sleeping for:", delay)
+        # Default wait implementation, to be overriden in subclasses
+        # with IO scheduling
+        log.debug("Sleeping for: %s", delay)
         time.sleep(delay)
 
     def run_forever(self):
@@ -91,7 +83,6 @@ class EventLoop:
                 except StopIteration as e:
                     log.debug("Gen finished: %s", cb)
                     continue
-                #self.q.append(c)
                 self.call_later(delay, cb, *args)
 
     def run_until_complete(self, coro):
@@ -108,6 +99,7 @@ class EventLoop:
 
     def close(self):
         pass
+
 
 import select
 
@@ -175,6 +167,9 @@ class IODone(SysCall):
 
 def get_event_loop():
     return EpollEventLoop()
+
+def coroutine(f):
+    return f
 
 def async(coro):
     # We don't have Task bloat, so op is null
