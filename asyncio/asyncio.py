@@ -183,15 +183,6 @@ def async(coro):
 def sleep(secs):
     yield Sleep("sleep", secs)
 
-def sleep2(secs):
-    t = time.time()
-#    print("Started sleep:", t, "targetting:", t + secs)
-    while time.time() < t + secs:
-        time.sleep(0.01)
-        yield None
-#    print("Finished sleeping", secs)
-#    time.sleep(secs)
-
 
 import microsocket as _socket
 
