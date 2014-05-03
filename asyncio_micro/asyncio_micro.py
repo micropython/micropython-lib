@@ -10,6 +10,7 @@ log = logging.getLogger("asyncio")
 IO_READ  = 1
 IO_WRITE = 2
 
+type_gen = type((lambda: (yield))())
 
 class EventLoop:
 
@@ -60,9 +61,9 @@ class EventLoop:
                 try:
                     if args == ():
                         args = (None,)
-                    log.debug("Gen send args: %s", args)
+                    log.debug("Gen %s send args: %s", cb, args)
                     ret = cb.send(*args)
-                    log.debug("Gen yield result: %s", ret)
+                    log.debug("Gen %s yield result: %s", cb, ret)
                     if isinstance(ret, SysCall):
                         if isinstance(ret, Sleep):
                             delay = ret.args[0]
@@ -79,6 +80,11 @@ class EventLoop:
                                 self.remove_reader(ret.obj.fileno())
                             elif ret.op == IO_WRITE:
                                 self.remove_writer(ret.obj.fileno())
+                    elif isinstance(ret, type_gen):
+                        self.call_soon(ret)
+                    else:
+                        print(ret, type(ret))
+                        assert False
                 except StopIteration as e:
                     log.debug("Gen finished: %s", cb)
                     continue
