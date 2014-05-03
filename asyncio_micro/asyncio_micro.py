@@ -79,7 +79,6 @@ class EventLoop:
                                 self.remove_reader(ret.obj.fileno())
                             elif ret.op == IO_WRITE:
                                 self.remove_writer(ret.obj.fileno())
-                            continue
                 except StopIteration as e:
                     log.debug("Gen finished: %s", cb)
                     continue
