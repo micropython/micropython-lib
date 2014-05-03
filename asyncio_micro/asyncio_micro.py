@@ -235,3 +235,23 @@ def open_connection(host, port):
     s = yield IOWrite(s)
     log.debug("open_connection: After iowait: %s", s)
     return StreamReader(s), StreamWriter(s)
+
+
+def start_server(client_coro, host, port):
+    log.debug("start_server(%s, %s)", host, port)
+    s = _socket.socket()
+    s.setblocking(False)
+
+    ai = _socket.getaddrinfo(host, port)
+    addr = ai[0][4]
+    s.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1)
+    s.bind(addr)
+    s.listen(10)
+    while True:
+        log.debug("start_server: Before accept")
+        yield IORead(s)
+        log.debug("start_server: After iowait")
+        s2, client_addr = s.accept()
+        s2.setblocking(False)
+        log.debug("start_server: After accept: %s", s2)
+        yield client_coro(StreamReader(s2), StreamWriter(s2))
