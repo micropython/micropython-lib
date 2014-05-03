@@ -69,10 +69,10 @@ class EventLoop:
                         elif isinstance(ret, IORead):
 #                            self.add_reader(ret.obj.fileno(), lambda self, c, f: self.call_soon(c, f), self, cb, ret.obj)
 #                            self.add_reader(ret.obj.fileno(), lambda c, f: self.call_soon(c, f), cb, ret.obj)
-                            self.add_reader(ret.obj.fileno(), lambda f: self.call_soon(cb, f), ret.obj)
+                            self.add_reader(ret.obj.fileno(), lambda cb, f: self.call_soon(cb, f), cb, ret.obj)
                             continue
                         elif isinstance(ret, IOWrite):
-                            self.add_writer(ret.obj.fileno(), lambda f: self.call_soon(cb, f), ret.obj)
+                            self.add_writer(ret.obj.fileno(), lambda cb, f: self.call_soon(cb, f), cb, ret.obj)
                             continue
                         elif isinstance(ret, IODone):
                             if ret.op == IO_READ:
