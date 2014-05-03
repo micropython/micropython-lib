@@ -31,6 +31,7 @@ class Epoll:
     def __init__(self, epfd):
         self.epfd = epfd
         self.evbuf = struct.pack(self.epoll_event, 0, 0)
+        self.registry = {}
 
     def register(self, fd, eventmask=EPOLLIN|EPOLLPRI|EPOLLOUT, retval=None):
         "retval is extension to stdlib, value to use in results from .poll()."
@@ -41,11 +42,15 @@ class Epoll:
         if r == -1 and os.errno.get() == errno.EEXIST:
             r = epoll_ctl(self.epfd, EPOLL_CTL_MOD, fd, s)
         os.check_error(r)
+        # We must keep reference to retval, or it may be GCed. And we must
+        # keep mapping from fd to retval to be able to get rid of retval reference.
+        self.registry[fd] = retval
 
     def unregister(self, fd):
         # Pass dummy event structure, to workaround kernel bug
         r = epoll_ctl(self.epfd, EPOLL_CTL_DEL, fd, self.evbuf)
         os.check_error(r)
+        del self.registry[fd]
 
     def poll(self, timeout=-1):
         s = bytearray(self.evbuf)
