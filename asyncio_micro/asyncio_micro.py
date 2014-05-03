@@ -186,6 +186,13 @@ class StreamReader:
     def __init__(self, s):
         self.s = s
 
+    def read(self, n):
+        s = yield IORead(self.s)
+        res = self.s.read(n)
+        if not res:
+            yield IODone(IO_READ, self.s)
+        return res
+
     def readline(self):
         log.debug("StreamReader.readline()")
         s = yield IORead(self.s)
@@ -207,6 +214,10 @@ class StreamWriter:
         log.debug("StreamWriter.write(): %d", res)
         s = yield IOWrite(self.s)
         log.debug("StreamWriter.write(): returning")
+
+    def close(self):
+        yield IODone(IO_WRITE, self.s)
+        self.s.close()
 
 
 def open_connection(host, port):
