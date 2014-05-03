@@ -1,4 +1,4 @@
-import asyncio
+import asyncio_micro as asyncio
 
 @asyncio.coroutine
 def print_http_headers(url):

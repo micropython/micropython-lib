@@ -1,4 +1,4 @@
-import asyncio
+import asyncio_micro as asyncio
 import time
 
 
