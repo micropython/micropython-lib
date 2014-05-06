@@ -191,9 +191,13 @@ class StreamReader:
     def __init__(self, s):
         self.s = s
 
-    def read(self, n):
+    def read(self, n=-1):
         s = yield IORead(self.s)
-        res = self.s.read(n)
+        while True:
+            res = self.s.read(n)
+            if res is not None:
+                break
+            log.warn("Empty read")
         if not res:
             yield IODone(IO_READ, self.s)
         return res
@@ -202,7 +206,11 @@ class StreamReader:
         log.debug("StreamReader.readline()")
         s = yield IORead(self.s)
         log.debug("StreamReader.readline(): after IORead: %s", s)
-        res = self.s.readline()
+        while True:
+            res = self.s.readline()
+            if res is not None:
+                break
+            log.warn("Empty read")
         if not res:
             yield IODone(IO_READ, self.s)
         log.debug("StreamReader.readline(): res: %s", res)
