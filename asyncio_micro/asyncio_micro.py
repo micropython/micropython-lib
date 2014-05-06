@@ -223,10 +223,19 @@ class StreamWriter:
         self.s = s
 
     def write(self, buf):
-        res = self.s.write(buf)
-        log.debug("StreamWriter.write(): %d", res)
-        s = yield IOWrite(self.s)
-        log.debug("StreamWriter.write(): returning")
+        sz = len(buf)
+        while True:
+            res = self.s.write(buf)
+            log.debug("StreamWriter.write(): %d", res)
+            # If we spooled everything, (just) return
+            if res == sz:
+                return
+            if res is None:
+                res = 0
+            buf = buf[res:]
+            sz -= res
+            s = yield IOWrite(self.s)
+            log.debug("StreamWriter.write(): can write more")
 
     def close(self):
         yield IODone(IO_WRITE, self.s)
