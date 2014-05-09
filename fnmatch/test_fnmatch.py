@@ -44,7 +44,7 @@ class FnmatchTestCase(unittest.TestCase):
         check('\nfoo', 'foo*', False)
         check('\n', '*')
 
-    def test_mix_bytes_str(self):
+    def _test_mix_bytes_str(self):
         self.assertRaises(TypeError, fnmatch, 'test', b'*')
         self.assertRaises(TypeError, fnmatch, b'test', '*')
         self.assertRaises(TypeError, fnmatchcase, 'test', b'*')
