@@ -3,6 +3,9 @@ import re
 m = re.search(r"a+", "caaab")
 assert m.group(0) == "aaa"
 
+m = re.match(r"(?ms)foo.*\Z", "foo\nbar")
+assert m.group(0) == "foo\nbar"
+
 assert re.match(r"a+", "caaab") is None
 m = re.match(r"a+", "aaaab")
 assert m.group(0) == "aaaa"
