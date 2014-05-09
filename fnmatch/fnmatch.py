@@ -107,4 +107,5 @@ def translate(pat):
                 res = '%s[%s]' % (res, stuff)
         else:
             res = res + re.escape(c)
-    return res + '\Z(?ms)'
+    # Original patterns is undefined, see http://bugs.python.org/issue21464
+    return '(?ms)' + res + '\Z'
