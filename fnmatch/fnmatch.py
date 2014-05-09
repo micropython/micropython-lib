@@ -13,7 +13,7 @@ import os
 import os.path
 import posixpath
 import re
-import functools
+#import functools
 
 __all__ = ["filter", "fnmatch", "fnmatchcase", "translate"]
 
@@ -36,7 +36,7 @@ def fnmatch(name, pat):
     pat = os.path.normcase(pat)
     return fnmatchcase(name, pat)
 
-@functools.lru_cache(maxsize=256, typed=True)
+#@functools.lru_cache(maxsize=256, typed=True)
 def _compile_pattern(pat):
     if isinstance(pat, bytes):
         pat_str = str(pat, 'ISO-8859-1')
