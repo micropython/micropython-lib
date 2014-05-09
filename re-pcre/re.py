@@ -116,3 +116,13 @@ def match(pattern, string, flags=0):
 def sub(pattern, repl, s, count=0, flags=0):
     r = compile(pattern, flags)
     return r.sub(repl, s)
+
+
+def escape(s):
+    res = ""
+    for c in s:
+        if '0' <= c <= '9' or 'A' <= c <= 'Z' or 'a' <= c <= 'z' or c == '_':
+            res += c
+        else:
+            res += "\\" + c
+    return res
