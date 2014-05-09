@@ -1,19 +1,19 @@
 class TestCase:
 
-    def fail(self, msg):
+    def fail(self, msg=''):
         assert False, msg
 
-    def assertEqual(self, x, y):
+    def assertEqual(self, x, y, msg=''):
         assert x == y, "%r vs %r" % (x, y)
 
-    def assertTrue(self, x):
-        assert x
+    def assertTrue(self, x, msg=''):
+        assert x, msg
 
-    def assertIn(self, x, y):
-        assert x in y
+    def assertIn(self, x, y, msg=''):
+        assert x in y, msg
 
-    def assertIsInstance(self, x, y):
-        assert isinstance(x, y)
+    def assertIsInstance(self, x, y, msg=''):
+        assert isinstance(x, y), msg
 
     def assertRaises(self, exc, func, *args):
         try:
