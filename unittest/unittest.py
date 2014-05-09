@@ -25,14 +25,19 @@ class TestCase:
             raise
 
 
+# TODO: Uncompliant
+def run_class(c):
+    o = c()
+    for name in dir(o):
+        if name.startswith("test"):
+            m = getattr(o, name)
+            m()
+            print(name, "...ok")
+
+
 def main(module="__main__"):
     m = __import__(module)
     for tn in dir(m):
         c = getattr(m, tn)
         if isinstance(c, object) and issubclass(c, TestCase):
-            o = c()
-            for name in dir(o):
-                if name.startswith("test"):
-                    m = getattr(o, name)
-                    m()
-                    print(name, "...ok")
+            run_class(c)
