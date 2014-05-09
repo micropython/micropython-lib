@@ -10,6 +10,7 @@ The function translate(PATTERN) returns a regular expression
 corresponding to PATTERN.  (It does not compile it.)
 """
 import os
+import os.path
 import posixpath
 import re
 import functools
