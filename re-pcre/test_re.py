@@ -17,5 +17,6 @@ assert re.sub("a", lambda m: m.group(0) * 2, "caaab") == "caaaaaab"
 
 m = re.match(r"(\d+)\.(\d+)", "24.1632")
 assert m.groups() == ('24', '1632')
+assert m.group(2, 1) == ('1632', '24')
 
 assert re.escape(r"1243*&[]_dsfAd") == r"1243\*\&\[\]_dsfAd"
