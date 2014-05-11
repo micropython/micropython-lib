@@ -8,8 +8,6 @@ class defaultdict:
         try:
             return self.d[key]
         except KeyError:
-            if self.default_factory is None:
-                raise
             v = self.__missing__(key)
             self.d[key] = v
             return v
@@ -21,4 +19,6 @@ class defaultdict:
         del self.d[key]
 
     def __missing__(self, key):
+        if self.default_factory is None:
+            raise KeyError(key)
         return self.default_factory()
