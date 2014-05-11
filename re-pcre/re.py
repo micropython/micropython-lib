@@ -96,6 +96,27 @@ class PCREPattern:
                 res += repl
             s = s[end:]
 
+    def split(self, s, maxsplit=0):
+        res = []
+        while True:
+            m = self.search(s)
+            g = None
+            if m:
+                g = m.group(0)
+            if not m or not g:
+                res.append(s)
+                return res
+            beg, end = m.span(0)
+            res.append(s[:beg])
+            if m.num > 1:
+                res.extend(m.groups())
+            s = s[end:]
+            if maxsplit > 0:
+                maxsplit -= 1
+                if maxsplit == 0:
+                    res.append(s)
+                    return res
+
 
 def compile(pattern, flags=0):
     errptr = bytes(4)
@@ -118,6 +139,11 @@ def match(pattern, string, flags=0):
 def sub(pattern, repl, s, count=0, flags=0):
     r = compile(pattern, flags)
     return r.sub(repl, s)
+
+
+def split(pattern, s, maxsplit=0, flags=0):
+    r = compile(pattern, flags)
+    return r.split(s, maxsplit)
 
 
 def escape(s):
