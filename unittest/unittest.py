@@ -15,9 +15,9 @@ class TestCase:
     def assertIsInstance(self, x, y, msg=''):
         assert isinstance(x, y), msg
 
-    def assertRaises(self, exc, func, *args):
+    def assertRaises(self, exc, func, *args, **kwargs):
         try:
-            func(*args)
+            func(*args, **kwargs)
             assert False, "%r not raised" % exc
         except Exception as e:
             if isinstance(e, exc):
