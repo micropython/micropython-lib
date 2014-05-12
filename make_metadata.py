@@ -18,7 +18,7 @@ setup(name='micropython-%(name)s',
       maintainer=%(maintainer)r,
       maintainer_email='micro-python@googlegroups.com',
       license=%(license)r,
-      %(_what_)s=['%(name)s'])
+      %(_what_)s=['%(top_name)s'])
 """
 
 DUMMY_DESC = """\
@@ -29,6 +29,13 @@ module, it may be not using it onevery code path, so may work at least
 partially). It is expected that more complete implementation of the module
 will be provided later. Please help with the development if you are
 interested in this module."""
+
+MICROPYTHON_LIB_DESC = """\
+This is a module reimplemented specifically for MicroPython standard library,
+with efficient and lean design in mind. Note that this module is likely work
+in progress and likely supports just a subset of CPython's corresponding
+module.Please help with the development if you are interested in this
+module."""
 
 MICROPYTHON_DEVELS = 'MicroPython Developers'
 MICROPYTHON_DEVELS_EMAIL = 'micro-python@googlegroups.com'
@@ -74,15 +81,24 @@ def main():
             data["maintainer"] = MICROPYTHON_DEVELS
             data["license"] = "Python"
             data["desc"] = "CPython %s module ported to MicroPython" % module
-        elif data["srctype"] == "micropython":
+        elif data["srctype"] == "micropython-lib":
             if "author" not in data:
                 data["author"] = MICROPYTHON_DEVELS
+            if "author_email" not in data:
+                data["author_email"] = MICROPYTHON_DEVELS_EMAIL
             if "maintainer" not in data:
-                data["author"] = MICROPYTHON_DEVELS
+                data["maintainer"] = MICROPYTHON_DEVELS
+            if "desc" not in data:
+                data["desc"] = "%s module for MicroPython" % module
+            if "long_desc" not in data:
+                data["long_desc"] = MICROPYTHON_LIB_DESC
+            if "license" not in data:
+                data["license"] = "MIT"
         else:
             raise ValueError
 
         data["name"] = module
+        data["top_name"] = module.split(".", 1)[0]
         write_setup(module + "/setup.py", data)
 
 
