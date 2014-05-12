@@ -30,16 +30,26 @@ partially). It is expected that more complete implementation of the module
 will be provided later. Please help with the development if you are
 interested in this module."""
 
+CPYTHON_DESC = """\
+This is a module ported from CPython standard library to be compatible with
+MicroPython interpreter. Usually, this means applying small patches for
+features not supported (yet, or at all) in MicroPython. Sometimes, heavier
+changes are required. Note that CPython modules are written with availability
+of vast resources in mind, and may not work for MicroPython ports with
+limited heap. If you are affected by such a case, please help reimplement
+the module from scratch."""
+
 MICROPYTHON_LIB_DESC = """\
 This is a module reimplemented specifically for MicroPython standard library,
 with efficient and lean design in mind. Note that this module is likely work
 in progress and likely supports just a subset of CPython's corresponding
-module.Please help with the development if you are interested in this
+module. Please help with the development if you are interested in this
 module."""
 
 MICROPYTHON_DEVELS = 'MicroPython Developers'
 MICROPYTHON_DEVELS_EMAIL = 'micro-python@googlegroups.com'
 CPYTHON_DEVELS = 'CPython Developers'
+CPYTHON_DEVELS_EMAIL = 'python-dev@python.org'
 
 def parse_metadata(f):
     data = {}
@@ -78,9 +88,11 @@ def main():
             data["long_desc"] = DUMMY_DESC
         elif data["srctype"] == "cpython":
             data["author"] = CPYTHON_DEVELS
+            data["author_email"] = CPYTHON_DEVELS_EMAIL
             data["maintainer"] = MICROPYTHON_DEVELS
             data["license"] = "Python"
             data["desc"] = "CPython %s module ported to MicroPython" % module
+            data["long_desc"] = CPYTHON_DESC
         elif data["srctype"] == "micropython-lib":
             if "author" not in data:
                 data["author"] = MICROPYTHON_DEVELS
