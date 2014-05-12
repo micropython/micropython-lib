@@ -1,18 +1,18 @@
 import sys
-# Remove current dir from sys.path, otherwise distutils will peek up our
-# module instead of system one.
+# Remove current dir from sys.path, otherwise setuptools will peek up our
+# module instead of system.
 sys.path.pop(0)
-sys.path.insert(0, '..')
 from setuptools import setup
-import metadata
 
-NAME = 'base64'
 
-setup(name='micropython-' + NAME,
-      version='0.0.0',
-      description=metadata.desc_dummy(NAME),
-      url=metadata.url,
-      author=metadata.author_upy_devels,
-      author_email=metadata.author_upy_devels_email,
+setup(name='micropython-base64',
+      version='0.0.1',
+      description='Dummy base64 module for MicroPython',
+      long_description='This is a dummy implementation of a module for MicroPython standard library.\nIt contains zero or very little functionality, and primarily intended to\navoid import errors (using idea that even if an application imports a\nmodule, it may be not using it onevery code path, so may work at least\npartially). It is expected that more complete implementation of the module\nwill be provided later. Please help with the development if you are\ninterested in this module.',
+      url='https://github.com/micropython/micropython/issues/405',
+      author='MicroPython Developers',
+      author_email='micro-python@googlegroups.com',
+      maintainer='MicroPython Developers',
+      maintainer_email='micro-python@googlegroups.com',
       license='MIT',
-      py_modules=[NAME])
+      py_modules=['base64'])
