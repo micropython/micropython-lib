@@ -1,11 +1,14 @@
 import ffi
 import array
+import struct
 
 
 libc = ffi.open("libc.so.6")
 
 errno = libc.var("i", "errno")
 mkdir_ = libc.func("i", "mkdir", "si")
+opendir_ = libc.func("P", "opendir", "s")
+readdir_ = libc.func("P", "readdir", "P")
 read_ = libc.func("i", "read", "ipi")
 write_ = libc.func("i", "write", "iPi")
 close_ = libc.func("i", "close", "i")
@@ -24,6 +27,23 @@ def check_error(ret):
 def mkdir(name, mode=0o777):
     e = mkdir_(name, mode)
     check_error(e)
+
+def listdir(path="."):
+    dir = opendir_(path)
+    if not dir:
+        check_error(e)
+    res = []
+    dirent_fmt = "iiHB256s"
+    while True:
+        dirent = readdir_(dir)
+        if not dirent:
+            break
+        dirent = ffi.as_bytearray(dirent, struct.calcsize(dirent_fmt))
+        dirent = struct.unpack(dirent_fmt, dirent)
+        fname = str(dirent[4].split('\0', 1)[0], "ascii")
+        if fname != "." and fname != "..":
+            res.append(fname)
+    return res
 
 def read(fd, n):
     buf = bytearray(n)
