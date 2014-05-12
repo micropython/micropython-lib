@@ -4,7 +4,14 @@ class TestCase:
         assert False, msg
 
     def assertEqual(self, x, y, msg=''):
-        assert x == y, "%r vs (expected) %r" % (x, y)
+        if not msg:
+            msg = "%r vs (expected) %r" % (x, y)
+        assert x == y, msg
+
+    def assertIs(self, x, y, msg=''):
+        if not msg:
+            msg = "%r is not %r" % (x, y)
+        assert x is y, msg
 
     def assertTrue(self, x, msg=''):
         assert x, msg
