@@ -18,7 +18,7 @@ setup(name='micropython-%(name)s',
       maintainer=%(maintainer)r,
       maintainer_email='micro-python@googlegroups.com',
       license=%(license)r,
-      py_modules=['%(name)s'])
+      %(_what_)s=['%(name)s'])
 """
 
 DUMMY_DESC = """\
@@ -55,6 +55,13 @@ def main():
             data = parse_metadata(f)
 
         module = fname.split("/")[0]
+        if data["type"] == "module":
+            data["_what_"] = "py_modules"
+        elif data["type"] == "package":
+            data["_what_"] = "packages"
+        else:
+            raise ValueError
+
         if data["srctype"] == "dummy":
             data["author"] = MICROPYTHON_DEVELS
             data["author_email"] = MICROPYTHON_DEVELS_EMAIL
@@ -73,7 +80,7 @@ def main():
             if "maintainer" not in data:
                 data["author"] = MICROPYTHON_DEVELS
         else:
-            raise NotImplementedError
+            raise ValueError
 
         data["name"] = module
         write_setup(module + "/setup.py", data)
