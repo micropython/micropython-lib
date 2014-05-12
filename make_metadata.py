@@ -55,19 +55,19 @@ def main():
             data = parse_metadata(f)
 
         module = fname.split("/")[0]
-        if data["type"] == "dummy":
+        if data["srctype"] == "dummy":
             data["author"] = MICROPYTHON_DEVELS
             data["author_email"] = MICROPYTHON_DEVELS_EMAIL
             data["maintainer"] = MICROPYTHON_DEVELS
             data["license"] = "MIT"
             data["desc"] = "Dummy %s module for MicroPython" % module
             data["long_desc"] = DUMMY_DESC
-        elif data["type"] == "cpython":
+        elif data["srctype"] == "cpython":
             data["author"] = CPYTHON_DEVELS
             data["maintainer"] = MICROPYTHON_DEVELS
             data["license"] = "Python"
             data["desc"] = "CPython %s module ported to MicroPython" % module
-        elif data["type"] == "micropython":
+        elif data["srctype"] == "micropython":
             if "author" not in data:
                 data["author"] = MICROPYTHON_DEVELS
             if "maintainer" not in data:

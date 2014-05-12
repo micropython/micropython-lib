@@ -1,2 +1,2 @@
-type=dummy
+srctype=dummy
 version=0.0.1
