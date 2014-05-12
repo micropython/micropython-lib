@@ -1,3 +1,7 @@
+class SkipTest(Exception):
+    pass
+
+
 class TestCase:
 
     def fail(self, msg=''):
@@ -32,14 +36,32 @@ class TestCase:
             raise
 
 
+def skip(msg):
+    def _decor(fun):
+        # We just replace original fun with _inner
+        def _inner(self):
+            raise SkipTest(msg)
+        return _inner
+    return _decor
+
+
+def skipUnless(cond, msg):
+    if cond:
+        return lambda x: x
+    return skip(msg)
+
+
 # TODO: Uncompliant
 def run_class(c):
     o = c()
     for name in dir(o):
         if name.startswith("test"):
             m = getattr(o, name)
-            m()
-            print(name, "...ok")
+            try:
+                m()
+                print(name, "...ok")
+            except SkipTest as e:
+                print(name, "...skipped:", e.args[0])
 
 
 def main(module="__main__"):
