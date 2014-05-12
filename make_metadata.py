@@ -18,7 +18,7 @@ setup(name='micropython-%(name)s',
       maintainer=%(maintainer)r,
       maintainer_email='micro-python@googlegroups.com',
       license=%(license)r,
-      %(_what_)s=['%(top_name)s'])
+      %(_what_)s=['%(top_name)s']%(_inst_req_)s)
 """
 
 DUMMY_DESC = """\
@@ -56,7 +56,7 @@ def parse_metadata(f):
     for l in f:
         l = l.strip()
         k, v = l.split("=", 1)
-        data[k] = v
+        data[k.strip()] = v.strip()
     return data
 
 
@@ -111,6 +111,13 @@ def main():
 
         data["name"] = module
         data["top_name"] = module.split(".", 1)[0]
+
+        if "depends" in data:
+            deps = ["micropython-" + x.strip() for x in data["depends"].split(",")]
+            data["_inst_req_"] = ",\n      install_requires=['" + "', '".join(deps) + "']"
+        else:
+            data["_inst_req_"] = ""
+
         write_setup(module + "/setup.py", data)
 
 
