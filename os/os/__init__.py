@@ -2,6 +2,7 @@ import ffi
 import array
 import struct
 import errno
+import stat as stat_
 try:
     from _os import *
 except:
@@ -80,6 +81,24 @@ def listdir(path="."):
         if fname != "." and fname != "..":
             res.append(fname)
     return res
+
+def walk(top, topdown=True):
+    files = []
+    dirs = []
+    for dirent in ilistdir_ex(top):
+        mode = dirent[3] << 12
+        fname = str(dirent[4].split('\0', 1)[0], "ascii")
+        if stat_.S_ISDIR(mode):
+            if fname != "." and fname != "..":
+                dirs.append(fname)
+        else:
+            files.append(fname)
+    if topdown:
+        yield top, dirs, files
+    for d in dirs:
+        yield from walk(top + "/" + d, topdown)
+    if not topdown:
+        yield top, dirs, files
 
 def read(fd, n):
     buf = bytearray(n)
