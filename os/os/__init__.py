@@ -15,6 +15,7 @@ errno_ = libc.var("i", "errno")
 mkdir_ = libc.func("i", "mkdir", "si")
 unlink_ = libc.func("i", "unlink", "s")
 rmdir_ = libc.func("i", "rmdir", "s")
+getwd_ = libc.func("s", "getwd", "s")
 opendir_ = libc.func("P", "opendir", "s")
 readdir_ = libc.func("P", "readdir", "P")
 read_ = libc.func("i", "read", "ipi")
@@ -42,6 +43,10 @@ def check_error(ret):
 def raise_error():
     raise OSError(errno_.get())
 
+
+def getcwd():
+    buf = bytearray(512)
+    return getwd_(buf)
 
 def mkdir(name, mode=0o777):
     e = mkdir_(name, mode)
