@@ -13,6 +13,8 @@ libc = ffi.open("libc.so.6")
 
 errno_ = libc.var("i", "errno")
 mkdir_ = libc.func("i", "mkdir", "si")
+unlink_ = libc.func("i", "unlink", "s")
+rmdir_ = libc.func("i", "rmdir", "s")
 opendir_ = libc.func("P", "opendir", "s")
 readdir_ = libc.func("P", "readdir", "P")
 read_ = libc.func("i", "read", "ipi")
@@ -43,6 +45,14 @@ def raise_error():
 
 def mkdir(name, mode=0o777):
     e = mkdir_(name, mode)
+    check_error(e)
+
+def unlink(name):
+    e = unlink_(name)
+    check_error(e)
+
+def rmdir(name):
+    e = rmdir_(name)
     check_error(e)
 
 def makedirs(name, mode=0o777, exist_ok=False):
