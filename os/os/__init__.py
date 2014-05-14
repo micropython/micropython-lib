@@ -2,6 +2,10 @@ import ffi
 import array
 import struct
 import errno
+try:
+    from _os import *
+except:
+    pass
 
 
 libc = ffi.open("libc.so.6")
