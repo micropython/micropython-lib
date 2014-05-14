@@ -32,6 +32,9 @@ def check_error(ret):
     if ret == -1:
         raise OSError(errno_.get())
 
+def raise_error():
+    raise OSError(errno_.get())
+
 
 def mkdir(name, mode=0o777):
     e = mkdir_(name, mode)
@@ -55,7 +58,7 @@ def makedirs(name, mode=0o777, exist_ok=False):
 def listdir(path="."):
     dir = opendir_(path)
     if not dir:
-        check_error(e)
+        raise_error()
     res = []
     dirent_fmt = "iiHB256s"
     while True:
