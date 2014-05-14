@@ -59,7 +59,7 @@ def makedirs(name, mode=0o777, exist_ok=False):
             if e.args[0] != errno.EEXIST:
                 raise
 
-def listdir(path="."):
+def ilistdir_ex(path="."):
     dir = opendir_(path)
     if not dir:
         raise_error()
@@ -71,6 +71,11 @@ def listdir(path="."):
             break
         dirent = ffi.as_bytearray(dirent, struct.calcsize(dirent_fmt))
         dirent = struct.unpack(dirent_fmt, dirent)
+        yield dirent
+
+def listdir(path="."):
+    res = []
+    for dirent in ilistdir_ex(path):
         fname = str(dirent[4].split('\0', 1)[0], "ascii")
         if fname != "." and fname != "..":
             res.append(fname)
