@@ -1,3 +1,6 @@
+import os
+
+
 def normcase(s):
     return s
 
@@ -18,3 +21,6 @@ def split(path):
     if not head:
         head = "/"
     return (head, r[1])
+
+def exists(path):
+    return os.access(path, os.F_OK)
