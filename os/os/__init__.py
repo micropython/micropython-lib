@@ -1,11 +1,12 @@
 import ffi
 import array
 import struct
+import errno
 
 
 libc = ffi.open("libc.so.6")
 
-errno = libc.var("i", "errno")
+errno_ = libc.var("i", "errno")
 mkdir_ = libc.func("i", "mkdir", "si")
 opendir_ = libc.func("P", "opendir", "s")
 readdir_ = libc.func("P", "readdir", "P")
@@ -27,12 +28,27 @@ F_OK = const(0)
 
 def check_error(ret):
     if ret == -1:
-        raise OSError(errno.get())
+        raise OSError(errno_.get())
 
 
 def mkdir(name, mode=0o777):
     e = mkdir_(name, mode)
     check_error(e)
+
+def makedirs(name, mode=0o777, exist_ok=False):
+    exists = access(name, F_OK)
+    if exists:
+        if exist_ok:
+            return
+        raise OSError(errno.EEXIST)
+    s = ""
+    for c in name.split("/"):
+        s += c + "/"
+        try:
+            mkdir(s)
+        except OSError as e:
+            if e.args[0] != errno.EEXIST:
+                raise
 
 def listdir(path="."):
     dir = opendir_(path)
