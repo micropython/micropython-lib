@@ -27,3 +27,11 @@ def exists(path):
 
 # TODO
 lexists = exists
+
+def isdir(path):
+    import stat
+    try:
+        mode = os.stat(path)[0]
+        return stat.S_ISDIR(mode)
+    except OSError:
+        return False
