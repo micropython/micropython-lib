@@ -24,3 +24,6 @@ def split(path):
 
 def exists(path):
     return os.access(path, os.F_OK)
+
+# TODO
+lexists = exists
