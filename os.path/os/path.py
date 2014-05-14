@@ -7,6 +7,9 @@ def normcase(s):
 def normpath(s):
     return s
 
+def abspath(s):
+    return os.getcwd() + "/" + s
+
 def join(*args):
     # TODO: this is non-compliant
     return "/".join(args)

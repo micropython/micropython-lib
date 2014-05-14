@@ -1,4 +1,6 @@
-from os.path import *
+import sys
+sys.path[0] = "os"
+from path import *
 
 assert split("") == ("", "")
 assert split("path") == ("", "path")
