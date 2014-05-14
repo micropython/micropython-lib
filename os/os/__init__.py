@@ -35,6 +35,9 @@ F_OK = const(0)
 
 
 error = OSError
+sep = "/"
+curdir = "."
+pardir = ".."
 
 def check_error(ret):
     if ret == -1:
