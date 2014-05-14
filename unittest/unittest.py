@@ -54,11 +54,15 @@ def skipUnless(cond, msg):
 # TODO: Uncompliant
 def run_class(c):
     o = c()
+    set_up = getattr(o, "setUp", lambda: None)
+    tear_down = getattr(o, "tearDown", lambda: None)
     for name in dir(o):
         if name.startswith("test"):
             m = getattr(o, name)
             try:
+                set_up()
                 m()
+                tear_down()
                 print(name, "...ok")
             except SkipTest as e:
                 print(name, "...skipped:", e.args[0])
