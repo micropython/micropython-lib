@@ -12,11 +12,17 @@ readdir_ = libc.func("P", "readdir", "P")
 read_ = libc.func("i", "read", "ipi")
 write_ = libc.func("i", "write", "iPi")
 close_ = libc.func("i", "close", "i")
+access_ = libc.func("i", "access", "si")
 fork_ = libc.func("i", "fork", "")
 pipe_ = libc.func("i", "pipe", "p")
 _exit_ = libc.func("v", "_exit", "i")
 getpid_ = libc.func("i", "getpid", "")
 waitpid_ = libc.func("i", "waitpid", "ipi")
+
+R_OK = const(4)
+W_OK = const(2)
+X_OK = const(1)
+F_OK = const(0)
 
 
 def check_error(ret):
@@ -61,6 +67,8 @@ def close(fd):
     check_error(r)
     return r
 
+def access(path, mode):
+    return access_(path, mode) == 0
 
 def fork():
     r = fork_()
