@@ -26,6 +26,8 @@ X_OK = const(1)
 F_OK = const(0)
 
 
+error = OSError
+
 def check_error(ret):
     if ret == -1:
         raise OSError(errno_.get())
