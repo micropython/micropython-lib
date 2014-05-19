@@ -1,3 +1,4 @@
-srctype=dummy
-type=module
-version=0.0.1
+srctype = cpython
+type = module
+version = 0.5
+depends = os, re-pcre, fnmatch
