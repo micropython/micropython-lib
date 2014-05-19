@@ -1,0 +1,4 @@
+srctype = micropython-lib
+type = package
+version = 0.0.7
+author = Paul Sokolovsky
