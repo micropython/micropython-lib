@@ -32,4 +32,5 @@ EMLINK  = 31  # Too many links
 EPIPE   = 32  # Broken pipe
 EDOM    = 33  # Math argument out of domain of func
 ERANGE  = 34  # Math result not representable
+EAFNOSUPPORT = 97 # Address family not supported by protocol
 EINPROGRESS = 115 # Operation now in progress
