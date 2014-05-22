@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-d = defaultdict(lambda:42)
+d = defaultdict.defaultdict(lambda:42)
 assert d[1] == 42
 d[2] = 3
 assert d[2] == 3
