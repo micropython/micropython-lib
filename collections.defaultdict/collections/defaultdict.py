@@ -1,5 +1,14 @@
 class defaultdict:
 
+    @staticmethod
+    def __new__(cls, default_factory=None, **kwargs):
+        # Some code (e.g. urllib.urlparse) expects that basic defaultdict
+        # functionality will be available to subclasses without them
+        # calling __init__().
+        self = super(defaultdict, cls).__new__(cls)
+        self.d = {}
+        return self
+
     def __init__(self, default_factory=None, **kwargs):
         self.d = kwargs
         self.default_factory = default_factory
