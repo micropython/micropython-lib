@@ -757,9 +757,9 @@ def urlencode(query, doseq=False, safe='', encoding=None, errors=None):
             # allowed empty dicts that type of behavior probably should be
             # preserved for consistency
         except TypeError:
-            ty, va, tb = sys.exc_info()
+#            ty, va, tb = sys.exc_info()
             raise TypeError("not a valid non-string sequence "
-                            "or mapping object").with_traceback(tb)
+                            "or mapping object")#.with_traceback(tb)
 
     l = []
     if not doseq:
