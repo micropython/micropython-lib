@@ -499,7 +499,7 @@ def unquote_to_bytes(string):
             append(item)
     return b''.join(res)
 
-_asciire = re.compile('([\x00-\x7f]+)')
+_asciire = re.compile(r'([\x00-\x7f]+)')
 
 def unquote(string, encoding='utf-8', errors='replace'):
     """Replace %xx escapes by their single-character equivalent. The optional
