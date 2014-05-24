@@ -97,6 +97,7 @@ def _append_doc(doc, added_doc):
     return doc + '\n' + added_doc
 
 def _extend_docstrings(cls):
+    return cls
     if cls.__doc__ and cls.__doc__.startswith('+'):
         cls.__doc__ = _append_doc(cls.__bases__[0].__doc__, cls.__doc__)
     for name, attr in cls.__dict__.items():
@@ -109,7 +110,7 @@ def _extend_docstrings(cls):
     return cls
 
 
-class Policy(_PolicyBase, metaclass=abc.ABCMeta):
+class Policy(_PolicyBase):#, metaclass=abc.ABCMeta):
 
     r"""Controls for how messages are interpreted and formatted.
 
