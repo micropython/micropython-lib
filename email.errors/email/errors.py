@@ -21,7 +21,7 @@ class BoundaryError(MessageParseError):
     """Couldn't find terminating boundary."""
 
 
-class MultipartConversionError(MessageError, TypeError):
+class MultipartConversionError(MessageError):#, TypeError):
     """Conversion to a multipart is prohibited."""
 
 
