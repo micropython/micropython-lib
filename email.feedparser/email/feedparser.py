@@ -135,7 +135,7 @@ class BufferedSubFile(object):
 class FeedParser:
     """A feed-style parser of email."""
 
-    def __init__(self, _factory=message.Message, *, policy=compat32):
+    def __init__(self, _factory=message.Message, policy=compat32):
         """_factory is called with no arguments to create a new message obj
 
         The policy keyword specifies a policy object that controls a number of
