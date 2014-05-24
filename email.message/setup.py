@@ -6,7 +6,7 @@ from setuptools import setup
 
 
 setup(name='micropython-email.message',
-      version='0.5',
+      version='0.5.1',
       description='CPython email.message module ported to MicroPython',
       long_description='This is a module ported from CPython standard library to be compatible with\nMicroPython interpreter. Usually, this means applying small patches for\nfeatures not supported (yet, or at all) in MicroPython. Sometimes, heavier\nchanges are required. Note that CPython modules are written with availability\nof vast resources in mind, and may not work for MicroPython ports with\nlimited heap. If you are affected by such a case, please help reimplement\nthe module from scratch.',
       url='https://github.com/micropython/micropython/issues/405',
@@ -16,4 +16,4 @@ setup(name='micropython-email.message',
       maintainer_email='micro-python@googlegroups.com',
       license='Python',
       packages=['email'],
-      install_requires=['micropython-re-pcre', 'micropython-uu', 'micropython-base64', 'micropython-binascii', 'micropython-email.utils', 'micropython-email.charset'])
+      install_requires=['micropython-re-pcre', 'micropython-uu', 'micropython-base64', 'micropython-binascii', 'micropython-email.utils', 'micropython-email.errors', 'micropython-email.charset'])
