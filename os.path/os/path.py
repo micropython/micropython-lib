@@ -12,7 +12,10 @@ def abspath(s):
 
 def join(*args):
     # TODO: this is non-compliant
-    return "/".join(args)
+    if type(args[0]) is bytes:
+        return b"/".join(args)
+    else:
+        return "/".join(args)
 
 def split(path):
     if path == "":
