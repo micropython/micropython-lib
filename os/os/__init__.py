@@ -93,10 +93,13 @@ def ilistdir_ex(path="."):
         yield dirent
 
 def listdir(path="."):
+    is_bytes = type(path) is bytes
     res = []
     for dirent in ilistdir_ex(path):
         fname = str(dirent[4].split('\0', 1)[0], "ascii")
         if fname != "." and fname != "..":
+            if is_bytes:
+                fname = fsencode(fname)
             res.append(fname)
     return res
 
