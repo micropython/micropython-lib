@@ -1038,7 +1038,7 @@ class HTTPConnection:
             header = header.encode('ascii')
         values = list(values)
         for i, one_value in enumerate(values):
-            if hasattr(one_value, 'encode'):
+            if isinstance(one_value, str):
                 values[i] = one_value.encode('latin-1')
             elif isinstance(one_value, int):
                 values[i] = str(one_value).encode('ascii')
