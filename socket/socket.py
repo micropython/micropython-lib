@@ -1,6 +1,9 @@
 from microsocket import getaddrinfo
 import microsocket as _socket
 
+
+_GLOBAL_DEFAULT_TIMEOUT = 30
+
 def create_connection(addr, timeout=None, source_address=None):
     s = socket()
     #print("Address:", addr)
