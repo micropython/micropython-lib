@@ -312,7 +312,7 @@ class Header:
     def _nonctext(self, s):
         """True if string s is not a ctext character of RFC822.
         """
-        return s.isspace() or s in ('(', ')', '\\')
+        return s in (' ', '\t', '(', ')', '\\')
 
     def encode(self, splitchars=';, \t', maxlinelen=None, linesep='\n'):
         r"""Encode a message header into an RFC-compliant format.
