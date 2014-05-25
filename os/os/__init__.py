@@ -159,3 +159,14 @@ def waitpid(pid, opts):
     r = waitpid_(pid, a, opts)
     check_error(r)
     return (r, a[0])
+
+
+def fsencode(s):
+    if type(s) is bytes:
+        return s
+    return bytes(s, "utf-8")
+
+def fsdecode(s):
+    if type(s) is str:
+        return s
+    return str(s, "utf-8")
