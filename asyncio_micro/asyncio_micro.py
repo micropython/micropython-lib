@@ -222,20 +222,26 @@ class StreamWriter:
     def __init__(self, s):
         self.s = s
 
-    def write(self, buf):
+    def awrite(self, buf):
+        # This method is called awrite (async write) to not proliferate
+        # incompatibility with original asyncio. Unlike original asyncio
+        # whose .write() method is both not a coroutine and guaranteed
+        # to return immediately (which means it has to buffer all the
+        # data), this method is a coroutine.
         sz = len(buf)
         while True:
             res = self.s.write(buf)
-            log.debug("StreamWriter.write(): %d", res)
-            # If we spooled everything, (just) return
+            # If we spooled everything, return immediately
             if res == sz:
+                log.debug("StreamWriter.awrite(): completed spooling %d bytes", res)
                 return
             if res is None:
                 res = 0
+            log.debug("StreamWriter.awrite(): spooled partial %d bytes", res)
             buf = buf[res:]
             sz -= res
             s = yield IOWrite(self.s)
-            log.debug("StreamWriter.write(): can write more")
+            log.debug("StreamWriter.awrite(): can write more")
 
     def close(self):
         yield IODone(IO_WRITE, self.s)
