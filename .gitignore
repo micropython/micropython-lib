@@ -2,3 +2,5 @@ MANIFEST
 __pycache__
 *.egg-info
 */dist/
+*.org
+*.1
