@@ -6,7 +6,7 @@ def print_http_headers(url):
     print(reader, writer)
     print("================")
     query = "GET / HTTP/1.0\r\n\r\n"
-    yield from writer.write(query.encode('latin-1'))
+    yield from writer.awrite(query.encode('latin-1'))
     while True:
         line = yield from reader.readline()
         if not line:

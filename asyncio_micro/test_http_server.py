@@ -5,7 +5,7 @@ def serve(reader, writer):
     print(reader, writer)
     print("================")
     print((yield from reader.read()))
-    yield from writer.write("HTTP/1.0 200 OK\r\n\r\nHello.\r\n")
+    yield from writer.awrite("HTTP/1.0 200 OK\r\n\r\nHello.\r\n")
     print("After response write")
     yield from writer.close()
     print("Finished processing request")
