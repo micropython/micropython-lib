@@ -39,7 +39,7 @@ class Epoll:
             retval = fd
         s = struct.pack(self.epoll_event, eventmask, retval)
         r = epoll_ctl(self.epfd, EPOLL_CTL_ADD, fd, s)
-        if r == -1 and os.errno.get() == errno.EEXIST:
+        if r == -1 and os.errno_.get() == errno.EEXIST:
             r = epoll_ctl(self.epfd, EPOLL_CTL_MOD, fd, s)
         os.check_error(r)
         # We must keep reference to retval, or it may be GCed. And we must
