@@ -82,6 +82,9 @@ class EventLoop:
                                 self.remove_writer(ret.obj.fileno())
                     elif isinstance(ret, type_gen):
                         self.call_soon(ret)
+                    elif ret is None:
+                        # Just reschedule
+                        pass
                     else:
                         print(ret, type(ret))
                         assert False
