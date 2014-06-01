@@ -44,7 +44,7 @@ class EventLoop:
         while True:
             if self.q:
                 t, cnt, cb, args = heapq.heappop(self.q)
-                log.debug("Next task to run: %s", (t, cnt, cb, args))
+                log.debug("Next coroutine to run: %s", (t, cnt, cb, args))
 #                __main__.mem_info()
                 tnow = self.time()
                 delay = t - tnow
@@ -61,9 +61,9 @@ class EventLoop:
                 try:
                     if args == ():
                         args = (None,)
-                    log.debug("Gen %s send args: %s", cb, args)
+                    log.debug("Coroutine %s send args: %s", cb, args)
                     ret = cb.send(*args)
-                    log.debug("Gen %s yield result: %s", cb, ret)
+                    log.debug("Coroutine %s yield result: %s", cb, ret)
                     if isinstance(ret, SysCall):
                         if isinstance(ret, Sleep):
                             delay = ret.args[0]
@@ -86,10 +86,9 @@ class EventLoop:
                         # Just reschedule
                         pass
                     else:
-                        print(ret, type(ret))
-                        assert False
+                        assert False, "Unsupported coroutine yield value: %r (of type %r)" % (ret, type(ret))
                 except StopIteration as e:
-                    log.debug("Gen finished: %s", cb)
+                    log.debug("Coroutine finished: %s", cb)
                     continue
                 self.call_later(delay, cb, *args)
 
