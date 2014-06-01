@@ -7,9 +7,6 @@ import logging
 
 log = logging.getLogger("asyncio")
 
-IO_READ  = 1
-IO_WRITE = 2
-
 type_gen = type((lambda: (yield))())
 
 class EventLoop:
@@ -65,21 +62,21 @@ class EventLoop:
                     ret = cb.send(*args)
                     log.debug("Coroutine %s yield result: %s", cb, ret)
                     if isinstance(ret, SysCall):
+                        arg = ret.args[0]
                         if isinstance(ret, Sleep):
-                            delay = ret.args[0]
+                            delay = arg
                         elif isinstance(ret, IORead):
 #                            self.add_reader(ret.obj.fileno(), lambda self, c, f: self.call_soon(c, f), self, cb, ret.obj)
 #                            self.add_reader(ret.obj.fileno(), lambda c, f: self.call_soon(c, f), cb, ret.obj)
-                            self.add_reader(ret.obj.fileno(), lambda cb, f: self.call_soon(cb, f), cb, ret.obj)
+                            self.add_reader(arg.fileno(), lambda cb, f: self.call_soon(cb, f), cb, arg)
                             continue
                         elif isinstance(ret, IOWrite):
-                            self.add_writer(ret.obj.fileno(), lambda cb, f: self.call_soon(cb, f), cb, ret.obj)
+                            self.add_writer(arg.fileno(), lambda cb, f: self.call_soon(cb, f), cb, arg)
                             continue
-                        elif isinstance(ret, IODone):
-                            if ret.op == IO_READ:
-                                self.remove_reader(ret.obj.fileno())
-                            elif ret.op == IO_WRITE:
-                                self.remove_writer(ret.obj.fileno())
+                        elif isinstance(ret, IOReadDone):
+                            self.remove_reader(arg.fileno())
+                        elif isinstance(ret, IOWriteDone):
+                            self.remove_writer(arg.fileno())
                     elif isinstance(ret, type_gen):
                         self.call_soon(ret)
                     elif ret is None:
@@ -146,8 +143,7 @@ class EpollEventLoop(EventLoop):
 
 class SysCall:
 
-    def __init__(self, call, *args):
-        self.call = call
+    def __init__(self, *args):
         self.args = args
 
     def handle(self):
@@ -157,20 +153,16 @@ class Sleep(SysCall):
     pass
 
 class IORead(SysCall):
-
-    def __init__(self, obj):
-        self.obj = obj
+    pass
 
 class IOWrite(SysCall):
+    pass
 
-    def __init__(self, obj):
-        self.obj = obj
+class IOReadDone(SysCall):
+    pass
 
-class IODone(SysCall):
-
-    def __init__(self, op, obj):
-        self.op = op
-        self.obj = obj
+class IOWriteDone(SysCall):
+    pass
 
 
 def get_event_loop():
@@ -184,7 +176,7 @@ def async(coro):
     return coro
 
 def sleep(secs):
-    yield Sleep("sleep", secs)
+    yield Sleep(secs)
 
 
 import microsocket as _socket
@@ -202,7 +194,7 @@ class StreamReader:
                 break
             log.warn("Empty read")
         if not res:
-            yield IODone(IO_READ, self.s)
+            yield IOReadDone(self.s)
         return res
 
     def readline(self):
@@ -215,7 +207,7 @@ class StreamReader:
                 break
             log.warn("Empty read")
         if not res:
-            yield IODone(IO_READ, self.s)
+            yield IOReadDone(self.s)
         log.debug("StreamReader.readline(): res: %s", res)
         return res
 
@@ -247,7 +239,7 @@ class StreamWriter:
             log.debug("StreamWriter.awrite(): can write more")
 
     def close(self):
-        yield IODone(IO_WRITE, self.s)
+        yield IOWriteDone(self.s)
         self.s.close()
 
 
