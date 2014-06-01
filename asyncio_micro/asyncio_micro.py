@@ -150,10 +150,11 @@ class SysCall:
         self.call = call
         self.args = args
 
-class Sleep(SysCall):
-
     def handle(self):
-        time.sleep(self.args[0])
+        raise NotImplementedError
+
+class Sleep(SysCall):
+    pass
 
 class IORead(SysCall):
 
