@@ -56,6 +56,8 @@ def parse_metadata(f):
     data = {}
     for l in f:
         l = l.strip()
+        if l[0] == "#":
+            continue
         k, v = l.split("=", 1)
         data[k.strip()] = v.strip()
     return data
