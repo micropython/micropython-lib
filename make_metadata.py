@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
+# MicroPython will pick up glob from the current dir otherwise.
+import sys
+sys.path.pop(0)
+
 import glob
+
 
 TEMPLATE = """\
 import sys
