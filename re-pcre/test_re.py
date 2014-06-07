@@ -28,3 +28,5 @@ assert re.split('(\W+)', 'Words, words, words.') == ['Words', ', ', 'words', ', 
 assert re.split('\W+', 'Words, words, words.', 1) == ['Words', 'words, words.']
 assert re.split('[a-f]+', '0a3B9', flags=re.IGNORECASE) == ['0', '3', '9']
 assert re.split('(\W+)', '...words, words...') == ['', '...', 'words', ', ', 'words', '...', '']
+
+assert re.sub(r"[ :/?&]", "_", "http://foo.ua/bar/?a=1&b=baz/") == "http___foo.ua_bar__a=1_b=baz_"

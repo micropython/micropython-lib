@@ -95,6 +95,7 @@ class PCREPattern:
             else:
                 res += repl
             s = s[end:]
+        return res
 
     def split(self, s, maxsplit=0):
         res = []
