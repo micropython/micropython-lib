@@ -14,7 +14,7 @@ sys.path.pop(0)
 from setuptools import setup
 
 
-setup(name='micropython-%(name)s',
+setup(name='micropython-%(dist_name)s',
       version='%(version)s',
       description=%(desc)r,
       long_description=%(long_desc)r,
@@ -117,8 +117,10 @@ def main():
         else:
             raise ValueError
 
-        data["name"] = module
-        data["top_name"] = module.split(".", 1)[0]
+        data["dist_name"] = module
+        if "name" not in data:
+            data["name"] = module
+        data["top_name"] = data["name"].split(".", 1)[0]
 
         if "depends" in data:
             deps = ["micropython-" + x.strip() for x in data["depends"].split(",")]
