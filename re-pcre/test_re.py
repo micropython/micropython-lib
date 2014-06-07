@@ -12,6 +12,9 @@ assert m.group(0) == "aaaa"
 
 assert re.sub("a", "z", "caaab") == "czzzb"
 assert re.sub("a+", "z", "caaab") == "czb"
+assert re.sub("a", "z", "caaab", 1) == "czaab"
+assert re.sub("a", "z", "caaab", 2) == "czzab"
+assert re.sub("a", "z", "caaab", 10) == "czzzb"
 
 assert re.sub("a", lambda m: m.group(0) * 2, "caaab") == "caaaaaab"
 

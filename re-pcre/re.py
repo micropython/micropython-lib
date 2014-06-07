@@ -80,7 +80,7 @@ class PCREPattern:
     def match(self, s, pos=0, endpos=-1):
         return self.search(s, pos, endpos, PCRE_ANCHORED)
 
-    def sub(self, repl, s):
+    def sub(self, repl, s, count=0):
         if not callable(repl):
             assert "\\" not in repl, "Backrefs not implemented"
         res = ""
@@ -95,6 +95,10 @@ class PCREPattern:
             else:
                 res += repl
             s = s[end:]
+            if count != 0:
+                count -= 1
+                if count == 0:
+                    return res + s
         return res
 
     def split(self, s, maxsplit=0):
@@ -139,7 +143,7 @@ def match(pattern, string, flags=0):
 
 def sub(pattern, repl, s, count=0, flags=0):
     r = compile(pattern, flags)
-    return r.sub(repl, s)
+    return r.sub(repl, s, count)
 
 
 def split(pattern, s, maxsplit=0, flags=0):
