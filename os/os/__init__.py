@@ -173,3 +173,8 @@ def fsdecode(s):
     if type(s) is str:
         return s
     return str(s, "utf-8")
+
+
+def urandom(n):
+    with open("/dev/urandom", "rb") as f:
+        return f.read(n)
