@@ -273,7 +273,8 @@ def parse_headers(fp, _class=HTTPMessage):
 
 _strict_sentinel = object()
 
-class HTTPResponse(io.RawIOBase):
+class HTTPResponse:
+#class HTTPResponse(io.RawIOBase):
 
     # See RFC 2616 sec 19.6 and RFC 1945 sec 6 for details.
 
