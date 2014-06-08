@@ -76,7 +76,11 @@ class Cursor:
         self.h = h
         self.stmnt = None
 
-    def execute(self, sql):
+    def execute(self, sql, params=None):
+        if params:
+            params = [quote(v) for v in params]
+            sql = sql % tuple(params)
+        print(sql)
         b = bytearray(4)
         s = sqlite3_prepare(self.h, sql, -1, b, None)
         check_error(self.h, s)
@@ -119,3 +123,9 @@ def connect(fname):
     sqlite3_open(fname, b)
     h = int.from_bytes(b)
     return Connections(h)
+
+
+def quote(val):
+    if isinstance(val, str):
+        return "'%s'" % val
+    return str(val)
