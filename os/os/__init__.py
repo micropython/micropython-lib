@@ -35,9 +35,12 @@ F_OK = const(0)
 
 
 error = OSError
+name = "posix"
 sep = "/"
 curdir = "."
 pardir = ".."
+environ = {"WARNING": "NOT_IMPLEMENTED"}
+
 
 def check_error(ret):
     if ret == -1:
