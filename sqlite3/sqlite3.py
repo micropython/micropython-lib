@@ -26,6 +26,9 @@ sqlite3_column_int = sq3.func("i", "sqlite3_column_int", "pi")
 # using "d" return type gives wrong results
 sqlite3_column_double = sq3.func("f", "sqlite3_column_double", "pi")
 sqlite3_column_text = sq3.func("s", "sqlite3_column_text", "pi")
+#sqlite3_int64 sqlite3_last_insert_rowid(sqlite3*);
+# TODO: should return long int
+sqlite3_last_insert_rowid = sq3.func("i", "sqlite3_last_insert_rowid", "p")
 #const char *sqlite3_errmsg(sqlite3*);
 sqlite3_errmsg = sq3.func("s", "sqlite3_errmsg", "p")
 
@@ -93,6 +96,7 @@ class Cursor:
         if not self.num_cols:
             v = self.fetchone()
             assert v is None
+            self.lastrowid = sqlite3_last_insert_rowid(self.h)
 
     def close(self):
         s = sqlite3_finalize(self.stmnt)
