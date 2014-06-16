@@ -89,8 +89,10 @@ class Cursor:
         self.num_cols = sqlite3_column_count(self.stmnt)
         print("num_cols", self.num_cols)
         # If it's not select, actually execute it here
-        if not sql.startswith("SELECT"):
-            self.fetchone()
+        # num_cols == 0 for statements which don't return data (=> modify it)
+        if not self.num_cols:
+            v = self.fetchone()
+            assert v is None
 
     def close(self):
         s = sqlite3_finalize(self.stmnt)
