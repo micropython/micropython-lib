@@ -3,13 +3,14 @@ import array
 import struct
 import errno
 import stat as stat_
+import _libc
 try:
     from _os import *
 except:
     pass
 
 
-libc = ffi.open("libc.so.6")
+libc = _libc.get()
 
 errno_ = libc.var("i", "errno")
 mkdir_ = libc.func("i", "mkdir", "si")
