@@ -117,7 +117,8 @@ def main():
         else:
             raise ValueError
 
-        data["dist_name"] = module
+        if "dist_name" not in data:
+            data["dist_name"] = module
         if "name" not in data:
             data["name"] = module
         data["top_name"] = data["name"].split(".", 1)[0]
