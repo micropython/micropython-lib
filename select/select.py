@@ -2,9 +2,10 @@ import ffi
 import struct
 import os
 import errno
+import _libc
 
 
-libc = ffi.open("libc.so.6")
+libc = _libc.get()
 
 #int epoll_create(int size);
 epoll_create = libc.func("i", "epoll_create", "i")
