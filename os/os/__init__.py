@@ -28,6 +28,7 @@ pipe_ = libc.func("i", "pipe", "p")
 _exit_ = libc.func("v", "_exit", "i")
 getpid_ = libc.func("i", "getpid", "")
 waitpid_ = libc.func("i", "waitpid", "ipi")
+system_ = libc.func("i", "system", "s")
 
 R_OK = const(4)
 W_OK = const(2)
@@ -167,6 +168,10 @@ def waitpid(pid, opts):
     check_error(r)
     return (r, a[0])
 
+def system(command):
+    r = system_(command)
+    check_error(r)
+    return r
 
 def fsencode(s):
     if type(s) is bytes:
