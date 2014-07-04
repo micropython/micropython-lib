@@ -13,7 +13,9 @@ except:
 libc = _libc.get()
 
 errno_ = libc.var("i", "errno")
+chdir_ = libc.func("i", "chdir", "s")
 mkdir_ = libc.func("i", "mkdir", "si")
+rename_ = libc.func("i", "rename", "ss")
 unlink_ = libc.func("i", "unlink", "s")
 rmdir_ = libc.func("i", "rmdir", "s")
 getwd_ = libc.func("s", "getwd", "s")
@@ -58,6 +60,10 @@ def getcwd():
 
 def mkdir(name, mode=0o777):
     e = mkdir_(name, mode)
+    check_error(e)
+
+def rename(old, new):
+    e = rename_(old, new)
     check_error(e)
 
 def unlink(name):
@@ -144,6 +150,10 @@ def close(fd):
 
 def access(path, mode):
     return access_(path, mode) == 0
+
+def chdir(dir):
+    r = chdir_(dir)
+    check_error(r)
 
 def fork():
     r = fork_()
