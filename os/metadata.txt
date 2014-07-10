@@ -1,5 +1,5 @@
 srctype = micropython-lib
 type = package
-version = 0.1.4
+version = 0.1.5
 author = Paul Sokolovsky
-depends = libc
+depends = libc, errno
