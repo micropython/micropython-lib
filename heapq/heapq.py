@@ -127,7 +127,7 @@ From all times, sorting has always been a Great Art! :-)
 __all__ = ['heappush', 'heappop', 'heapify', 'heapreplace', 'merge',
            'nlargest', 'nsmallest', 'heappushpop']
 
-from itertools import islice, count, tee, chain
+#from itertools import count, tee, chain
 
 def heappush(heap, item):
     """Push item onto heap, maintaining the heap invariant."""
@@ -197,6 +197,7 @@ def nlargest(n, iterable):
 
     Equivalent to:  sorted(iterable, reverse=True)[:n]
     """
+    from itertools import islice, count, tee, chain
     if n < 0:
         return []
     it = iter(iterable)
@@ -215,6 +216,7 @@ def nsmallest(n, iterable):
 
     Equivalent to:  sorted(iterable)[:n]
     """
+    from itertools import islice, count, tee, chain
     if n < 0:
         return []
     it = iter(iterable)
@@ -392,6 +394,7 @@ def nsmallest(n, iterable, key=None):
 
     Equivalent to:  sorted(iterable, key=key)[:n]
     """
+    from itertools import islice, count, tee, chain
     # Short-cut for n==1 is to use min() when len(iterable)>0
     if n == 1:
         it = iter(iterable)
@@ -430,6 +433,7 @@ def nlargest(n, iterable, key=None):
     Equivalent to:  sorted(iterable, key=key, reverse=True)[:n]
     """
 
+    from itertools import islice, count, tee, chain
     # Short-cut for n==1 is to use max() when len(iterable)>0
     if n == 1:
         it = iter(iterable)
