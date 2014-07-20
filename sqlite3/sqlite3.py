@@ -88,9 +88,9 @@ class Cursor:
         s = sqlite3_prepare(self.h, sql, -1, b, None)
         check_error(self.h, s)
         self.stmnt = int.from_bytes(b)
-        print("stmnt", self.stmnt)
+        #print("stmnt", self.stmnt)
         self.num_cols = sqlite3_column_count(self.stmnt)
-        print("num_cols", self.num_cols)
+        #print("num_cols", self.num_cols)
         # If it's not select, actually execute it here
         # num_cols == 0 for statements which don't return data (=> modify it)
         if not self.num_cols:
