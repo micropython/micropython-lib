@@ -224,6 +224,7 @@ class StreamWriter:
         # to return immediately (which means it has to buffer all the
         # data), this method is a coroutine.
         sz = len(buf)
+        log.debug("StreamWriter.awrite(): spooling %d bytes", sz)
         while True:
             res = self.s.write(buf)
             # If we spooled everything, return immediately
@@ -233,6 +234,7 @@ class StreamWriter:
             if res is None:
                 res = 0
             log.debug("StreamWriter.awrite(): spooled partial %d bytes", res)
+            assert res < sz
             buf = buf[res:]
             sz -= res
             s = yield IOWrite(self.s)
