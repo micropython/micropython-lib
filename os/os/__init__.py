@@ -3,19 +3,22 @@ import array
 import struct
 import errno
 import stat as stat_
+import _libc
 try:
     from _os import *
 except:
     pass
 
 
-libc = ffi.open("libc.so.6")
+libc = _libc.get()
 
 errno_ = libc.var("i", "errno")
+chdir_ = libc.func("i", "chdir", "s")
 mkdir_ = libc.func("i", "mkdir", "si")
+rename_ = libc.func("i", "rename", "ss")
 unlink_ = libc.func("i", "unlink", "s")
 rmdir_ = libc.func("i", "rmdir", "s")
-getwd_ = libc.func("s", "getwd", "s")
+getcwd_ = libc.func("s", "getcwd", "si")
 opendir_ = libc.func("P", "opendir", "s")
 readdir_ = libc.func("P", "readdir", "P")
 read_ = libc.func("i", "read", "ipi")
@@ -27,6 +30,7 @@ pipe_ = libc.func("i", "pipe", "p")
 _exit_ = libc.func("v", "_exit", "i")
 getpid_ = libc.func("i", "getpid", "")
 waitpid_ = libc.func("i", "waitpid", "ipi")
+system_ = libc.func("i", "system", "s")
 
 R_OK = const(4)
 W_OK = const(2)
@@ -35,9 +39,12 @@ F_OK = const(0)
 
 
 error = OSError
+name = "posix"
 sep = "/"
 curdir = "."
 pardir = ".."
+environ = {"WARNING": "NOT_IMPLEMENTED"}
+
 
 def check_error(ret):
     if ret == -1:
@@ -49,10 +56,14 @@ def raise_error():
 
 def getcwd():
     buf = bytearray(512)
-    return getwd_(buf)
+    return getcwd_(buf, 512)
 
 def mkdir(name, mode=0o777):
     e = mkdir_(name, mode)
+    check_error(e)
+
+def rename(old, new):
+    e = rename_(old, new)
     check_error(e)
 
 def unlink(name):
@@ -140,6 +151,10 @@ def close(fd):
 def access(path, mode):
     return access_(path, mode) == 0
 
+def chdir(dir):
+    r = chdir_(dir)
+    check_error(r)
+
 def fork():
     r = fork_()
     check_error(r)
@@ -163,6 +178,10 @@ def waitpid(pid, opts):
     check_error(r)
     return (r, a[0])
 
+def system(command):
+    r = system_(command)
+    check_error(r)
+    return r
 
 def fsencode(s):
     if type(s) is bytes:
@@ -173,3 +192,8 @@ def fsdecode(s):
     if type(s) is str:
         return s
     return str(s, "utf-8")
+
+
+def urandom(n):
+    with open("/dev/urandom", "rb") as f:
+        return f.read(n)

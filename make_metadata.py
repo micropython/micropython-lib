@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
+# MicroPython will pick up glob from the current dir otherwise.
+import sys
+sys.path.pop(0)
+
 import glob
+
 
 TEMPLATE = """\
 import sys
@@ -9,7 +14,7 @@ sys.path.pop(0)
 from setuptools import setup
 
 
-setup(name='micropython-%(name)s',
+setup(name='micropython-%(dist_name)s',
       version='%(version)s',
       description=%(desc)r,
       long_description=%(long_desc)r,
@@ -56,6 +61,8 @@ def parse_metadata(f):
     data = {}
     for l in f:
         l = l.strip()
+        if l[0] == "#":
+            continue
         k, v = l.split("=", 1)
         data[k.strip()] = v.strip()
     return data
@@ -110,8 +117,11 @@ def main():
         else:
             raise ValueError
 
-        data["name"] = module
-        data["top_name"] = module.split(".", 1)[0]
+        if "dist_name" not in data:
+            data["dist_name"] = module
+        if "name" not in data:
+            data["name"] = module
+        data["top_name"] = data["name"].split(".", 1)[0]
 
         if "depends" in data:
             deps = ["micropython-" + x.strip() for x in data["depends"].split(",")]

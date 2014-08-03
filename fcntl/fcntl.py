@@ -1,7 +1,8 @@
 import ffi
+import _libc
 
 
-libc = ffi.open("libc.so.6")
+libc = _libc.get()
 
 fcntl_l = libc.func("i", "fcntl", "iil")
 fcntl_s = libc.func("i", "fcntl", "iip")
