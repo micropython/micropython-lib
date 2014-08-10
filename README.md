@@ -1,6 +1,6 @@
 ~~~~
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-micropython-lib is a "highly experimental" community project.
+micropython-lib is a highly experimental community project.
 
 Please help to drive it to just "experimental" state by testing
 provided packages with MicroPython.
