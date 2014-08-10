@@ -22,23 +22,27 @@ EPOLL_CTL_ADD = 1
 EPOLL_CTL_DEL = 2
 EPOLL_CTL_MOD = 3
 
+# TODO: struct epoll_event's 2nd member is union of uint64_t, etc.
+# On x86, uint64_t is 4-byte aligned, on many other platforms - 8-byte.
+# Until uctypes module can assign native struct offset, use dirty hack
+# below.
+if struct.calcsize("IQ") == 12:
+    epoll_event = "IO"
+else:
+    epoll_event = "QO"
 
 class Epoll:
 
-    # Second value is actually of uint64_t size, so struct
-    # will be smaller on 32bit, but seem to not segfault.
-    epoll_event = "IO"
-
     def __init__(self, epfd):
         self.epfd = epfd
-        self.evbuf = struct.pack(self.epoll_event, 0, 0)
+        self.evbuf = struct.pack(epoll_event, 0, None)
         self.registry = {}
 
     def register(self, fd, eventmask=EPOLLIN|EPOLLPRI|EPOLLOUT, retval=None):
         "retval is extension to stdlib, value to use in results from .poll()."
         if retval is None:
             retval = fd
-        s = struct.pack(self.epoll_event, eventmask, retval)
+        s = struct.pack(epoll_event, eventmask, retval)
         r = epoll_ctl(self.epfd, EPOLL_CTL_ADD, fd, s)
         if r == -1 and os.errno_.get() == errno.EEXIST:
             r = epoll_ctl(self.epfd, EPOLL_CTL_MOD, fd, s)
@@ -59,7 +63,7 @@ class Epoll:
         os.check_error(n)
         res = []
         if n > 0:
-            vals = struct.unpack(self.epoll_event, s)
+            vals = struct.unpack(epoll_event, s)
             res.append((vals[1], vals[0]))
         return res
 
