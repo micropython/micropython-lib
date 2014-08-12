@@ -40,14 +40,25 @@ The data members `self.doc_header', `self.misc_header', and
 `self.undoc_header' set the headers used for the help function's
 listings of documented functions, miscellaneous topics, and undocumented
 functions respectively.
+
+----------------------------------------------------------------------------
+This is a copy of python's Cmd, but leaves out features that aren't relevant
+or can't currently be implemented for MicroPython.
+
+One of the notable deviations is that since MicroPython strips doc strings,
+this means that that help by doc string feature doesn't work.
+
+completions have also been stripped out.
 """
 
-import string, sys
+#import string, sys
+import sys	# MiroPython doesn't yet have a string module
 
 __all__ = ["Cmd"]
 
 PROMPT = '(Cmd) '
-IDENTCHARS = string.ascii_letters + string.digits + '_'
+#IDENTCHARS = string.ascii_letters + string.digits + '_'
+IDENTCHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
 
 class Cmd:
     """A simple framework for writing line-oriented command interpreters.
@@ -73,13 +84,10 @@ class Cmd:
     nohelp = "*** No help on %s"
     use_rawinput = 1
 
-    def __init__(self, completekey='tab', stdin=None, stdout=None):
+    def __init__(self, stdin=None, stdout=None):
         """Instantiate a line-oriented interpreter framework.
 
-        The optional argument 'completekey' is the readline name of a
-        completion key; it defaults to the Tab key. If completekey is
-        not None and the readline module is available, command completion
-        is done automatically. The optional arguments stdin and stdout
+        The optional arguments stdin and stdout
         specify alternate input and output file objects; if not specified,
         sys.stdin and sys.stdout are used.
 
@@ -93,7 +101,6 @@ class Cmd:
         else:
             self.stdout = sys.stdout
         self.cmdqueue = []
-        self.completekey = completekey
 
     def cmdloop(self, intro=None):
         """Repeatedly issue a prompt, accept input, parse an initial prefix
@@ -103,14 +110,6 @@ class Cmd:
         """
 
         self.preloop()
-        if self.use_rawinput and self.completekey:
-            try:
-                import readline
-                self.old_completer = readline.get_completer()
-                readline.set_completer(self.complete)
-                readline.parse_and_bind(self.completekey+": complete")
-            except ImportError:
-                pass
         try:
             if intro is not None:
                 self.intro = intro
@@ -139,13 +138,7 @@ class Cmd:
                 stop = self.postcmd(stop, line)
             self.postloop()
         finally:
-            if self.use_rawinput and self.completekey:
-                try:
-                    import readline
-                    readline.set_completer(self.old_completer)
-                except ImportError:
-                    pass
-
+            pass
 
     def precmd(self, line):
         """Hook method executed just before the command line is
@@ -235,59 +228,10 @@ class Cmd:
         """
         self.stdout.write('*** Unknown syntax: %s\n'%line)
 
-    def completedefault(self, *ignored):
-        """Method called to complete an input line when no command-specific
-        complete_*() method is available.
-
-        By default, it returns an empty list.
-
-        """
-        return []
-
-    def completenames(self, text, *ignored):
-        dotext = 'do_'+text
-        return [a[3:] for a in self.get_names() if a.startswith(dotext)]
-
-    def complete(self, text, state):
-        """Return the next possible completion for 'text'.
-
-        If a command has not been entered, then complete against command list.
-        Otherwise try to call complete_<command> to get list of completions.
-        """
-        if state == 0:
-            import readline
-            origline = readline.get_line_buffer()
-            line = origline.lstrip()
-            stripped = len(origline) - len(line)
-            begidx = readline.get_begidx() - stripped
-            endidx = readline.get_endidx() - stripped
-            if begidx>0:
-                cmd, args, foo = self.parseline(line)
-                if cmd == '':
-                    compfunc = self.completedefault
-                else:
-                    try:
-                        compfunc = getattr(self, 'complete_' + cmd)
-                    except AttributeError:
-                        compfunc = self.completedefault
-            else:
-                compfunc = self.completenames
-            self.completion_matches = compfunc(text, line, begidx, endidx)
-        try:
-            return self.completion_matches[state]
-        except IndexError:
-            return None
-
     def get_names(self):
         # This method used to pull in base class attributes
         # at a time dir() didn't do it yet.
         return dir(self.__class__)
-
-    def complete_help(self, *args):
-        commands = set(self.completenames(*args))
-        topics = set(a[5:] for a in self.get_names()
-                     if a.startswith('help_' + args[0]))
-        return list(commands | topics)
 
     def do_help(self, arg):
         'List available commands with "help" or detailed help with "help cmd".'
@@ -296,13 +240,6 @@ class Cmd:
             try:
                 func = getattr(self, 'help_' + arg)
             except AttributeError:
-                try:
-                    doc=getattr(self, 'do_' + arg).__doc__
-                    if doc:
-                        self.stdout.write("%s\n"%str(doc))
-                        return
-                except AttributeError:
-                    pass
                 self.stdout.write("%s\n"%str(self.nohelp % (arg,)))
                 return
             func()
@@ -326,8 +263,6 @@ class Cmd:
                     if cmd in help:
                         cmds_doc.append(cmd)
                         del help[cmd]
-                    elif getattr(self, name).__doc__:
-                        cmds_doc.append(cmd)
                     else:
                         cmds_undoc.append(cmd)
             self.stdout.write("%s\n"%str(self.doc_leader))
@@ -397,5 +332,6 @@ class Cmd:
             while texts and not texts[-1]:
                 del texts[-1]
             for col in range(len(texts)):
-                texts[col] = texts[col].ljust(colwidths[col])
+                #texts[col] = texts[col].ljust(colwidths[col])
+                texts[col] = '%-*s' % (colwidths[col], texts[col])
             self.stdout.write("%s\n"%str("  ".join(texts)))
