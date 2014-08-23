@@ -21,6 +21,7 @@ rmdir_ = libc.func("i", "rmdir", "s")
 getcwd_ = libc.func("s", "getcwd", "si")
 opendir_ = libc.func("P", "opendir", "s")
 readdir_ = libc.func("P", "readdir", "P")
+open_ = libc.func("i", "open", "sii")
 read_ = libc.func("i", "read", "ipi")
 write_ = libc.func("i", "write", "iPi")
 close_ = libc.func("i", "close", "i")
@@ -37,6 +38,16 @@ W_OK = const(2)
 X_OK = const(1)
 F_OK = const(0)
 
+O_ACCMODE  = 0o0000003
+O_RDONLY   = 0o0000000
+O_WRONLY   = 0o0000001
+O_RDWR     = 0o0000002
+O_CREAT    = 0o0000100
+O_EXCL     = 0o0000200
+O_NOCTTY   = 0o0000400
+O_TRUNC    = 0o0001000
+O_APPEND   = 0o0002000
+O_NONBLOCK = 0o0004000
 
 error = OSError
 name = "posix"
@@ -131,6 +142,11 @@ def walk(top, topdown=True):
         yield from walk(top + "/" + d, topdown)
     if not topdown:
         yield top, dirs, files
+
+def open(n, flags, mode=0o777):
+    r = open_(n, flags, mode)
+    check_error(r)
+    return r
 
 def read(fd, n):
     buf = bytearray(n)
