@@ -115,13 +115,13 @@ def ilistdir_ex(path="."):
         yield dirent
 
 def listdir(path="."):
-    is_bytes = type(path) is bytes
+    is_str = type(path) is not bytes
     res = []
     for dirent in ilistdir_ex(path):
-        fname = str(dirent[4].split('\0', 1)[0], "ascii")
-        if fname != "." and fname != "..":
-            if is_bytes:
-                fname = fsencode(fname)
+        fname = dirent[4].split(b'\0', 1)[0]
+        if fname != b"." and fname != b"..":
+            if is_str:
+                fname = fsdecode(fname)
             res.append(fname)
     return res
 
@@ -130,12 +130,12 @@ def walk(top, topdown=True):
     dirs = []
     for dirent in ilistdir_ex(top):
         mode = dirent[3] << 12
-        fname = str(dirent[4].split('\0', 1)[0], "ascii")
+        fname = dirent[4].split(b'\0', 1)[0]
         if stat_.S_ISDIR(mode):
-            if fname != "." and fname != "..":
-                dirs.append(fname)
+            if fname != b"." and fname != b"..":
+                dirs.append(fsdecode(fname))
         else:
-            files.append(fname)
+            files.append(fsdecode(fname))
     if topdown:
         yield top, dirs, files
     for d in dirs:
