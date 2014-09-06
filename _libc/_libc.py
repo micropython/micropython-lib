@@ -1,4 +1,5 @@
 import ffi
+import sys
 
 
 _h = None
@@ -22,3 +23,12 @@ def get():
 def set_names(n):
     global names
     names = n
+
+# Find out bitness of the platform, even if long ints are not supported
+# TODO: All bitness differences should be removed from micropython-lib, and
+# this snippet too.
+bitness = 1
+v = sys.maxsize
+while v:
+    bitness += 1
+    v >>= 1

@@ -1,5 +1,5 @@
 srctype = micropython-lib
 type = module
-version = 0.0.8
+version = 0.1
 author = Paul Sokolovsky
 depends = os, libc

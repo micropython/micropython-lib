@@ -26,7 +26,11 @@ EPOLL_CTL_MOD = 3
 # On x86, uint64_t is 4-byte aligned, on many other platforms - 8-byte.
 # Until uctypes module can assign native struct offset, use dirty hack
 # below.
-if struct.calcsize("IQ") == 12:
+# TODO: Get rid of all this dirtiness, move it on C side
+if _libc.bitness > 32:
+    # On x86_64, epoll_event is packed struct
+    epoll_event = "<IO"
+elif struct.calcsize("IQ") == 12:
     epoll_event = "IO"
 else:
     epoll_event = "QO"
