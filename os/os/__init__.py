@@ -105,7 +105,7 @@ def ilistdir_ex(path="."):
     if not dir:
         raise_error()
     res = []
-    dirent_fmt = "iiHB256s"
+    dirent_fmt = "LLHB256s"
     while True:
         dirent = readdir_(dir)
         if not dirent:
