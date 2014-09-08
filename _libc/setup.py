@@ -6,7 +6,7 @@ from setuptools import setup
 
 
 setup(name='micropython-libc',
-      version='0.1',
+      version='0.2',
       description='MicroPython FFI helper module',
       long_description='MicroPython FFI helper module to interface with underlying libc',
       url='https://github.com/micropython/micropython/issues/405',
