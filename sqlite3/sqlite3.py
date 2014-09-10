@@ -24,7 +24,7 @@ sqlite3_column_count = sq3.func("i", "sqlite3_column_count", "p")
 sqlite3_column_type = sq3.func("i", "sqlite3_column_type", "pi")
 sqlite3_column_int = sq3.func("i", "sqlite3_column_int", "pi")
 # using "d" return type gives wrong results
-sqlite3_column_double = sq3.func("f", "sqlite3_column_double", "pi")
+sqlite3_column_double = sq3.func("d", "sqlite3_column_double", "pi")
 sqlite3_column_text = sq3.func("s", "sqlite3_column_text", "pi")
 #sqlite3_int64 sqlite3_last_insert_rowid(sqlite3*);
 # TODO: should return long int
