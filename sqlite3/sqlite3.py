@@ -1,7 +1,18 @@
 import ffi
 
+# sq3 = ffi.open("libsqlite3.so.0")
 
-sq3 = ffi.open("libsqlite3.so.0")
+def ffi_open(names):
+    err = None
+    for n in names:
+        try:
+            mod = ffi.open(n)
+            return mod
+        except OSError as e:
+            err = e
+    raise err
+
+sq3 = ffi_open(('libsqlite3.so.0', 'libsqlite3.dylib', 'libsqlite3.0.dylib'))
 
 sqlite3_open = sq3.func("i", "sqlite3_open", "sp")
 #int sqlite3_close(sqlite3*);
