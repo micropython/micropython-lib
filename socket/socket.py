@@ -1,5 +1,5 @@
-from microsocket import getaddrinfo
-import microsocket as _socket
+from usocket import getaddrinfo
+import usocket as _socket
 
 
 _GLOBAL_DEFAULT_TIMEOUT = 30
