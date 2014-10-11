@@ -179,7 +179,7 @@ def sleep(secs):
     yield Sleep(secs)
 
 
-import microsocket as _socket
+import usocket as _socket
 
 class StreamReader:
 
