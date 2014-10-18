@@ -77,6 +77,8 @@ class EventLoop:
                             self.remove_reader(arg.fileno())
                         elif isinstance(ret, IOWriteDone):
                             self.remove_writer(arg.fileno())
+                        elif isinstance(ret, StopLoop):
+                            return arg
                     elif isinstance(ret, type_gen):
                         self.call_soon(ret)
                     elif ret is None:
@@ -90,16 +92,11 @@ class EventLoop:
                 self.call_later(delay, cb, *args)
 
     def run_until_complete(self, coro):
-        val = None
-        while True:
-            try:
-                ret = coro.send(val)
-            except StopIteration as e:
-                print(e)
-                break
-            print("ret:", ret)
-            if isinstance(ret, SysCall):
-                ret.handle()
+        def _run_and_stop():
+            yield from coro
+            yield StopLoop(0)
+        self.call_soon(_run_and_stop())
+        self.run_forever()
 
     def close(self):
         pass
@@ -150,6 +147,9 @@ class SysCall:
         raise NotImplementedError
 
 class Sleep(SysCall):
+    pass
+
+class StopLoop(SysCall):
     pass
 
 class IORead(SysCall):
