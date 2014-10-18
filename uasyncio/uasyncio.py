@@ -211,6 +211,9 @@ class StreamReader:
         log.debug("StreamReader.readline(): res: %s", res)
         return res
 
+    def __repr__(self):
+        return "<StreamReader %r>" % self.s
+
 
 class StreamWriter:
 
@@ -243,6 +246,9 @@ class StreamWriter:
     def close(self):
         yield IOWriteDone(self.s)
         self.s.close()
+
+    def __repr__(self):
+        return "<StreamWriter %r>" % self.s
 
 
 def open_connection(host, port):
