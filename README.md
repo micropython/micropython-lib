@@ -15,9 +15,9 @@ distribution package from PyPI. Each module is either written from scratch or
 ported from CPython. 
 
 Note that the main target of micropython-lib is a "Unix" port of MicroPython
-(future ports to be determined). Actual system requirements vary per module.
-Though if a module is not related to I/O, the module should work without
-problem on bare-metal ports too.
+(additional ports to support are to be determined). Actual system requirements
+vary per module. Though if a module is not related to I/O, the module should
+work without problem on bare-metal ports too (e.g. pyboard).
 
 
 Usage
@@ -61,6 +61,6 @@ More information is on GitHub and in the MicroPython forums:
  * https://github.com/micropython/micropython/issues/405
  * http://forum.micropython.org/viewtopic.php?f=5&t=70
 
-For basic guidelines for installing packages from PyPI:
+Guidelines for packaging MicroPython modules for PyPI:
 
  * https://github.com/micropython/micropython/issues/413
