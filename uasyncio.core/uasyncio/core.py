@@ -1,5 +1,5 @@
 import time
-import heapq
+import uheapq as heapq
 import logging
 
 
