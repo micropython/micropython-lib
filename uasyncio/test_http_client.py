@@ -20,6 +20,5 @@ url = "google.com"
 loop = asyncio.get_event_loop()
 #task = asyncio.async(print_http_headers(url))
 #loop.run_until_complete(task)
-loop.call_soon(print_http_headers(url))
-loop.run_forever()
+loop.run_until_complete(print_http_headers(url))
 loop.close()
