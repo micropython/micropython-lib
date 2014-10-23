@@ -1,14 +1,8 @@
-import time
-import heapq
 import errno
-import logging
+import select
+import usocket as _socket
 from uasyncio.core import *
 
-
-log = logging.getLogger("asyncio")
-
-
-import select
 
 class EpollEventLoop(EventLoop):
 
@@ -47,8 +41,6 @@ class EpollEventLoop(EventLoop):
 def get_event_loop():
     return EpollEventLoop()
 
-
-import usocket as _socket
 
 class StreamReader:
 

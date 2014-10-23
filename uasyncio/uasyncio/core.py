@@ -1,7 +1,5 @@
-import __main__
 import time
 import heapq
-import errno
 import logging
 
 
