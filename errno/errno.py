@@ -33,5 +33,6 @@ EPIPE   = 32  # Broken pipe
 EDOM    = 33  # Math argument out of domain of func
 ERANGE  = 34  # Math result not representable
 EAFNOSUPPORT = 97 # Address family not supported by protocol
+ECONNRESET = 104 # Connection timed out
 ETIMEDOUT = 110 # Connection timed out
 EINPROGRESS = 115 # Operation now in progress
