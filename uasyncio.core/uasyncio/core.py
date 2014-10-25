@@ -24,7 +24,8 @@ class EventLoop:
 
     def call_at(self, time, callback, *args):
         # Including self.cnt is a workaround per heapq docs
-        log.debug("Scheduling %s", (time, self.cnt, callback, args))
+        if __debug__:
+            log.debug("Scheduling %s", (time, self.cnt, callback, args))
         heapq.heappush(self.q, (time, self.cnt, callback, args))
 #        print(self.q)
         self.cnt += 1
@@ -39,7 +40,8 @@ class EventLoop:
         while True:
             if self.q:
                 t, cnt, cb, args = heapq.heappop(self.q)
-                log.debug("Next coroutine to run: %s", (t, cnt, cb, args))
+                if __debug__:
+                    log.debug("Next coroutine to run: %s", (t, cnt, cb, args))
 #                __main__.mem_info()
                 tnow = self.time()
                 delay = t - tnow
@@ -56,9 +58,11 @@ class EventLoop:
                 try:
                     if args == ():
                         args = (None,)
-                    log.debug("Coroutine %s send args: %s", cb, args)
+                    if __debug__:
+                        log.debug("Coroutine %s send args: %s", cb, args)
                     ret = cb.send(*args)
-                    log.debug("Coroutine %s yield result: %s", cb, ret)
+                    if __debug__:
+                        log.debug("Coroutine %s yield result: %s", cb, ret)
                     if isinstance(ret, SysCall):
                         arg = ret.args[0]
                         if isinstance(ret, Sleep):
@@ -85,7 +89,8 @@ class EventLoop:
                     else:
                         assert False, "Unsupported coroutine yield value: %r (of type %r)" % (ret, type(ret))
                 except StopIteration as e:
-                    log.debug("Coroutine finished: %s", cb)
+                    if __debug__:
+                        log.debug("Coroutine finished: %s", cb)
                     continue
                 self.call_later(delay, cb, *args)
 
