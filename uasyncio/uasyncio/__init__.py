@@ -11,30 +11,36 @@ class EpollEventLoop(EventLoop):
         self.poller = select.epoll(1)
 
     def add_reader(self, fd, cb, *args):
-        log.debug("add_reader%s", (fd, cb, args))
+        if __debug__:
+            log.debug("add_reader%s", (fd, cb, args))
         self.poller.register(fd, select.EPOLLIN, (cb, args))
 
     def remove_reader(self, fd):
-        log.debug("remove_reader(%s)", fd)
+        if __debug__:
+            log.debug("remove_reader(%s)", fd)
         self.poller.unregister(fd)
 
     def add_writer(self, fd, cb, *args):
-        log.debug("add_writer%s", (fd, cb, args))
+        if __debug__:
+            log.debug("add_writer%s", (fd, cb, args))
         self.poller.register(fd, select.EPOLLOUT, (cb, args))
 
     def remove_writer(self, fd):
-        log.debug("remove_writer(%s)", fd)
+        if __debug__:
+            log.debug("remove_writer(%s)", fd)
         self.poller.unregister(fd)
 
     def wait(self, delay):
-        log.debug("epoll.wait(%d)", delay)
+        if __debug__:
+            log.debug("epoll.wait(%d)", delay)
         if delay == -1:
             res = self.poller.poll(-1)
         else:
             res = self.poller.poll(int(delay * 1000))
-        log.debug("epoll result: %s", res)
+        #log.debug("epoll result: %s", res)
         for cb, ev in res:
-            log.debug("Calling IO callback: %s%s", cb[0], cb[1])
+            if __debug__:
+                log.debug("Calling IO callback: %s%s", cb[0], cb[1])
             cb[0](*cb[1])
 
 
@@ -59,9 +65,11 @@ class StreamReader:
         return res
 
     def readline(self):
-        log.debug("StreamReader.readline()")
+        if __debug__:
+            log.debug("StreamReader.readline()")
         s = yield IORead(self.s)
-        log.debug("StreamReader.readline(): after IORead: %s", s)
+        if __debug__:
+            log.debug("StreamReader.readline(): after IORead: %s", s)
         while True:
             res = self.s.readline()
             if res is not None:
@@ -69,7 +77,8 @@ class StreamReader:
             log.warn("Empty read")
         if not res:
             yield IOReadDone(self.s)
-        log.debug("StreamReader.readline(): res: %s", res)
+        if __debug__:
+            log.debug("StreamReader.readline(): res: %s", res)
         return res
 
     def __repr__(self):
@@ -88,21 +97,25 @@ class StreamWriter:
         # to return immediately (which means it has to buffer all the
         # data), this method is a coroutine.
         sz = len(buf)
-        log.debug("StreamWriter.awrite(): spooling %d bytes", sz)
+        if __debug__:
+            log.debug("StreamWriter.awrite(): spooling %d bytes", sz)
         while True:
             res = self.s.write(buf)
             # If we spooled everything, return immediately
             if res == sz:
-                log.debug("StreamWriter.awrite(): completed spooling %d bytes", res)
+                if __debug__:
+                    log.debug("StreamWriter.awrite(): completed spooling %d bytes", res)
                 return
             if res is None:
                 res = 0
-            log.debug("StreamWriter.awrite(): spooled partial %d bytes", res)
+            if __debug__:
+                log.debug("StreamWriter.awrite(): spooled partial %d bytes", res)
             assert res < sz
             buf = buf[res:]
             sz -= res
             s = yield IOWrite(self.s)
-            log.debug("StreamWriter.awrite(): can write more")
+            if __debug__:
+                log.debug("StreamWriter.awrite(): can write more")
 
     def close(self):
         yield IOWriteDone(self.s)
@@ -113,7 +126,8 @@ class StreamWriter:
 
 
 def open_connection(host, port):
-    log.debug("open_connection(%s, %s)", host, port)
+    if __debug__:
+        log.debug("open_connection(%s, %s)", host, port)
     s = _socket.socket()
     s.setblocking(False)
     ai = _socket.getaddrinfo(host, port)
@@ -123,9 +137,11 @@ def open_connection(host, port):
     except OSError as e:
         if e.args[0] != errno.EINPROGRESS:
             raise
-    log.debug("open_connection: After connect")
+    if __debug__:
+        log.debug("open_connection: After connect")
     s = yield IOWrite(s)
-    log.debug("open_connection: After iowait: %s", s)
+    if __debug__:
+        log.debug("open_connection: After iowait: %s", s)
     return StreamReader(s), StreamWriter(s)
 
 
@@ -140,10 +156,13 @@ def start_server(client_coro, host, port):
     s.bind(addr)
     s.listen(10)
     while True:
-        log.debug("start_server: Before accept")
+        if __debug__:
+            log.debug("start_server: Before accept")
         yield IORead(s)
-        log.debug("start_server: After iowait")
+        if __debug__:
+            log.debug("start_server: After iowait")
         s2, client_addr = s.accept()
         s2.setblocking(False)
-        log.debug("start_server: After accept: %s", s2)
+        if __debug__:
+            log.debug("start_server: After accept: %s", s2)
         yield client_coro(StreamReader(s2), StreamWriter(s2))
