@@ -28,7 +28,15 @@ class EpollEventLoop(EventLoop):
     def remove_writer(self, fd):
         if __debug__:
             log.debug("remove_writer(%s)", fd)
-        self.poller.unregister(fd)
+        try:
+            self.poller.unregister(fd)
+        except OSError as e:
+            # StreamWriter.awrite() first tries to write to an fd,
+            # and if that succeeds, yield IOWrite may never be called
+            # for that fd, and it will never be added to poller. So,
+            # ignore such error.
+            if e.args[0] != errno.ENOENT:
+                raise
 
     def wait(self, delay):
         if __debug__:
