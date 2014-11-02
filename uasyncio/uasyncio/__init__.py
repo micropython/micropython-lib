@@ -125,7 +125,8 @@ class StreamWriter:
             assert res < sz
             buf = buf[res:]
             sz -= res
-            s = yield IOWrite(self.s)
+            s2 = yield IOWrite(self.s)
+            #assert s2.fileno() == self.s.fileno()
             if __debug__:
                 log.debug("StreamWriter.awrite(): can write more")
 
@@ -151,7 +152,9 @@ def open_connection(host, port):
             raise
     if __debug__:
         log.debug("open_connection: After connect")
-    s = yield IOWrite(s)
+    s2 = yield IOWrite(s)
+    if __debug__:
+        assert s2.fileno() == s.fileno()
     if __debug__:
         log.debug("open_connection: After iowait: %s", s)
     return StreamReader(s), StreamWriter(s)
