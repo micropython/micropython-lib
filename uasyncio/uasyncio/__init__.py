@@ -13,7 +13,7 @@ class EpollEventLoop(EventLoop):
     def add_reader(self, fd, cb, *args):
         if __debug__:
             log.debug("add_reader%s", (fd, cb, args))
-        self.poller.register(fd, select.EPOLLIN, (cb, args))
+        self.poller.register(fd, select.EPOLLIN | select.EPOLLONESHOT, (cb, args))
 
     def remove_reader(self, fd):
         if __debug__:
@@ -23,7 +23,7 @@ class EpollEventLoop(EventLoop):
     def add_writer(self, fd, cb, *args):
         if __debug__:
             log.debug("add_writer%s", (fd, cb, args))
-        self.poller.register(fd, select.EPOLLOUT, (cb, args))
+        self.poller.register(fd, select.EPOLLOUT | select.EPOLLONESHOT, (cb, args))
 
     def remove_writer(self, fd):
         if __debug__:
