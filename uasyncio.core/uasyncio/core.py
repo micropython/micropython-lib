@@ -132,15 +132,32 @@ class IOWriteDone(SysCall):
     pass
 
 
+_event_loop = None
+_event_loop_class = EventLoop
 def get_event_loop():
-    return EventLoop()
+    global _event_loop
+    if _event_loop is None:
+        _event_loop = _event_loop_class()
+    return _event_loop
+
+def sleep(secs):
+    yield Sleep(secs)
 
 def coroutine(f):
     return f
 
-def async(coro):
-    # We don't have Task bloat, so op is null
+#
+# The functions below are deprecated in uasyncio, and provided only
+# for compatibility with CPython asyncio
+#
+
+def async(coro, loop=_event_loop):
+    _event_loop.call_soon(coro)
+    # CPython asyncio incompatibility: we don't return Task object
     return coro
 
-def sleep(secs):
-    yield Sleep(secs)
+
+# CPython asyncio incompatibility: Task is a function, not a class (for efficiency)
+def Task(coro, loop=_event_loop):
+    # Same as async()
+    _event_loop.call_soon(coro)
