@@ -6,7 +6,7 @@ from setuptools import setup
 
 
 setup(name='micropython-uasyncio',
-      version='0.7',
+      version='0.7.1',
       description='uasyncio module for MicroPython',
       long_description='Lightweight asyncio-like library built around native Python coroutines, not around un-Python devices like callback mess.',
       url='https://github.com/micropython/micropython/issues/405',
