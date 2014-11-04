@@ -16,6 +16,11 @@ class EventLoop:
     def time(self):
         return time.time()
 
+    def create_task(self, coro):
+        # CPython 3.4.2
+        self.call_at(0, callback)
+        # CPython asyncio incompatibility: we don't return Task object
+
     def call_soon(self, callback, *args):
         self.call_at(0, callback, *args)
 
