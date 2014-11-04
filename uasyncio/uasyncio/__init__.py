@@ -52,10 +52,6 @@ class EpollEventLoop(EventLoop):
             cb[0](*cb[1])
 
 
-def get_event_loop():
-    return EpollEventLoop()
-
-
 class StreamReader:
 
     def __init__(self, s):
@@ -181,3 +177,7 @@ def start_server(client_coro, host, port):
         if __debug__:
             log.debug("start_server: After accept: %s", s2)
         yield client_coro(StreamReader(s2), StreamWriter(s2))
+
+
+import uasyncio.core
+uasyncio.core._event_loop_class = EpollEventLoop
