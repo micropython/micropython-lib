@@ -53,6 +53,23 @@ To install modules during development, use `make install`. By default, all
 available packages will be installed. To install a specific module, add the 
 `MOD=<module>` parameter to the end of the `make install` command.
 
+Note on OSX
+-
+By default OSX uses the BSD versions of basic core utilities. The
+micropython-lib `Makefile` make use of certain GNU-specific options
+for some of these utilities (`find`, `xargs`, and `cp`)
+This is being tracked at https://github.com/micropython/micropython-lib/issues/10
+Until the Makefile is revised to work on both GNU and BSD based
+systems, the following workaround is available for OSX users:
+ * Use Macports to install the GNU coreutils:
+`sudo port install coreutils`
+ * Make a copy of `Makefile`, naming it something like `Makefile-osx`,
+and modify this copy of the Makefile to use the GNU versions of the
+utilities you just installed: change `find` to `gfind`, `xargs` to
+`gxargs`, and `cp` to `gcp`
+ * Now run `gmake --makefile=Makefile-osx install` to install
+micropython-lib to its default location (`~/.micropython/lib`) 
+
 
 Links
 -----
