@@ -156,7 +156,7 @@ def open_connection(host, port):
     return StreamReader(s), StreamWriter(s)
 
 
-def start_server(client_coro, host, port):
+def start_server(client_coro, host, port, backlog=10):
     log.debug("start_server(%s, %s)", host, port)
     s = _socket.socket()
     s.setblocking(False)
@@ -165,7 +165,7 @@ def start_server(client_coro, host, port):
     addr = ai[0][4]
     s.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1)
     s.bind(addr)
-    s.listen(10)
+    s.listen(backlog)
     while True:
         if __debug__:
             log.debug("start_server: Before accept")
