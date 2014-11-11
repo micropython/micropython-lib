@@ -1,0 +1,45 @@
+Testing and Validating
+----------------------
+
+To test uasyncio correctness and performance, HTTP server samples can be
+used. The simplest test is with test_http_server.py and Apache Benchmark
+(ab). In one window, run:
+
+micropython -O test_http_server.py
+
+(-O is needed to short-circuit debug logging calls.)
+
+In another:
+
+ab -n10000 -c10 http://localhost:8081/
+
+ab tests that all responses have the same length, but doesn't check
+content. test_http_server.py also serves very short, static reply.
+
+
+For more heavy testing, test_http_server_heavy.py is provided. It serves
+large response split among several async writes. It is also dynamic -
+includes incrementing counter, so each response will be different. The
+response size generates is more 4Mb, because under Linux, socket writes
+can buffer up to 4Mb of content (this appear to be controlled by
+/proc/sys/net/ipv4/tcp_wmem and not /proc/sys/net/core/wmem_default).
+test_http_server_heavy.py also includes (trivial) handling of
+client-induced errors like EPIPE and ECONNRESET. To validate content
+served, a post-hook script for "boom" tool
+(https://github.com/tarekziade/boom) is provided.
+
+Before start, you may want to bump .listen() value in uasyncio/__init__.py
+from default 10 to at least 30.
+
+Start:
+
+micropython -X heapsize=300000000 -O test_http_server_heavy.py
+
+(Yes, that's 300Mb of heap - we'll be serving 4+Mb of content with 30
+concurrent connections).
+
+And:
+
+PYTHONPATH=. boom -n1000 -c30 http://localhost:8081 --post-hook=boom_uasyncio.validate
+
+There should be no Python exceptions in the output.
