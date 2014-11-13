@@ -8,7 +8,7 @@ from setuptools import setup
 setup(name='micropython-uasyncio.core',
       version='0.8.1',
       description='uasyncio.core module for MicroPython',
-      long_description='Lightweight asyncio-like library built around native Python coroutines, not around un-Python devices like callback mess. (Core event loop).',
+      long_description='Lightweight implementation of asyncio-like library built around native Python coroutines. (Core event loop).',
       url='https://github.com/micropython/micropython/issues/405',
       author='Paul Sokolovsky',
       author_email='micro-python@googlegroups.com',
