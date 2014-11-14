@@ -50,7 +50,7 @@ class Logger:
         self.log(CRITICAL, msg, *args)
 
 
-_level = NOTSET
+_level = INFO
 _loggers = {}
 
 def getLogger(name):
@@ -60,6 +60,6 @@ def getLogger(name):
     _loggers[name] = l
     return l
 
-def basicConfig(level=DEBUG):
+def basicConfig(level=INFO):
     global _level
     _level = level
