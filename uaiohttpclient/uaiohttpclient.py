@@ -20,7 +20,10 @@ def request_raw(method, url):
         proto, dummy, host = url.split("/", 2)
         path = ""
     reader, writer = yield from asyncio.open_connection(host, 80)
-    query = "%s /%s HTTP/1.0\r\nHost: %s\r\n\r\n" % (method, path, host)
+    # Use protocol 1.0, because 1.1 always allows to use chunked transfer-encoding
+    # But explicitly set Connection: close, even though this should be default for 1.0,
+    # because some servers misbehave w/o it.
+    query = "%s /%s HTTP/1.0\r\nHost: %s\r\nConnection: close\r\n\r\n" % (method, path, host)
     yield from writer.awrite(query.encode('latin-1'))
 #    yield from writer.close()
     return reader
