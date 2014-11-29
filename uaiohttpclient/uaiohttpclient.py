@@ -59,24 +59,36 @@ def request_raw(method, url):
 
 
 def request(method, url):
-    reader = yield from request_raw(method, url)
-    headers = []
-    sline = yield from reader.readline()
-    protover, st, msg = sline.split(None, 2)
-    chunked = False
-    while True:
-        line = yield from reader.readline()
-        if not line or line == b"\r\n":
-            break
-        headers.append(line)
-        if line.startswith(b"Transfer-Encoding:"):
-            if b"chunked" in line:
-                chunked = True
+    redir_cnt = 0
+    redir_url = None
+    while redir_cnt < 2:
+        reader = yield from request_raw(method, url)
+        headers = []
+        sline = yield from reader.readline()
+        protover, status, msg = sline.split(None, 2)
+        status = int(status)
+        chunked = False
+        while True:
+            line = yield from reader.readline()
+            if not line or line == b"\r\n":
+                break
+            headers.append(line)
+            if line.startswith(b"Transfer-Encoding:"):
+                if b"chunked" in line:
+                    chunked = True
+            elif line.startswith(b"Location:"):
+                url = line.rstrip().split(None, 1)[1].decode("latin-1")
+
+        if 301 <= status <= 303:
+            redir_cnt += 1
+            yield from reader.close()
+            continue
+        break
 
     if chunked:
         resp = ChunkedClientResponse(reader)
     else:
         resp = ClientResponse(reader)
-    resp.status = int(st)
+    resp.status = status
     resp.headers = headers
     return resp
