@@ -25,4 +25,4 @@ class deque:
         return len(self.q)
 
     def __bool__(self):
-        return len(self) > 0
+        return bool(self.q)
