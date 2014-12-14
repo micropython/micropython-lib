@@ -20,3 +20,6 @@ class deque:
 
     def appendleft(self, a):
         self.q = [a] + self.q
+
+    def __len__(self):
+        return len(self.q)
