@@ -19,10 +19,16 @@ class deque:
         self.q.append(a)
 
     def appendleft(self, a):
-        self.q = [a] + self.q
+        self.q.insert(0, a)
 
     def __len__(self):
         return len(self.q)
 
     def __bool__(self):
         return bool(self.q)
+
+    def __iter__(self):
+        yield from self.q
+
+    def __str__(self):
+        return 'deque({})'.format(self.q)
