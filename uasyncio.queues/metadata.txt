@@ -1,0 +1,5 @@
+srctype = micropython-lib
+type = package
+version = 0.1
+long_desc = Port of asyncio.queues to uasyncio.
+depends = uasyncio.core, collections.deque
