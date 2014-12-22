@@ -14,11 +14,11 @@ def fcntl(fd, op, arg):
     if type(arg) is int:
         return fcntl_l(fd, op, arg)
     else:
-        raise NotImplementedError
+        return fcntl_s(fd, op, arg)
 
 
 def ioctl(fd, op, arg):
     if type(arg) is int:
         return ioctl_l(fd, op, arg)
     else:
-        raise NotImplementedError
+        return ioctl_s(fd, op, arg)
