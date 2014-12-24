@@ -1,0 +1,4 @@
+srctype = cpython
+type = package
+version = 3.4.2-0
+long_desc = Port of contextlib for micropython
