@@ -10,14 +10,14 @@ ioctl_l = libc.func("i", "ioctl", "iil")
 ioctl_s = libc.func("i", "ioctl", "iip")
 
 
-def fcntl(fd, op, arg):
+def fcntl(fd, op, arg=0):
     if type(arg) is int:
         return fcntl_l(fd, op, arg)
     else:
         return fcntl_s(fd, op, arg)
 
 
-def ioctl(fd, op, arg):
+def ioctl(fd, op, arg=0):
     if type(arg) is int:
         return ioctl_l(fd, op, arg)
     else:
