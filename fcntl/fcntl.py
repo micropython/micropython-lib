@@ -1,4 +1,5 @@
 import ffi
+import os
 import _libc
 
 
@@ -12,13 +13,25 @@ ioctl_s = libc.func("i", "ioctl", "iip")
 
 def fcntl(fd, op, arg=0):
     if type(arg) is int:
-        return fcntl_l(fd, op, arg)
+        r = fcntl_l(fd, op, arg)
+        os.check_error(r)
+        return r
     else:
-        return fcntl_s(fd, op, arg)
+        r = fcntl_s(fd, op, arg)
+        os.check_error(r)
+        # TODO: Not compliant. CPython says that arg should be immutable,
+        # and possibly mutated buffer is returned.
+        return r
 
 
-def ioctl(fd, op, arg=0):
+def ioctl(fd, op, arg=0, mut=False):
     if type(arg) is int:
-        return ioctl_l(fd, op, arg)
+        r = ioctl_l(fd, op, arg)
+        os.check_error(r)
+        return r
     else:
-        return ioctl_s(fd, op, arg)
+        # TODO
+        assert mut
+        r = ioctl_s(fd, op, arg)
+        os.check_error(r)
+        return r
