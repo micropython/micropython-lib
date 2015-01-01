@@ -126,7 +126,7 @@ class StreamWriter:
             if __debug__:
                 log.debug("StreamWriter.awrite(): can write more")
 
-    def close(self):
+    def aclose(self):
         yield IOWriteDone(self.s)
         self.s.close()
 
