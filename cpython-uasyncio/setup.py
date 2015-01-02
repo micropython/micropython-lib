@@ -6,7 +6,7 @@ from setuptools import setup
 
 
 setup(name='micropython-cpython-uasyncio',
-      version='0.1',
+      version='0.2',
       description='MicroPython module uasyncio ported to CPython',
       long_description='This is MicroPython compatibility module, allowing applications using\nMicroPython-specific features to run on CPython.\n',
       url='https://github.com/micropython/micropython/issues/405',

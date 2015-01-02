@@ -78,3 +78,22 @@ class Task(OrgTask):
 
 
 asyncio.tasks.Task = Task
+
+
+OrgStreamWriter = StreamWriter
+
+class StreamWriter(OrgStreamWriter):
+
+    def awrite(self, data):
+        if isinstance(data, str):
+            data = data.encode("utf-8")
+        self.write(data)
+        yield from self.drain()
+
+    def aclose(self):
+        self.close()
+        return
+        yield
+
+
+asyncio.streams.StreamWriter = StreamWriter
