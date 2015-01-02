@@ -52,6 +52,11 @@ in progress and likely supports just a subset of CPython's corresponding
 module. Please help with the development if you are interested in this
 module."""
 
+BACKPORT_DESC = """\
+This is MicroPython compatibility module, allowing applications using
+MicroPython-specific features to run on CPython.
+"""
+
 MICROPYTHON_DEVELS = 'MicroPython Developers'
 MICROPYTHON_DEVELS_EMAIL = 'micro-python@googlegroups.com'
 CPYTHON_DEVELS = 'CPython Developers'
@@ -79,7 +84,8 @@ def main():
         with open(fname) as f:
             data = parse_metadata(f)
 
-        module = fname.split("/")[0]
+        dirname = fname.split("/")[0]
+        module = dirname
         if data["type"] == "module":
             data["_what_"] = "py_modules"
         elif data["type"] == "package":
@@ -114,11 +120,20 @@ def main():
                 data["long_desc"] = MICROPYTHON_LIB_DESC
             if "license" not in data:
                 data["license"] = "MIT"
+        elif data["srctype"] == "cpython-backport":
+            assert module.startswith("cpython-")
+            module = module[len("cpython-"):]
+            data["author"] = MICROPYTHON_DEVELS
+            data["author_email"] = MICROPYTHON_DEVELS_EMAIL
+            data["maintainer"] = MICROPYTHON_DEVELS
+            data["license"] = "Python"
+            data["desc"] = "MicroPython module %s ported to CPython" % module
+            data["long_desc"] = BACKPORT_DESC
         else:
             raise ValueError
 
         if "dist_name" not in data:
-            data["dist_name"] = module
+            data["dist_name"] = dirname
         if "name" not in data:
             data["name"] = module
         data["top_name"] = data["name"].split(".", 1)[0]
@@ -129,7 +144,7 @@ def main():
         else:
             data["_inst_req_"] = ""
 
-        write_setup(module + "/setup.py", data)
+        write_setup(dirname + "/setup.py", data)
 
 
 if __name__ == "__main__":
