@@ -56,7 +56,7 @@ def request_raw(method, url):
     # because some servers misbehave w/o it.
     query = "%s /%s HTTP/1.0\r\nHost: %s\r\nConnection: close\r\n\r\n" % (method, path, host)
     yield from writer.awrite(query.encode('latin-1'))
-#    yield from writer.close()
+#    yield from writer.aclose()
     return reader
 
 
@@ -83,7 +83,7 @@ def request(method, url):
 
         if 301 <= status <= 303:
             redir_cnt += 1
-            yield from reader.close()
+            yield from reader.aclose()
             continue
         break
 
