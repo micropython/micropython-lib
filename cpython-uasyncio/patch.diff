@@ -1,0 +1,27 @@
+This patch shows changes done to asyncio.tasks.Task._step() from CPython 3.4.2.
+
+--- tasks.py	2015-01-01 10:51:40.707114866 +0200
++++ uasyncio.py	2015-01-01 10:54:20.172402890 +0200
+@@ -46,13 +55,16 @@
+                 # Bare yield relinquishes control for one event loop iteration.
+                 self._loop.call_soon(self._step)
+             elif inspect.isgenerator(result):
++                #print("Scheduling", result)
++                self._loop.create_task(result)
++                self._loop.call_soon(self._step)
+                 # Yielding a generator is just wrong.
+-                self._loop.call_soon(
+-                    self._step, None,
+-                    RuntimeError(
+-                        'yield was used instead of yield from for '
+-                        'generator in task {!r} with {}'.format(
+-                            self, result)))
++#                self._loop.call_soon(
++#                    self._step, None,
++#                    RuntimeError(
++#                        'yield was used instead of yield from for '
++#                        'generator in task {!r} with {}'.format(
++#                            self, result)))
+             else:
+                 # Yielding something else is an error.
+                 self._loop.call_soon(
