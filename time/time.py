@@ -24,3 +24,9 @@ def strftime(format, t=None):
     buf = bytearray(32)
     l = strftime_(buf, 32, format, tm_p)
     return str(buf[:l], "utf-8")
+
+def perf_counter():
+    return time()
+
+def process_time():
+    return clock()
