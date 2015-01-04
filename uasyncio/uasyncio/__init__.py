@@ -85,7 +85,7 @@ class StreamReader:
             log.debug("StreamReader.readline(): res: %s", res)
         return res
 
-    def close(self):
+    def aclose(self):
         yield IOReadDone(self.s)
         self.s.close()
 
