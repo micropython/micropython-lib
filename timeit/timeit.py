@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-"""Tool for measuring execution time of small code snippets.
+__doc__ = """Tool for measuring execution time of small code snippets.
 
 This module avoids a number of common traps for measuring execution
 times.  See also Tim Peters' introduction to the Algorithms chapter in
