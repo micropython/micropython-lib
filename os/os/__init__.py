@@ -58,8 +58,13 @@ environ = {"WARNING": "NOT_IMPLEMENTED"}
 
 
 def check_error(ret):
+    # Return True is error was EINTR (which usually means that OS call
+    # should be restarted).
     if ret == -1:
-        raise OSError(errno_.get())
+        e = errno_.get()
+        if e == errno.EINTR:
+            return True
+        raise OSError(e)
 
 def raise_error():
     raise OSError(errno_.get())
