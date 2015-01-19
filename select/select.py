@@ -54,7 +54,8 @@ class Epoll:
             r = epoll_ctl(self.epfd, EPOLL_CTL_MOD, fd, s)
         os.check_error(r)
         # We must keep reference to retval, or it may be GCed. And we must
-        # keep mapping from fd to retval to be able to get rid of retval reference.
+        # keep mapping from fd to retval to be able to get rid of this retval
+        # reference later.
         self.registry[fd] = retval
 
     def unregister(self, fd):
