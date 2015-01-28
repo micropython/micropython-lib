@@ -7,3 +7,15 @@ def rmtree(top):
         for f in files:
             os.unlink(path + "/" + f)
         os.rmdir(path)
+
+def copyfileobj(src, dest, length=512):
+    buf = bytearray(length)
+    while True:
+        sz = src.readinto(buf)
+        if not sz:
+            break
+        if sz == length:
+            dest.write(buf)
+        else:
+            b = memoryview(buf)[:sz]
+            dest.write(b)
