@@ -32,6 +32,7 @@ _exit_ = libc.func("v", "_exit", "i")
 getpid_ = libc.func("i", "getpid", "")
 waitpid_ = libc.func("i", "waitpid", "ipi")
 system_ = libc.func("i", "system", "s")
+getenv_ = libc.func("s", "getenv", "P")
 
 R_OK = const(4)
 W_OK = const(2)
@@ -203,6 +204,12 @@ def system(command):
     r = system_(command)
     check_error(r)
     return r
+
+def getenv(var, default=None):
+    var = getenv_(var)
+    if var is None:
+        return default
+    return var
 
 def fsencode(s):
     if type(s) is bytes:
