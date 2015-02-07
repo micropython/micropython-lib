@@ -54,7 +54,7 @@ def request_raw(method, url):
     # Use protocol 1.0, because 1.1 always allows to use chunked transfer-encoding
     # But explicitly set Connection: close, even though this should be default for 1.0,
     # because some servers misbehave w/o it.
-    query = "%s /%s HTTP/1.0\r\nHost: %s\r\nConnection: close\r\n\r\n" % (method, path, host)
+    query = "%s /%s HTTP/1.0\r\nHost: %s\r\nConnection: close\r\nUser-Agent: compat\r\n\r\n" % (method, path, host)
     yield from writer.awrite(query.encode('latin-1'))
 #    yield from writer.aclose()
     return reader
