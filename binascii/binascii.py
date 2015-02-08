@@ -4,8 +4,7 @@ def unhexlify(data):
     if len(data) % 2 != 0:
         raise Exception("Odd-length string")
 
-    chunks = [ data[i:i+2] for i in range(0, len(data), 2) ]
-    return b''.join(map(lambda x: int(x, 16).to_bytes(1), chunks))
+    return b''.join([ int(data[i:i+2], 16).to_bytes(1) for i in range(0, len(data), 2) ])
 
 b2a_hex = hexlify
 a2b_hex = unhexlify
