@@ -116,13 +116,24 @@ def main():
     if sys.argv[1] != "install":
         fatal("Only 'install' command supported")
 
+    to_install = []
+
     i = 2
-    while sys.argv[i][0] == "-":
+    while i < len(sys.argv) and sys.argv[i][0] == "-":
         opt = sys.argv[i][1]
         i += 1
         if opt == "p":
             install_path = sys.argv[i]
             i += 1
+        elif opt == "r":
+            list_file = sys.argv[i]
+            i += 1
+            with open(list_file) as f:
+                while True:
+                    l = f.readline()
+                    if not l:
+                        break
+                    to_install.append(l.rstrip())
         else:
             fatal("Unknown/unsupported option: " + opt)
 
@@ -138,7 +149,7 @@ def main():
 
     print("Installing to: " + install_path)
 
-    to_install = sys.argv[i:]
+    to_install.extend(sys.argv[i:])
     # sets would be perfect here, but don't depend on them
     installed = []
     while to_install:
