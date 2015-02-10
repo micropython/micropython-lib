@@ -1,16 +1,22 @@
-import sys
-import os
-import os.path
-import errno
-import gzip
+def upip_import(mod):
+    try:
+        return __import__("upip_" + mod)
+    except ImportError:
+        return __import__(mod)
+
+sys = upip_import("sys")
+os = upip_import("os")
+os.path = upip_import("os.path").path
+errno = upip_import("errno")
+gzip = upip_import("gzip")
 try:
-    import utarfile as tarfile
+    tarfile = upip_import("utarfile")
 except ImportError:
-    import tarfile
+    tarfile = upip_import("tarfile")
 try:
-    import ujson as json
+    json = upip_import("ujson")
 except ImportError:
-    import json
+    json = upip_import("json")
 
 
 DEFAULT_MICROPYPATH = "~/.micropython/lib:/usr/lib/micropython"
