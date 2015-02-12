@@ -24,7 +24,7 @@ setup(name='micropython-%(dist_name)s',
       maintainer=%(maintainer)r,
       maintainer_email='micro-python@googlegroups.com',
       license=%(license)r,
-      %(_what_)s=['%(top_name)s']%(_inst_req_)s)
+      %(_what_)s=[%(modules)s]%(_inst_req_)s)
 """
 
 DUMMY_DESC = """\
@@ -136,7 +136,10 @@ def main():
             data["dist_name"] = dirname
         if "name" not in data:
             data["name"] = module
-        data["top_name"] = data["name"].split(".", 1)[0]
+
+        data["modules"] = "'" + data["name"].split(".", 1)[0] + "'"
+        if "extra_modules" in data:
+            data["modules"] += ", " + ", ".join(["'" + x.strip() + "'" for x in data["extra_modules"].split(",")])
 
         if "depends" in data:
             deps = ["micropython-" + x.strip() for x in data["depends"].split(",")]
