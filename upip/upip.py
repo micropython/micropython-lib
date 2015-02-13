@@ -116,8 +116,19 @@ def install_pkg(pkg_spec, install_path):
     f = tarfile.TarFile("pkg.tar")
     return install_tar(f, install_path)
 
+def help():
+    print("upip - Simple PyPI package manager for MicroPython")
+    print("Usage: micropython -m upip install <package>... | -r <requirements.txt>")
+    print("""\
+Note: only micropython-* packages are supported for installation, upip does not
+support arbitrary code in setup.py.""")
+    sys.exit(1)
+
 def main():
     install_path = None
+
+    if len(sys.argv) < 2 or sys.argv[1] == "-h" or sys.argv[1] == "--help":
+        help()
 
     if sys.argv[1] != "install":
         fatal("Only 'install' command supported")
@@ -126,12 +137,14 @@ def main():
 
     i = 2
     while i < len(sys.argv) and sys.argv[i][0] == "-":
-        opt = sys.argv[i][1]
+        opt = sys.argv[i]
         i += 1
-        if opt == "p":
+        if opt == "-h" or opt == "--help":
+            help()
+        elif opt == "-p":
             install_path = sys.argv[i]
             i += 1
-        elif opt == "r":
+        elif opt == "-r":
             list_file = sys.argv[i]
             i += 1
             with open(list_file) as f:
@@ -156,6 +169,9 @@ def main():
     print("Installing to: " + install_path)
 
     to_install.extend(sys.argv[i:])
+    if not to_install:
+        help()
+
     # sets would be perfect here, but don't depend on them
     installed = []
     while to_install:
