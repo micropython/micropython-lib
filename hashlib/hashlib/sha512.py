@@ -149,6 +149,12 @@ def sha384_init():
     sha_info['digestsize'] = 48
     return sha_info
 
+def getbuf(s):
+    if isinstance(s, str):
+        return s.encode('ascii')
+    else:
+        return bytes(s)
+
 def sha_update(sha_info, buffer):
     if isinstance(buffer, str):
         raise TypeError("Unicode strings must be encoded before hashing")
@@ -167,7 +173,8 @@ def sha_update(sha_info, buffer):
             i = count
 
         # copy buffer
-        sha_info['data'][sha_info['local']:sha_info['local']+i] = buffer[buffer_idx:buffer_idx+i]
+        for x in enumerate(buffer[buffer_idx:buffer_idx+i]):
+            sha_info['data'][sha_info['local']+x[0]] = x[1]
 
         count -= i
         buffer_idx += i
@@ -188,7 +195,7 @@ def sha_update(sha_info, buffer):
 
     # copy buffer
     pos = sha_info['local']
-    sha_info['data'][pos:pos+count] = buffer[buffer_idx:buffer_idx + count]
+    sha_info['data'][pos:pos+count] = list(buffer[buffer_idx:buffer_idx + count])
     sha_info['local'] = count
 
 def sha_final(sha_info):
@@ -238,10 +245,10 @@ class sha512(object):
     def __init__(self, s=None):
         self._sha = sha_init()
         if s:
-            sha_update(self._sha, s)
+            sha_update(self._sha, getbuf(s))
 
     def update(self, s):
-        sha_update(self._sha, s)
+        sha_update(self._sha, getbuf(s))
 
     def digest(self):
         return sha_final(self._sha.copy())[:self._sha['digestsize']]
@@ -250,7 +257,7 @@ class sha512(object):
         return ''.join(['%.2x' % i for i in self.digest()])
 
     def copy(self):
-        new = sha512.__new__(sha512)
+        new = sha512()
         new._sha = self._sha.copy()
         return new
 
@@ -260,25 +267,24 @@ class sha384(sha512):
     def __init__(self, s=None):
         self._sha = sha384_init()
         if s:
-            sha_update(self._sha, s)
+            sha_update(self._sha, getbuf(s))
 
     def copy(self):
-        new = sha384.__new__(sha384)
+        new = sha384()
         new._sha = self._sha.copy()
         return new
 
 def test():
-    import _sha512
-
     a_str = "just a test string"
 
-    assert _sha512.sha512().hexdigest() == sha512().hexdigest()
-    assert _sha512.sha512(a_str).hexdigest() == sha512(a_str).hexdigest()
-    assert _sha512.sha512(a_str*7).hexdigest() == sha512(a_str*7).hexdigest()
+    assert sha512().digest() == b"\xcf\x83\xe15~\xef\xb8\xbd\xf1T(P\xd6m\x80\x07\xd6 \xe4\x05\x0bW\x15\xdc\x83\xf4\xa9!\xd3l\xe9\xceG\xd0\xd1<]\x85\xf2\xb0\xff\x83\x18\xd2\x87~\xec/c\xb91\xbdGAz\x81\xa582z\xf9'\xda>"
+    assert sha512().hexdigest() == 'cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e'
+    assert sha512(a_str).hexdigest() == '68be4c6664af867dd1d01c8d77e963d87d77b702400c8fabae355a41b8927a5a5533a7f1c28509bbd65c5f3ac716f33be271fbda0ca018b71a84708c9fae8a53'
+    assert sha512(a_str*7).hexdigest() == '3233acdbfcfff9bff9fc72401d31dbffa62bd24e9ec846f0578d647da73258d9f0879f7fde01fe2cc6516af3f343807fdef79e23d696c923d79931db46bf1819'
 
     s = sha512(a_str)
     s.update(a_str)
-    assert _sha512.sha512(a_str+a_str).hexdigest() == s.hexdigest()
+    assert s.hexdigest() == '341aeb668730bbb48127d5531115f3c39d12cb9586a6ca770898398aff2411087cfe0b570689adf328cddeb1f00803acce6737a19f310b53bbdb0320828f75bb'
 
 if __name__ == "__main__":
     test()

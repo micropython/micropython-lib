@@ -129,6 +129,12 @@ def sha224_init():
     sha_info['digestsize'] = 28
     return sha_info
 
+def getbuf(s):
+    if isinstance(s, str):
+        return s.encode('ascii')
+    else:
+        return bytes(s)
+
 def sha_update(sha_info, buffer):
     if isinstance(buffer, str):
         raise TypeError("Unicode strings must be encoded before hashing")
@@ -147,7 +153,8 @@ def sha_update(sha_info, buffer):
             i = count
         
         # copy buffer
-        sha_info['data'][sha_info['local']:sha_info['local']+i] = buffer[buffer_idx:buffer_idx+i]
+        for x in enumerate(buffer[buffer_idx:buffer_idx+i]):
+            sha_info['data'][sha_info['local']+x[0]] = x[1]
         
         count -= i
         buffer_idx += i
@@ -169,7 +176,7 @@ def sha_update(sha_info, buffer):
     
     # copy buffer
     pos = sha_info['local']
-    sha_info['data'][pos:pos+count] = buffer[buffer_idx:buffer_idx + count]
+    sha_info['data'][pos:pos+count] = list(buffer[buffer_idx:buffer_idx + count])
     sha_info['local'] = count
 
 def sha_final(sha_info):
@@ -201,7 +208,7 @@ def sha_final(sha_info):
     dig = []
     for i in sha_info['digest']:
         dig.extend([ ((i>>24) & 0xff), ((i>>16) & 0xff), ((i>>8) & 0xff), (i & 0xff) ])
-    return ''.join([chr(i) for i in dig])
+    return bytes(dig)
 
 class sha256(object):
     digest_size = digestsize = SHA_DIGESTSIZE
@@ -210,19 +217,19 @@ class sha256(object):
     def __init__(self, s=None):
         self._sha = sha_init()
         if s:
-            sha_update(self._sha, s)
+            sha_update(self._sha, getbuf(s))
     
     def update(self, s):
-        sha_update(self._sha, s)
+        sha_update(self._sha, getbuf(s))
     
     def digest(self):
         return sha_final(self._sha.copy())[:self._sha['digestsize']]
     
     def hexdigest(self):
-        return ''.join(['%.2x' % ord(i) for i in self.digest()])
+        return ''.join(['%.2x' % i for i in self.digest()])
 
     def copy(self):
-        new = sha256.__new__(sha256)
+        new = sha256()
         new._sha = self._sha.copy()
         return new
 
@@ -232,16 +239,17 @@ class sha224(sha256):
     def __init__(self, s=None):
         self._sha = sha224_init()
         if s:
-            sha_update(self._sha, s)
+            sha_update(self._sha, getbuf(s))
 
     def copy(self):
-        new = sha224.__new__(sha224)
+        new = sha224()
         new._sha = self._sha.copy()
         return new
 
 def test():
     a_str = "just a test string"
     
+    assert b"\xe3\xb0\xc4B\x98\xfc\x1c\x14\x9a\xfb\xf4\xc8\x99o\xb9$'\xaeA\xe4d\x9b\x93L\xa4\x95\x99\x1bxR\xb8U" == sha256().digest()
     assert 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' == sha256().hexdigest()
     assert 'd7b553c6f09ac85d142415f857c5310f3bbbe7cdd787cce4b985acedd585266f' == sha256(a_str).hexdigest()
     assert '8113ebf33c97daa9998762aacafe750c7cefc2b2f173c90c59663a57fe626f21' == sha256(a_str*7).hexdigest()
