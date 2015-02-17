@@ -2,6 +2,11 @@
 This code was Ported from CPython's sha512module.c
 """
 
+<<<<<<< HEAD
+=======
+import struct
+
+>>>>>>> hashlib: Pure python implementation of sha224, sha256, sha384, sha512
 SHA_BLOCKSIZE = 128
 SHA_DIGESTSIZE = 64
 
@@ -156,8 +161,11 @@ def getbuf(s):
         return bytes(s)
 
 def sha_update(sha_info, buffer):
+<<<<<<< HEAD
     if isinstance(buffer, str):
         raise TypeError("Unicode strings must be encoded before hashing")
+=======
+>>>>>>> hashlib: Pure python implementation of sha224, sha256, sha384, sha512
     count = len(buffer)
     buffer_idx = 0
     clo = (sha_info['count_lo'] + (count << 3)) & 0xffffffff
@@ -236,6 +244,10 @@ def sha_final(sha_info):
     dig = []
     for i in sha_info['digest']:
         dig.extend([ ((i>>56) & 0xff), ((i>>48) & 0xff), ((i>>40) & 0xff), ((i>>32) & 0xff), ((i>>24) & 0xff), ((i>>16) & 0xff), ((i>>8) & 0xff), (i & 0xff) ])
+<<<<<<< HEAD
+=======
+
+>>>>>>> hashlib: Pure python implementation of sha224, sha256, sha384, sha512
     return bytes(dig)
 
 class sha512(object):
