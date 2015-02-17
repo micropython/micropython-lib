@@ -33,7 +33,8 @@ def _bytes_from_decode_data(s):
     if isinstance(s, str):
         try:
             return s.encode('ascii')
-        except UnicodeEncodeError:
+#        except UnicodeEncodeError:
+        except:
             raise ValueError('string argument should contain only ASCII characters')
     elif isinstance(s, bytes_types):
         return s
@@ -109,8 +110,8 @@ def standard_b64decode(s):
     return b64decode(s)
 
 
-_urlsafe_encode_translation = bytes.maketrans(b'+/', b'-_')
-_urlsafe_decode_translation = bytes.maketrans(b'-_', b'+/')
+#_urlsafe_encode_translation = bytes.maketrans(b'+/', b'-_')
+#_urlsafe_decode_translation = bytes.maketrans(b'-_', b'+/')
 
 def urlsafe_b64encode(s):
     """Encode a byte string using a url-safe Base64 alphabet.
@@ -119,7 +120,8 @@ def urlsafe_b64encode(s):
     returned.  The alphabet uses '-' instead of '+' and '_' instead of
     '/'.
     """
-    return b64encode(s).translate(_urlsafe_encode_translation)
+#    return b64encode(s).translate(_urlsafe_encode_translation)
+    raise NotImplementedError()
 
 def urlsafe_b64decode(s):
     """Decode a byte string encoded with the standard Base64 alphabet.
@@ -131,9 +133,10 @@ def urlsafe_b64decode(s):
 
     The alphabet uses '-' instead of '+' and '_' instead of '/'.
     """
-    s = _bytes_from_decode_data(s)
-    s = s.translate(_urlsafe_decode_translation)
-    return b64decode(s)
+#    s = _bytes_from_decode_data(s)
+#    s = s.translate(_urlsafe_decode_translation)
+#    return b64decode(s)
+    raise NotImplementedError()
 
 
 
@@ -187,13 +190,13 @@ def b32encode(s):
                           ])
     # Adjust for any leftover partial quanta
     if leftover == 1:
-        encoded[-6:] = b'======'
+        encoded = encoded[:-6] + b'======'
     elif leftover == 2:
-        encoded[-4:] = b'===='
+        encoded = encoded[:-4] + b'===='
     elif leftover == 3:
-        encoded[-3:] = b'==='
+        encoded = encoded[:-3] + b'==='
     elif leftover == 4:
-        encoded[-1:] = b'='
+        encoded = encoded[:-1] + b'='
     return bytes(encoded)
 
 
@@ -232,12 +235,13 @@ def b32decode(s, casefold=False, map01=None):
     # Strip off pad characters from the right.  We need to count the pad
     # characters because this will tell us how many null bytes to remove from
     # the end of the decoded string.
-    padchars = 0
-    mo = re.search(b'(?P<pad>[=]*)$', s)
-    if mo:
-        padchars = len(mo.group('pad'))
-        if padchars > 0:
-            s = s[:-padchars]
+    padchars = s.find(b'=')
+    if padchars > 0:
+        padchars = len(s) - padchars
+        s = s[:-padchars]
+    else:
+        padchars = 0
+
     # Now decode the full quanta
     parts = []
     acc = 0
