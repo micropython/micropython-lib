@@ -4,11 +4,16 @@ Implements the HMAC algorithm as described by RFC 2104.
 """
 
 import warnings as _warnings
-from _operator import _compare_digest as compare_digest
+#from _operator import _compare_digest as compare_digest
 import hashlib as _hashlib
+PendingDeprecationWarning = None
+RuntimeWarning = None
 
 trans_5C = bytes((x ^ 0x5C) for x in range(256))
 trans_36 = bytes((x ^ 0x36) for x in range(256))
+
+def translate(d, t):
+    return b''.join([ chr(t[x]).encode('ascii') for x in d ])
 
 # The size of the digests returned by HMAC depends on the underlying
 # hashing module used.  Use digest_size from the instance of HMAC instead.
@@ -78,8 +83,8 @@ class HMAC:
             key = self.digest_cons(key).digest()
 
         key = key + bytes(blocksize - len(key))
-        self.outer.update(key.translate(trans_5C))
-        self.inner.update(key.translate(trans_36))
+        self.outer.update(translate(key, trans_5C))
+        self.inner.update(translate(key, trans_36))
         if msg is not None:
             self.update(msg)
 
