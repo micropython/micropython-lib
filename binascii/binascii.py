@@ -4,14 +4,54 @@ def unhexlify(data):
     if len(data) % 2 != 0:
         raise Exception("Odd-length string")
 
+<<<<<<< HEAD
     return bytes([ int(data[i:i+2], 16) for i in range(0, len(data), 2) ])
+=======
+    return b''.join([ int(data[i:i+2], 16).to_bytes(1) for i in range(0, len(data), 2) ])
+>>>>>>> binascii: Added custom unhexlify implementation
 
 b2a_hex = hexlify
 a2b_hex = unhexlify
 
+<<<<<<< HEAD
 # ____________________________________________________________
 
 PAD = '='
+=======
+PAD = '='
+table_b2a_base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+
+def b2a_base64(data):
+    "Base64-code line of data."
+
+    newlength = (len(data) + 2) // 3
+    newlength = newlength * 4 + 1
+    res = []
+
+    leftchar = 0
+    leftbits = 0
+    for c in data:
+        # Shift into our buffer, and output any 6bits ready
+        leftchar = (leftchar << 8) | c
+        leftbits += 8
+        res.append(table_b2a_base64[(leftchar >> (leftbits-6)) & 0x3f])
+        leftbits -= 6
+        if leftbits >= 6:
+            res.append(table_b2a_base64[(leftchar >> (leftbits-6)) & 0x3f])
+            leftbits -= 6
+
+    if leftbits == 2:
+        res.append(table_b2a_base64[(leftchar & 3) << 4])
+        res.append(PAD)
+        res.append(PAD)
+    elif leftbits == 4:
+        res.append(table_b2a_base64[(leftchar & 0xf) << 2])
+        res.append(PAD)
+    res.append('\n')
+    return ''.join(res).encode('ascii')
+
+# -------------------------------
+>>>>>>> binascii: Added custom unhexlify implementation
 
 table_a2b_base64 = [
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
@@ -31,11 +71,19 @@ table_a2b_base64 = [
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
     -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,    
 ]
+<<<<<<< HEAD
+=======
+
+>>>>>>> binascii: Added custom unhexlify implementation
 def _transform(n):
     if n == -1:
         return '\xff'
     else:
         return chr(n)
+<<<<<<< HEAD
+=======
+
+>>>>>>> binascii: Added custom unhexlify implementation
 table_a2b_base64 = ''.join(map(_transform, table_a2b_base64))
 assert len(table_a2b_base64) == 256
 
@@ -50,6 +98,10 @@ def a2b_base64(ascii):
 
     for c in ascii:
         c = chr(c)
+<<<<<<< HEAD
+=======
+        
+>>>>>>> binascii: Added custom unhexlify implementation
         if c == PAD:
             if quad_pos > 2 or (quad_pos == 2 and last_char_was_a_pad):
                 break      # stop on 'xxx=' or on 'xx=='
@@ -76,6 +128,7 @@ def a2b_base64(ascii):
             raise Exception("Incorrect padding")
 
     return b''.join(res)
+<<<<<<< HEAD
 
 # ____________________________________________________________
 
@@ -110,3 +163,5 @@ def b2a_base64(bin):
         res.append(PAD)
     res.append('\n')
     return ''.join(res).encode('ascii')
+=======
+>>>>>>> binascii: Added custom unhexlify implementation
