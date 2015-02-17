@@ -1,8 +1,13 @@
-from pypy.interpreter.error import OperationError
-from pypy.interpreter.gateway import unwrap_spec
-from rpython.rlib.rstring import StringBuilder
-from pypy.module.binascii.interp_binascii import raise_Error
-from rpython.rlib.rarithmetic import ovfcheck
+from ubinascii import hexlify
+
+def unhexlify(data):
+    if len(data) % 2 != 0:
+        raise Exception("Odd-length string")
+
+    return b''.join([ int(data[i:i+2], 16).to_bytes(1) for i in range(0, len(data), 2) ])
+
+b2a_hex = hexlify
+a2b_hex = unhexlify
 
 # ____________________________________________________________
 
@@ -34,18 +39,17 @@ def _transform(n):
 table_a2b_base64 = ''.join(map(_transform, table_a2b_base64))
 assert len(table_a2b_base64) == 256
 
-
-@unwrap_spec(ascii='bufferstr')
-def a2b_base64(space, ascii):
+def a2b_base64(ascii):
     "Decode a line of base64 data."
 
-    res = StringBuilder((len(ascii) // 4) * 3)   # maximum estimate
+    res = []
     quad_pos = 0
     leftchar = 0
     leftbits = 0
     last_char_was_a_pad = False
 
     for c in ascii:
+        c = chr(c)
         if c == PAD:
             if quad_pos > 2 or (quad_pos == 2 and last_char_was_a_pad):
                 break      # stop on 'xxx=' or on 'xx=='
@@ -63,38 +67,33 @@ def a2b_base64(space, ascii):
             #
             if leftbits >= 8:
                 leftbits -= 8
-                res.append(chr(leftchar >> leftbits))
+                res.append((leftchar >> leftbits).to_bytes(1))
                 leftchar &= ((1 << leftbits) - 1)
             #
             last_char_was_a_pad = False
     else:
         if leftbits != 0:
-            raise_Error(space, "Incorrect padding")
+            raise Exception("Incorrect padding")
 
-    return space.wrapbytes(res.build())
+    return b''.join(res)
 
 # ____________________________________________________________
 
 table_b2a_base64 = (
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/")
 
-@unwrap_spec(bin='bufferstr')
-def b2a_base64(space, bin):
+def b2a_base64(bin):
     "Base64-code line of data."
 
     newlength = (len(bin) + 2) // 3
-    try:
-        newlength = ovfcheck(newlength * 4)
-    except OverflowError:
-        raise OperationError(space.w_MemoryError, space.w_None)
-    newlength += 1
-    res = StringBuilder(newlength)
+    newlength = newlength * 4 + 1
+    res = []
 
     leftchar = 0
     leftbits = 0
     for c in bin:
         # Shift into our buffer, and output any 6bits ready
-        leftchar = (leftchar << 8) | ord(c)
+        leftchar = (leftchar << 8) | c
         leftbits += 8
         res.append(table_b2a_base64[(leftchar >> (leftbits-6)) & 0x3f])
         leftbits -= 6
@@ -110,4 +109,4 @@ def b2a_base64(space, bin):
         res.append(table_b2a_base64[(leftchar & 0xf) << 2])
         res.append(PAD)
     res.append('\n')
-    return space.wrapbytes(res.build())
+    return ''.join(res).encode('ascii')
