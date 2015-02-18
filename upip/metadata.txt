@@ -2,6 +2,6 @@ srctype = micropython-lib
 type = module
 version = 0.1
 author = Paul Sokolovsky
-extra_modules = upip_errno, upip_gzip, upip_os, upip_os_path, upip_utarfile
+extra_modules = upip__libc, upip_errno, upip_gzip, upip_os, upip_os_path, upip_stat, upip_utarfile
 desc = Simple package manager for MicroPython.
 long_desc = Simple package manager for MicroPython, targetting to be self-hosted (but not yet there). Compatible only with packages without custom setup.py code.

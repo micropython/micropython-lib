@@ -1,12 +1,20 @@
-def upip_import(mod):
+def upip_import(mod, sub=None):
     try:
-        return __import__("upip_" + mod)
+        mod_ = mod
+        if sub:
+            mod_ += "_" + sub
+        return __import__("upip_" + mod_)
     except ImportError:
-        return __import__(mod)
+        m = __import__(mod)
+        if sub:
+            return getattr(m, sub)
+        return m
 
 sys = upip_import("sys")
 os = upip_import("os")
-os.path = upip_import("os.path").path
+#os.path = upip_import("os.path").path
+ospath = upip_import("os", "path")
+
 errno = upip_import("errno")
 gzip = upip_import("gzip")
 try:
@@ -103,7 +111,7 @@ def install_pkg(pkg_spec, install_path):
     packages = data["releases"][latest_ver]
     assert len(packages) == 1
     package_url = packages[0]["url"]
-    package_fname = os.path.basename(package_url)
+    package_fname = ospath.basename(package_url)
     print(package_url)
     download(package_url, package_fname)
 

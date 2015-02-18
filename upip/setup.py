@@ -15,4 +15,4 @@ setup(name='micropython-upip',
       maintainer='MicroPython Developers',
       maintainer_email='micro-python@googlegroups.com',
       license='MIT',
-      py_modules=['upip', 'upip_errno', 'upip_gzip', 'upip_os', 'upip_os_path', 'upip_utarfile'])
+      py_modules=['upip', 'upip__libc', 'upip_errno', 'upip_gzip', 'upip_os', 'upip_os_path', 'upip_stat', 'upip_utarfile'])
