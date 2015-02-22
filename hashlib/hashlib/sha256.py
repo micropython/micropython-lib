@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+import struct
+
+>>>>>>> hashlib: Pure python implementation of sha224, sha256, sha384, sha512
 SHA_BLOCKSIZE = 64
 SHA_DIGESTSIZE = 32
 
@@ -136,8 +141,11 @@ def getbuf(s):
         return bytes(s)
 
 def sha_update(sha_info, buffer):
+<<<<<<< HEAD
     if isinstance(buffer, str):
         raise TypeError("Unicode strings must be encoded before hashing")
+=======
+>>>>>>> hashlib: Pure python implementation of sha224, sha256, sha384, sha512
     count = len(buffer)
     buffer_idx = 0
     clo = (sha_info['count_lo'] + (count << 3)) & 0xffffffff
@@ -172,8 +180,12 @@ def sha_update(sha_info, buffer):
         count -= SHA_BLOCKSIZE
         buffer_idx += SHA_BLOCKSIZE
         sha_transform(sha_info)
+<<<<<<< HEAD
         
     
+=======
+   
+>>>>>>> hashlib: Pure python implementation of sha224, sha256, sha384, sha512
     # copy buffer
     pos = sha_info['local']
     sha_info['data'][pos:pos+count] = list(buffer[buffer_idx:buffer_idx + count])
@@ -248,8 +260,14 @@ class sha224(sha256):
 
 def test():
     a_str = "just a test string"
+<<<<<<< HEAD
     
     assert b"\xe3\xb0\xc4B\x98\xfc\x1c\x14\x9a\xfb\xf4\xc8\x99o\xb9$'\xaeA\xe4d\x9b\x93L\xa4\x95\x99\x1bxR\xb8U" == sha256().digest()
+=======
+
+    assert b"\xe3\xb0\xc4B\x98\xfc\x1c\x14\x9a\xfb\xf4\xc8\x99o\xb9$'\xaeA\xe4d\x9b\x93L\xa4\x95\x99\x1bxR\xb8U" == sha256().digest()
+
+>>>>>>> hashlib: Pure python implementation of sha224, sha256, sha384, sha512
     assert 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' == sha256().hexdigest()
     assert 'd7b553c6f09ac85d142415f857c5310f3bbbe7cdd787cce4b985acedd585266f' == sha256(a_str).hexdigest()
     assert '8113ebf33c97daa9998762aacafe750c7cefc2b2f173c90c59663a57fe626f21' == sha256(a_str*7).hexdigest()
@@ -260,5 +278,8 @@ def test():
 
 if __name__ == "__main__":
     test()
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> hashlib: Pure python implementation of sha224, sha256, sha384, sha512

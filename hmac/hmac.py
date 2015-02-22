@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """HMAC (Keyed-Hashing for Message Authentication) Python module.
 
 Implements the HMAC algorithm as described by RFC 2104.
@@ -9,6 +10,8 @@ import hashlib as _hashlib
 PendingDeprecationWarning = None
 RuntimeWarning = None
 
+=======
+>>>>>>> hmac: Ported from CPython 3.3
 trans_5C = bytes((x ^ 0x5C) for x in range(256))
 trans_36 = bytes((x ^ 0x36) for x in range(256))
 
@@ -19,8 +22,11 @@ def translate(d, t):
 # hashing module used.  Use digest_size from the instance of HMAC instead.
 digest_size = None
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> hmac: Ported from CPython 3.3
 class HMAC:
     """RFC 2104 HMAC class.  Also complies with RFC 4231.
 
@@ -33,12 +39,16 @@ class HMAC:
 
         key:       key for the keyed hash object.
         msg:       Initial input for the hash, if provided.
+<<<<<<< HEAD
         digestmod: A module supporting PEP 247.  *OR*
                    A hashlib constructor returning a new hash object. *OR*
                    A hash name suitable for hashlib.new().
                    Defaults to hashlib.md5.
                    Implicit default to hashlib.md5 is deprecated and will be
                    removed in Python 3.6.
+=======
+        digestmod: A module supporting PEP 247.
+>>>>>>> hmac: Ported from CPython 3.3
 
         Note: key and msg must be a bytes or bytearray objects.
         """
@@ -47,6 +57,7 @@ class HMAC:
             raise TypeError("key: expected bytes or bytearray, but got %r" % type(key).__name__)
 
         if digestmod is None:
+<<<<<<< HEAD
             _warnings.warn("HMAC() without an explicit digestmod argument "
                            "is deprecated.", PendingDeprecationWarning, 2)
             digestmod = _hashlib.md5
@@ -57,6 +68,14 @@ class HMAC:
             self.digest_cons = lambda d=b'': _hashlib.new(digestmod, d)
         else:
             self.digest_cons = lambda d=b'': digestmod.new(d)
+=======
+            raise Exception("HMAC() without an explicit digestmod argument is deprecated.")
+
+        if callable(digestmod):
+            self.digest_cons = digestmod
+        else:
+            raise Exception("Digestmod must be callable")
+>>>>>>> hmac: Ported from CPython 3.3
 
         self.outer = self.digest_cons()
         self.inner = self.digest_cons()
@@ -65,6 +84,7 @@ class HMAC:
         if hasattr(self.inner, 'block_size'):
             blocksize = self.inner.block_size
             if blocksize < 16:
+<<<<<<< HEAD
                 _warnings.warn('block_size of %d seems too small; using our '
                                'default of %d.' % (blocksize, self.blocksize),
                                RuntimeWarning, 2)
@@ -74,6 +94,11 @@ class HMAC:
                            'Assuming %d.' % (self.blocksize),
                            RuntimeWarning, 2)
             blocksize = self.blocksize
+=======
+                raise Exception('block_size of %d seems too small')
+        else:
+            raise Exception('No block_size attribute on given digest object')
+>>>>>>> hmac: Ported from CPython 3.3
 
         # self.blocksize is the default blocksize. self.block_size is
         # effective block size as well as the public API attribute.
