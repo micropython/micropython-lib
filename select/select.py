@@ -66,8 +66,11 @@ class Epoll:
 
     def poll(self, timeout=-1):
         s = bytearray(self.evbuf)
-        n = epoll_wait(self.epfd, s, 1, timeout)
-        os.check_error(n)
+        while True:
+            n = epoll_wait(self.epfd, s, 1, timeout)
+            if not os.check_error(n):
+                break
+            # TODO: what about timeout value?
         res = []
         if n > 0:
             vals = struct.unpack(epoll_event, s)
