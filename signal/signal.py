@@ -10,9 +10,12 @@ SIGTERM = 15
 
 libc = _libc.get()
 
-signal_ = libc.func("i", "signal", "ii")
+signal_i = libc.func("i", "signal", "ii")
+signal_p = libc.func("i", "signal", "ip")
 
 def signal(n, handler):
     if isinstance(handler, int):
-        return signal_(n, handler)
-    raise NotImplementedError
+        return signal_i(n, handler)
+    import ffi
+    cb = ffi.callback("v", handler, "i")
+    return signal_p(n, cb)
