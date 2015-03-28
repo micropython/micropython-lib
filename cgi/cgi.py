@@ -881,7 +881,7 @@ def test(environ=os.environ):
     """
     print("Content-type: text/html")
     print()
-    sys.stderr = sys.stdout
+    #sys.stderr = sys.stdout
     try:
         form = FieldStorage()   # Replace with other classes to test those
         print_directory()
