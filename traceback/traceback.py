@@ -1,4 +1,5 @@
-# Dummy file to preclude import errors
-# Should be reimplemented for MicroPython
-# Reason:
-# Completely different underlying impl in MicroPython.
+def format_tb(tb, limit):
+    return ["traceback.format_tb() not implemented\n"]
+
+def format_exception_only(type, value):
+    return [repr(value) + "\n"]
