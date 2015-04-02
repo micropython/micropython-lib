@@ -41,7 +41,7 @@ Version History:
 
 LOOPS = 50000
 
-from time import clock
+from utime import clock
 
 __version__ = "1.2"
 
