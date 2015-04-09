@@ -158,7 +158,7 @@ def read(fd, n):
     buf = bytearray(n)
     r = read_(fd, buf, n)
     check_error(r)
-    return buf[:r]
+    return bytes(buf[:r])
 
 def write(fd, buf):
     r = write_(fd, buf, len(buf))
