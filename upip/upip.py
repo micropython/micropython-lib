@@ -114,12 +114,11 @@ def install_pkg(pkg_spec, install_path):
     data = get_pkg_metadata(pkg_spec)
 
     latest_ver = data["info"]["version"]
-    print("Installing %s %s" % (pkg_spec, latest_ver))
     packages = data["releases"][latest_ver]
     assert len(packages) == 1
     package_url = packages[0]["url"]
+    print("Installing %s %s from %s" % (pkg_spec, latest_ver, package_url))
     package_fname = ospath.basename(package_url)
-    print(package_url)
     download(package_url, package_fname)
 
     data = gzdecompress(package_fname)
