@@ -82,8 +82,8 @@ def download(url, local_name):
     os.system("wget -q %s -O %s" % (url, local_name))
 
 def get_pkg_metadata(name):
-    download("https://pypi.python.org/pypi/%s/json" % name, "pkg.json")
-    with open("pkg.json") as f:
+    download("https://pypi.python.org/pypi/%s/json" % name, ".pkg.json")
+    with open(".pkg.json") as f:
         s = f.read()
     return json.loads(s)
 
@@ -117,11 +117,11 @@ def install_pkg(pkg_spec, install_path):
 
     data = gzdecompress(package_fname)
 
-    f = open("pkg.tar", "wb")
+    f = open(".pkg.tar", "wb")
     f.write(data)
     f.close()
 
-    f = tarfile.TarFile("pkg.tar")
+    f = tarfile.TarFile(".pkg.tar")
     return install_tar(f, install_path)
 
 def help():
