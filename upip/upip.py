@@ -52,7 +52,7 @@ def install_tar(f, prefix):
             fname = ""
 
         save = True
-        for p in ("setup.", "PKG-INFO"):
+        for p in ("setup.", "PKG-INFO", "README"):
                 #print(fname, p)
                 if fname.startswith(p) or ".egg-info" in fname:
                     if fname.endswith("/requires.txt"):
