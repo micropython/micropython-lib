@@ -29,6 +29,9 @@ except ImportError:
 
 DEFAULT_MICROPYPATH = "~/.micropython/lib:/usr/lib/micropython"
 
+debug = False
+cleanup_files = [".pkg.tar"]
+
 def save_file(fname, subf):
     outf = open(fname, "wb")
     while True:
@@ -80,6 +83,8 @@ def expandhome(s):
 
 def download(url, local_name):
     os.system("wget -q %s -O %s" % (url, local_name))
+    if local_name not in cleanup_files:
+        cleanup_files.append(local_name)
 
 def get_pkg_metadata(name):
     download("https://pypi.python.org/pypi/%s/json" % name, ".pkg.json")
@@ -124,6 +129,13 @@ def install_pkg(pkg_spec, install_path):
     f = tarfile.TarFile(".pkg.tar")
     return install_tar(f, install_path)
 
+def cleanup():
+    for fname in cleanup_files:
+        try:
+            os.unlink(fname)
+        except OSError:
+            print("Warning: Cannot delete " + fname)
+
 def help():
     print("upip - Simple PyPI package manager for MicroPython")
     print("Usage: micropython -m upip install <package>... | -r <requirements.txt>")
@@ -133,6 +145,7 @@ support arbitrary code in setup.py.""")
     sys.exit(1)
 
 def main():
+    global debug
     install_path = None
 
     if len(sys.argv) < 2 or sys.argv[1] == "-h" or sys.argv[1] == "--help":
@@ -161,6 +174,8 @@ def main():
                     if not l:
                         break
                     to_install.append(l.rstrip())
+        elif opt == "--debug":
+            debug = True
         else:
             fatal("Unknown/unsupported option: " + opt)
 
@@ -195,5 +210,7 @@ def main():
             deps = deps.decode("utf-8").split("\n")
             to_install.extend(deps)
 
+    if not debug:
+        cleanup()
 
 main()
