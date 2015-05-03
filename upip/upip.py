@@ -58,7 +58,8 @@ def install_tar(f, prefix):
                     if fname.endswith("/requires.txt"):
                         meta["deps"] = f.extractfile(info).read()
                     save = False
-                    print("Skipping", fname)
+                    if debug:
+                        print("Skipping", fname)
                     break
 
         if save:
@@ -71,7 +72,8 @@ def install_tar(f, prefix):
                     if e.args[0] != errno.EEXIST:
                         raise
             else:
-                print("Extracting " + outfname)
+                if debug:
+                    print("Extracting " + outfname)
                 subf = f.extractfile(info)
                 save_file(outfname, subf)
     return meta
@@ -198,13 +200,15 @@ def main():
     # sets would be perfect here, but don't depend on them
     installed = []
     while to_install:
-        print("Queue:", to_install)
+        if debug:
+            print("Queue:", to_install)
         pkg_spec = to_install.pop(0)
         if pkg_spec in installed:
             continue
         meta = install_pkg(pkg_spec, install_path)
         installed.append(pkg_spec)
-        print(meta)
+        if debug:
+            print(meta)
         deps = meta.get("deps", "").rstrip()
         if deps:
             deps = deps.decode("utf-8").split("\n")
