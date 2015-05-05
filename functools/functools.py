@@ -13,4 +13,4 @@ def update_wrapper(wrapper, wrapped):
 
 def wraps(wrapped):
     # Dummy impl
-    return wrapped
+    return lambda x: x
