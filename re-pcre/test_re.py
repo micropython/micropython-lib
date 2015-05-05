@@ -33,3 +33,12 @@ assert re.split('[a-f]+', '0a3B9', flags=re.IGNORECASE) == ['0', '3', '9']
 assert re.split('(\W+)', '...words, words...') == ['', '...', 'words', ', ', 'words', '...', '']
 
 assert re.sub(r"[ :/?&]", "_", "http://foo.ua/bar/?a=1&b=baz/") == "http___foo.ua_bar__a=1_b=baz_"
+
+text = "He was carefully disguised but captured quickly by police."
+assert re.findall(r"\w+ly", text) == ['carefully', 'quickly']
+
+text = "He was carefully disguised but captured quickly by police."
+assert re.findall(r"(\w+)(ly)", text) == [('careful', 'ly'), ('quick', 'ly')]
+
+text = "He was carefully disguised but captured quickly by police."
+assert re.findall(r"(\w+)ly", text) == ['careful', 'quick']

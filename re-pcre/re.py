@@ -122,6 +122,21 @@ class PCREPattern:
                     res.append(s)
                     return res
 
+    def findall(self, s):
+        res = []
+        while True:
+            m = self.search(s)
+            if not m:
+                return res
+            if m.num == 1:
+                res.append(m.group(0))
+            elif m.num == 2:
+                res.append(m.group(1))
+            else:
+                res.append(m.groups())
+            beg, end = m.span(0)
+            s = s[end:]
+
 
 def compile(pattern, flags=0):
     errptr = bytes(4)
@@ -149,6 +164,10 @@ def sub(pattern, repl, s, count=0, flags=0):
 def split(pattern, s, maxsplit=0, flags=0):
     r = compile(pattern, flags)
     return r.split(s, maxsplit)
+
+def findall(pattern, s, flags=0):
+    r = compile(pattern, flags)
+    return r.findall(s)
 
 
 def escape(s):
