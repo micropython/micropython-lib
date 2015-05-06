@@ -47,3 +47,13 @@ def isdir(path):
         return upip_stat.S_ISDIR(mode)
     except OSError:
         return False
+
+
+def expanduser(s):
+    if s == "~" or s.startswith("~/"):
+        h = upip_os.getenv("HOME")
+        return h + s[1:]
+    if s[0] == "~":
+        # Sorry folks, follow conventions
+        return "/home/" + s[1:]
+    return s

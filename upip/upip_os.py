@@ -1,6 +1,6 @@
 import ffi
 import array
-import struct
+import ustruct as struct
 import upip_errno
 import upip_stat as stat_
 import upip__libc
