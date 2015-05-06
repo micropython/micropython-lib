@@ -1,6 +1,6 @@
 import ffi
 import array
-import struct
+import ustruct as struct
 import errno
 import stat as stat_
 import _libc
