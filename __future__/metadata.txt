@@ -1,3 +1,4 @@
 srctype=dummy
 type=module
 version=0.0.1
+dist_name=future
