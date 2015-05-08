@@ -141,8 +141,8 @@ def help():
     print("upip - Simple PyPI package manager for MicroPython")
     print("Usage: micropython -m upip install <package>... | -r <requirements.txt>")
     print("""\
-Note: only micropython-* packages are supported for installation, upip does not
-support arbitrary code in setup.py.""")
+Note: only MicroPython packages (usually, micropython-*) are supported for
+installation, upip does not support arbitrary code in setup.py.""")
     sys.exit(1)
 
 def main():
