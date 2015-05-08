@@ -6,7 +6,7 @@ from setuptools import setup
 
 
 setup(name='micropython-upip',
-      version='0.5.1',
+      version='0.5.2',
       description='Simple package manager for MicroPython.',
       long_description='Simple package manager for MicroPython, targetting to be self-hosted (but not yet there). Compatible only with packages without custom setup.py code.',
       url='https://github.com/micropython/micropython/issues/405',
