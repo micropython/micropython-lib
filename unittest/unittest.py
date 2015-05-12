@@ -73,8 +73,31 @@ def skipUnless(cond, msg):
     return skip(msg)
 
 
+class TestSuite:
+    def __init__(self):
+        self.tests = []
+    def addTest(self, cls):
+        self.tests.append(cls)
+
+class TestRunner:
+    def run(self, suite):
+        res = TestResult()
+        for c in suite.tests:
+            run_class(c, res)
+        return res
+
+class TestResult:
+    def __init__(self):
+        self.errorsNum = 0
+        self.failuresNum = 0
+        self.skippedNum = 0
+        self.testsRun = 0
+
+    def wasSuccessful(self):
+        return self.errorsNum == 0 and self.failuresNum == 0
+
 # TODO: Uncompliant
-def run_class(c):
+def run_class(c, test_result):
     o = c()
     set_up = getattr(o, "setUp", lambda: None)
     tear_down = getattr(o, "tearDown", lambda: None)
@@ -83,11 +106,13 @@ def run_class(c):
             m = getattr(o, name)
             try:
                 set_up()
+                test_result.testsRun += 1
                 m()
                 tear_down()
                 print(name, "...ok")
             except SkipTest as e:
                 print(name, "...skipped:", e.args[0])
+                test_result.skippedNum += 1
 
 
 def main(module="__main__"):
