@@ -2,6 +2,22 @@ class SkipTest(Exception):
     pass
 
 
+class AssertRaisesContext:
+
+    def __init__(self, exc):
+        self.expected = exc
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, tb):
+        if exc_type is None:
+            assert False, "%r not raised" % exc
+        if issubclass(exc_type, self.expected):
+            return True
+        return False
+
+
 class TestCase:
 
     def fail(self, msg=''):
@@ -26,7 +42,10 @@ class TestCase:
     def assertIsInstance(self, x, y, msg=''):
         assert isinstance(x, y), msg
 
-    def assertRaises(self, exc, func, *args, **kwargs):
+    def assertRaises(self, exc, func=None, *args, **kwargs):
+        if func is None:
+            return AssertRaisesContext(exc)
+
         try:
             func(*args, **kwargs)
             assert False, "%r not raised" % exc
