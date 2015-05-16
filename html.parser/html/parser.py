@@ -26,7 +26,7 @@ commentclose = re.compile(r'--\s*>')
 tagfind = re.compile('([a-zA-Z][-.a-zA-Z0-9:_]*)(?:\s|/(?!>))*')
 # see http://www.w3.org/TR/html5/tokenization.html#tag-open-state
 # and http://www.w3.org/TR/html5/tokenization.html#tag-name-state
-tagfind_tolerant = re.compile('[a-zA-Z][^\t\n\r\f />\x00]*')
+tagfind_tolerant = re.compile('[a-zA-Z][^\t\n\r\f />\\x00]*')
 # Note:
 #  1) the strict attrfind isn't really strict, but we can't make it
 #     correctly strict without breaking backward compatibility;
