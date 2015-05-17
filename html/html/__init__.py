@@ -16,6 +16,7 @@ def escape(s, quote=True):
     characters, both double quote (") and single quote (') characters are also
     translated.
     """
+    import string
     if quote:
-        return s.translate(_escape_map_full)
-    return s.translate(_escape_map)
+        return string.translate(s, _escape_map_full)
+    return string.translate(s, _escape_map)
