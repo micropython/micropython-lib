@@ -1,5 +1,6 @@
 import os
 import tty, termios
+import select
 
 COLOR_BLACK    = 0
 COLOR_RED      = 1
@@ -54,7 +55,7 @@ KEY_QUIT = 1009
 KEY_ENTER = 1010
 KEY_BACKSPACE = 1011
 KEY_DELETE = 1012
-KEY_ESC = 1020
+KEY_ESC = 0x1b
 
 KEY_DC = KEY_DELETE
 KEY_PPAGE = KEY_PGUP
@@ -140,6 +141,7 @@ class Window:
         self.bkgattr = A_NORMAL
         self.keybuf = None
         self.keyi = 0
+        self.keydelay = -1
 
     def _goto(self, row, col):
         _move(self.y + row, self.x + col)
@@ -210,13 +212,32 @@ class Window:
         pass
 
     def timeout(self, delay):
-        assert delay < 0
+        self.keydelay = delay
+
+    def nodelay(self, yes):
+        if yes:
+            self.keydelay = 0
+        else:
+            self.keydelay = -1
 
     def getch(self):
         if self.keybuf and self.keyi < len(self.keybuf):
             c = self.keybuf[self.keyi]
             self.keyi += 1
             return c
+
+        if self.keydelay >= 0:
+            USE_EPOLL = 1
+            if USE_EPOLL:
+                poll = select.epoll()
+                poll.register(0, select.EPOLLIN)
+                res = poll.poll(self.keydelay / 1000)
+                poll.unregister(0)
+                poll.close()
+            else:
+                res = select.select([0], [], [], self.keydelay / 1000)[0]
+            if not res:
+                return -1
 
         key = os.read(0, 32)
         if key[0] != 0x1b:
