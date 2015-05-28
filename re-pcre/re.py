@@ -124,8 +124,9 @@ class PCREPattern:
 
     def findall(self, s):
         res = []
+        start = 0
         while True:
-            m = self.search(s)
+            m = self.search(s, start)
             if not m:
                 return res
             if m.num == 1:
@@ -135,7 +136,7 @@ class PCREPattern:
             else:
                 res.append(m.groups())
             beg, end = m.span(0)
-            s = s[end:]
+            start = end
 
 
 def compile(pattern, flags=0):
