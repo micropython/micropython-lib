@@ -4,6 +4,8 @@
 # Basic, useful module, by CPython impl depends on module "string" which
 # uses metaclasses.
 
+import sys
+
 CRITICAL = 50
 ERROR    = 40
 WARNING  = 30
@@ -32,7 +34,7 @@ class Logger:
 
     def log(self, level, msg, *args):
         if level >= (self.level or _level):
-            print(("%s:%s:" + msg) % ((self._level_str(level), self.name) + args))
+            print(("%s:%s:" + msg) % ((self._level_str(level), self.name) + args), file=sys.stderr)
 
     def debug(self, msg, *args):
         self.log(DEBUG, msg, *args)
