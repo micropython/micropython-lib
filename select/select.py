@@ -17,6 +17,9 @@ epoll_wait = libc.func("i", "epoll_wait", "ipii")
 EPOLLIN = 0x001
 EPOLLPRI = 0x002
 EPOLLOUT = 0x004
+EPOLLERR = 0x008
+EPOLLHUP = 0x010
+EPOLLRDHUP = 0x2000
 EPOLLONESHOT = 1 << 30
 EPOLLET  = 1 << 31
 
