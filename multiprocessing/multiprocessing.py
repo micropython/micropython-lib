@@ -49,8 +49,12 @@ class Connection:
 
     def recv(self):
         s = self.f.read(4)
+        if not s:
+            raise EOFError
         l = int.from_bytes(s)
         s = self.f.read(l)
+        if not s:
+            raise EOFError
         return pickle.loads(s)
 
     def close(self):
