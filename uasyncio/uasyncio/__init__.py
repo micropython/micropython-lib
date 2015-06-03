@@ -95,8 +95,9 @@ class StreamReader:
 
 class StreamWriter:
 
-    def __init__(self, s):
+    def __init__(self, s, extra):
         self.s = s
+        self.extra = extra
 
     def awrite(self, buf):
         # This method is called awrite (async write) to not proliferate
@@ -130,6 +131,9 @@ class StreamWriter:
         yield IOWriteDone(self.s)
         self.s.close()
 
+    def get_extra_info(self, name, default=None):
+        return self.extra.get(name, default)
+
     def __repr__(self):
         return "<StreamWriter %r>" % self.s
 
@@ -153,7 +157,7 @@ def open_connection(host, port):
         assert s2.fileno() == s.fileno()
     if __debug__:
         log.debug("open_connection: After iowait: %s", s)
-    return StreamReader(s), StreamWriter(s)
+    return StreamReader(s), StreamWriter(s, {})
 
 
 def start_server(client_coro, host, port, backlog=10):
@@ -176,7 +180,8 @@ def start_server(client_coro, host, port, backlog=10):
         s2.setblocking(False)
         if __debug__:
             log.debug("start_server: After accept: %s", s2)
-        yield client_coro(StreamReader(s2), StreamWriter(s2))
+        extra = {"peername": client_addr}
+        yield client_coro(StreamReader(s2), StreamWriter(s2, extra))
 
 
 import uasyncio.core
