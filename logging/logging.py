@@ -60,6 +60,10 @@ def getLogger(name):
     _loggers[name] = l
     return l
 
-def basicConfig(level=INFO):
+def basicConfig(level=INFO, filename=None, format=None):
     global _level
     _level = level
+    if filename is not None:
+        print("logging.basicConfig: filename arg is not supported")
+    if format is not None:
+        print("logging.basicConfig: format arg is not supported")
