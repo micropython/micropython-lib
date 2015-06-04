@@ -1,8 +1,19 @@
 import ffi
 import array
 
+# pcre = ffi.open("libpcre.so.3")
 
-pcre = ffi.open("libpcre.so.3")
+def ffi_open(names):
+    err = None
+    for n in names:
+        try:
+            mod = ffi.open(n)
+            return mod
+        except OSError as e:
+            err = e
+    raise err
+
+pcre = ffi_open(('libpcre.so.3', 'libpcre.dylib', 'libpcre.0.dylib'))
 
 #       pcre *pcre_compile(const char *pattern, int options,
 #            const char **errptr, int *erroffset,
