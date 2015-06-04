@@ -60,6 +60,12 @@ def getLogger(name):
     _loggers[name] = l
     return l
 
+def info(msg, *args):
+    getLogger(None).info(msg, *args)
+
+def debug(msg, *args):
+    getLogger(None).debug(msg, *args)
+
 def basicConfig(level=INFO, filename=None, format=None):
     global _level
     _level = level
