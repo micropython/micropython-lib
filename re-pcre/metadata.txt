@@ -3,3 +3,4 @@ srctype = micropython-lib
 type = module
 version = 0.2
 author = Paul Sokolovsky
+depends = ffilib

@@ -15,4 +15,5 @@ setup(name='micropython-re-pcre',
       maintainer='MicroPython Developers',
       maintainer_email='micro-python@googlegroups.com',
       license='MIT',
-      py_modules=['re'])
+      py_modules=['re'],
+      install_requires=['micropython-ffilib'])

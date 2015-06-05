@@ -1,8 +1,8 @@
-import ffi
+import ffilib
 import array
 
 
-pcre = ffi.open("libpcre.so.3")
+pcre = ffilib.open("libpcre")
 
 #       pcre *pcre_compile(const char *pattern, int options,
 #            const char **errptr, int *erroffset,
