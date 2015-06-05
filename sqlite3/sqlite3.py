@@ -1,7 +1,7 @@
-import ffi
+import ffilib
 
 
-sq3 = ffi.open("libsqlite3.so.0")
+sq3 = ffilib.open("libsqlite3")
 
 sqlite3_open = sq3.func("i", "sqlite3_open", "sp")
 #int sqlite3_close(sqlite3*);
