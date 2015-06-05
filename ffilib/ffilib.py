@@ -1,3 +1,4 @@
+import sys
 import ffi
 
 _cache = {}
@@ -7,22 +8,18 @@ def open(name, maxver=10, extra=()):
         return _cache[name]
     except KeyError:
         pass
+    def libs():
+        if sys.platform == "linux":
+            yield '%s.so' % name
+            for i in range(maxver, -1, -1):
+                yield '%s.so.%u' % (name, i)
+        else:
+            for ext in ('dylib', 'dll'):
+                yield '%s.%s' % (name, ext)
+        for n in extra:
+            yield n
     err = None
-    for n in ("%s.so" % name, "%s.dylib" % name):
-        try:
-            l = ffi.open(n)
-            _cache[name] = l
-            return l
-        except OSError as e:
-            err = e
-    for i in range(maxver):
-        try:
-            l = ffi.open("%s.so.%u" % (name, i))
-            _cache[name] = l
-            return l
-        except OSError as e:
-            err = e
-    for n in extra:
+    for n in libs():
         try:
             l = ffi.open(n)
             _cache[name] = l

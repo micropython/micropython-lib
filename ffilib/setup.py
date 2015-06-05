@@ -5,7 +5,7 @@ sys.path.pop(0)
 from setuptools import setup
 
 
-setup(name='micropython-libc',
+setup(name='micropython-ffilib',
       version='0.1.0',
       description='MicroPython FFI helper module',
       long_description='MicroPython FFI helper module to easily interface with underlying shared libraries',
