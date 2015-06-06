@@ -27,3 +27,6 @@ def open(name, maxver=10, extra=()):
         except OSError as e:
             err = e
     raise err
+
+def libc():
+    return open("libc", 6)
