@@ -3,14 +3,14 @@ import array
 import ustruct as struct
 import errno
 import stat as stat_
-import _libc
+import ffilib
 try:
     from _os import *
 except:
     pass
 
 
-libc = _libc.get()
+libc = ffilib.libc()
 
 errno_ = libc.var("i", "errno")
 chdir_ = libc.func("i", "chdir", "s")
