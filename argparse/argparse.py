@@ -18,39 +18,39 @@ class _Arg:
         self.default = default
         self.help = help
 
-    def parse(self, argv):
+    def parse(self, args):
         # parse args for this arg
         if self.action == "store":
             if self.nargs == None:
-                if argv:
-                    return argv.pop(0)
+                if args:
+                    return args.pop(0)
                 else:
                     raise _ArgError("expecting value for %s" % self.name)
             elif self.nargs == "?":
-                if argv:
-                    return argv.pop(0)
+                if args:
+                    return args.pop(0)
                 else:
                     return self.default
             else:
                 if self.nargs == "*":
                     n = -1
                 elif self.nargs == "+":
-                    if not argv:
+                    if not args:
                         raise _ArgError("expecting value for %s" % self.name)
                     n = -1
                 else:
                     n = int(self.nargs)
                 ret = []
                 stop_at_opt = True
-                while argv and n != 0:
-                    if stop_at_opt and argv[0].startswith("-") and argv[0] != "-":
-                        if argv[0] == "--":
+                while args and n != 0:
+                    if stop_at_opt and args[0].startswith("-") and args[0] != "-":
+                        if args[0] == "--":
                             stop_at_opt = False
-                            argv.pop(0)
+                            args.pop(0)
                         else:
                             break
                     else:
-                        ret.append(argv.pop(0))
+                        ret.append(args.pop(0))
                         n -= 1
                 if n > 0:
                     raise _ArgError("expecting value for %s" % self.name)
@@ -126,15 +126,19 @@ class ArgumentParser:
         for opt in self.opt:
             print("  %-16s%s" % (opt.name + render_arg(opt), opt.help))
 
-    def parse_args(self):
+    def parse_args(self, args=None):
+        if args is None:
+            args = sys.argv[1:]
+        else:
+            args = args[:]
         try:
-            return self._parse_args()
+            return self._parse_args(args)
         except _ArgError as e:
             self.usage(False)
             print("error:", e)
             sys.exit(2)
 
-    def _parse_args(self):
+    def _parse_args(self, args):
         # add optional args with defaults
         arg_dest = []
         arg_vals = []
@@ -143,19 +147,18 @@ class ArgumentParser:
             arg_vals.append(opt.default)
 
         # parse all args
-        argv = sys.argv[1:]
         parsed_pos = False
-        while argv or not parsed_pos:
-            if argv and argv[0].startswith("-") and argv[0] != "-" and argv[0] != "--":
+        while args or not parsed_pos:
+            if args and args[0].startswith("-") and args[0] != "-" and args[0] != "--":
                 # optional arg
-                a = argv.pop(0)
+                a = args.pop(0)
                 if a in ("-h", "--help"):
                     self.usage(True)
                     sys.exit(0)
                 found = False
                 for i, opt in enumerate(self.opt):
                     if a == opt.name:
-                        arg_vals[i] = opt.parse(argv)
+                        arg_vals[i] = opt.parse(args)
                         found = True
                         break
                 if not found:
@@ -163,10 +166,10 @@ class ArgumentParser:
             else:
                 # positional arg
                 if parsed_pos:
-                    raise _ArgError("extra args: %s" % " ".join(argv))
+                    raise _ArgError("extra args: %s" % " ".join(args))
                 for pos in self.pos:
                     arg_dest.append(pos.dest)
-                    arg_vals.append(pos.parse(argv))
+                    arg_vals.append(pos.parse(args))
                 parsed_pos = True
 
         # build and return named tuple with arg values
