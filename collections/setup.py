@@ -1,18 +1,18 @@
 import sys
-# Remove current dir from sys.path, otherwise distutils will peek up our
-# module instead of system one.
+# Remove current dir from sys.path, otherwise setuptools will peek up our
+# module instead of system.
 sys.path.pop(0)
-sys.path.insert(0, '..')
 from setuptools import setup
-import metadata
 
-NAME = 'collections'
 
-setup(name='micropython-' + NAME,
-      version='0.0.2',
-      description='Top-level collection package for MicroPython',
-      url=metadata.url,
-      author=metadata.author_upy_devels,
-      author_email=metadata.author_upy_devels_email,
+setup(name='micropython-collections',
+      version='0.1',
+      description='collections module for MicroPython',
+      long_description="This is a module reimplemented specifically for MicroPython standard library,\nwith efficient and lean design in mind. Note that this module is likely work\nin progress and likely supports just a subset of CPython's corresponding\nmodule. Please help with the development if you are interested in this\nmodule.",
+      url='https://github.com/micropython/micropython/issues/405',
+      author='MicroPython Developers',
+      author_email='micro-python@googlegroups.com',
+      maintainer='MicroPython Developers',
+      maintainer_email='micro-python@googlegroups.com',
       license='MIT',
-      packages=[NAME])
+      packages=['collections'])
