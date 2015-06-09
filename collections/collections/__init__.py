@@ -11,3 +11,6 @@ try:
     from .deque import deque
 except ImportError:
     pass
+
+class MutableMapping:
+    pass
