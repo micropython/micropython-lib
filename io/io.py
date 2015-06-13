@@ -11,6 +11,8 @@ class BufferedIOBase:
     def write(self, data):
         self.flush()
         self._data[self._location: self._location + len(data)] = data
+        self._location += len(data)
+        return len(data)
 
     def seek(self, location):
         if location < 0:
@@ -19,8 +21,7 @@ class BufferedIOBase:
         if location >= len(self._data):
             raise ValueError("location {} outside of length".format(location))
         self._location = location
-
-        self._location += len(data)
+        return location
 
     def tell(self):
         return self._location
@@ -36,9 +37,8 @@ class BufferedIOBase:
         return out
 
     read1 = read
-    readall = read
 
-    def readinto(b):
+    def readinto(self, b):
         self.flush()
         loc = self._location
         lenread = len(self._data) - loc
@@ -58,10 +58,11 @@ class BufferedIOBase:
 class BytesIO(BufferedIOBase):
     def __init__(self, initial_bytes):
         if not initial_bytes:
-            inital_bytes = bytearray()
+            initial_bytes = bytearray()
         else:
-            inital_bytes = bytearray(inital_bytes)
-        self._data = inital_bytes
+            initial_bytes = bytearray(initial_bytes)
+        self._data = initial_bytes
+        BufferedIOBase.__init__(self)
 
     def flush(self):
         self._data.extend(b''.join(self._written))
@@ -70,13 +71,12 @@ class BytesIO(BufferedIOBase):
     def write(self, data):
         if not isinstance(data, bytes):
             data = bytes(data)
-        BaseIO.write(self, data)
+        return BufferedIOBase.write(self, data)
 
     def read(self, size=-1):
-        return bytes(BaseIO.read(self, size))
+        return bytes(BufferedIOBase.read(self, size))
 
     read1 = read
-    readall = read
 
     def getvalue(self):
         self.flush()
