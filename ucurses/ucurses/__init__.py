@@ -319,6 +319,8 @@ def curs_set(visibility):
 def beep():
     _wr(b"\x07")
 
-def newwin(lines, cols, y, x):
+def newwin(lines, cols, y=0, x=0):
     #print("newwin(%d, %d, %d, %d)" % (lines, cols, y, x))
+    cols = cols or SCREEN.cols
+    lines = lines or SCREEN.lines
     return Window(lines, cols, y, x)
