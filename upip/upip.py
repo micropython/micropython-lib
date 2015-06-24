@@ -32,6 +32,9 @@ DEFAULT_MICROPYPATH = "~/.micropython/lib:/usr/lib/micropython"
 debug = False
 cleanup_files = [".pkg.tar"]
 
+class NotFoundError(Exception):
+    pass
+
 def save_file(fname, subf):
     outf = open(fname, "wb")
     while True:
@@ -84,9 +87,13 @@ def expandhome(s):
     return s
 
 def download(url, local_name):
-    os.system("wget -q %s -O %s" % (url, local_name))
+    if debug:
+        print("wget -q %s -O %s" % (url, local_name))
+    rc = os.system("wget -q %s -O %s" % (url, local_name))
     if local_name not in cleanup_files:
         cleanup_files.append(local_name)
+    if rc == 8 * 256:
+        raise NotFoundError
 
 def get_pkg_metadata(name):
     download("https://pypi.python.org/pypi/%s/json" % name, ".pkg.json")
@@ -198,20 +205,24 @@ def main():
 
     # sets would be perfect here, but don't depend on them
     installed = []
-    while to_install:
-        if debug:
-            print("Queue:", to_install)
-        pkg_spec = to_install.pop(0)
-        if pkg_spec in installed:
-            continue
-        meta = install_pkg(pkg_spec, install_path)
-        installed.append(pkg_spec)
-        if debug:
-            print(meta)
-        deps = meta.get("deps", "").rstrip()
-        if deps:
-            deps = deps.decode("utf-8").split("\n")
-            to_install.extend(deps)
+    try:
+        while to_install:
+            if debug:
+                print("Queue:", to_install)
+            pkg_spec = to_install.pop(0)
+            if pkg_spec in installed:
+                continue
+            meta = install_pkg(pkg_spec, install_path)
+            installed.append(pkg_spec)
+            if debug:
+                print(meta)
+            deps = meta.get("deps", "").rstrip()
+            if deps:
+                deps = deps.decode("utf-8").split("\n")
+                to_install.extend(deps)
+    except NotFoundError:
+        print("Error: cannot find '%s' package (or server error), packages may be partially installed" \
+            % pkg_spec, file=sys.stderr)
 
     if not debug:
         cleanup()
