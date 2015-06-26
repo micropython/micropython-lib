@@ -1,3 +1,4 @@
-srctype=dummy
-type=module
-version=0.0.0
+srctype = micropython-lib
+type = module
+version = 0.1
+depends = pkg_resources
