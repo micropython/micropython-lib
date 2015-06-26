@@ -223,5 +223,6 @@ def fsdecode(s):
 
 
 def urandom(n):
-    with open("/dev/urandom", "rb") as f:
+    import builtins
+    with builtins.open("/dev/urandom", "rb") as f:
         return f.read(n)
