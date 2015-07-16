@@ -1,4 +1,4 @@
-from usocket import getaddrinfo
+from usocket import *
 import usocket as _socket
 
 
