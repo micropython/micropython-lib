@@ -27,7 +27,7 @@ def ismethod(obj):
     return isinstance(obj, type(_Instance.meth))
 
 def isclass(obj):
-    return isinstance(object, type)
+    return isinstance(obj, type)
 
 def ismodule(obj):
     return isinstance(obj, type(sys))
