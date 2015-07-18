@@ -2,6 +2,7 @@
 
 # Install micropython modules
 
+import argparse
 from distutils.dir_util import mkpath, copy_tree
 import os
 import re
@@ -11,6 +12,7 @@ import sys
 def install(modules, lib):
     mkpath(lib)
     for module in modules:
+        #print("module " + module)
         install_from_module(module, lib)
 
 def module_directories(root):
@@ -22,11 +24,11 @@ def module_directories(root):
 
 def install_from_module(module, lib):
     for filename in files_for_module(module):
-        print("shutil.copy(%s, %s)" % (filename, lib))
+        #print("shutil.copy(%s, %s)" % (filename, lib))
         shutil.copy(filename, lib)
     for dirname, name in directories_for_module(module):
         dest = os.path.join(lib, name)
-        print("copy_tree(%s, %s)" % (dirname, dest))
+        #print("copy_tree(%s, %s)" % (dirname, dest))
         copy_tree(dirname, dest)
 
 
@@ -50,18 +52,17 @@ def directories_for_module(module):
             yield dirname, name
 
 def main(argv):
-    lib = os.path.join(os.environ.get('HOME'), \
-                                    '.micropython', 'lib')
-    if len(argv) > 1 and re.match('^(-h)|(--help)', argv[1]):
-        print(
-"""Usage: %s [MODULE_NAME]...
-Install micropython library modules in %s
-Omitting any MODULE_NAMEs will install them all.""" \
-              % (argv[0], lib))
-        sys.exit(0)
-    command_line_modules = argv[1:]
-    modules = command_line_modules or module_directories('.')
-    install(modules, lib)
+    parser = argparse.ArgumentParser(description="Install micropython libraries",
+                                     epilog="Omitting any MODULE installs all available modules")
+    parser.add_argument('-d', '--destination',
+                        default=os.path.join(os.environ.get('HOME'), \
+                                             '.micropython', 'lib'),
+                        help="Destination directory for library files")
+    parser.add_argument('modules', metavar='MODULE', nargs='*',
+                        help="module name")
+    args = parser.parse_args()
+    modules = args.modules or module_directories('.')
+    install(modules, args.destination)
 
 if __name__ == "__main__":
     main(sys.argv)
