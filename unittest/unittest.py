@@ -116,8 +116,19 @@ def run_class(c, test_result):
 
 
 def main(module="__main__"):
+    def test_cases(m):
+        for tn in dir(m):
+            c = getattr(m, tn)
+            if isinstance(c, object) and isinstance(c, type) and issubclass(c, TestCase):
+                yield c
+
     m = __import__(module)
-    for tn in dir(m):
-        c = getattr(m, tn)
-        if isinstance(c, object) and issubclass(c, TestCase):
-            run_class(c)
+    suite = TestSuite()
+    for c in test_cases(m):
+        suite.addTest(c)
+    runner = TestRunner()
+    result = runner.run(suite)
+    msg = "Ran %d tests" % result.testsRun
+    if result.skippedNum > 0:
+        msg += " (%d skipped)" % result.skippedNum
+    print(msg)
