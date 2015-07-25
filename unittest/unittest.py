@@ -12,7 +12,7 @@ class AssertRaisesContext:
 
     def __exit__(self, exc_type, exc_value, tb):
         if exc_type is None:
-            assert False, "%r not raised" % exc
+            assert False, "%r not raised" % self.expected
         if issubclass(exc_type, self.expected):
             return True
         return False
@@ -28,15 +28,34 @@ class TestCase:
             msg = "%r vs (expected) %r" % (x, y)
         assert x == y, msg
 
+    def assertNotEqual(self, x, y, msg=''):
+        if not msg:
+            msg = "%r not expected to be equal %r" % (x, y)
+        assert x != y, msg
+
     def assertIs(self, x, y, msg=''):
         if not msg:
             msg = "%r is not %r" % (x, y)
         assert x is y, msg
 
+    def assertIsNot(self, x, y, msg=''):
+        if not msg:
+            msg = "%r is %r" % (x, y)
+        assert x is not y, msg
+
     def assertTrue(self, x, msg=''):
+        if not msg:
+            msg = "Expected %r to be True" % x
         assert x, msg
 
+    def assertFalse(self, x, msg=''):
+        if not msg:
+            msg = "Expected %r to be False" % x
+        assert not x, msg
+
     def assertIn(self, x, y, msg=''):
+        if not msg:
+            msg = "Expected %r to be in %r" % (x, y)
         assert x in y, msg
 
     def assertIsInstance(self, x, y, msg=''):
@@ -53,9 +72,6 @@ class TestCase:
             if isinstance(e, exc):
                 return
             raise
-
-    def assertFalse(self, x, msg=''):
-        assert not x, msg
 
 
 def skip(msg):
