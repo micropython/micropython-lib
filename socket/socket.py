@@ -8,6 +8,9 @@ IP_ADD_MEMBERSHIP = 35
 IP_DROP_MEMBERSHIP = 36
 
 
+def inet_aton(addr):
+    return inet_pton(AF_INET, addr)
+
 def create_connection(addr, timeout=None, source_address=None):
     s = socket()
     #print("Address:", addr)
