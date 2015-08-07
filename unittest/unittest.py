@@ -119,15 +119,16 @@ def run_class(c, test_result):
     tear_down = getattr(o, "tearDown", lambda: None)
     for name in dir(o):
         if name.startswith("test"):
+            print(name, end=' ...')
             m = getattr(o, name)
             try:
                 set_up()
                 test_result.testsRun += 1
                 m()
                 tear_down()
-                print(name, "...ok")
+                print(" ok")
             except SkipTest as e:
-                print(name, "...skipped:", e.args[0])
+                print(" skipped:", e.args[0])
                 test_result.skippedNum += 1
 
 
