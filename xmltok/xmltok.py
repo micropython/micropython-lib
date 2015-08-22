@@ -50,6 +50,15 @@ class XMLTokenizer:
             ident += self.getch()
         return ident
 
+    def getnsident(self):
+        ns = ""
+        ident = self.getident()
+        if self.curch() == ":":
+            self.nextch()
+            ns = ident
+            ident = self.getident()
+        return (ns, ident)
+
     def match(self, c):
         self.skip_ws()
         if self.curch() == c:
@@ -63,7 +72,7 @@ class XMLTokenizer:
 
     def lex_attrs_till(self):
         while self.isident():
-            attr = self.getident()
+            attr = self.getnsident()
             yield (ATTR, attr)
             self.expect("=")
             self.expect('"')
@@ -77,7 +86,7 @@ class XMLTokenizer:
         while not self.eof():
             if self.match("<"):
                 if self.match("/"):
-                    yield (END_TAG, self.getident())
+                    yield (END_TAG, self.getnsident())
                     self.expect(">")
                 elif self.match("?"):
                     yield (PI, self.getident())
@@ -85,7 +94,7 @@ class XMLTokenizer:
                     self.expect("?")
                     self.expect(">")
                 else:
-                    tag = self.getident()
+                    tag = self.getnsident()
                     yield (START_TAG, tag)
                     yield from self.lex_attrs_till()
                     if self.match("/"):
