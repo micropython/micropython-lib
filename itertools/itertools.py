@@ -4,8 +4,19 @@ def count(start=0, step=1):
         start += step
 
 def cycle(p):
-    while p:
-        yield from p
+    try:
+        len(p)
+        while p:
+            yield from p
+    except TypeError:
+        # len() is not defined for this type. Assume it is
+        # a finite iterable so we must cache the elements.
+        cache = []
+        for i in p:
+            yield i
+            cache.append(i)
+        while cache:
+            yield from cache
 
 def repeat(el, n=None):
     if n is None:
