@@ -6,8 +6,6 @@ def count(start=0, step=1):
 def cycle(p):
     try:
         len(p)
-        while p:
-            yield from p
     except TypeError:
         # len() is not defined for this type. Assume it is
         # a finite iterable so we must cache the elements.
@@ -15,8 +13,10 @@ def cycle(p):
         for i in p:
             yield i
             cache.append(i)
-        while cache:
-            yield from cache
+        p = cache
+    while p:
+        yield from p
+
 
 def repeat(el, n=None):
     if n is None:
