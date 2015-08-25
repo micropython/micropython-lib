@@ -34,11 +34,17 @@ def islice(p, start, stop=(), step=1):
     if stop == ():
         stop = start
         start = 0
+    # TODO: optimizing or breaking semantics?
+    if start >= stop:
+        return
+    it = iter(p)
+    for i in range(start):
+        next(it)
+
     while True:
-        try:
-            yield p[start]
-        except IndexError:
-            return
+        yield next(it)
+        for i in range(step - 1):
+            next(it)
         start += step
         if start >= stop:
             return
