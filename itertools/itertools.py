@@ -4,7 +4,7 @@ def count(start=0, step=1):
         start += step
 
 def cycle(p):
-    while True:
+    while p:
         yield from p
 
 def repeat(el, n=None):
