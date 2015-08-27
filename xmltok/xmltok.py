@@ -73,14 +73,15 @@ class XMLTokenizer:
     def lex_attrs_till(self):
         while self.isident():
             attr = self.getnsident()
-            yield (ATTR, attr)
+            #yield (ATTR, attr)
             self.expect("=")
             self.expect('"')
             val = ""
             while self.curch() != '"':
                 val += self.getch()
-            yield (ATTR_VAL, val)
+            #yield (ATTR_VAL, val)
             self.expect('"')
+            yield (ATTR, attr, val)
 
     def tokenize(self):
         while not self.eof():
