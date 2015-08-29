@@ -12,7 +12,21 @@ except:
 
 libc = ffilib.libc()
 
-errno_ = libc.var("i", "errno")
+try:
+    errno__ = libc.var("i", "errno")
+    def errno_(val=None):
+        if val is None:
+            return errno__.get()
+        errno__.set(val)
+except OSError:
+    __errno = libc.func("p", "__errno", "")
+    def errno_(val=None):
+        if val is None:
+            p = __errno()
+            buf = ffi.as_bytearray(p, 4)
+            return int.from_bytes(buf)
+        raise NotImplementedError
+
 chdir_ = libc.func("i", "chdir", "s")
 mkdir_ = libc.func("i", "mkdir", "si")
 rename_ = libc.func("i", "rename", "ss")
@@ -62,7 +76,7 @@ def check_error(ret):
     # Return True is error was EINTR (which usually means that OS call
     # should be restarted).
     if ret == -1:
-        e = errno_.get()
+        e = errno_()
         if e == errno.EINTR:
             return True
         raise OSError(e)
