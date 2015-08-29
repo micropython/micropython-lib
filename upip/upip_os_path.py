@@ -8,7 +8,9 @@ def normpath(s):
     return s
 
 def abspath(s):
-    return upip_os.getcwd() + "/" + s
+    if s[0] != "/":
+        return upip_os.getcwd() + "/" + s
+    return s
 
 def join(*args):
     # TODO: this is non-compliant

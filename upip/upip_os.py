@@ -3,16 +3,30 @@ import array
 import ustruct as struct
 import upip_errno
 import upip_stat as stat_
-import upip__libc
+import upip_ffilib
 try:
     from _os import *
 except:
     pass
 
 
-libc = upip__libc.get()
+libc = upip_ffilib.libc()
 
-errno_ = libc.var("i", "errno")
+try:
+    errno__ = libc.var("i", "errno")
+    def errno_(val=None):
+        if val is None:
+            return errno__.get()
+        errno__.set(val)
+except OSError:
+    __upip_errno = libc.func("p", "__errno", "")
+    def errno_(val=None):
+        if val is None:
+            p = __upip_errno()
+            buf = ffi.as_bytearray(p, 4)
+            return int.from_bytes(buf)
+        raise NotImplementedError
+
 chdir_ = libc.func("i", "chdir", "s")
 mkdir_ = libc.func("i", "mkdir", "si")
 rename_ = libc.func("i", "rename", "ss")
@@ -62,7 +76,7 @@ def check_error(ret):
     # Return True is error was EINTR (which usually means that OS call
     # should be restarted).
     if ret == -1:
-        e = errno_.get()
+        e = errno_()
         if e == upip_errno.EINTR:
             return True
         raise OSError(e)
@@ -223,5 +237,6 @@ def fsdecode(s):
 
 
 def urandom(n):
-    with open("/dev/urandom", "rb") as f:
+    import builtins
+    with builtins.open("/dev/urandom", "rb") as f:
         return f.read(n)
