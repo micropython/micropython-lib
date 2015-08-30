@@ -6,7 +6,7 @@ from setuptools import setup
 
 
 setup(name='micropython-ffilib',
-      version='0.1.1',
+      version='0.1.2',
       description='MicroPython FFI helper module',
       long_description='MicroPython FFI helper module to easily interface with underlying shared libraries',
       url='https://github.com/micropython/micropython/issues/405',
