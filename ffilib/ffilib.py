@@ -30,3 +30,12 @@ def open(name, maxver=10, extra=()):
 
 def libc():
     return open("libc", 6)
+
+# Find out bitness of the platform, even if long ints are not supported
+# TODO: All bitness differences should be removed from micropython-lib, and
+# this snippet too.
+bitness = 1
+v = sys.maxsize
+while v:
+    bitness += 1
+    v >>= 1
