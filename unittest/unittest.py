@@ -33,6 +33,46 @@ class TestCase:
             msg = "%r not expected to be equal %r" % (x, y)
         assert x != y, msg
 
+    def assertAlmostEqual(self, x, y, places=None, msg='', delta=None):
+        if x == y:
+            return
+        if delta is not None and places is not None:
+            raise TypeError("specify delta or places not both")
+
+        if delta is not None:
+            if abs(x - y) <= delta:
+                return
+            if not msg:
+                msg = '%r != %r within %r delta' % (x, y, delta)
+        else:
+            if places is None:
+                places = 7
+            if round(abs(y-x), places) == 0:
+                return
+            if not msg:
+                msg = '%r != %r within %r places' % (x, y, places)
+
+        assert False, msg
+
+    def assertNotAlmostEqual(self, x, y, places=None, msg='', delta=None):
+        if delta is not None and places is not None:
+            raise TypeError("specify delta or places not both")
+
+        if delta is not None:
+            if not (x == y) and abs(x - y) > delta:
+                return
+            if not msg:
+                msg = '%r == %r within %r delta' % (x, y, delta)
+        else:
+            if places is None:
+                places = 7
+            if not (x == y) and round(abs(y-x), places) != 0:
+                return
+            if not msg:
+                msg = '%r == %r within %r places' % (x, y, places)
+
+        assert False, msg
+
     def assertIs(self, x, y, msg=''):
         if not msg:
             msg = "%r is not %r" % (x, y)
@@ -72,6 +112,7 @@ class TestCase:
             if isinstance(e, exc):
                 return
             raise
+
 
 
 def skip(msg):

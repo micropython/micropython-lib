@@ -14,6 +14,47 @@ class TestUnittestAssertions(unittest.TestCase):
         with self.assertRaises(AssertionError):
             self.assertEqual([0,1,2], [1,2,3])
 
+    def test_AlmostEqual(self):
+        self.assertAlmostEqual(    1.00000001, 1.0)
+        self.assertNotAlmostEqual( 1.0000001, 1.0)
+        with self.assertRaises(AssertionError):
+            self.assertAlmostEqual(1.0000001, 1.0)
+        with self.assertRaises(AssertionError):
+            self.assertNotAlmostEqual(1.00000001, 1.0)
+
+        self.assertAlmostEqual(1.1, 1.0, places=0)
+        with self.assertRaises(AssertionError):
+            self.assertAlmostEqual(1.1, 1.0, places=1)
+
+        self.assertAlmostEqual(0, .1+.1j, places=0)
+        self.assertNotAlmostEqual(0, .1+.1j, places=1)
+        with self.assertRaises(AssertionError):
+            self.assertAlmostEqual(0, .1+.1j, places=1)
+        with self.assertRaises(AssertionError):
+            self.assertNotAlmostEqual(0, .1+.1j, places=0)
+
+        self.assertAlmostEqual(float('inf'), float('inf'))
+        with self.assertRaises(AssertionError):
+            self.assertNotAlmostEqual(float('inf'), float('inf'))
+
+    def test_AmostEqualWithDelta(self):
+        self.assertAlmostEqual(1.1, 1.0, delta=0.5)
+        self.assertAlmostEqual(1.0, 1.1, delta=0.5)
+        self.assertNotAlmostEqual(1.1, 1.0, delta=0.05)
+        self.assertNotAlmostEqual(1.0, 1.1, delta=0.05)
+
+        self.assertAlmostEqual(1.0, 1.0, delta=0.5)
+        with self.assertRaises(AssertionError):
+            self.assertNotAlmostEqual(1.0, 1.0, delta=0.5)
+        with self.assertRaises(AssertionError):
+            self.assertAlmostEqual(1.1, 1.0, delta=0.05)
+        with self.assertRaises(AssertionError):
+            self.assertNotAlmostEqual(1.1, 1.0, delta=0.5)
+        with self.assertRaises(TypeError):
+            self.assertAlmostEqual(1.1, 1.0, places=2, delta=2)
+        with self.assertRaises(TypeError):
+            self.assertNotAlmostEqual(1.1, 1.0, places=2, delta=2)
+
     def testNotEqual(self):
         self.assertNotEqual([0,1,2], [0,2,1])
         with self.assertRaises(AssertionError):
