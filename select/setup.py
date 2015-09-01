@@ -6,7 +6,7 @@ from setuptools import setup
 
 
 setup(name='micropython-select',
-      version='0.1.5',
+      version='0.1.6',
       description='select module for MicroPython',
       long_description="This is a module reimplemented specifically for MicroPython standard library,\nwith efficient and lean design in mind. Note that this module is likely work\nin progress and likely supports just a subset of CPython's corresponding\nmodule. Please help with the development if you are interested in this\nmodule.",
       url='https://github.com/micropython/micropython/issues/405',
@@ -16,4 +16,4 @@ setup(name='micropython-select',
       maintainer_email='micro-python@googlegroups.com',
       license='MIT',
       py_modules=['select'],
-      install_requires=['micropython-os', 'micropython-libc'])
+      install_requires=['micropython-os', 'micropython-ffilib'])

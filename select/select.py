@@ -2,10 +2,10 @@ import ffi
 import ustruct as struct
 import os
 import errno
-import _libc
+import ffilib
 
 
-libc = _libc.get()
+libc = ffilib.libc()
 
 #int epoll_create(int size);
 epoll_create = libc.func("i", "epoll_create", "i")
@@ -32,7 +32,7 @@ EPOLL_CTL_MOD = 3
 # Until uctypes module can assign native struct offset, use dirty hack
 # below.
 # TODO: Get rid of all this dirtiness, move it on C side
-if _libc.bitness > 32:
+if ffilib.bitness > 32:
     # On x86_64, epoll_event is packed struct
     epoll_event = "<IO"
 elif struct.calcsize("IQ") == 12:
