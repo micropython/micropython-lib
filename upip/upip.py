@@ -86,14 +86,52 @@ def expandhome(s):
     s = s.replace("~/", h + "/")
     return s
 
-def download(url, local_name):
-    if debug:
-        print("wget -q %s -O %s" % (url, local_name))
-    rc = os.system("wget -q %s -O %s" % (url, local_name))
-    if local_name not in cleanup_files:
-        cleanup_files.append(local_name)
-    if rc == 8 * 256:
-        raise NotFoundError
+try:
+    import ussl
+    import usocket
+    def download(url, local_name):
+        proto, _, host, urlpath = url.split('/', 3)
+        ai = usocket.getaddrinfo(host, 443)
+        #print("Address infos:", ai)
+        addr = ai[0][4]
+
+        s = usocket.socket()
+        #print("Connect address:", addr)
+        s.connect(addr)
+
+        if proto == "https:":
+            s = ussl.wrap_socket(s)
+
+        # MicroPython rawsocket module supports file interface directly
+        s.write("GET /%s HTTP/1.0\r\nHost: %s\r\n\r\n" % (urlpath, host))
+        l = s.readline()
+        protover, status, msg = l.split(None, 2)
+        if status != b"200":
+            raise OSError()
+        while 1:
+            l = s.readline()
+            if not l:
+                raise OSError()
+            if l == b'\r\n':
+                break
+        with open(local_name, "wb") as f:
+            while 1:
+                l = s.read(1024)
+                if not l:
+                    break
+                f.write(l)
+
+except ImportError:
+
+    def download(url, local_name):
+        if debug:
+            print("wget -q %s -O %s" % (url, local_name))
+        rc = os.system("wget -q %s -O %s" % (url, local_name))
+        if local_name not in cleanup_files:
+            cleanup_files.append(local_name)
+        if rc == 8 * 256:
+            raise NotFoundError
+
 
 def get_pkg_metadata(name):
     download("https://pypi.python.org/pypi/%s/json" % name, ".pkg.json")
