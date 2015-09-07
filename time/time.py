@@ -1,9 +1,9 @@
 from utime import *
 import ffi
-import _libc
+import ffilib
 import array
 
-libc = _libc.get()
+libc = ffilib.libc()
 
 # struct tm *gmtime(const time_t *timep);
 # struct tm *localtime(const time_t *timep);
