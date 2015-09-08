@@ -1,9 +1,9 @@
 import ffi
 import os
-import _libc
+import ffilib
 
 
-libc = _libc.get()
+libc = ffilib.libc()
 
 fcntl_l = libc.func("i", "fcntl", "iil")
 fcntl_s = libc.func("i", "fcntl", "iip")
