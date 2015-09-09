@@ -1,4 +1,4 @@
-import _libc
+import ffilib
 
 
 SIG_DFL = 0
@@ -8,7 +8,7 @@ SIGINT = 2
 SIGPIPE = 13
 SIGTERM = 15
 
-libc = _libc.get()
+libc = ffilib.libc()
 
 signal_i = libc.func("i", "signal", "ii")
 signal_p = libc.func("i", "signal", "ip")
