@@ -1,5 +1,3 @@
-import string
-
 TEXT = "TEXT"
 START_TAG = "START_TAG"
 #START_TAG_DONE = "START_TAG_DONE"
@@ -46,7 +44,10 @@ class XMLTokenizer:
     def getident(self):
         self.skip_ws()
         ident = ""
-        while self.curch() in (string.ascii_letters + string.digits):
+        while True:
+            c = self.curch()
+            if not(c.isalpha() or c.isdigit() or c in "_-."):
+                break
             ident += self.getch()
         return ident
 
