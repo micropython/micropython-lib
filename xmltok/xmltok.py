@@ -2,12 +2,12 @@ import string
 
 TEXT = "TEXT"
 START_TAG = "START_TAG"
-START_TAG_DONE = "START_TAG_DONE"
+#START_TAG_DONE = "START_TAG_DONE"
 END_TAG = "END_TAG"
 PI = "PI"
-PI_DONE = "PI_DONE"
+#PI_DONE = "PI_DONE"
 ATTR = "ATTR"
-ATTR_VAL = "ATTR_VAL"
+#ATTR_VAL = "ATTR_VAL"
 
 class XMLSyntaxError(Exception):
     pass
