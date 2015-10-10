@@ -115,7 +115,15 @@ def gfind(gen, pred):
 
 def text_of(gen, tag):
     # Return text content of a leaf tag
-    gfind(gen, lambda i: i == (START_TAG, tag))
+    def match_tag(t):
+        if t[0] != START_TAG:
+            return False
+        if isinstance(tag, ()):
+            return t[1] == tag
+        return t[1][1] == tag
+
+    gfind(gen, match_tag)
+    # Assumes no attributes
     t, val = next(gen)
     assert t == TEXT
     return val
