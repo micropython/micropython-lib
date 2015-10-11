@@ -39,6 +39,7 @@ open_ = libc.func("i", "open", "sii")
 read_ = libc.func("i", "read", "ipi")
 write_ = libc.func("i", "write", "iPi")
 close_ = libc.func("i", "close", "i")
+dup_ = libc.func("i", "dup", "i")
 access_ = libc.func("i", "access", "si")
 fork_ = libc.func("i", "fork", "")
 pipe_ = libc.func("i", "pipe", "p")
@@ -181,6 +182,11 @@ def write(fd, buf):
 
 def close(fd):
     r = close_(fd)
+    check_error(r)
+    return r
+
+def dup(fd):
+    r = dup_(fd)
     check_error(r)
     return r
 
