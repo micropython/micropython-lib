@@ -47,6 +47,7 @@ _exit_ = libc.func("v", "_exit", "i")
 getpid_ = libc.func("i", "getpid", "")
 waitpid_ = libc.func("i", "waitpid", "ipi")
 system_ = libc.func("i", "system", "s")
+execvp_ = libc.func("i", "execvp", "PP")
 getenv_ = libc.func("s", "getenv", "P")
 
 R_OK = const(4)
@@ -210,6 +211,16 @@ def pipe():
 
 def _exit(n):
     _exit_(n)
+
+def execvp(f, args):
+    import uctypes
+    args_ = array.array("P", [0] * (len(args) + 1))
+    i = 0
+    for a in args:
+        args_[i] = uctypes.addressof(a)
+        i += 1
+    r = execvp_(f, uctypes.addressof(args_))
+    check_error(r)
 
 def getpid():
     return getpid_()
