@@ -7,6 +7,13 @@ IPPROTO_IP = 0
 IP_ADD_MEMBERSHIP = 35
 IP_DROP_MEMBERSHIP = 36
 
+def _resolve_addr(addr):
+    if isinstance(addr, bytes):
+        return addr
+    if len(addr) != 2:
+        raise NotImplementedError("Only IPv4 supported")
+    a = getaddrinfo(addr[0], addr[1], _socket.AF_INET)
+    return a[0][4]
 
 def inet_aton(addr):
     return inet_pton(AF_INET, addr)
@@ -25,6 +32,12 @@ def create_connection(addr, timeout=None, source_address=None):
 
 
 class socket(_socket.socket):
+
+    def bind(self, addr):
+        return super().bind(_resolve_addr(addr))
+
+    def connect(self, addr):
+        return super().connect(_resolve_addr(addr))
 
     def sendall(self, *args):
         return self.send(*args)
