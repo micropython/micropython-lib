@@ -61,7 +61,7 @@ class _Arg:
             assert False
 
 class ArgumentParser:
-    def __init__(self, *, description):
+    def __init__(self, *, description=""):
         self.description = description
         self.opt = []
         self.pos = []
