@@ -3,7 +3,7 @@ import argparse
 parser = argparse.ArgumentParser(description="command line program")
 parser.add_argument("a")
 parser.add_argument("b")
-parser.add_argument("c")
+parser.add_argument(dest="c")
 args = parser.parse_args(["1", "2", "3"])
 assert args.a == "1" and args.b == "2" and args.c == "3"
 
