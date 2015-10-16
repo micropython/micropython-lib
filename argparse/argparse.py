@@ -126,7 +126,8 @@ class ArgumentParser:
 
         # print full information
         print()
-        print(self.description)
+        if self.description:
+            print(self.description)
         if self.pos:
             print("\npositional args:")
             for pos in self.pos:
