@@ -98,6 +98,8 @@ class ArgumentParser:
             dest = kwargs.get("dest")
             if dest is None:
                 dest = args[0]
+            if not args:
+                args = [dest]
         list.append(
             _Arg(args, dest, action, kwargs.get("nargs", None),
                 const, default, kwargs.get("help", "")))
