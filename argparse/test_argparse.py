@@ -15,7 +15,7 @@ assert args.a == False and args.b == 123
 args = parser.parse_args(["-a"])
 assert args.a == True and args.b == 123
 args = parser.parse_args(["-b", "456"])
-assert args.a == False and args.b == 456
+assert args.a == False and args.b == "456"
 
 parser = argparse.ArgumentParser()
 parser.add_argument("files", nargs="+")
