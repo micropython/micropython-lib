@@ -9,8 +9,8 @@ class _ArgError(BaseException):
     pass
 
 class _Arg:
-    def __init__(self, name, dest, action, nargs, const, default, help):
-        self.name = name
+    def __init__(self, names, dest, action, nargs, const, default, help):
+        self.names = names
         self.dest = dest
         self.action = action
         self.nargs = nargs
@@ -18,14 +18,14 @@ class _Arg:
         self.default = default
         self.help = help
 
-    def parse(self, args):
+    def parse(self, optname, args):
         # parse args for this arg
         if self.action == "store":
             if self.nargs == None:
                 if args:
                     return args.pop(0)
                 else:
-                    raise _ArgError("expecting value for %s" % self.name)
+                    raise _ArgError("expecting value for %s" % optname)
             elif self.nargs == "?":
                 if args:
                     return args.pop(0)
@@ -36,7 +36,7 @@ class _Arg:
                     n = -1
                 elif self.nargs == "+":
                     if not args:
-                        raise _ArgError("expecting value for %s" % self.name)
+                        raise _ArgError("expecting value for %s" % optname)
                     n = -1
                 else:
                     n = int(self.nargs)
@@ -53,12 +53,21 @@ class _Arg:
                         ret.append(args.pop(0))
                         n -= 1
                 if n > 0:
-                    raise _ArgError("expecting value for %s" % self.name)
+                    raise _ArgError("expecting value for %s" % optname)
                 return ret
         elif self.action == "store_const":
             return self.const
         else:
             assert False
+
+def _dest_from_optnames(opt_names):
+    dest = opt_names[0]
+    for name in opt_names:
+        if name.startswith("--"):
+            dest = name
+            break
+    return dest.lstrip("-").replace("-", "_")
+
 
 class ArgumentParser:
     def __init__(self, *, description=""):
@@ -66,7 +75,7 @@ class ArgumentParser:
         self.opt = []
         self.pos = []
 
-    def add_argument(self, name, **kwargs):
+    def add_argument(self, *args, **kwargs):
         action = kwargs.get("action", "store")
         if action == "store_true":
             action = "store_const"
@@ -79,17 +88,18 @@ class ArgumentParser:
         else:
             const = kwargs.get("const", None)
             default = kwargs.get("default", None)
-        if name.startswith("-"):
+        if args and args[0].startswith("-"):
             list = self.opt
-            if name.startswith("--"):
-                dest = kwargs.get("dest", name[2:])
-            else:
-                dest = kwargs.get("dest", name[1:])
+            dest = kwargs.get("dest")
+            if dest is None:
+                dest = _dest_from_optnames(args)
         else:
             list = self.pos
-            dest = kwargs.get("dest", name)
+            dest = kwargs.get("dest")
+            if dest is None:
+                dest = args[0]
         list.append(
-            _Arg(name, dest, action, kwargs.get("nargs", None),
+            _Arg(args, dest, action, kwargs.get("nargs", None),
                 const, default, kwargs.get("help", "")))
 
     def usage(self, full):
@@ -106,7 +116,7 @@ class ArgumentParser:
             else:
                 return ""
         for opt in self.opt:
-            print(" [%s%s]" % (opt.name, render_arg(opt)), end="")
+            print(" [%s%s]" % (', '.join(opt.names), render_arg(opt)), end="")
         for pos in self.pos:
             print(render_arg(pos), end="")
         print()
@@ -120,11 +130,11 @@ class ArgumentParser:
         if self.pos:
             print("\npositional args:")
             for pos in self.pos:
-                print("  %-16s%s" % (pos.name, pos.help))
+                print("  %-16s%s" % (pos.names[0], pos.help))
         print("\noptional args:")
         print("  -h, --help      show this message and exit")
         for opt in self.opt:
-            print("  %-16s%s" % (opt.name + render_arg(opt), opt.help))
+            print("  %-16s%s" % (', '.join(opt.names) + render_arg(opt), opt.help))
 
     def parse_args(self, args=None):
         if args is None:
@@ -157,8 +167,8 @@ class ArgumentParser:
                     sys.exit(0)
                 found = False
                 for i, opt in enumerate(self.opt):
-                    if a == opt.name:
-                        arg_vals[i] = opt.parse(args)
+                    if a in opt.names:
+                        arg_vals[i] = opt.parse(a, args)
                         found = True
                         break
                 if not found:
@@ -169,7 +179,7 @@ class ArgumentParser:
                     raise _ArgError("extra args: %s" % " ".join(args))
                 for pos in self.pos:
                     arg_dest.append(pos.dest)
-                    arg_vals.append(pos.parse(args))
+                    arg_vals.append(pos.parse(pos.names[0], args))
                 parsed_pos = True
 
         # build and return named tuple with arg values
