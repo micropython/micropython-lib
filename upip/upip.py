@@ -226,7 +226,7 @@ def main():
             fatal("Unknown/unsupported option: " + opt)
 
     if install_path is None:
-        install_path = DEFAULT_MICROPYPATH
+        install_path = os.getenv("MICROPYPATH", DEFAULT_MICROPYPATH)
 
     install_path = install_path.split(":", 1)[0]
 
