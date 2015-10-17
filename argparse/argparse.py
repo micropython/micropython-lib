@@ -5,8 +5,10 @@ Minimal and functional version of CPython's argparse module.
 import sys
 from _collections import namedtuple
 
+
 class _ArgError(BaseException):
     pass
+
 
 class _Arg:
     def __init__(self, names, dest, action, nargs, const, default, help):
@@ -21,7 +23,7 @@ class _Arg:
     def parse(self, optname, args):
         # parse args for this arg
         if self.action == "store":
-            if self.nargs == None:
+            if self.nargs is None:
                 if args:
                     return args.pop(0)
                 else:
@@ -59,6 +61,7 @@ class _Arg:
             return self.const
         else:
             assert False
+
 
 def _dest_from_optnames(opt_names):
     dest = opt_names[0]
@@ -102,11 +105,12 @@ class ArgumentParser:
                 args = [dest]
         list.append(
             _Arg(args, dest, action, kwargs.get("nargs", None),
-                const, default, kwargs.get("help", "")))
+                 const, default, kwargs.get("help", "")))
 
     def usage(self, full):
         # print short usage
         print("usage: %s [-h]" % sys.argv[0], end="")
+
         def render_arg(arg):
             if arg.action == "store":
                 if arg.nargs is None:
