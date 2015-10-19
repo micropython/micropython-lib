@@ -8,7 +8,7 @@ IP_ADD_MEMBERSHIP = 35
 IP_DROP_MEMBERSHIP = 36
 
 def _resolve_addr(addr):
-    if isinstance(addr, bytes):
+    if isinstance(addr, (bytes, bytearray)):
         return addr
     if len(addr) != 2:
         raise NotImplementedError("Only IPv4 supported")
