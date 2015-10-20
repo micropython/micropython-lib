@@ -4,7 +4,6 @@ Original source code: https://hg.python.org/cpython/file/3.4/Lib/contextlib.py
 
 Not implemented:
  - redirect_stdout;
- - ExitStack.
 
 """
 
@@ -94,7 +93,6 @@ class ExitStack(object):
         """Helper to correctly register callbacks to __exit__ methods"""
         def _exit_wrapper(*exc_details):
             return cm_exit(cm, *exc_details)
-        _exit_wrapper.__self__ = cm
         self.push(_exit_wrapper)
 
     def push(self, exit):
@@ -124,9 +122,6 @@ class ExitStack(object):
         """
         def _exit_wrapper(exc_type, exc, tb):
             callback(*args, **kwds)
-        # We changed the signature, so using @wraps is not appropriate, but
-        # setting __wrapped__ may still help with introspection
-        _exit_wrapper.__wrapped__ = callback
         self.push(_exit_wrapper)
         return callback # Allow use as a decorator
 
@@ -152,24 +147,6 @@ class ExitStack(object):
 
     def __exit__(self, *exc_details):
         received_exc = exc_details[0] is not None
-
-        # We manipulate the exception state so it behaves as though
-        # we were actually nesting multiple with statements
-        frame_exc = sys.exc_info()[1]
-        def _fix_exception_context(new_exc, old_exc):
-            # Context may not be correct, so find the end of the chain
-            while 1:
-                exc_context = new_exc.__context__
-                if exc_context is old_exc:
-                    # Context is already set correctly (see issue 20317)
-                    return
-                if exc_context is None or exc_context is frame_exc:
-                    break
-                new_exc = exc_context
-            # Change the end of the chain to point to the exception
-            # we expect it to reference
-            new_exc.__context__ = old_exc
-
         # Callbacks are invoked in LIFO order to match the behaviour of
         # nested context managers
         suppressed_exc = False
@@ -182,18 +159,8 @@ class ExitStack(object):
                     pending_raise = False
                     exc_details = (None, None, None)
             except:
-                new_exc_details = sys.exc_info()
-                # simulate the stack of exceptions by setting the context
-                _fix_exception_context(new_exc_details[1], exc_details[1])
+                exc_details = sys.exc_info()
                 pending_raise = True
-                exc_details = new_exc_details
         if pending_raise:
-            try:
-                # bare "raise exc_details[1]" replaces our carefully
-                # set-up context
-                fixed_ctx = exc_details[1].__context__
-                raise exc_details[1]
-            except BaseException:
-                exc_details[1].__context__ = fixed_ctx
-                raise
+            raise exc_details[1]
         return received_exc and suppressed_exc
