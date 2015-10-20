@@ -2,3 +2,4 @@ srctype = cpython
 type = module
 version = 3.4.2-1
 long_desc = Port of contextlib for micropython
+depends = ucontextlib

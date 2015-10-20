@@ -15,4 +15,5 @@ setup(name='micropython-contextlib',
       maintainer='MicroPython Developers',
       maintainer_email='micro-python@googlegroups.com',
       license='Python',
-      py_modules=['contextlib'])
+      py_modules=['contextlib'],
+      install_requires=['ucontextlib'])
