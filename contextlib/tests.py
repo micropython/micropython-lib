@@ -1,38 +1,8 @@
-from unittest import TestCase, run_class
-from contextlib import contextmanager, closing, suppress
+import unittest
+from contextlib import closing, suppress
 
 
-class ContextManagerTestCase(TestCase):
-
-    def setUp(self):
-        self._history = []
-
-        @contextmanager
-        def manager(x):
-            self._history.append('start')
-            try:
-                yield x
-            finally:
-                self._history.append('finish')
-
-        self._manager = manager
-
-    def test_context_manager(self):
-        with self._manager(123) as x:
-            self.assertEqual(x, 123)
-        self.assertEqual(self._history, ['start', 'finish'])
-
-    def test_context_manager_on_error(self):
-        exc = Exception()
-        try:
-            with self._manager(123) as x:
-                raise exc
-        except Exception as e:
-            self.assertEqual(exc, e)
-        self.assertEqual(self._history, ['start', 'finish'])
-
-
-class ClosingTestCase(TestCase):
+class ClosingTestCase(unittest.TestCase):
 
     class Closable:
         def __init__(self):
@@ -58,7 +28,7 @@ class ClosingTestCase(TestCase):
         self.assertTrue(closable.closed)
 
 
-class SuppressTestCase(TestCase):
+class SuppressTestCase(unittest.TestCase):
 
     def test_suppress(self):
         with suppress(ValueError, TypeError):
@@ -68,6 +38,4 @@ class SuppressTestCase(TestCase):
 
 
 if __name__ == '__main__':
-    run_class(ContextManagerTestCase)
-    run_class(ClosingTestCase)
-    run_class(SuppressTestCase)
+    unittest.main()
