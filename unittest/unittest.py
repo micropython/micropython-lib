@@ -83,6 +83,16 @@ class TestCase:
             msg = "%r is %r" % (x, y)
         assert x is not y, msg
 
+    def assertIsNone(self, x, msg=''):
+        if not msg:
+            msg = "%r is not None" % x
+        assert x is None, msg
+
+    def assertIsNotNone(self, x, msg=''):
+        if not msg:
+            msg = "%r is None" % x
+        assert x is not None, msg
+
     def assertTrue(self, x, msg=''):
         if not msg:
             msg = "Expected %r to be True" % x
