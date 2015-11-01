@@ -72,6 +72,16 @@ class TestUnittestAssertions(unittest.TestCase):
         with self.assertRaises(AssertionError):
             self.assertIsNot(None, None)
 
+    def testIsNone(self):
+        self.assertIsNone(None)
+        with self.assertRaises(AssertionError):
+            self.assertIsNone(0)
+
+    def testIsNotNone(self):
+        self.assertIsNotNone(0)
+        with self.assertRaises(AssertionError):
+            self.assertIsNotNone(None)
+
     def testTrue(self):
         self.assertTrue(True)
         with self.assertRaises(AssertionError):
