@@ -11,9 +11,7 @@ def upip_import(mod, sub=None):
         return m
 
 sys = upip_import("sys")
-os = upip_import("os")
-#os.path = upip_import("os.path").path
-ospath = upip_import("os", "path")
+import _os as os
 
 errno = upip_import("errno")
 gzip = upip_import("gzip")
@@ -34,6 +32,35 @@ cleanup_files = [".pkg.tar"]
 
 class NotFoundError(Exception):
     pass
+
+def op_split(path):
+    if path == "":
+        return ("", "")
+    r = path.rsplit("/", 1)
+    if len(r) == 1:
+        return ("", path)
+    head = r[0]
+    if not head:
+        head = "/"
+    return (head, r[1])
+
+def op_basename(path):
+    return op_split(path)[1]
+
+def _makedirs(name, mode=0o777):
+    ret = False
+    s = ""
+    for c in name.rstrip("/").split("/"):
+        s += c + "/"
+        try:
+            os.mkdir(s)
+            ret = True
+        except OSError as e:
+            if e.args[0] != errno.EEXIST:
+                raise
+            ret = False
+    return ret
+
 
 def save_file(fname, subf):
     outf = open(fname, "wb")
@@ -68,12 +95,8 @@ def install_tar(f, prefix):
         if save:
             outfname = prefix + fname
             if info.type == tarfile.DIRTYPE:
-                try:
-                    os.makedirs(outfname)
+                if _makedirs(outfname):
                     print("Created " + outfname)
-                except OSError as e:
-                    if e.args[0] != errno.EEXIST:
-                        raise
             else:
                 if debug:
                     print("Extracting " + outfname)
@@ -163,7 +186,7 @@ def install_pkg(pkg_spec, install_path):
     assert len(packages) == 1
     package_url = packages[0]["url"]
     print("Installing %s %s from %s" % (pkg_spec, latest_ver, package_url))
-    package_fname = ospath.basename(package_url)
+    package_fname = op_basename(package_url)
     download(package_url, package_fname)
 
     data = gzdecompress(package_fname)

@@ -2,7 +2,7 @@ all:
 
 # This target prepares snapshot of all dependency modules, for
 # self-contained install
-deps: upip_ffilib.py upip_os.py upip_os_path.py upip_errno.py upip_gzip.py upip_stat.py upip_utarfile.py
+deps: upip_errno.py upip_gzip.py upip_utarfile.py
 
 upip_ffilib.py: ../ffilib/ffilib.py
 	cp $^ $@
