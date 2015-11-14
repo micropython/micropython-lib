@@ -47,6 +47,7 @@ def op_split(path):
 def op_basename(path):
     return op_split(path)[1]
 
+
 def _makedirs(name, mode=0o777):
     ret = False
     s = ""
@@ -56,7 +57,7 @@ def _makedirs(name, mode=0o777):
             os.mkdir(s)
             ret = True
         except OSError as e:
-            if e.args[0] != errno.EEXIST:
+            if e.args[0] != errno.EEXIST and e.args[0] != errno.EISDIR:
                 raise
             ret = False
     return ret
