@@ -1,6 +1,6 @@
 srctype = micropython-lib
 type = module
-version = 0.6.1
+version = 0.6.2
 author = Paul Sokolovsky
 extra_modules = upip_errno, upip_gzip, upip_utarfile
 desc = Simple package manager for MicroPython.
