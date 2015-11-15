@@ -1,4 +1,4 @@
 srctype = cpython
 type = package
-version = 0.5
-depends = re-pcre, collections
+version = 0.5.1
+depends = re-pcre, collections, collections.defaultdict
