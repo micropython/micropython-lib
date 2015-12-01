@@ -12,7 +12,8 @@ def _resolve_addr(addr):
         return addr
     if len(addr) != 2:
         raise NotImplementedError("Only IPv4 supported")
-    a = getaddrinfo(addr[0], addr[1], _socket.AF_INET)
+    a = "0.0.0.0" if addr[0] == "" else addr[0]
+    a = getaddrinfo(a, addr[1], _socket.AF_INET)
     return a[0][4]
 
 def inet_aton(addr):
