@@ -21,6 +21,9 @@ class deque:
     def appendleft(self, a):
         self.q.insert(0, a)
 
+    def extend(self, a):
+        self.q.extend(a)
+
     def __len__(self):
         return len(self.q)
 
