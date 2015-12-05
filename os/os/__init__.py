@@ -8,6 +8,7 @@ try:
     from _os import *
 except:
     pass
+import os.path as path
 
 
 libc = ffilib.libc()
