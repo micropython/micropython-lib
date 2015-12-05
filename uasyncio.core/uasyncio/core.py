@@ -71,8 +71,8 @@ class EventLoop:
                     ret = cb.send(*args)
                     if __debug__:
                         log.debug("Coroutine %s yield result: %s", cb, ret)
-                    if isinstance(ret, SysCall):
-                        arg = ret.args[0]
+                    if isinstance(ret, SysCall1):
+                        arg = ret.arg
                         if isinstance(ret, Sleep):
                             delay = arg
                         elif isinstance(ret, IORead):
@@ -121,22 +121,28 @@ class SysCall:
     def handle(self):
         raise NotImplementedError
 
-class Sleep(SysCall):
+# Optimized syscall with 1 arg
+class SysCall1(SysCall):
+
+    def __init__(self, arg):
+        self.arg = arg
+
+class Sleep(SysCall1):
     pass
 
-class StopLoop(SysCall):
+class StopLoop(SysCall1):
     pass
 
-class IORead(SysCall):
+class IORead(SysCall1):
     pass
 
-class IOWrite(SysCall):
+class IOWrite(SysCall1):
     pass
 
-class IOReadDone(SysCall):
+class IOReadDone(SysCall1):
     pass
 
-class IOWriteDone(SysCall):
+class IOWriteDone(SysCall1):
     pass
 
 
