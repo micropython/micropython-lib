@@ -7,6 +7,8 @@ IPPROTO_IP = 0
 IP_ADD_MEMBERSHIP = 35
 IP_DROP_MEMBERSHIP = 36
 
+error = OSError
+
 def _resolve_addr(addr):
     if isinstance(addr, (bytes, bytearray)):
         return addr
