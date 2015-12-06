@@ -13,7 +13,10 @@ class EpollEventLoop(EventLoop):
     def add_reader(self, fd, cb, *args):
         if __debug__:
             log.debug("add_reader%s", (fd, cb, args))
-        self.poller.register(fd, select.EPOLLIN | select.EPOLLONESHOT, (cb, args))
+        if args:
+            self.poller.register(fd, select.EPOLLIN | select.EPOLLONESHOT, (cb, args))
+        else:
+            self.poller.register(fd, select.EPOLLIN | select.EPOLLONESHOT, cb)
 
     def remove_reader(self, fd):
         if __debug__:
@@ -23,7 +26,10 @@ class EpollEventLoop(EventLoop):
     def add_writer(self, fd, cb, *args):
         if __debug__:
             log.debug("add_writer%s", (fd, cb, args))
-        self.poller.register(fd, select.EPOLLOUT | select.EPOLLONESHOT, (cb, args))
+        if args:
+            self.poller.register(fd, select.EPOLLOUT | select.EPOLLONESHOT, (cb, args))
+        else:
+            self.poller.register(fd, select.EPOLLOUT | select.EPOLLONESHOT, cb)
 
     def remove_writer(self, fd):
         if __debug__:
@@ -48,8 +54,11 @@ class EpollEventLoop(EventLoop):
         #log.debug("epoll result: %s", res)
         for cb, ev in res:
             if __debug__:
-                log.debug("Calling IO callback: %s%s", cb[0], cb[1])
-            cb[0](*cb[1])
+                log.debug("Calling IO callback: %r", cb)
+            if isinstance(cb, tuple):
+                cb[0](*cb[1])
+            else:
+                cb()
 
 
 class StreamReader:
