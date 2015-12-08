@@ -51,3 +51,7 @@ def islice(p, start, stop=(), step=1):
 
 def tee(iterable, n=2):
     return [iter(iterable)] * n
+
+def starmap(function, iterable):
+    for args in iterable:
+        yield function(*args)
