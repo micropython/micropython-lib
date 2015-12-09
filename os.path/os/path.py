@@ -1,6 +1,8 @@
 import os
 
 
+sep = "/"
+
 def normcase(s):
     return s
 
