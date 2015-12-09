@@ -67,7 +67,7 @@ class StreamReader:
         self.s = s
 
     def read(self, n=-1):
-        s = yield IORead(self.s)
+        yield IORead(self.s)
         while True:
             res = self.s.read(n)
             if res is not None:
@@ -80,9 +80,9 @@ class StreamReader:
     def readline(self):
         if __debug__:
             log.debug("StreamReader.readline()")
-        s = yield IORead(self.s)
-        if __debug__:
-            log.debug("StreamReader.readline(): after IORead: %s", s)
+        yield IORead(self.s)
+#        if __debug__:
+#            log.debug("StreamReader.readline(): after IORead: %s", s)
         while True:
             res = self.s.readline()
             if res is not None:
@@ -131,7 +131,7 @@ class StreamWriter:
             assert res < sz
             buf = buf[res:]
             sz -= res
-            s2 = yield IOWrite(self.s)
+            yield IOWrite(self.s)
             #assert s2.fileno() == self.s.fileno()
             if __debug__:
                 log.debug("StreamWriter.awrite(): can write more")
@@ -161,9 +161,9 @@ def open_connection(host, port):
             raise
     if __debug__:
         log.debug("open_connection: After connect")
-    s2 = yield IOWrite(s)
-    if __debug__:
-        assert s2.fileno() == s.fileno()
+    yield IOWrite(s)
+#    if __debug__:
+#        assert s2.fileno() == s.fileno()
     if __debug__:
         log.debug("open_connection: After iowait: %s", s)
     return StreamReader(s), StreamWriter(s, {})
