@@ -11,7 +11,7 @@ def upip_import(mod, sub=None):
         return m
 
 sys = upip_import("sys")
-import _os as os
+import uos as os
 
 errno = upip_import("errno")
 gzip = upip_import("gzip")
