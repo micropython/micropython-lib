@@ -58,7 +58,7 @@ class EpollEventLoop(EventLoop):
             if isinstance(cb, tuple):
                 cb[0](*cb[1])
             else:
-                cb()
+                self.call_soon(cb)
 
 
 class StreamReader:
