@@ -5,7 +5,7 @@ import errno
 import stat as stat_
 import ffilib
 try:
-    from _os import *
+    from uos import *
 except:
     pass
 
