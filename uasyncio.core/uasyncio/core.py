@@ -44,12 +44,6 @@ class EventLoop:
         log.debug("Sleeping for: %s", delay)
         time.sleep(delay)
 
-    # Workaround bug for in uPy - default args for lambda's are not supported
-    def lambda_helper(self, cb):
-        def lmb(cb=cb):
-            self.call_soon(cb)
-        return lmb
-
     def run_forever(self):
         while True:
             if self.q:
@@ -85,11 +79,11 @@ class EventLoop:
 #                            self.add_reader(ret.obj.fileno(), lambda self, c, f: self.call_soon(c, f), self, cb, ret.obj)
 #                            self.add_reader(ret.obj.fileno(), lambda c, f: self.call_soon(c, f), cb, ret.obj)
 #                            self.add_reader(arg.fileno(), lambda cb: self.call_soon(cb), cb)
-                            self.add_reader(arg.fileno(), self.lambda_helper(cb))
+                            self.add_reader(arg.fileno(), cb)
                             continue
                         elif isinstance(ret, IOWrite):
 #                            self.add_writer(arg.fileno(), lambda cb: self.call_soon(cb), cb)
-                            self.add_writer(arg.fileno(), self.lambda_helper(cb))
+                            self.add_writer(arg.fileno(), cb)
                             continue
                         elif isinstance(ret, IOReadDone):
                             self.remove_reader(arg.fileno())
