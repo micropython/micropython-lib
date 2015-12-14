@@ -122,7 +122,7 @@ def makedirs(name, mode=0o777, exist_ok=False):
             if e.args[0] != errno.EEXIST:
                 raise
 
-def ilistdir_ex(path="."):
+def ilistdir(path="."):
     dir = opendir_(path)
     if not dir:
         raise_error()
@@ -134,13 +134,14 @@ def ilistdir_ex(path="."):
             break
         dirent = ffi.as_bytearray(dirent, struct.calcsize(dirent_fmt))
         dirent = struct.unpack(dirent_fmt, dirent)
+        dirent = (dirent[-1].split(b'\0', 1)[0], dirent[-2], dirent[0])
         yield dirent
 
 def listdir(path="."):
     is_str = type(path) is not bytes
     res = []
-    for dirent in ilistdir_ex(path):
-        fname = dirent[4].split(b'\0', 1)[0]
+    for dirent in ilistdir(path):
+        fname = dirent[0]
         if fname != b"." and fname != b"..":
             if is_str:
                 fname = fsdecode(fname)
