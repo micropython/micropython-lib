@@ -9,6 +9,29 @@ try:
 except:
     pass
 
+R_OK = const(4)
+W_OK = const(2)
+X_OK = const(1)
+F_OK = const(0)
+
+O_ACCMODE  = 0o0000003
+O_RDONLY   = 0o0000000
+O_WRONLY   = 0o0000001
+O_RDWR     = 0o0000002
+O_CREAT    = 0o0000100
+O_EXCL     = 0o0000200
+O_NOCTTY   = 0o0000400
+O_TRUNC    = 0o0001000
+O_APPEND   = 0o0002000
+O_NONBLOCK = 0o0004000
+
+error = OSError
+name = "posix"
+sep = "/"
+curdir = "."
+pardir = ".."
+environ = {"WARNING": "NOT_IMPLEMENTED"}
+
 
 libc = ffilib.libc()
 
@@ -50,28 +73,6 @@ system_ = libc.func("i", "system", "s")
 execvp_ = libc.func("i", "execvp", "PP")
 getenv_ = libc.func("s", "getenv", "P")
 
-R_OK = const(4)
-W_OK = const(2)
-X_OK = const(1)
-F_OK = const(0)
-
-O_ACCMODE  = 0o0000003
-O_RDONLY   = 0o0000000
-O_WRONLY   = 0o0000001
-O_RDWR     = 0o0000002
-O_CREAT    = 0o0000100
-O_EXCL     = 0o0000200
-O_NOCTTY   = 0o0000400
-O_TRUNC    = 0o0001000
-O_APPEND   = 0o0002000
-O_NONBLOCK = 0o0004000
-
-error = OSError
-name = "posix"
-sep = "/"
-curdir = "."
-pardir = ".."
-environ = {"WARNING": "NOT_IMPLEMENTED"}
 
 
 def check_error(ret):
