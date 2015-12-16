@@ -1,13 +1,10 @@
 import ffi
 import array
 import ustruct as struct
-import errno
+import errno as errno_
 import stat as stat_
 import ffilib
-try:
-    from uos import *
-except:
-    pass
+import uos
 
 R_OK = const(4)
 W_OK = const(2)
@@ -34,21 +31,6 @@ environ = {"WARNING": "NOT_IMPLEMENTED"}
 
 
 libc = ffilib.libc()
-
-try:
-    errno__ = libc.var("i", "errno")
-    def errno_(val=None):
-        if val is None:
-            return errno__.get()
-        errno__.set(val)
-except OSError:
-    __errno = libc.func("p", "__errno", "")
-    def errno_(val=None):
-        if val is None:
-            p = __errno()
-            buf = ffi.as_bytearray(p, 4)
-            return int.from_bytes(buf)
-        raise NotImplementedError
 
 chdir_ = libc.func("i", "chdir", "s")
 mkdir_ = libc.func("i", "mkdir", "si")
@@ -79,13 +61,13 @@ def check_error(ret):
     # Return True is error was EINTR (which usually means that OS call
     # should be restarted).
     if ret == -1:
-        e = errno_()
-        if e == errno.EINTR:
+        e = uos.errno()
+        if e == errno_.EINTR:
             return True
         raise OSError(e)
 
 def raise_error():
-    raise OSError(errno_.get())
+    raise OSError(uos.errno())
 
 
 def getcwd():
@@ -113,14 +95,14 @@ def makedirs(name, mode=0o777, exist_ok=False):
     if exists:
         if exist_ok:
             return
-        raise OSError(errno.EEXIST)
+        raise OSError(errno_.EEXIST)
     s = ""
     for c in name.split("/"):
         s += c + "/"
         try:
             mkdir(s)
         except OSError as e:
-            if e.args[0] != errno.EEXIST:
+            if e.args[0] != errno_.EEXIST:
                 raise
 
 def ilistdir(path="."):
