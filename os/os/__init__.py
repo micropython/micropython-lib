@@ -1,4 +1,3 @@
-import ffi
 import array
 import ustruct as struct
 import errno as errno_
@@ -115,7 +114,8 @@ def ilistdir(path="."):
         dirent = readdir_(dir)
         if not dirent:
             break
-        dirent = ffi.as_bytearray(dirent, struct.calcsize(dirent_fmt))
+        import uctypes
+        dirent = uctypes.bytes_at(dirent, struct.calcsize(dirent_fmt))
         dirent = struct.unpack(dirent_fmt, dirent)
         dirent = (dirent[-1].split(b'\0', 1)[0], dirent[-2], dirent[0])
         yield dirent
