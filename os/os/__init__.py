@@ -52,6 +52,7 @@ getpid_ = libc.func("i", "getpid", "")
 waitpid_ = libc.func("i", "waitpid", "ipi")
 system_ = libc.func("i", "system", "s")
 execvp_ = libc.func("i", "execvp", "PP")
+kill_ = libc.func("i", "kill", "ii")
 getenv_ = libc.func("s", "getenv", "P")
 
 
@@ -214,6 +215,10 @@ def waitpid(pid, opts):
     r = waitpid_(pid, a, opts)
     check_error(r)
     return (r, a[0])
+
+def kill(pid, sig):
+    r = kill_(pid, sig)
+    check_error(r)
 
 def system(command):
     r = system_(command)
