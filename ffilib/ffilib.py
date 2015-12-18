@@ -1,9 +1,14 @@
 import sys
-import ffi
+try:
+    import ffi
+except ImportError:
+    ffi = None
 
 _cache = {}
 
 def open(name, maxver=10, extra=()):
+    if not ffi:
+        return None
     try:
         return _cache[name]
     except KeyError:
