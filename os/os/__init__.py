@@ -106,21 +106,24 @@ def makedirs(name, mode=0o777, exist_ok=False):
             if e.args[0] != errno_.EEXIST:
                 raise
 
-def ilistdir(path="."):
-    dir = opendir_(path)
-    if not dir:
-        raise_error()
-    res = []
-    dirent_fmt = "LLHB256s"
-    while True:
-        dirent = readdir_(dir)
-        if not dirent:
-            break
-        import uctypes
-        dirent = uctypes.bytes_at(dirent, struct.calcsize(dirent_fmt))
-        dirent = struct.unpack(dirent_fmt, dirent)
-        dirent = (dirent[-1].split(b'\0', 1)[0], dirent[-2], dirent[0])
-        yield dirent
+if hasattr(uos, "ilistdir"):
+    ilistdir = uos.ilistdir
+else:
+    def ilistdir(path="."):
+        dir = opendir_(path)
+        if not dir:
+            raise_error()
+        res = []
+        dirent_fmt = "LLHB256s"
+        while True:
+            dirent = readdir_(dir)
+            if not dirent:
+                break
+            import uctypes
+            dirent = uctypes.bytes_at(dirent, struct.calcsize(dirent_fmt))
+            dirent = struct.unpack(dirent_fmt, dirent)
+            dirent = (dirent[-1].split(b'\0', 1)[0], dirent[-2], dirent[0])
+            yield dirent
 
 def listdir(path="."):
     is_str = type(path) is not bytes
