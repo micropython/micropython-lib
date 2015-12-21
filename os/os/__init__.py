@@ -92,19 +92,21 @@ def rmdir(name):
     check_error(e)
 
 def makedirs(name, mode=0o777, exist_ok=False):
-    exists = access(name, F_OK)
-    if exists:
-        if exist_ok:
-            return
-        raise OSError(errno_.EEXIST)
     s = ""
-    for c in name.split("/"):
+    comps = name.split("/")
+    if comps[-1] == "":
+        comps.pop()
+    for i, c in enumerate(comps):
         s += c + "/"
         try:
-            mkdir(s)
+            uos.mkdir(s)
         except OSError as e:
             if e.args[0] != errno_.EEXIST:
                 raise
+            if i == len(comps) - 1:
+                if exist_ok:
+                    return
+                raise e
 
 if hasattr(uos, "ilistdir"):
     ilistdir = uos.ilistdir
