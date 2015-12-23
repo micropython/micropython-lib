@@ -132,7 +132,7 @@ def listdir(path="."):
     res = []
     for dirent in ilistdir(path):
         fname = dirent[0]
-        if fname != b"." and fname != b"..":
+        if fname not in (b".", b"..", ".", ".."):
             if is_str:
                 fname = fsdecode(fname)
             res.append(fname)
