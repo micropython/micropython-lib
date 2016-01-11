@@ -39,8 +39,7 @@ class socket(_socket.socket):
     def accept(self):
         s, addr = super().accept()
         addr = _socket.sockaddr(addr)
-        # Assumes IPv4
-        return (s, addr[1:3])
+        return (s, (_socket.inet_ntop(addr[0], addr[1]), addr[2]))
 
     def bind(self, addr):
         return super().bind(_resolve_addr(addr))
