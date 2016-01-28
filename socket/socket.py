@@ -12,10 +12,14 @@ error = OSError
 def _resolve_addr(addr):
     if isinstance(addr, (bytes, bytearray)):
         return addr
+    family = _socket.AF_INET
     if len(addr) != 2:
-        raise NotImplementedError("Only IPv4 supported")
-    a = "0.0.0.0" if addr[0] == "" else addr[0]
-    a = getaddrinfo(a, addr[1], _socket.AF_INET)
+        family = _socket.AF_INET6
+    if addr[0] == "":
+        a = "0.0.0.0" if family == _socket.AF_INET else "::"
+    else:
+        a = addr[0]
+    a = getaddrinfo(a, addr[1], family)
     return a[0][4]
 
 def inet_aton(addr):
