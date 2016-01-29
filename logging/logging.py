@@ -15,6 +15,8 @@ _level_dict = {
     DEBUG: "DEBUG",
 }
 
+_stream = sys.stderr
+
 class Logger:
 
     def __init__(self, name):
@@ -28,7 +30,7 @@ class Logger:
 
     def log(self, level, msg, *args):
         if level >= (self.level or _level):
-            print(("%s:%s:" + msg) % ((self._level_str(level), self.name) + args), file=sys.stderr)
+            print(("%s:%s:" + msg) % ((self._level_str(level), self.name) + args), file=_stream)
 
     def debug(self, msg, *args):
         self.log(DEBUG, msg, *args)
@@ -62,9 +64,11 @@ def info(msg, *args):
 def debug(msg, *args):
     getLogger(None).debug(msg, *args)
 
-def basicConfig(level=INFO, filename=None, format=None):
-    global _level
+def basicConfig(level=INFO, filename=None, stream=None, format=None):
+    global _level, _stream
     _level = level
+    if stream:
+        _stream = stream
     if filename is not None:
         print("logging.basicConfig: filename arg is not supported")
     if format is not None:
