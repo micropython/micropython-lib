@@ -41,7 +41,7 @@ Version History:
 
 LOOPS = 50000
 
-from utime import clock
+from utime import ticks_ms, ticks_diff
 
 __version__ = "1.2"
 
@@ -93,10 +93,10 @@ def Proc0(loops=LOOPS):
     global PtrGlb
     global PtrGlbNext
 
-    starttime = clock()
+    starttime = ticks_ms()
     for i in range(loops):
         pass
-    nulltime = clock() - starttime
+    nulltime = ticks_diff(starttime, ticks_ms())
 
     PtrGlbNext = Record()
     PtrGlb = Record()
@@ -108,7 +108,7 @@ def Proc0(loops=LOOPS):
     String1Loc = "DHRYSTONE PROGRAM, 1'ST STRING"
     Array2Glob[8 // 2][7 // 2] = 10
 
-    starttime = clock()
+    starttime = ticks_ms()
 
     for i in range(loops):
         Proc5()
@@ -134,12 +134,12 @@ def Proc0(loops=LOOPS):
         IntLoc2 = 7 * (IntLoc3 - IntLoc2) - IntLoc1
         IntLoc1 = Proc2(IntLoc1)
 
-    benchtime = clock() - starttime - nulltime
+    benchtime = ticks_diff(starttime, ticks_ms()) - nulltime
     if benchtime == 0.0:
         loopsPerBenchtime = 0.0
     else:
-        loopsPerBenchtime = (loops / benchtime)
-    return benchtime, loopsPerBenchtime
+        loopsPerBenchtime = (loops / benchtime) * 1000
+    return benchtime / 1000, loopsPerBenchtime
 
 def Proc1(PtrParIn):
     PtrParIn.PtrComp = NextRecord = PtrGlb.copy()
