@@ -78,8 +78,8 @@ IntGlob = 0
 BoolGlob = FALSE
 Char1Glob = '\0'
 Char2Glob = '\0'
-Array1Glob = [0]*51
-Array2Glob = [x[:] for x in [Array1Glob]*51]
+Array1Glob = [0]*(51 // 2)
+Array2Glob = [x[:] for x in [Array1Glob]*(51 // 2)]
 PtrGlb = None
 PtrGlbNext = None
 
@@ -106,7 +106,7 @@ def Proc0(loops=LOOPS):
     PtrGlb.IntComp = 40
     PtrGlb.StringComp = "DHRYSTONE PROGRAM, SOME STRING"
     String1Loc = "DHRYSTONE PROGRAM, 1'ST STRING"
-    Array2Glob[8][7] = 10
+    Array2Glob[8 // 2][7 // 2] = 10
 
     starttime = clock()
 
@@ -220,13 +220,13 @@ def Proc8(Array1Par, Array2Par, IntParI1, IntParI2):
     global IntGlob
 
     IntLoc = IntParI1 + 5
-    Array1Par[IntLoc] = IntParI2
-    Array1Par[IntLoc+1] = Array1Par[IntLoc]
-    Array1Par[IntLoc+30] = IntLoc
+    Array1Par[IntLoc // 2] = IntParI2
+    Array1Par[(IntLoc+1) // 2] = Array1Par[IntLoc // 2]
+    Array1Par[(IntLoc+30) // 2] = IntLoc
     for IntIndex in range(IntLoc, IntLoc+2):
-        Array2Par[IntLoc][IntIndex] = IntLoc
-    Array2Par[IntLoc][IntLoc-1] = Array2Par[IntLoc][IntLoc-1] + 1
-    Array2Par[IntLoc+20][IntLoc] = Array1Par[IntLoc]
+        Array2Par[IntLoc // 2][IntIndex // 2] = IntLoc
+    Array2Par[IntLoc // 2][(IntLoc-1) // 2] = Array2Par[IntLoc // 2][(IntLoc-1) // 2] + 1
+    Array2Par[(IntLoc+20) // 2][IntLoc // 2] = Array1Par[IntLoc // 2]
     IntGlob = 5
 
 def Func1(CharPar1, CharPar2):
