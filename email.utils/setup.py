@@ -16,4 +16,4 @@ setup(name='micropython-email.utils',
       maintainer_email='micro-python@googlegroups.com',
       license='Python',
       packages=['email'],
-      install_requires=['micropython-os', 'micropython-re-pcre', 'micropython-base64', 'micropython-random', 'micropython-datetime', 'micropython-urlib.parse', 'micropython-warnings', 'micropython-quopri', 'micropython-email.charset'])
+      install_requires=['micropython-os', 'micropython-re-pcre', 'micropython-base64', 'micropython-random', 'micropython-datetime', 'micropython-urllib.parse', 'micropython-warnings', 'micropython-quopri', 'micropython-email.charset'])

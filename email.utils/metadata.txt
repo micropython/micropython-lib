@@ -1,4 +1,4 @@
 srctype = cpython
 type = package
 version = 0.5
-depends = os, re-pcre, base64, random, datetime, urlib.parse, warnings, quopri, email.charset
+depends = os, re-pcre, base64, random, datetime, urllib.parse, warnings, quopri, email.charset
