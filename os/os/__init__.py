@@ -70,6 +70,7 @@ def check_error(ret):
 def raise_error():
     raise OSError(uos.errno())
 
+stat = uos.stat
 
 def getcwd():
     buf = bytearray(512)
