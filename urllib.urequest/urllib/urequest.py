@@ -1,8 +1,8 @@
 import usocket
 
 def urlopen(url, data=None):
-    if data:
-        raise NotImplementedError("POST is not yet supported")
+    if data is not None and method=="GET":
+        method = "POST"
     try:
         proto, dummy, host, path = url.split("/", 3)
     except ValueError:
@@ -15,7 +15,13 @@ def urlopen(url, data=None):
     addr = ai[0][4]
     s = usocket.socket()
     s.connect(addr)
-    s.send(b"GET /%s HTTP/1.0\r\nHost: %s\r\n\r\n" % (path, host))
+    if data:
+        req = b"%s /%s HTTP/1.0\r\nHost: %s\r\nContent-Length: %d\r\n\r\n" % (method, path, host, len(data))
+    else:
+        req = b"%s /%s HTTP/1.0\r\nHost: %s\r\n\r\n" % (method, path, host)
+    s.send(req)
+    if data:
+        s.send(data)
 
     l = s.readline()
     protover, status, msg = l.split(None, 2)
