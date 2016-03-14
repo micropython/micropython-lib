@@ -1,6 +1,6 @@
 import usocket
 
-def urlopen(url, data=None):
+def urlopen(url, data=None, method="GET"):
     if data is not None and method=="GET":
         method = "POST"
     try:
