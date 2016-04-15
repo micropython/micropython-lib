@@ -53,3 +53,6 @@ class socket(_socket.socket):
 
     def sendall(self, *args):
         return self.send(*args)
+
+    def sendto(self, data, addr):
+        return super().sendto(data, _resolve_addr(addr))
