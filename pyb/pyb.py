@@ -10,7 +10,7 @@ class LED:
         self.f.write(b"0")
 
     def set(self, v):
-        self.f.write(b"{}".format(0 if v < 0 else 255 if v > 255 else v))
+        self.f.write(b"{}".format(max(0, min(255, v)))
 
     def get(self):
         self.f.seek(0)
