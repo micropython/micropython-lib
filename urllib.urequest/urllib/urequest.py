@@ -1,7 +1,7 @@
 import usocket
 
 def urlopen(url, data=None, method="GET"):
-    if data is not None and method=="GET":
+    if data is not None and method == "GET":
         method = "POST"
     try:
         proto, dummy, host, path = url.split("/", 3)
