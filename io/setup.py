@@ -6,7 +6,7 @@ from setuptools import setup
 
 
 setup(name='micropython-io',
-      version='0.0.1',
+      version='0.0.2',
       description='Dummy io module for MicroPython',
       long_description='This is a dummy implementation of a module for MicroPython standard library.\nIt contains zero or very little functionality, and primarily intended to\navoid import errors (using idea that even if an application imports a\nmodule, it may be not using it onevery code path, so may work at least\npartially). It is expected that more complete implementation of the module\nwill be provided later. Please help with the development if you are\ninterested in this module.',
       url='https://github.com/micropython/micropython/issues/405',
