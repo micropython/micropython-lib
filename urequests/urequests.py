@@ -30,7 +30,7 @@ class Response:
         return ujson.loads(self.content)
 
 
-def request(method, url, data=None, headers={}, stream=None):
+def request(method, url, data=None, json=None, headers={}, stream=None):
     try:
         proto, dummy, host, path = url.split("/", 3)
     except ValueError:
@@ -46,6 +46,10 @@ def request(method, url, data=None, headers={}, stream=None):
     s.send(b"%s /%s HTTP/1.0\r\n" % (method, path))
     if not "Host" in headers:
         s.send(b"Host: %s\r\n" % host)
+    if json is not None:
+        assert data is None
+        import ujson
+        data = ujson.dumps(json)
     if data:
         s.send(b"Content-Length: %d\r\n" % len(data))
     s.send(b"\r\n")
