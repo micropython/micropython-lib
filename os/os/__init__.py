@@ -139,21 +139,25 @@ def listdir(path="."):
             res.append(fname)
     return res
 
-def walk(top, topdown=True):
+def walk(top, topdown=True, onerror=None, followlinks=False):
     files = []
     dirs = []
-    for dirent in ilistdir_ex(top):
-        mode = dirent[3] << 12
-        fname = dirent[4].split(b'\0', 1)[0]
-        if stat_.S_ISDIR(mode):
-            if fname != b"." and fname != b"..":
-                dirs.append(fsdecode(fname))
-        else:
-            files.append(fsdecode(fname))
+    try:
+        for dirent in listdir(top):
+            if stat_.S_ISDIR(stat(top + sep + dirent)[0]):
+                if dirent != b"." and dirent != b"..":
+                    dirs.append(fsdecode(dirent))
+            else:
+                files.append(fsdecode(dirent))
+    except OSError as err:
+        if onerror is not None:
+            onerror(err)
+        return
     if topdown:
         yield top, dirs, files
     for d in dirs:
-        yield from walk(top + "/" + d, topdown)
+        if not stat_.S_ISLNK(stat(top + sep + d)[0]) or followlinks:
+            yield from walk(top + sep + d, topdown, onerror, followlinks)
     if not topdown:
         yield top, dirs, files
 
