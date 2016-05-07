@@ -143,12 +143,15 @@ def walk(top, topdown=True, onerror=None, followlinks=False):
     files = []
     dirs = []
     try:
-        for dirent in listdir(top):
-            if stat_.S_ISDIR(stat(top + sep + dirent)[0]):
-                if dirent != b"." and dirent != b"..":
-                    dirs.append(fsdecode(dirent))
+        for dirent in ilistdir(top):
+            mode = dirent[2] << 12
+            fname = fsdecode(dirent[0])
+            if fname in (".", ".."):
+                continue
+            if stat_.S_ISDIR(mode):
+                    dirs.append(fname)
             else:
-                files.append(fsdecode(dirent))
+                files.append(fname)
     except OSError as err:
         if onerror is not None:
             onerror(err)
