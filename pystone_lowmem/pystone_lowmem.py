@@ -66,7 +66,7 @@ FALSE = 0
 
 def main(loops=LOOPS):
     benchtime, stones = pystones(loops)
-    print("Pystone(%s) time for %d passes = %g" % \
+    print("Pystone(%s) time for %d passes = %gms" % \
           (__version__, loops, benchtime))
     print("This machine benchmarks at %g pystones/second" % stones)
 
@@ -135,11 +135,11 @@ def Proc0(loops=LOOPS):
         IntLoc1 = Proc2(IntLoc1)
 
     benchtime = ticks_diff(starttime, ticks_ms()) - nulltime
-    if benchtime == 0.0:
-        loopsPerBenchtime = 0.0
+    if benchtime == 0:
+        loopsPerBenchtime = 0
     else:
-        loopsPerBenchtime = (loops / benchtime) * 1000
-    return benchtime / 1000, loopsPerBenchtime
+        loopsPerBenchtime = (loops * 1000 // benchtime)
+    return benchtime, loopsPerBenchtime
 
 def Proc1(PtrParIn):
     PtrParIn.PtrComp = NextRecord = PtrGlb.copy()
