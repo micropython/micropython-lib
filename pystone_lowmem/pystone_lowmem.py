@@ -39,7 +39,7 @@ Version History:
 
 """
 
-LOOPS = 50000
+LOOPS = 500
 
 from utime import ticks_ms, ticks_diff
 
