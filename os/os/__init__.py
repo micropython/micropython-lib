@@ -142,14 +142,14 @@ def listdir(path="."):
 def walk(top, topdown=True):
     files = []
     dirs = []
-    for dirent in ilistdir_ex(top):
-        mode = dirent[3] << 12
-        fname = dirent[4].split(b'\0', 1)[0]
+    for dirent in ilistdir(top):
+        mode = dirent[1] << 12
+        fname = fsdecode(dirent[0])
         if stat_.S_ISDIR(mode):
-            if fname != b"." and fname != b"..":
-                dirs.append(fsdecode(fname))
+            if fname != "." and fname != "..":
+                dirs.append(fname)
         else:
-            files.append(fsdecode(fname))
+            files.append(fname)
     if topdown:
         yield top, dirs, files
     for d in dirs:
