@@ -32,12 +32,21 @@ class Response:
 
 def request(method, url, data=None, json=None, headers={}, stream=None):
     try:
-        proto, dummy, host, path = url.split("/", 3)
+        proto, dummy, hostname, path = url.split("/", 3)
     except ValueError:
-        proto, dummy, host = url.split("/", 2)
+        proto, dummy, hostname = url.split("/", 2)
         path = ""
     if proto != "http:":
         raise ValueError("Unsupported protocol: " + proto)
+    
+    if ':' in hostname:
+        host, port = hostname.split(':', 1)
+        if not port.isdigit():
+            raise ValueError('Unable to parse port')
+        port = int(port)
+    else:
+        host = hostname
+        port = 80
 
     ai = usocket.getaddrinfo(host, 80)
     addr = ai[0][4]
