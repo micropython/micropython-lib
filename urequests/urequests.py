@@ -39,12 +39,11 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
     if proto != "http:":
         raise ValueError("Unsupported protocol: " + proto)
 
-    try:
+    port = 80
+    if ':' in host:
         _host, port = host.split(':', 1)
         host = _host
         port = int(port)
-    except ValueError:
-        port = 80
 
     ai = usocket.getaddrinfo(host, port)
     addr = ai[0][4]
