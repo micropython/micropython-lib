@@ -11,7 +11,12 @@ def urlopen(url, data=None, method="GET"):
     if proto != "http:":
         raise ValueError("Unsupported protocol: " + proto)
 
-    ai = usocket.getaddrinfo(host, 80)
+    port = 80
+    if ":" in host:
+        host, port = host.split(":", 1)
+        port = int(port)
+
+    ai = usocket.getaddrinfo(host, port)
     addr = ai[0][4]
     s = usocket.socket()
     s.connect(addr)
