@@ -211,9 +211,12 @@ def cleanup():
             print("Warning: Cannot delete " + fname)
 
 def help():
-    print("upip - Simple PyPI package manager for MicroPython")
-    print("Usage: micropython -m upip install <package>... | -r <requirements.txt>")
     print("""\
+upip - Simple PyPI package manager for MicroPython
+Usage: micropython -m upip install [-p <path>] <package>... | -r <requirements.txt>
+
+If -p is not given, packages will be installed to first path component of
+MICROPYPATH, or to ~/.micropython/lib/ by default.
 Note: only MicroPython packages (usually, micropython-*) are supported for
 installation, upip does not support arbitrary code in setup.py.""")
     sys.exit(1)
