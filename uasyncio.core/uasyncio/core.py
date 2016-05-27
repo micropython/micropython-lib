@@ -167,7 +167,7 @@ def coroutine(f):
 # for compatibility with CPython asyncio
 #
 
-def async(coro, loop=_event_loop):
+def ensure_future(coro, loop=_event_loop):
     _event_loop.call_soon(coro)
     # CPython asyncio incompatibility: we don't return Task object
     return coro
