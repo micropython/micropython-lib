@@ -12,8 +12,8 @@ def upip_import(mod, sub=None):
 
 sys = upip_import("sys")
 import uos as os
+import uerrno as errno
 
-errno = upip_import("errno")
 gzip = upip_import("gzip")
 try:
     tarfile = upip_import("utarfile")
