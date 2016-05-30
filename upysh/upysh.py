@@ -28,6 +28,8 @@ ls = LS()
 def cd(path):
     os.chdir(path)
 
+mkdir = os.mkdir
+
 def head(f, n=10):
     with open(f) as f:
         for i in range(n):
@@ -38,6 +40,17 @@ def head(f, n=10):
 def cat(f):
     head(f, 1 << 30)
 
+def newfile(path):
+    print("Type file contents line by line, finish with EOF (Ctrl+D).")
+    with open(path, "w") as f:
+        while 1:
+            try:
+                l = input()
+            except EOFError:
+                break
+            f.write(l)
+            f.write("\n")
+
 def help():
     print("""
 This is 'upysh' help, for builtin Python help run:
@@ -46,4 +59,5 @@ builtins.help()
 
 upysh commands:
 pwd, cd("new_dir"), ls, ls(...), head(...), cat(...)
+mkdir(...), newfile(...)
 """)
