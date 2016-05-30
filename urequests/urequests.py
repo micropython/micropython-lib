@@ -36,10 +36,14 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
     except ValueError:
         proto, dummy, host = url.split("/", 2)
         path = ""
-    if proto != "http:":
+    if proto == "http:":
+        port = 80
+    elif proto == "https:":
+        import ussl
+        port = 443
+    else:
         raise ValueError("Unsupported protocol: " + proto)
 
-    port = 80
     if ":" in host:
         host, port = host.split(":", 1)
         port = int(port)
@@ -48,18 +52,20 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
     addr = ai[0][4]
     s = usocket.socket()
     s.connect(addr)
-    s.send(b"%s /%s HTTP/1.0\r\n" % (method, path))
+    if proto == "https:":
+        s = ussl.wrap_socket(s)
+    s.write(b"%s /%s HTTP/1.0\r\n" % (method, path))
     if not "Host" in headers:
-        s.send(b"Host: %s\r\n" % host)
+        s.write(b"Host: %s\r\n" % host)
     if json is not None:
         assert data is None
         import ujson
         data = ujson.dumps(json)
     if data:
-        s.send(b"Content-Length: %d\r\n" % len(data))
-    s.send(b"\r\n")
+        s.write(b"Content-Length: %d\r\n" % len(data))
+    s.write(b"\r\n")
     if data:
-        s.send(data)
+        s.write(data)
 
     l = s.readline()
     protover, status, msg = l.split(None, 2)
