@@ -8,10 +8,14 @@ def urlopen(url, data=None, method="GET"):
     except ValueError:
         proto, dummy, host = url.split("/", 2)
         path = ""
-    if proto != "http:":
+    if proto == "http:":
+        port = 80
+    elif proto == "https:":
+        import ussl
+        port = 443
+    else:
         raise ValueError("Unsupported protocol: " + proto)
 
-    port = 80
     if ":" in host:
         host, port = host.split(":", 1)
         port = int(port)
@@ -20,13 +24,15 @@ def urlopen(url, data=None, method="GET"):
     addr = ai[0][4]
     s = usocket.socket()
     s.connect(addr)
+    if proto == "https:":
+        s = ussl.wrap_socket(s)
     if data:
         req = b"%s /%s HTTP/1.0\r\nHost: %s\r\nContent-Length: %d\r\n\r\n" % (method, path, host, len(data))
     else:
         req = b"%s /%s HTTP/1.0\r\nHost: %s\r\n\r\n" % (method, path, host)
-    s.send(req)
+    s.write(req)
     if data:
-        s.send(data)
+        s.write(data)
 
     l = s.readline()
     protover, status, msg = l.split(None, 2)
