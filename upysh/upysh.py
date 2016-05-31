@@ -4,15 +4,18 @@ import os
 class LS:
 
     def __repr__(self):
-        l = os.listdir()
-        l.sort()
-        return "\n".join(l)
+        self.__call__()
+        return ""
 
     def __call__(self, path="."):
         l = os.listdir(path)
         l.sort()
         for f in l:
-            print(f)
+            st = os.stat("%s/%s" % (path, f))
+            if st[0] & 0x4000:  # stat.S_IFDIR
+                print("   <dir> %s" % f)
+            else:
+                print("% 8d %s" % (st[6], f))
 
 class PWD:
 
