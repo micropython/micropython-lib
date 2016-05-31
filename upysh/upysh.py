@@ -29,6 +29,7 @@ def cd(path):
     os.chdir(path)
 
 mkdir = os.mkdir
+mv = os.rename
 
 def head(f, n=10):
     with open(f) as f:
