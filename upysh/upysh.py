@@ -20,19 +20,56 @@ class LS:
 class PWD:
 
     def __repr__(self):
-        return os.getcwd()
+        res = os.getcwd()
+        if res == "": # TLD on esp8266
+            res = "/"
+        return res
 
     def __call__(self):
         return self.__repr__()
 
+class CLEAR:
+
+    def __repr__(self):
+        return "\x1b[2J\x1b[H"
+
+    def __call__(self):
+        return self.__repr__()
+        
+class HELP:
+
+    def __repr__(self):
+        return ("""
+This is 'upysh' help. upysh commands:
+
+cat(file)
+clear 
+cd("new_dir") 
+ls 
+ls(object) 
+head(file [, #_of_lines]) 
+help
+mkdir(newdir) 
+mv(from, to)
+newfile(file)
+pwd
+rm(file)
+rmdir(empty_dir)
+""")
+
+    def __call__(self):
+        return self.__repr__()
+
+        
 pwd = PWD()
 ls = LS()
-
-def cd(path):
-    os.chdir(path)
-
+clear = CLEAR()
+help = HELP()
+cd = os.chdir
 mkdir = os.mkdir
 mv = os.rename
+rm = os.remove
+rmdir = os.remove
 
 def head(f, n=10):
     with open(f) as f:
@@ -55,13 +92,3 @@ def newfile(path):
             f.write(l)
             f.write("\n")
 
-def help():
-    print("""
-This is 'upysh' help, for builtin Python help run:
-import builtins
-builtins.help()
-
-upysh commands:
-pwd, cd("new_dir"), ls, ls(...), head(...), cat(...)
-mkdir(...), newfile(...)
-""")
