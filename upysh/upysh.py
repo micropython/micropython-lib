@@ -1,5 +1,6 @@
 import sys
 import os
+from time import localtime
 
 class LS:
 
@@ -12,10 +13,11 @@ class LS:
         l.sort()
         for f in l:
             st = os.stat("%s/%s" % (path, f))
+            tm = localtime(st[7])
             if st[0] & 0x4000:  # stat.S_IFDIR
-                print("   <dir> %s" % f)
+                print("%04d-%02d-%02d %02d:%02d    <dir> %s" % (tm[0], tm[1], tm[2], tm[3], tm[4], f))
             else:
-                print("% 8d %s" % (st[6], f))
+                print("%04d-%02d-%02d %02d:%02d %8d %s" % (tm[0], tm[1], tm[2], tm[3], tm[4], st[6], f))
 
 class PWD:
 
@@ -36,19 +38,19 @@ class CLEAR:
     def __call__(self):
         return self.__repr__()
         
-class HELP:
+class MAN:
 
     def __repr__(self):
         return ("""
-This is 'upysh' help. upysh commands:
+This is 'upysh' command list:
 
 cat(file)
 clear 
-cd("new_dir") 
+cd(new_dir) 
 ls 
 ls(object) 
 head(file [, #_of_lines]) 
-help
+man
 mkdir(newdir) 
 mv(from, to)
 newfile(file)
@@ -64,7 +66,7 @@ rmdir(empty_dir)
 pwd = PWD()
 ls = LS()
 clear = CLEAR()
-help = HELP()
+man = MAN()
 cd = os.chdir
 mkdir = os.mkdir
 mv = os.rename
