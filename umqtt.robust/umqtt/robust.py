@@ -26,6 +26,18 @@ class MQTTClient(simple.MQTTClient):
                 i += 1
                 self.delay(i)
 
+    def with_retry(self, meth, *args, **kwargs):
+        while 1:
+            try:
+                return meth(*args, **kwargs)
+            except OSError as e:
+                print("%r" % e)
+            time.sleep(0.5)
+            self.reconnect()
+
+    def publish_(self, *args, **kwargs):
+        return self.with_retry(super().publish, *args, **kwargs)
+
     def publish(self, topic, msg, retain=False, qos=0):
         while 1:
             try:
