@@ -42,7 +42,7 @@ class MAN:
 
     def __repr__(self):
         return ("""
-This is 'upysh' command list:
+This is the 'upysh' command list:
 
 cat(file)
 clear 
