@@ -185,7 +185,7 @@ class Timer:
         else:
             it = [None] * number
         gcold = gc.isenabled()
-        gc.disable()
+#        gc.disable()
         try:
             timing = self.inner(it, self.timer)
         finally:
