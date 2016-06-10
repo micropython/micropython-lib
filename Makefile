@@ -11,6 +11,7 @@ install:
 	else \
 	    for d in $$(find -maxdepth 1 -type d ! -name ".*"); do \
 	        echo $$d; \
+	        [ "$$d" = "./_install_tmp" ] && continue; \
 	        (cd $$d; sh -c $(CMD)); \
 	    done \
 	fi
