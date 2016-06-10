@@ -6,7 +6,7 @@ from setuptools import setup
 
 
 setup(name='micropython-timeit',
-      version='3.3.3-1',
+      version='3.3.3-2',
       description='CPython timeit module ported to MicroPython',
       long_description='This is a module ported from CPython standard library to be compatible with\nMicroPython interpreter. Usually, this means applying small patches for\nfeatures not supported (yet, or at all) in MicroPython. Sometimes, heavier\nchanges are required. Note that CPython modules are written with availability\nof vast resources in mind, and may not work for MicroPython ports with\nlimited heap. If you are affected by such a case, please help reimplement\nthe module from scratch.',
       url='https://github.com/micropython/micropython/issues/405',
@@ -15,4 +15,5 @@ setup(name='micropython-timeit',
       maintainer='MicroPython Developers',
       maintainer_email='micro-python@googlegroups.com',
       license='Python',
-      py_modules=['timeit'])
+      py_modules=['timeit'],
+      install_requires=['micropython-getopt', 'micropython-itertools', 'micropython-linecache', 'micropython-time', 'micropython-traceback'])
