@@ -27,11 +27,17 @@ def urlopen(url, data=None, method="GET"):
     if proto == "https:":
         s = ussl.wrap_socket(s)
 
-    req = b"%s /%s HTTP/1.0\r\nHost: %s\r\n" % (method, path, host)
-    s.write(req)
+    s.write(method)
+    s.write(b" /")
+    s.write(path)
+    s.write(b" HTTP/1.0\r\nHost: ")
+    s.write(host)
+    s.write(b"\r\n")
 
     if data:
-        req = b"Content-Length: %d\r\n" % len(data)
+        s.write(b"Content-Length: ")
+        s.write(str(len(data)))
+        s.write(b"\r\n")
     s.write(b"\r\n")
     if data:
         s.write(data)
