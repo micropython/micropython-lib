@@ -28,11 +28,11 @@ class PWD:
 pwd = PWD()
 ls = LS()
 
-def cd(path):
-    os.chdir(path)
-
+cd = os.chdir
 mkdir = os.mkdir
 mv = os.rename
+rm = os.remove
+rmdir = os.rmdir
 
 def head(f, n=10):
     with open(f) as f:
@@ -63,5 +63,5 @@ builtins.help()
 
 upysh commands:
 pwd, cd("new_dir"), ls, ls(...), head(...), cat(...)
-mkdir(...), newfile(...)
+newfile(...), rm(...), mkdir(...), rmdir(...)
 """)
