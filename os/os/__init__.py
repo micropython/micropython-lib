@@ -87,6 +87,7 @@ def rename(old, new):
 def unlink(name):
     e = unlink_(name)
     check_error(e)
+remove = unlink
 
 def rmdir(name):
     e = rmdir_(name)
