@@ -61,6 +61,9 @@ This is 'upysh' help, for builtin Python help run:
 import builtins
 builtins.help()
 
+upysh is intended to be imported using:
+from upysh import *
+
 upysh commands:
 pwd, cd("new_dir"), ls, ls(...), head(...), cat(...)
 newfile(...), rm(...), mkdir(...), rmdir(...)
