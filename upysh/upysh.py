@@ -65,3 +65,5 @@ upysh commands:
 pwd, cd("new_dir"), ls, ls(...), head(...), cat(...)
 newfile(...), rm(...), mkdir(...), rmdir(...)
 """)
+
+help()
