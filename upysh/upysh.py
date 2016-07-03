@@ -55,18 +55,20 @@ def newfile(path):
             f.write(l)
             f.write("\n")
 
-def help():
-    print("""
-This is 'upysh' help, for builtin Python help run:
-import builtins
-builtins.help()
+class Man():
 
+    def __repr__(self):
+        return("""
 upysh is intended to be imported using:
 from upysh import *
+
+To see this help text again, type "man".
 
 upysh commands:
 pwd, cd("new_dir"), ls, ls(...), head(...), cat(...)
 newfile(...), rm(...), mkdir(...), rmdir(...)
 """)
 
-help()
+man = Man()
+
+print(man)
