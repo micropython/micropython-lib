@@ -17,7 +17,7 @@ from setuptools import setup
 setup(name='micropython-%(dist_name)s',
       version='%(version)s',
       description=%(desc)r,
-      long_description=%(long_desc)r,
+      long_description=%(long_desc)s,
       url='https://github.com/micropython/micropython/issues/405',
       author=%(author)r,
       author_email=%(author_email)r,
@@ -154,6 +154,10 @@ def main():
             data["dist_name"] = dirname
         if "name" not in data:
             data["name"] = module
+        if data["long_desc"] == "README.rst":
+            data["long_desc"] = "open(%r).read()" % data["long_desc"]
+        else:
+            data["long_desc"] = repr(data["long_desc"])
 
         data["modules"] = "'" + data["name"].split(".", 1)[0] + "'"
         if "extra_modules" in data:
