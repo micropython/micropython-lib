@@ -7,7 +7,7 @@ from setuptools import setup
 
 setup(name='micropython-upysh',
       version='0.4',
-      description='upysh module for MicroPython',
+      description='Minimalistic file shell using native Python syntax.',
       long_description='Minimalistic file shell using native Python syntax.',
       url='https://github.com/micropython/micropython/issues/405',
       author='Paul Sokolovsky',
