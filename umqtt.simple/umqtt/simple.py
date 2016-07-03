@@ -1,7 +1,6 @@
 import usocket as socket
 import ustruct as struct
 from ubinascii import hexlify
-import time
 
 class MQTTException(Exception):
     pass
