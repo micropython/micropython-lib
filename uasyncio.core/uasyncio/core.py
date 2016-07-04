@@ -25,7 +25,7 @@ class EventLoop:
         # CPython asyncio incompatibility: we don't return Task object
 
     def call_soon(self, callback, *args):
-        self.call_at(0, callback, *args)
+        self.call_at(self.time(), callback, *args)
 
     def call_later(self, delay, callback, *args):
         self.call_at(self.time() + delay, callback, *args)
