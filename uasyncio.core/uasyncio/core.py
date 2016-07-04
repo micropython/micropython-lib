@@ -64,11 +64,12 @@ class EventLoop:
             else:
                 delay = 0
                 try:
-                    if args == ():
-                        args = (None,)
                     if __debug__:
                         log.debug("Coroutine %s send args: %s", cb, args)
-                    ret = cb.send(*args)
+                    if args == ():
+                        ret = next(cb)
+                    else:
+                        ret = cb.send(*args)
                     if __debug__:
                         log.debug("Coroutine %s yield result: %s", cb, ret)
                     if isinstance(ret, SysCall1):
