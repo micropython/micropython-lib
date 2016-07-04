@@ -41,7 +41,8 @@ class EventLoop:
     def wait(self, delay):
         # Default wait implementation, to be overriden in subclasses
         # with IO scheduling
-        log.debug("Sleeping for: %s", delay)
+        if __debug__:
+            log.debug("Sleeping for: %s", delay)
         time.sleep(delay)
 
     def run_forever(self):
