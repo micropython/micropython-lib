@@ -25,8 +25,17 @@ class PWD:
     def __call__(self):
         return self.__repr__()
 
+class CLEAR:
+    def __repr__(self):
+        return "\x1b[2J\x1b[H"
+
+    def __call__(self):
+        return self.__repr__()
+
+
 pwd = PWD()
 ls = LS()
+clear = CLEAR()
 
 cd = os.chdir
 mkdir = os.mkdir
@@ -66,7 +75,8 @@ To see this help text again, type "man".
 
 upysh commands:
 pwd, cd("new_dir"), ls, ls(...), head(...), cat(...)
-newfile(...), rm(...), mkdir(...), rmdir(...)
+newfile(...), rm(...), mkdir(...), rmdir(...),
+clear
 """)
 
 man = Man()
