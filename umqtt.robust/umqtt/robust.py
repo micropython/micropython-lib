@@ -9,14 +9,14 @@ class MQTTClient(simple.MQTTClient):
     def delay(self, i):
         utime.sleep(self.DELAY)
 
-    def log(self, in_reconnect, exc):
+    def log(self, in_reconnect, e):
         if self.DEBUG:
             if in_reconnect:
                 print("mqtt reconnect: %r" % e)
             else:
                 print("mqtt: %r" % e)
 
-    def reconnect(self, i):
+    def reconnect(self):
         i = 0
         while 1:
             try:
