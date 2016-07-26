@@ -26,10 +26,10 @@ class MQTTClient(simple.MQTTClient):
                 i += 1
                 self.delay(i)
 
-    def publish(self, topic, msg, qos=0, retain=False):
+    def publish(self, topic, msg, retain=False, qos=0):
         while 1:
             try:
-                return super().publish(topic, msg, qos, retain)
+                return super().publish(topic, msg, retain, qos)
             except OSError as e:
                 self.log(False, e)
             self.reconnect()
