@@ -46,7 +46,9 @@ API reference
 Taking into account API traits described above, umqtt pretty closely
 follows MQTT control operations, and maps them to class methods:
 
-* ``connect()`` - Connect to a server.
+* ``connect(...)`` - Connect to a server. Returns True if this connection
+  uses persisten session stored on a server (this will be always False if
+  clean_session=True argument is used (default)).
 * ``disconnect()`` - Disconnect from a server, release resources.
 * ``ping()`` - Ping server (response is processed automatically by wait_msg()).
 * ``publish()`` - Publish a message.
