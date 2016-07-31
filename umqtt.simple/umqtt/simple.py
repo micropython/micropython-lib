@@ -112,9 +112,9 @@ class MQTTClient:
     # messages processed internally.
     def wait_msg(self):
         res = self.sock.read(1)
+        self.sock.setblocking(True)
         if res is None:
             return None
-        self.sock.setblocking(True)
         if res == b"":
             raise OSError(-1)
         if res == b"\xd0":  # PINGRESP
