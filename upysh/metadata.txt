@@ -1,6 +1,5 @@
 srctype = micropython-lib
 type = module
-version = 0.5
-author = Paul Sokolovsky
+version = 0.6
 desc = Minimalistic file shell using native Python syntax.
 long_desc = Minimalistic file shell using native Python syntax.
