@@ -75,7 +75,7 @@ To see this help text again, type "man".
 
 upysh commands:
 pwd, cd("new_dir"), ls, ls(...), head(...), cat(...)
-newfile(...), rm(...), mkdir(...), rmdir(...),
+newfile(...), mv("old", "new"), rm(...), mkdir(...), rmdir(...),
 clear
 """)
 
