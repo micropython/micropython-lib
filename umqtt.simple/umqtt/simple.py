@@ -79,9 +79,8 @@ class MQTTClient:
         if qos > 0:
             self.pid += 1
             pid = self.pid
-            buf = bytearray(b"\0\0")
-            struct.pack_into("!H", buf, 0, pid)
-            self.sock.write(buf)
+            struct.pack_into("!H", pkt, 0, pid)
+            self.sock.write(pkt, 2)
         self.sock.write(msg)
         if qos == 1:
             while 1:
