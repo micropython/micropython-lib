@@ -58,7 +58,6 @@ class MQTTClient:
 
     def ping(self):
         self.sock.write(b"\xc0\0")
-        self.sock.close()
 
     def publish(self, topic, msg, retain=False, qos=0):
         pkt = bytearray(b"\x30\0\0\0")
