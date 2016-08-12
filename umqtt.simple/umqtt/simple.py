@@ -45,13 +45,13 @@ class MQTTClient:
         msg = bytearray(b"\x10\0\0\x04MQTT\x04\x02\0\0")
         msg[1] = 10 + 2 + len(self.client_id)
         msg[9] = clean_session << 1
-        if self.user and self.pswd:
+        if self.user is not None:
             msg[1] += 2 + len(self.user) + 2 + len(self.pswd)
             msg[9] |= 0xC0
         self.sock.write(msg)
         #print(hex(len(msg)), hexlify(msg, ":"))
         self._send_str(self.client_id)
-        if self.user and self.pswd:
+        if self.user is not None:
             self._send_str(self.user)
             self._send_str(self.pswd)
         resp = self.sock.read(4)
