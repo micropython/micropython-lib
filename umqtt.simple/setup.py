@@ -6,7 +6,7 @@ from setuptools import setup
 
 
 setup(name='micropython-umqtt.simple',
-      version='1.0.1',
+      version='1.1',
       description='Lightweight MQTT client for MicroPython.',
       long_description=open('README.rst').read(),
       url='https://github.com/micropython/micropython/issues/405',
