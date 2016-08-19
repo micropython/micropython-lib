@@ -7,7 +7,8 @@ class MQTTException(Exception):
 
 class MQTTClient:
 
-    def __init__(self, client_id, server, port=0, user=None, password=None, ssl=False):
+    def __init__(self, client_id, server, port=0, user=None, password=None, keepalive=0,
+                 ssl=False):
         if port == 0:
             port = 8883 if ssl else 1883
         self.client_id = client_id
@@ -18,6 +19,7 @@ class MQTTClient:
         self.cb = None
         self.user = user
         self.pswd = password
+        self.keepalive = keepalive
 
     def _send_str(self, s):
         self.sock.write(struct.pack("!H", len(s)))
@@ -48,6 +50,10 @@ class MQTTClient:
         if self.user is not None:
             msg[1] += 2 + len(self.user) + 2 + len(self.pswd)
             msg[9] |= 0xC0
+        if self.keepalive:
+            assert self.keepalive < 65536
+            msg[10] |= self.keepalive >> 8
+            msg[11] |= self.keepalive & 0x00FF
         self.sock.write(msg)
         #print(hex(len(msg)), hexlify(msg, ":"))
         self._send_str(self.client_id)
