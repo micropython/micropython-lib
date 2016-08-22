@@ -51,7 +51,7 @@ class MQTTClient:
             msg[1] += 2 + len(self.user) + 2 + len(self.pswd)
             msg[9] |= 0xC0
         if self.keepalive:
-            assert self.keepalive < 65536, "Max two bytes keepalive"
+            assert self.keepalive < 65536
             msg[10] |= self.keepalive >> 8
             msg[11] |= self.keepalive & 0x00FF
         self.sock.write(msg)
