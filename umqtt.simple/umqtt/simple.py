@@ -8,13 +8,14 @@ class MQTTException(Exception):
 class MQTTClient:
 
     def __init__(self, client_id, server, port=0, user=None, password=None, keepalive=0,
-                 ssl=False):
+                 ssl=False, ssl_params={}):
         if port == 0:
             port = 8883 if ssl else 1883
         self.client_id = client_id
         self.sock = None
         self.addr = socket.getaddrinfo(server, port)[0][-1]
         self.ssl = ssl
+        self.ssl_params = ssl_params
         self.pid = 0
         self.cb = None
         self.user = user
@@ -43,7 +44,7 @@ class MQTTClient:
         self.sock.connect(self.addr)
         if self.ssl:
             import ussl
-            self.sock = ussl.wrap_socket(self.sock)
+            self.sock = ussl.wrap_socket(self.sock, **self.ssl_params)
         msg = bytearray(b"\x10\0\0\x04MQTT\x04\x02\0\0")
         msg[1] = 10 + 2 + len(self.client_id)
         msg[9] = clean_session << 1
