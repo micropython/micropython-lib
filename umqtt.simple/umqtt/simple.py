@@ -21,6 +21,10 @@ class MQTTClient:
         self.user = user
         self.pswd = password
         self.keepalive = keepalive
+        self.lw_topic = None
+        self.lw_msg = None
+        self.lw_qos = 0
+        self.lw_retain = False
 
     def _send_str(self, s):
         self.sock.write(struct.pack("!H", len(s)))
@@ -39,6 +43,14 @@ class MQTTClient:
     def set_callback(self, f):
         self.cb = f
 
+    def set_last_will(self, topic, msg, retain=False, qos=0):
+        assert 0 <= qos <= 2
+        assert topic
+        self.lw_topic = topic
+        self.lw_msg = msg
+        self.lw_qos = qos
+        self.lw_retain = retain
+
     def connect(self, clean_session=True):
         self.sock = socket.socket()
         self.sock.connect(self.addr)
@@ -55,9 +67,16 @@ class MQTTClient:
             assert self.keepalive < 65536
             msg[10] |= self.keepalive >> 8
             msg[11] |= self.keepalive & 0x00FF
+        if self.lw_topic:
+            msg[1] += 2 + len(self.lw_topic) + 2 + len(self.lw_msg)
+            msg[9] |= 0x4 | (self.lw_qos & 0x1) << 3 | (self.lw_qos & 0x2) << 3
+            msg[9] |= self.lw_retain << 5
         self.sock.write(msg)
         #print(hex(len(msg)), hexlify(msg, ":"))
         self._send_str(self.client_id)
+        if self.lw_topic:
+            self._send_str(self.lw_topic)
+            self._send_str(self.lw_msg)
         if self.user is not None:
             self._send_str(self.user)
             self._send_str(self.pswd)
