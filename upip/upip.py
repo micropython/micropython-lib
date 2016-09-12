@@ -120,7 +120,7 @@ try:
         #print("Address infos:", ai)
         addr = ai[0][4]
 
-        s = usocket.socket()
+        s = usocket.socket(ai[0][0])
         #print("Connect address:", addr)
         s.connect(addr)
 
