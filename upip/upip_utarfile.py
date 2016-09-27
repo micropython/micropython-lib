@@ -45,8 +45,11 @@ class TarInfo:
 
 class TarFile:
 
-    def __init__(self, name):
-        self.f = open(name, "rb")
+    def __init__(self, name=None, fileobj=None):
+        if fileobj:
+            self.f = fileobj
+        else:
+            self.f = open(name, "rb")
         self.subf = None
 
     def next(self):
