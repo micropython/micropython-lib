@@ -13,8 +13,8 @@ def upip_import(mod, sub=None):
 sys = upip_import("sys")
 import uos as os
 import uerrno as errno
+import uzlib
 
-gzip = upip_import("gzip")
 try:
     tarfile = upip_import("utarfile")
 except ImportError:
@@ -28,7 +28,7 @@ except ImportError:
 DEFAULT_MICROPYPATH = "~/.micropython/lib:/usr/lib/micropython"
 
 debug = False
-cleanup_files = [".pkg.tar"]
+cleanup_files = []
 
 class NotFoundError(Exception):
     pass
@@ -113,7 +113,7 @@ try:
     import ussl
     import usocket
     warn_ussl = True
-    def download(url, local_name):
+    def url_open(url):
         global warn_ussl
         proto, _, host, urlpath = url.split('/', 3)
         ai = usocket.getaddrinfo(host, 443)
@@ -142,12 +142,8 @@ try:
                 raise OSError()
             if l == b'\r\n':
                 break
-        with open(local_name, "wb") as f:
-            while 1:
-                l = s.read(1024)
-                if not l:
-                    break
-                f.write(l)
+
+        return s
 
 except ImportError:
 
@@ -162,9 +158,9 @@ except ImportError:
 
 
 def get_pkg_metadata(name):
-    download("https://pypi.python.org/pypi/%s/json" % name, ".pkg.json")
-    with open(".pkg.json") as f:
-        s = f.read()
+    f = url_open("https://pypi.python.org/pypi/%s/json" % name)
+    s = f.read()
+    f.close()
     return json.loads(s)
 
 
@@ -192,16 +188,12 @@ def install_pkg(pkg_spec, install_path):
     package_url = packages[0]["url"]
     print("Installing %s %s from %s" % (pkg_spec, latest_ver, package_url))
     package_fname = op_basename(package_url)
-    download(package_url, package_fname)
-
-    data = gzdecompress(package_fname)
-
-    f = open(".pkg.tar", "wb")
-    f.write(data)
-    f.close()
-
-    f = tarfile.TarFile(".pkg.tar")
-    return install_tar(f, install_path)
+    f1 = url_open(package_url)
+    f2 = uzlib.DecompIO(f1, 16 + 15)
+    f3 = tarfile.TarFile(fileobj=f2)
+    meta = install_tar(f3, install_path)
+    f1.close()
+    return meta
 
 def cleanup():
     for fname in cleanup_files:
