@@ -1,28 +1,9 @@
-def upip_import(mod, sub=None):
-    try:
-        mod_ = mod
-        if sub:
-            mod_ += "_" + sub
-        return __import__("upip_" + mod_)
-    except ImportError:
-        m = __import__(mod)
-        if sub:
-            return getattr(m, sub)
-        return m
-
-sys = upip_import("sys")
+import sys
 import uos as os
 import uerrno as errno
+import ujson as json
 import uzlib
-
-try:
-    tarfile = upip_import("utarfile")
-except ImportError:
-    tarfile = upip_import("tarfile")
-try:
-    json = upip_import("ujson")
-except ImportError:
-    json = upip_import("json")
+import upip_utarfile as tarfile
 
 
 DEFAULT_MICROPYPATH = "~/.micropython/lib:/usr/lib/micropython"
@@ -167,17 +148,6 @@ def get_pkg_metadata(name):
 def fatal(msg):
     print(msg)
     sys.exit(1)
-
-def gzdecompress(package_fname):
-    f = open(package_fname, "rb")
-    zipdata = f.read()
-    data = gzip.decompress(zipdata)
-    return data
-
-def gzdecompress_(package_fname):
-    os.system("gzip -d -c %s > ungz" % package_fname)
-    with open("ungz", "rb") as f:
-        return f.read()
 
 def install_pkg(pkg_spec, install_path):
     data = get_pkg_metadata(pkg_spec)
