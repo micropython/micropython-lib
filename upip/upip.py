@@ -90,52 +90,40 @@ def expandhome(s):
     s = s.replace("~/", h + "/")
     return s
 
-try:
-    import ussl
-    import usocket
-    warn_ussl = True
-    def url_open(url):
-        global warn_ussl
-        proto, _, host, urlpath = url.split('/', 3)
-        ai = usocket.getaddrinfo(host, 443)
-        #print("Address infos:", ai)
-        addr = ai[0][4]
+import ussl
+import usocket
+warn_ussl = True
+def url_open(url):
+    global warn_ussl
+    proto, _, host, urlpath = url.split('/', 3)
+    ai = usocket.getaddrinfo(host, 443)
+    #print("Address infos:", ai)
+    addr = ai[0][4]
 
-        s = usocket.socket(ai[0][0])
-        #print("Connect address:", addr)
-        s.connect(addr)
+    s = usocket.socket(ai[0][0])
+    #print("Connect address:", addr)
+    s.connect(addr)
 
-        if proto == "https:":
-            s = ussl.wrap_socket(s)
-            if warn_ussl:
-                print("Warning: %s SSL certificate is not validated" % host)
-                warn_ussl = False
+    if proto == "https:":
+        s = ussl.wrap_socket(s)
+        if warn_ussl:
+            print("Warning: %s SSL certificate is not validated" % host)
+            warn_ussl = False
 
-        # MicroPython rawsocket module supports file interface directly
-        s.write("GET /%s HTTP/1.0\r\nHost: %s\r\n\r\n" % (urlpath, host))
+    # MicroPython rawsocket module supports file interface directly
+    s.write("GET /%s HTTP/1.0\r\nHost: %s\r\n\r\n" % (urlpath, host))
+    l = s.readline()
+    protover, status, msg = l.split(None, 2)
+    if status != b"200":
+        raise OSError()
+    while 1:
         l = s.readline()
-        protover, status, msg = l.split(None, 2)
-        if status != b"200":
+        if not l:
             raise OSError()
-        while 1:
-            l = s.readline()
-            if not l:
-                raise OSError()
-            if l == b'\r\n':
-                break
+        if l == b'\r\n':
+            break
 
-        return s
-
-except ImportError:
-
-    def download(url, local_name):
-        if debug:
-            print("wget -q %s -O %s" % (url, local_name))
-        rc = os.system("wget -q %s -O %s" % (url, local_name))
-        if local_name not in cleanup_files:
-            cleanup_files.append(local_name)
-        if rc == 8 * 256:
-            raise NotFoundError
+    return s
 
 
 def get_pkg_metadata(name):
