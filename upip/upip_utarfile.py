@@ -35,6 +35,15 @@ class FileSection:
         self.content_len -= sz
         return data
 
+    def readinto(self, buf):
+        if self.content_len == 0:
+            return 0
+        if len(buf) > self.content_len:
+            buf = memoryview(buf)[:self.content_len]
+        sz = self.f.readinto(buf)
+        self.content_len -= sz
+        return sz
+
     def skip(self):
         self.f.read(self.content_len + self.align)
 
