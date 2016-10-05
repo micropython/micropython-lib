@@ -11,6 +11,8 @@ DEFAULT_MICROPYPATH = "~/.micropython/lib:/usr/lib/micropython"
 debug = False
 cleanup_files = []
 
+file_buf = bytearray(512)
+
 class NotFoundError(Exception):
     pass
 
@@ -44,13 +46,13 @@ def _makedirs(name, mode=0o777):
 
 
 def save_file(fname, subf):
-    outf = open(fname, "wb")
-    while True:
-        buf = subf.read(1024)
-        if not buf:
-            break
-        outf.write(buf)
-    outf.close()
+    global file_buf
+    with open(fname, "wb") as outf:
+        while True:
+            sz = subf.readinto(file_buf)
+            if not sz:
+                break
+            outf.write(file_buf, sz)
 
 def install_tar(f, prefix):
     meta = {}
