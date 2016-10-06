@@ -155,6 +155,28 @@ def install_pkg(pkg_spec, install_path):
     f1.close()
     return meta
 
+def install(to_install, install_path):
+    # sets would be perfect here, but don't depend on them
+    installed = []
+    try:
+        while to_install:
+            if debug:
+                print("Queue:", to_install)
+            pkg_spec = to_install.pop(0)
+            if pkg_spec in installed:
+                continue
+            meta = install_pkg(pkg_spec, install_path)
+            installed.append(pkg_spec)
+            if debug:
+                print(meta)
+            deps = meta.get("deps", "").rstrip()
+            if deps:
+                deps = deps.decode("utf-8").split("\n")
+                to_install.extend(deps)
+    except NotFoundError:
+        print("Error: cannot find '%s' package (or server error), packages may be partially installed" \
+            % pkg_spec, file=sys.stderr)
+
 def cleanup():
     for fname in cleanup_files:
         try:
@@ -224,26 +246,7 @@ def main():
     if not to_install:
         help()
 
-    # sets would be perfect here, but don't depend on them
-    installed = []
-    try:
-        while to_install:
-            if debug:
-                print("Queue:", to_install)
-            pkg_spec = to_install.pop(0)
-            if pkg_spec in installed:
-                continue
-            meta = install_pkg(pkg_spec, install_path)
-            installed.append(pkg_spec)
-            if debug:
-                print(meta)
-            deps = meta.get("deps", "").rstrip()
-            if deps:
-                deps = deps.decode("utf-8").split("\n")
-                to_install.extend(deps)
-    except NotFoundError:
-        print("Error: cannot find '%s' package (or server error), packages may be partially installed" \
-            % pkg_spec, file=sys.stderr)
+    install(to_install, install_path)
 
     if not debug:
         cleanup()
