@@ -248,4 +248,6 @@ def main():
     if not debug:
         cleanup()
 
-main()
+
+if __name__ == "__main__":
+    main()
