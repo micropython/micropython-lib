@@ -161,6 +161,8 @@ def install(to_install, install_path=None):
         install_path = get_install_path()
     if install_path[-1] != "/":
         install_path += "/"
+    if not isinstance(to_install, list):
+        to_install = [to_install]
     print("Installing to: " + install_path)
     # sets would be perfect here, but don't depend on them
     installed = []
