@@ -35,7 +35,9 @@ def _makedirs(name, mode=0o777):
     ret = False
     s = ""
     for c in name.rstrip("/").split("/"):
-        s += c + "/"
+        if s:
+            s += "/"
+        s += c
         try:
             os.mkdir(s)
             ret = True
