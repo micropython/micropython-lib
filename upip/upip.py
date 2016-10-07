@@ -9,6 +9,7 @@ import upip_utarfile as tarfile
 DEFAULT_MICROPYPATH = "~/.micropython/lib:/usr/lib/micropython"
 
 debug = False
+install_path = None
 cleanup_files = []
 
 file_buf = bytearray(512)
@@ -155,7 +156,12 @@ def install_pkg(pkg_spec, install_path):
     f1.close()
     return meta
 
-def install(to_install, install_path):
+def install(to_install, install_path=None):
+    if install_path is None:
+        install_path = get_install_path()
+    if install_path[-1] != "/":
+        install_path += "/"
+    print("Installing to: " + install_path)
     # sets would be perfect here, but don't depend on them
     installed = []
     try:
@@ -177,6 +183,18 @@ def install(to_install, install_path):
         print("Error: cannot find '%s' package (or server error), packages may be partially installed" \
             % pkg_spec, file=sys.stderr)
 
+def get_install_path():
+    global install_path
+    if install_path is None:
+        if hasattr(os, "getenv"):
+            install_path = os.getenv("MICROPYPATH")
+        if install_path is None:
+            # sys.path[0] is current module's path
+            install_path = sys.path[1]
+    install_path = install_path.split(":", 1)[0]
+    install_path = expandhome(install_path)
+    return install_path
+
 def cleanup():
     for fname in cleanup_files:
         try:
@@ -197,6 +215,7 @@ installation, upip does not support arbitrary code in setup.py.""")
 
 def main():
     global debug
+    global install_path
     install_path = None
 
     if len(sys.argv) < 2 or sys.argv[1] == "-h" or sys.argv[1] == "--help":
@@ -230,23 +249,11 @@ def main():
         else:
             fatal("Unknown/unsupported option: " + opt)
 
-    if install_path is None:
-        install_path = os.getenv("MICROPYPATH") or DEFAULT_MICROPYPATH
-
-    install_path = install_path.split(":", 1)[0]
-
-    install_path = expandhome(install_path)
-
-    if install_path[-1] != "/":
-        install_path += "/"
-
-    print("Installing to: " + install_path)
-
     to_install.extend(sys.argv[i:])
     if not to_install:
         help()
 
-    install(to_install, install_path)
+    install(to_install)
 
     if not debug:
         cleanup()
