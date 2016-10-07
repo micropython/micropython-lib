@@ -89,8 +89,9 @@ def install_tar(f, prefix):
     return meta
 
 def expandhome(s):
-    h = os.getenv("HOME")
-    s = s.replace("~/", h + "/")
+    if "~/" in s:
+        h = os.getenv("HOME")
+        s = s.replace("~/", h + "/")
     return s
 
 import ussl
