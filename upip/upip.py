@@ -31,10 +31,11 @@ def op_split(path):
 def op_basename(path):
     return op_split(path)[1]
 
+# Expects *file* name
 def _makedirs(name, mode=0o777):
     ret = False
     s = ""
-    for c in name.rstrip("/").split("/"):
+    for c in name.rstrip("/").split("/")[:-1]:
         if s:
             s += "/"
         s += c
@@ -80,12 +81,10 @@ def install_tar(f, prefix):
 
         if save:
             outfname = prefix + fname
-            if info.type == tarfile.DIRTYPE:
-                if _makedirs(outfname):
-                    print("Created " + outfname)
-            else:
+            if info.type != tarfile.DIRTYPE:
                 if debug:
                     print("Extracting " + outfname)
+                _makedirs(outfname)
                 subf = f.extractfile(info)
                 save_file(outfname, subf)
     return meta
