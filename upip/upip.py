@@ -9,6 +9,7 @@ import upip_utarfile as tarfile
 debug = False
 install_path = None
 cleanup_files = []
+gzdict_sz = 16 + 15
 
 file_buf = bytearray(512)
 
@@ -152,13 +153,19 @@ def install_pkg(pkg_spec, install_path):
     print("Installing %s %s from %s" % (pkg_spec, latest_ver, package_url))
     package_fname = op_basename(package_url)
     f1 = url_open(package_url)
-    f2 = uzlib.DecompIO(f1, 16 + 15)
+    f2 = uzlib.DecompIO(f1, gzdict_sz)
     f3 = tarfile.TarFile(fileobj=f2)
     meta = install_tar(f3, install_path)
     f1.close()
     return meta
 
 def install(to_install, install_path=None):
+    # Calculate gzip dictionary size to use
+    global gzdict_sz
+    sz = gc.mem_free() + gc.mem_alloc()
+    if sz <= 655360:
+        gzdict_sz = 16 + 12
+
     if install_path is None:
         install_path = get_install_path()
     if install_path[-1] != "/":
