@@ -6,8 +6,6 @@ import uzlib
 import upip_utarfile as tarfile
 
 
-DEFAULT_MICROPYPATH = "~/.micropython/lib:/usr/lib/micropython"
-
 debug = False
 install_path = None
 cleanup_files = []
@@ -192,12 +190,8 @@ def install(to_install, install_path=None):
 def get_install_path():
     global install_path
     if install_path is None:
-        if hasattr(os, "getenv"):
-            install_path = os.getenv("MICROPYPATH")
-        if install_path is None:
-            # sys.path[0] is current module's path
-            install_path = sys.path[1]
-    install_path = install_path.split(":", 1)[0]
+        # sys.path[0] is current module's path
+        install_path = sys.path[1]
     install_path = expandhome(install_path)
     return install_path
 
@@ -213,11 +207,15 @@ def help():
 upip - Simple PyPI package manager for MicroPython
 Usage: micropython -m upip install [-p <path>] <package>... | -r <requirements.txt>
 
-If -p is not given, packages will be installed to first path component of
-MICROPYPATH, or to ~/.micropython/lib/ by default.
-Note: only MicroPython packages (usually, micropython-*) are supported for
-installation, upip does not support arbitrary code in setup.py.""")
-    sys.exit(1)
+If <path> is not given, packages will be installed into sys.path[1]
+(can be set from MICROPYPATH environment variable, if current system
+supports that).""")
+    print("Current value of sys.path[1]:", sys.path[1])
+    print("""\
+
+Note: only MicroPython packages (usually, named micropython-*) are supported
+for installation, upip does not support arbitrary code in setup.py.
+""")
 
 def main():
     global debug
@@ -226,6 +224,7 @@ def main():
 
     if len(sys.argv) < 2 or sys.argv[1] == "-h" or sys.argv[1] == "--help":
         help()
+        return
 
     if sys.argv[1] != "install":
         fatal("Only 'install' command supported")
@@ -238,6 +237,7 @@ def main():
         i += 1
         if opt == "-h" or opt == "--help":
             help()
+            return
         elif opt == "-p":
             install_path = sys.argv[i]
             i += 1
@@ -258,6 +258,7 @@ def main():
     to_install.extend(sys.argv[i:])
     if not to_install:
         help()
+        return
 
     install(to_install)
 
