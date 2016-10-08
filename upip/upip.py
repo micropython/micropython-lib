@@ -206,6 +206,7 @@ def help():
     print("""\
 upip - Simple PyPI package manager for MicroPython
 Usage: micropython -m upip install [-p <path>] <package>... | -r <requirements.txt>
+import upip; upip.install(package_or_list, [<path>])
 
 If <path> is not given, packages will be installed into sys.path[1]
 (can be set from MICROPYPATH environment variable, if current system
