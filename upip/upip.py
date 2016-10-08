@@ -120,11 +120,13 @@ def url_open(url):
     l = s.readline()
     protover, status, msg = l.split(None, 2)
     if status != b"200":
-        raise OSError()
+        if status == b"404":
+            print("Package not found")
+        raise ValueError(status)
     while 1:
         l = s.readline()
         if not l:
-            raise OSError()
+            raise ValueError("Unexpected EOF")
         if l == b'\r\n':
             break
 
