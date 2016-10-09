@@ -6,7 +6,7 @@ from setuptools import setup
 
 
 setup(name='micropython-utarfile',
-      version='0.3',
+      version='0.3.1',
       description='utarfile module for MicroPython',
       long_description='Lightweight tarfile module subset',
       url='https://github.com/micropython/micropython/issues/405',

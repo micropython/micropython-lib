@@ -1,5 +1,5 @@
 srctype = micropython-lib
 type = module
-version = 0.3
+version = 0.3.1
 author = Paul Sokolovsky
 long_desc = Lightweight tarfile module subset
