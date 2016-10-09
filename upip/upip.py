@@ -1,9 +1,11 @@
 import sys
+import gc
 import uos as os
 import uerrno as errno
 import ujson as json
 import uzlib
 import upip_utarfile as tarfile
+gc.collect()
 
 
 debug = False
@@ -148,6 +150,8 @@ def install_pkg(pkg_spec, install_path):
 
     latest_ver = data["info"]["version"]
     packages = data["releases"][latest_ver]
+    del data
+    gc.collect()
     assert len(packages) == 1
     package_url = packages[0]["url"]
     print("Installing %s %s from %s" % (pkg_spec, latest_ver, package_url))
@@ -157,6 +161,9 @@ def install_pkg(pkg_spec, install_path):
     f3 = tarfile.TarFile(fileobj=f2)
     meta = install_tar(f3, install_path)
     f1.close()
+    del f3
+    del f2
+    gc.collect()
     return meta
 
 def install(to_install, install_path=None):
