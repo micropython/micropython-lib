@@ -39,7 +39,13 @@ class FileSection:
         return sz
 
     def skip(self):
-        self.f.read(self.content_len + self.align)
+        sz = self.content_len + self.align
+        if sz:
+            buf = bytearray(16)
+            while sz:
+                s = min(sz, 16)
+                self.f.readinto(buf, s)
+                sz -= s
 
 class TarInfo:
 
