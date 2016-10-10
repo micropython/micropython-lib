@@ -9,7 +9,7 @@ import glob
 TEMPLATE = """\
 import sys
 # Remove current dir from sys.path, otherwise setuptools will peek up our
-# module instead of system.
+# module instead of system's.
 sys.path.pop(0)
 from setuptools import setup
 
