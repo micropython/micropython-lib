@@ -1,5 +1,5 @@
 srctype = micropython-lib
 type = package
-version = 0.4.3
+version = 0.4.4
 author = Paul Sokolovsky
 depends = ffilib, errno, stat
