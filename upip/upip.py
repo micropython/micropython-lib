@@ -170,7 +170,7 @@ def install(to_install, install_path=None):
     # Calculate gzip dictionary size to use
     global gzdict_sz
     sz = gc.mem_free() + gc.mem_alloc()
-    if sz <= 655360:
+    if sz <= 65536:
         gzdict_sz = 16 + 12
 
     if install_path is None:
