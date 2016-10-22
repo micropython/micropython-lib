@@ -36,8 +36,11 @@ def op_basename(path):
 def _makedirs(name, mode=0o777):
     ret = False
     s = ""
-    for c in name.rstrip("/").split("/")[:-1]:
-        if s:
+    comps = name.rstrip("/").split("/")[:-1]
+    if comps[0] == "":
+        s = "/"
+    for c in comps:
+        if s and s[-1] != "/":
             s += "/"
         s += c
         try:
