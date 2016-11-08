@@ -41,3 +41,10 @@ class MQTTClient(simple.MQTTClient):
             except OSError as e:
                 self.log(False, e)
             self.reconnect()
+
+    def check_msg(self):
+        try:
+            return super().check_msg()
+        except OSError as e:
+            self.log(False, e)
+        self.reconnect()
