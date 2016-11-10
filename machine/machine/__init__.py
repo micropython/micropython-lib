@@ -1,3 +1,4 @@
+from umachine import *
 from .timer import *
 from .pin import *
 
