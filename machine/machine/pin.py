@@ -15,12 +15,14 @@ class Pin(umachine.PinBase):
                 f.write(str(no))
             f = open(dirf, "w")
         f.write(dir)
-        self.f = open(pref + "value", "rw")
+        f.close()
+        self.f = open(pref + "value", "r+b")
 
     def value(self, v=None):
         if v is None:
-            return self.f.read(1) == "1"
-        self.f.write(str(v))
+            self.f.seek(0)
+            return 1 if self.f.read(1) == b"1" else 0
+        self.f.write(b"1" if v else b"0")
 
     def deinit(self):
         self.f.close()
