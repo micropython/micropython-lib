@@ -17,7 +17,7 @@ class EventLoop:
         self.cnt = 0
 
     def time(self):
-        return time.time()
+        return time.ticks_ms()
 
     def create_task(self, coro):
         # CPython 3.4.2
@@ -28,13 +28,16 @@ class EventLoop:
         self.call_at(self.time(), callback, *args)
 
     def call_later(self, delay, callback, *args):
-        self.call_at(self.time() + delay, callback, *args)
+        self.call_at(time.ticks_add(self.time(), int(delay * 1000)), callback, *args)
+
+    def call_later_ms(self, delay, callback, *args):
+        self.call_at(time.ticks_add(self.time(), delay), callback, *args)
 
     def call_at(self, time, callback, *args):
         # Including self.cnt is a workaround per heapq docs
         if __debug__:
             log.debug("Scheduling %s", (time, self.cnt, callback, args))
-        heapq.heappush(self.q, (time, self.cnt, callback, args))
+        heapq.heappush(self.q, (time, self.cnt, callback, args), True)
 #        print(self.q)
         self.cnt += 1
 
@@ -43,17 +46,17 @@ class EventLoop:
         # with IO scheduling
         if __debug__:
             log.debug("Sleeping for: %s", delay)
-        time.sleep(delay)
+        time.sleep_ms(delay)
 
     def run_forever(self):
         while True:
             if self.q:
-                t, cnt, cb, args = heapq.heappop(self.q)
+                t, cnt, cb, args = heapq.heappop(self.q, True)
                 if __debug__:
                     log.debug("Next coroutine to run: %s", (t, cnt, cb, args))
 #                __main__.mem_info()
                 tnow = self.time()
-                delay = t - tnow
+                delay = time.ticks_diff(t, tnow)
                 if delay > 0:
                     self.wait(delay)
             else:
@@ -95,6 +98,9 @@ class EventLoop:
                             return arg
                     elif isinstance(ret, type_gen):
                         self.call_soon(ret)
+                    elif isinstance(ret, int):
+                        # Delay
+                        delay = ret
                     elif ret is None:
                         # Just reschedule
                         pass
@@ -104,7 +110,7 @@ class EventLoop:
                     if __debug__:
                         log.debug("Coroutine finished: %s", cb)
                     continue
-                self.call_later(delay, cb, *args)
+                self.call_later_ms(delay, cb, *args)
 
     def run_until_complete(self, coro):
         def _run_and_stop():
@@ -159,7 +165,10 @@ def get_event_loop():
     return _event_loop
 
 def sleep(secs):
-    yield Sleep(secs)
+    yield int(secs * 1000)
+
+def sleep_ms(ms):
+    yield ms
 
 def coroutine(f):
     return f
