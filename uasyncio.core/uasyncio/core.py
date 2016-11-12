@@ -14,7 +14,6 @@ class EventLoop:
 
     def __init__(self):
         self.q = []
-        self.cnt = 0
 
     def time(self):
         return time.ticks_ms()
@@ -34,12 +33,9 @@ class EventLoop:
         self.call_at(time.ticks_add(self.time(), delay), callback, *args)
 
     def call_at(self, time, callback, *args):
-        # Including self.cnt is a workaround per heapq docs
         if __debug__:
-            log.debug("Scheduling %s", (time, self.cnt, callback, args))
-        heapq.heappush(self.q, (time, self.cnt, callback, args), True)
-#        print(self.q)
-        self.cnt += 1
+            log.debug("Scheduling %s", (time, callback, args))
+        heapq.heappush(self.q, (time, callback, args), True)
 
     def wait(self, delay):
         # Default wait implementation, to be overriden in subclasses
@@ -51,9 +47,9 @@ class EventLoop:
     def run_forever(self):
         while True:
             if self.q:
-                t, cnt, cb, args = heapq.heappop(self.q, True)
+                t, cb, args = heapq.heappop(self.q, True)
                 if __debug__:
-                    log.debug("Next coroutine to run: %s", (t, cnt, cb, args))
+                    log.debug("Next coroutine to run: %s", (t, cb, args))
 #                __main__.mem_info()
                 tnow = self.time()
                 delay = time.ticks_diff(t, tnow)
