@@ -6,6 +6,8 @@ import uheapq as heapq
 import logging
 
 
+DEBUG = 0
+
 log = logging.getLogger("asyncio")
 
 type_gen = type((lambda: (yield))())
@@ -33,7 +35,7 @@ class EventLoop:
         self.call_at_(time.ticks_add(self.time(), delay), callback, args)
 
     def call_at(self, time, callback, *args):
-        if __debug__:
+        if __debug__ and DEBUG:
             log.debug("Scheduling %s", (time, callback, args))
         heapq.heappush(self.q, (time, callback, args), True)
 
@@ -45,7 +47,7 @@ class EventLoop:
     def wait(self, delay):
         # Default wait implementation, to be overriden in subclasses
         # with IO scheduling
-        if __debug__:
+        if __debug__ and DEBUG:
             log.debug("Sleeping for: %s", delay)
         time.sleep_ms(delay)
 
@@ -53,7 +55,7 @@ class EventLoop:
         while True:
             if self.q:
                 t, cb, args = heapq.heappop(self.q, True)
-                if __debug__:
+                if __debug__ and DEBUG:
                     log.debug("Next coroutine to run: %s", (t, cb, args))
 #                __main__.mem_info()
                 tnow = self.time()
@@ -69,13 +71,13 @@ class EventLoop:
             else:
                 delay = 0
                 try:
-                    if __debug__:
+                    if __debug__ and DEBUG:
                         log.debug("Coroutine %s send args: %s", cb, args)
                     if args == ():
                         ret = next(cb)
                     else:
                         ret = cb.send(*args)
-                    if __debug__:
+                    if __debug__ and DEBUG:
                         log.debug("Coroutine %s yield result: %s", cb, ret)
                     if isinstance(ret, SysCall1):
                         arg = ret.arg
@@ -108,7 +110,7 @@ class EventLoop:
                     else:
                         assert False, "Unsupported coroutine yield value: %r (of type %r)" % (ret, type(ret))
                 except StopIteration as e:
-                    if __debug__:
+                    if __debug__ and DEBUG:
                         log.debug("Coroutine finished: %s", cb)
                     continue
                 self.call_later_ms_(delay, cb, args)
