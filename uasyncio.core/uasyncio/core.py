@@ -29,11 +29,16 @@ class EventLoop:
     def call_later(self, delay, callback, *args):
         self.call_at(time.ticks_add(self.time(), int(delay * 1000)), callback, *args)
 
-    def call_later_ms(self, delay, callback, *args):
-        self.call_at(time.ticks_add(self.time(), delay), callback, *args)
+    def call_later_ms_(self, delay, callback, args=()):
+        self.call_at_(time.ticks_add(self.time(), delay), callback, args)
 
     def call_at(self, time, callback, *args):
         if __debug__:
+            log.debug("Scheduling %s", (time, callback, args))
+        heapq.heappush(self.q, (time, callback, args), True)
+
+    def call_at_(self, time, callback, args=()):
+        if __debug__ and DEBUG:
             log.debug("Scheduling %s", (time, callback, args))
         heapq.heappush(self.q, (time, callback, args), True)
 
@@ -106,7 +111,7 @@ class EventLoop:
                     if __debug__:
                         log.debug("Coroutine finished: %s", cb)
                     continue
-                self.call_later_ms(delay, cb, *args)
+                self.call_later_ms_(delay, cb, args)
 
     def run_until_complete(self, coro):
         def _run_and_stop():
