@@ -58,7 +58,7 @@ class EpollEventLoop(EventLoop):
         if delay == -1:
             res = self.poller.poll(-1, 1)
         else:
-            res = self.poller.poll(int(delay * 1000), 1)
+            res = self.poller.poll(delay, 1)
         #log.debug("epoll result: %s", res)
         for fd, ev in res:
             cb = self.objmap[fd]
