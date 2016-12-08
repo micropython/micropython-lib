@@ -50,9 +50,9 @@ def urlopen(url, data=None, method="GET"):
         l = s.readline()
         if not l or l == b"\r\n":
             break
-        #print(line)
+        #print(l)
         if l.startswith(b"Transfer-Encoding:"):
-            if b"chunked" in line:
+            if b"chunked" in l:
                 raise ValueError("Unsupported " + l)
         elif l.startswith(b"Location:"):
             raise NotImplementedError("Redirects not yet supported")
