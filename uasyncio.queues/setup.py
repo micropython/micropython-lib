@@ -7,7 +7,7 @@ sys.path.append("..")
 import optimize_upip
 
 setup(name='micropython-uasyncio.queues',
-      version='0.1.1',
+      version='0.1.2',
       description='uasyncio.queues module for MicroPython',
       long_description='Port of asyncio.queues to uasyncio.',
       url='https://github.com/micropython/micropython-lib',
