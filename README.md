@@ -16,11 +16,16 @@ Usage
 micropython-lib packages are published on PyPI (Python Package Index),
 the standard Python community package repository: http://pypi.python.org/ .
 On PyPI, you can search for MicroPython related packages and read
-additional package information.
+additional package information. By convention, all micropython-lib package
+names are prefixed with "micropython-".
+Browse available packages
+[via this URL](https://pypi.python.org/pypi?%3Aaction=search&term=micropython).
+(Note: search results may include both micropython-lib and 3rd-party
+packages).
 
 To install packages from PyPI for usage on your local system, use the
 `upip` tool, which is MicroPython's native package manager, similar to
-`upip`, which is used to install packages for CPython. `upip` is bundled
+`pip`, which is used to install packages for CPython. `upip` is bundled
 with MicroPython "Unix" port (i.e. if you build "Unix" port, you
 automatically have `upip` tool). Following examples assume that
 `micropython` binary is available on your `PATH`:
@@ -29,7 +34,7 @@ automatically have `upip` tool). Following examples assume that
 $ micropython -m upip install micropython-pystone
 ...
 $ micropython
->>> import pyston
+>>> import pystone
 >>> pystone.main()
 Pystone(1.2) time for 50000 passes = 0.534
 This machine benchmarks at 93633 pystones/second
