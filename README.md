@@ -1,12 +1,3 @@
-~~~~
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-micropython-lib is a highly experimental community project.
-
-Please help to drive it to just "experimental" state by testing
-provided packages with MicroPython.
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-~~~~
-
 micropython-lib
 ===============
 micropython-lib is a project to develop a non-monolothic standard library
