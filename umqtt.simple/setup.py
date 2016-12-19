@@ -7,7 +7,7 @@ sys.path.append("..")
 import optimize_upip
 
 setup(name='micropython-umqtt.simple',
-      version='1.3.1',
+      version='1.3.2',
       description='Lightweight MQTT client for MicroPython.',
       long_description=open('README.rst').read(),
       url='https://github.com/micropython/micropython-lib',
