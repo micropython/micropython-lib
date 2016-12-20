@@ -254,3 +254,23 @@ def urandom(n):
     import builtins
     with builtins.open("/dev/urandom", "rb") as f:
         return f.read(n)
+
+def popen(cmd, mode="r"):
+    import builtins
+    i, o = pipe()
+    if mode[0] == "w":
+        i, o = o, i
+    pid = fork()
+    if not pid:
+        if mode[0] == "r":
+            close(1)
+        else:
+            close(0)
+        close(i)
+        dup(o)
+        close(o)
+        s = system(cmd)
+        _exit(s)
+    else:
+        close(o)
+        return builtins.open(i, mode)
