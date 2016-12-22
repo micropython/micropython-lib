@@ -86,7 +86,7 @@ class EventLoop:
                     if isinstance(ret, SysCall1):
                         arg = ret.arg
                         if isinstance(ret, Sleep):
-                            delay = arg
+                            delay = int(arg * 1000)
                         elif isinstance(ret, IORead):
 #                            self.add_reader(ret.obj.fileno(), lambda self, c, f: self.call_soon(c, f), self, cb, ret.obj)
 #                            self.add_reader(ret.obj.fileno(), lambda c, f: self.call_soon(c, f), cb, ret.obj)
