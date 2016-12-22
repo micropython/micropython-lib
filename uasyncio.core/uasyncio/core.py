@@ -2,7 +2,7 @@ try:
     import utime as time
 except ImportError:
     import time
-import uheapq as heapq
+import utimeq
 import logging
 
 
@@ -14,8 +14,8 @@ type_gen = type((lambda: (yield))())
 
 class EventLoop:
 
-    def __init__(self):
-        self.q = []
+    def __init__(self, len=128):
+        self.q = utimeq.utimeq(len)
 
     def time(self):
         return time.ticks_ms()
@@ -37,12 +37,12 @@ class EventLoop:
     def call_at(self, time, callback, *args):
         if __debug__ and DEBUG:
             log.debug("Scheduling %s", (time, callback, args))
-        heapq.heappush(self.q, (time, callback, args), True)
+        self.q.push(time, callback, args)
 
     def call_at_(self, time, callback, args=()):
         if __debug__ and DEBUG:
             log.debug("Scheduling %s", (time, callback, args))
-        heapq.heappush(self.q, (time, callback, args), True)
+        self.q.push(time, callback, args)
 
     def wait(self, delay):
         # Default wait implementation, to be overriden in subclasses
@@ -52,9 +52,13 @@ class EventLoop:
         time.sleep_ms(delay)
 
     def run_forever(self):
+        cur_task = [0, 0, 0]
         while True:
             if self.q:
-                t, cb, args = heapq.heappop(self.q, True)
+                self.q.pop(cur_task)
+                t = cur_task[0]
+                cb = cur_task[1]
+                args = cur_task[2]
                 if __debug__ and DEBUG:
                     log.debug("Next coroutine to run: %s", (t, cb, args))
 #                __main__.mem_info()
