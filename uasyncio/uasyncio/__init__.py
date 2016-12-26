@@ -11,42 +11,42 @@ class EpollEventLoop(EventLoop):
         self.poller = select.poll()
         self.objmap = {}
 
-    def add_reader(self, fd, cb, *args):
+    def add_reader(self, sock, cb, *args):
         if DEBUG and __debug__:
-            log.debug("add_reader%s", (fd, cb, args))
+            log.debug("add_reader%s", (sock, cb, args))
         if args:
-            self.poller.register(fd, select.POLLIN)
-            self.objmap[fd] = (cb, args)
+            self.poller.register(sock, select.POLLIN)
+            self.objmap[id(sock)] = (cb, args)
         else:
-            self.poller.register(fd, select.POLLIN)
-            self.objmap[fd] = cb
+            self.poller.register(sock, select.POLLIN)
+            self.objmap[id(sock)] = cb
 
-    def remove_reader(self, fd):
+    def remove_reader(self, sock):
         if DEBUG and __debug__:
-            log.debug("remove_reader(%s)", fd)
-        self.poller.unregister(fd)
-        del self.objmap[fd]
+            log.debug("remove_reader(%s)", sock)
+        self.poller.unregister(sock)
+        del self.objmap[id(sock)]
 
-    def add_writer(self, fd, cb, *args):
+    def add_writer(self, sock, cb, *args):
         if DEBUG and __debug__:
-            log.debug("add_writer%s", (fd, cb, args))
+            log.debug("add_writer%s", (sock, cb, args))
         if args:
-            self.poller.register(fd, select.POLLOUT)
-            self.objmap[fd] = (cb, args)
+            self.poller.register(sock, select.POLLOUT)
+            self.objmap[id(sock)] = (cb, args)
         else:
-            self.poller.register(fd, select.POLLOUT)
-            self.objmap[fd] = cb
+            self.poller.register(sock, select.POLLOUT)
+            self.objmap[id(sock)] = cb
 
-    def remove_writer(self, fd):
+    def remove_writer(self, sock):
         if DEBUG and __debug__:
-            log.debug("remove_writer(%s)", fd)
+            log.debug("remove_writer(%s)", sock)
         try:
-            self.poller.unregister(fd)
-            self.objmap.pop(fd, None)
+            self.poller.unregister(sock)
+            self.objmap.pop(id(sock), None)
         except OSError as e:
-            # StreamWriter.awrite() first tries to write to an fd,
+            # StreamWriter.awrite() first tries to write to a socket,
             # and if that succeeds, yield IOWrite may never be called
-            # for that fd, and it will never be added to poller. So,
+            # for that socket, and it will never be added to poller. So,
             # ignore such error.
             if e.args[0] != errno.ENOENT:
                 raise
@@ -63,8 +63,8 @@ class EpollEventLoop(EventLoop):
         # Remove "if res" workaround after
         # https://github.com/micropython/micropython/issues/2716 fixed.
         if res:
-            for fd, ev in res:
-                cb = self.objmap[fd]
+            for sock, ev in res:
+                cb = self.objmap[id(sock)]
                 if DEBUG and __debug__:
                     log.debug("Calling IO callback: %r", cb)
                 if isinstance(cb, tuple):
