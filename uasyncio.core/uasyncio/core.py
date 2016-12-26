@@ -103,6 +103,8 @@ class EventLoop:
                             self.remove_writer(arg.fileno())
                         elif isinstance(ret, StopLoop):
                             return arg
+                        else:
+                            assert False, "Unknown syscall yielded: %r (of type %r)" % (ret, type(ret))
                     elif isinstance(ret, type_gen):
                         self.call_soon(ret)
                     elif isinstance(ret, int):
