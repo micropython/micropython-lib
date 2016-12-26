@@ -87,6 +87,8 @@ class EventLoop:
                         arg = ret.arg
                         if isinstance(ret, Sleep):
                             delay = int(arg * 1000)
+                        if isinstance(ret, SleepMs):
+                            delay = arg
                         elif isinstance(ret, IORead):
 #                            self.add_reader(ret.obj.fileno(), lambda self, c, f: self.call_soon(c, f), self, cb, ret.obj)
 #                            self.add_reader(ret.obj.fileno(), lambda c, f: self.call_soon(c, f), cb, ret.obj)
@@ -176,8 +178,35 @@ def get_event_loop():
 def sleep(secs):
     yield int(secs * 1000)
 
-def sleep_ms(ms):
-    yield ms
+# Implementation of sleep_ms awaitable with zero heap memory usage
+class SleepMs(SysCall1):
+
+    def __init__(self):
+        self.v = None
+        self.arg = None
+
+    def __call__(self, arg):
+        self.v = arg
+        #print("__call__")
+        return self
+
+    def __iter__(self):
+        #print("__iter__")
+        return self
+
+    def __next__(self):
+        if self.v is not None:
+            #print("__next__ syscall enter")
+            self.arg = self.v
+            self.v = None
+            return self
+        #print("__next__ syscall exit")
+        _stop_iter.__traceback__ = None
+        raise _stop_iter
+
+_stop_iter = StopIteration()
+sleep_ms = SleepMs()
+
 
 def coroutine(f):
     return f
