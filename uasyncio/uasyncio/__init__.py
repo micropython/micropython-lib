@@ -60,14 +60,17 @@ class EpollEventLoop(EventLoop):
         else:
             res = self.poller.poll(delay, 1)
         #log.debug("epoll result: %s", res)
-        for fd, ev in res:
-            cb = self.objmap[fd]
-            if __debug__:
-                log.debug("Calling IO callback: %r", cb)
-            if isinstance(cb, tuple):
-                cb[0](*cb[1])
-            else:
-                self.call_soon(cb)
+        # Remove "if res" workaround after
+        # https://github.com/micropython/micropython/issues/2716 fixed.
+        if res:
+            for fd, ev in res:
+                cb = self.objmap[fd]
+                if __debug__:
+                    log.debug("Calling IO callback: %r", cb)
+                if isinstance(cb, tuple):
+                    cb[0](*cb[1])
+                else:
+                    self.call_soon(cb)
 
 
 class StreamReader:
