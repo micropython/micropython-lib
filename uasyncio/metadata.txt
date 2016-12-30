@@ -1,6 +1,6 @@
 srctype = micropython-lib
 type = package
-version = 1.0
+version = 1.0.1
 author = Paul Sokolovsky
 long_desc = Lightweight asyncio-like library built around native Python coroutines, not around un-Python devices like callback mess.
 depends = errno, uasyncio.core
