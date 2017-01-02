@@ -123,6 +123,9 @@ class TestCase:
                 return
             raise
 
+    def assertFalse(self, x, msg=''):
+        assert not x, msg
+
 
 
 def skip(msg):
