@@ -3,12 +3,12 @@ try:
 except ImportError:
     import time
 import utimeq
-import logging
-
 
 DEBUG = 0
 
-log = logging.getLogger("asyncio")
+if __debug__ and DEBUG:
+    import logging
+    log = logging.getLogger("asyncio")
 
 type_gen = type((lambda: (yield))())
 
