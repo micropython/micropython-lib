@@ -6,3 +6,5 @@ d[2] = 3
 assert d[2] == 3
 del d[1]
 assert d[1] == 42
+
+assert "foo" not in d
