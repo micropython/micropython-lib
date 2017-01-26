@@ -79,8 +79,8 @@ class StreamReader:
         self.s = s
 
     def read(self, n=-1):
-        yield IORead(self.s)
         while True:
+            yield IORead(self.s)
             res = self.s.read(n)
             if res is not None:
                 break
@@ -92,10 +92,10 @@ class StreamReader:
     def readline(self):
         if __debug__:
             log.debug("StreamReader.readline()")
-        yield IORead(self.s)
 #        if DEBUG and __debug__:
 #            log.debug("StreamReader.readline(): after IORead: %s", s)
         while True:
+            yield IORead(self.s)
             res = self.s.readline()
             if res is not None:
                 break
