@@ -92,19 +92,20 @@ class StreamReader:
     def readline(self):
         if __debug__:
             log.debug("StreamReader.readline()")
-#        if DEBUG and __debug__:
-#            log.debug("StreamReader.readline(): after IORead: %s", s)
+        buf = b""
         while True:
             yield IORead(self.s)
             res = self.s.readline()
-            if res is not None:
+            assert res is not None
+            if not res:
+                yield IOReadDone(self.s)
                 break
-            log.warn("Empty read")
-        if not res:
-            yield IOReadDone(self.s)
+            buf += res
+            if buf[-1] == 0x0a:
+                break
         if DEBUG and __debug__:
-            log.debug("StreamReader.readline(): res: %s", res)
-        return res
+            log.debug("StreamReader.readline(): %s", buf)
+        return buf
 
     def aclose(self):
         yield IOReadDone(self.s)
