@@ -89,6 +89,19 @@ class StreamReader:
             yield IOReadDone(self.s)
         return res
 
+    def readexactly(self, n):
+        buf = b""
+        while n:
+            yield IORead(self.s)
+            res = self.s.read(n)
+            assert res is not None
+            if not res:
+                yield IOReadDone(self.s)
+                break
+            buf += res
+            n -= len(res)
+        return buf
+
     def readline(self):
         if __debug__:
             log.debug("StreamReader.readline()")
