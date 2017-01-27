@@ -1,4 +1,4 @@
-import errno
+import uerrno
 import uselect as select
 import usocket as _socket
 from uasyncio.core import *
@@ -48,7 +48,7 @@ class EpollEventLoop(EventLoop):
             # and if that succeeds, yield IOWrite may never be called
             # for that socket, and it will never be added to poller. So,
             # ignore such error.
-            if e.args[0] != errno.ENOENT:
+            if e.args[0] != uerrno.ENOENT:
                 raise
 
     def wait(self, delay):
@@ -183,7 +183,7 @@ def open_connection(host, port):
     try:
         s.connect(addr)
     except OSError as e:
-        if e.args[0] != errno.EINPROGRESS:
+        if e.args[0] != uerrno.EINPROGRESS:
             raise
     if __debug__:
         log.debug("open_connection: After connect")
