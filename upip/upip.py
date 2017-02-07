@@ -105,7 +105,10 @@ warn_ussl = True
 def url_open(url):
     global warn_ussl
     proto, _, host, urlpath = url.split('/', 3)
-    ai = usocket.getaddrinfo(host, 443)
+    try:
+        ai = usocket.getaddrinfo(host, 443)
+    except OSError as e:
+        fatal("Unable to resolve %s (no Internet?)" % host, e)
     #print("Address infos:", ai)
     addr = ai[0][4]
 
