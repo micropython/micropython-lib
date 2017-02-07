@@ -127,6 +127,7 @@ def url_open(url):
     l = s.readline()
     protover, status, msg = l.split(None, 2)
     if status != b"200":
+        s.close()
         exc = ValueError(status)
         if status == b"404":
             fatal("Package not found", exc)
@@ -134,6 +135,7 @@ def url_open(url):
     while 1:
         l = s.readline()
         if not l:
+            s.close()
             fatal("Unexpected EOF in HTTP headers", ValueError())
         if l == b'\r\n':
             break
