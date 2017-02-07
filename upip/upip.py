@@ -124,13 +124,14 @@ def url_open(url):
     l = s.readline()
     protover, status, msg = l.split(None, 2)
     if status != b"200":
+        exc = ValueError(status)
         if status == b"404":
-            print("Package not found")
-        raise ValueError(status)
+            fatal("Package not found", exc)
+        fatal("Unexpected error querying for package", exc)
     while 1:
         l = s.readline()
         if not l:
-            raise ValueError("Unexpected EOF")
+            fatal("Unexpected EOF in HTTP headers", ValueError())
         if l == b'\r\n':
             break
 
@@ -144,8 +145,10 @@ def get_pkg_metadata(name):
     return json.loads(s)
 
 
-def fatal(msg):
-    print(msg)
+def fatal(msg, exc=None):
+    print("Error:", msg)
+    if exc and debug:
+        raise exc
     sys.exit(1)
 
 def install_pkg(pkg_spec, install_path):
