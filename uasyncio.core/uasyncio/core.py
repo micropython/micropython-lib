@@ -14,7 +14,7 @@ type_gen = type((lambda: (yield))())
 
 class EventLoop:
 
-    def __init__(self, len=128):
+    def __init__(self, len=42):
         self.q = utimeq.utimeq(len)
 
     def time(self):
@@ -169,10 +169,10 @@ class IOWriteDone(SysCall1):
 
 _event_loop = None
 _event_loop_class = EventLoop
-def get_event_loop():
+def get_event_loop(len=42):
     global _event_loop
     if _event_loop is None:
-        _event_loop = _event_loop_class()
+        _event_loop = _event_loop_class(len)
     return _event_loop
 
 def sleep(secs):
