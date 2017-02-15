@@ -6,8 +6,8 @@ from uasyncio.core import *
 
 class EpollEventLoop(EventLoop):
 
-    def __init__(self):
-        EventLoop.__init__(self)
+    def __init__(self, len=42):
+        EventLoop.__init__(self, len)
         self.poller = select.poll()
         self.objmap = {}
 
