@@ -4,7 +4,7 @@ import usocket as _socket
 from uasyncio.core import *
 
 
-class EpollEventLoop(EventLoop):
+class PollEventLoop(EventLoop):
 
     def __init__(self, len=42):
         EventLoop.__init__(self, len)
@@ -53,13 +53,13 @@ class EpollEventLoop(EventLoop):
 
     def wait(self, delay):
         if DEBUG and __debug__:
-            log.debug("epoll.wait(%d)", delay)
+            log.debug("poll.wait(%d)", delay)
         # We need one-shot behavior (second arg of 1 to .poll())
         if delay == -1:
             res = self.poller.poll(-1, 1)
         else:
             res = self.poller.poll(delay, 1)
-        #log.debug("epoll result: %s", res)
+        #log.debug("poll result: %s", res)
         # Remove "if res" workaround after
         # https://github.com/micropython/micropython/issues/2716 fixed.
         if res:
@@ -220,4 +220,4 @@ def start_server(client_coro, host, port, backlog=10):
 
 
 import uasyncio.core
-uasyncio.core._event_loop_class = EpollEventLoop
+uasyncio.core._event_loop_class = PollEventLoop
