@@ -71,6 +71,17 @@ class MQTTClient:
             msg[1] += 2 + len(self.lw_topic) + 2 + len(self.lw_msg)
             msg[9] |= 0x4 | (self.lw_qos & 0x1) << 3 | (self.lw_qos & 0x2) << 3
             msg[9] |= self.lw_retain << 5
+        # fix "remaining length field" for message size over 128
+        rem_len = msg[1]
+        enc_bytearray = bytearray()
+        while (rem_len > 0):
+            enc_byte = rem_len % 128
+            rem_len = int(rem_len / 128)
+            if (rem_len > 0):
+                enc_byte |= 128
+            enc_bytearray.append(enc_byte)
+        msg[1:2] = enc_bytearray
+        
         self.sock.write(msg)
         #print(hex(len(msg)), hexlify(msg, ":"))
         self._send_str(self.client_id)
