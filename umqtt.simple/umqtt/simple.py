@@ -13,7 +13,8 @@ class MQTTClient:
             port = 8883 if ssl else 1883
         self.client_id = client_id
         self.sock = None
-        self.addr = socket.getaddrinfo(server, port)[0][-1]
+        self.server = server
+        self.port = port
         self.ssl = ssl
         self.ssl_params = ssl_params
         self.pid = 0
@@ -53,35 +54,45 @@ class MQTTClient:
 
     def connect(self, clean_session=True):
         self.sock = socket.socket()
+        self.addr = socket.getaddrinfo(self.server, self.port)[0][-1]
         self.sock.connect(self.addr)
         if self.ssl:
             import ussl
             self.sock = ussl.wrap_socket(self.sock, **self.ssl_params)
-        msg = bytearray(b"\x10\0\0\x04MQTT\x04\x02\0\0")
-        msg[1] = 10 + 2 + len(self.client_id)
-        msg[9] = clean_session << 1
+        sz = 10 + 2 + len(self.client_id)
         if self.user is not None:
-            msg[1] += 2 + len(self.user) + 2 + len(self.pswd)
-            msg[9] |= 0xC0
+            sz += 2 + len(self.user) + 2 + len(self.pswd)
+        if self.lw_topic:
+            sz += 2 + len(self.lw_topic) + 2 + len(self.lw_msg)
+			
+        if sz < 128:
+            msg = bytearray(b"\x10\0\0\x04MQTT\x04\x02\0\0")
+        elif sz < 16384:
+            msg = bytearray(b"\x10\0\0\0\x04MQTT\x04\x02\0\0")
+        elif sz < 2097152:
+            msg = bytearray(b"\x10\0\0\0\0\x04MQTT\x04\x02\0\0")
+        else:
+            msg = bytearray(b"\x10\0\0\0\0\0\x04MQTT\x04\x02\0\0")
+		
+        indexOfSize = 0
+        while (sz > 0):
+            enc_byte = sz % 128
+            sz = int(sz / 128)
+            if (sz > 0):
+                enc_byte |= 128
+            indexOfSize += 1
+            msg[indexOfSize] = enc_byte
+		
+        msg[8 + indexOfSize] = clean_session << 1
+        if self.user is not None:
+            msg[8 + indexOfSize] |= 0xC0
         if self.keepalive:
             assert self.keepalive < 65536
-            msg[10] |= self.keepalive >> 8
-            msg[11] |= self.keepalive & 0x00FF
+            msg[9 + indexOfSize] |= self.keepalive >> 8
+            msg[10 + indexOfSize] |= self.keepalive & 0x00FF
         if self.lw_topic:
-            msg[1] += 2 + len(self.lw_topic) + 2 + len(self.lw_msg)
-            msg[9] |= 0x4 | (self.lw_qos & 0x1) << 3 | (self.lw_qos & 0x2) << 3
-            msg[9] |= self.lw_retain << 5
-        # fix "remaining length field" for message size over 128
-        rem_len = msg[1]
-        enc_bytearray = bytearray()
-        while (rem_len > 0):
-            enc_byte = rem_len % 128
-            rem_len = int(rem_len / 128)
-            if (rem_len > 0):
-                enc_byte |= 128
-            enc_bytearray.append(enc_byte)
-        msg[1:2] = enc_bytearray
-        
+            msg[8 + indexOfSize] |= 0x4 | (self.lw_qos & 0x1) << 3 | (self.lw_qos & 0x2) << 3
+            msg[8 + indexOfSize] |= self.lw_retain << 5
         self.sock.write(msg)
         #print(hex(len(msg)), hexlify(msg, ":"))
         self._send_str(self.client_id)
