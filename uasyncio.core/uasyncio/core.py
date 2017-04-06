@@ -55,6 +55,16 @@ class EventLoop:
         cur_task = [0, 0, 0]
         while True:
             if self.q:
+                # wait() may finish prematurely due to I/O completion,
+                # and schedule new, earlier than before tasks to run.
+                while 1:
+                    t = self.q.peektime()
+                    tnow = self.time()
+                    delay = time.ticks_diff(t, tnow)
+                    if delay <= 0:
+                        break
+                    self.wait(delay)
+
                 self.q.pop(cur_task)
                 t = cur_task[0]
                 cb = cur_task[1]
@@ -62,10 +72,6 @@ class EventLoop:
                 if __debug__ and DEBUG:
                     log.debug("Next coroutine to run: %s", (t, cb, args))
 #                __main__.mem_info()
-                tnow = self.time()
-                delay = time.ticks_diff(t, tnow)
-                if delay > 0:
-                    self.wait(delay)
             else:
                 self.wait(-1)
                 # Assuming IO completion scheduled some tasks
