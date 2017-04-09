@@ -62,14 +62,14 @@ class MQTTClient:
         
         sz = 10 + 2 + len(self.client_id)
         msg[6] = clean_session << 1
-        if user is not None:
+        if self.user is not None:
             sz += 2 + len(self.user) + 2 + len(self.pswd)
             msg[6] |= 0xC0
         if self.keepalive:
             assert self.keepalive < 65536
             msg[7] |= self.keepalive >> 8
             msg[8] |= self.keepalive & 0x00FF
-        if lw_topic:
+        if self.lw_topic:
             sz += 2 + len(self.lw_topic) + 2 + len(self.lw_msg)
             msg[6] |= 0x4 | (self.lw_qos & 0x1) << 3 | (self.lw_qos & 0x2) << 3
             msg[6] |= self.lw_retain << 5
@@ -81,7 +81,7 @@ class MQTTClient:
             i += 1
         premsg[i] = sz
         
-        self.sock.write(premsg, i+1)
+        self.sock.write(premsg, i + 2)
         self.sock.write(msg)
         #print(hex(len(msg)), hexlify(msg, ":"))
         self._send_str(self.client_id)
