@@ -55,3 +55,14 @@ def tee(iterable, n=2):
 def starmap(function, iterable):
     for args in iterable:
         yield function(*args)
+
+def accumulate(iterable, func=lambda x, y: x + y):
+    it = iter(iterable)
+    try:
+        acc = next(it)
+    except StopIteration:
+        return
+    yield acc
+    for element in it:
+        acc = func(acc, element)
+        yield acc
