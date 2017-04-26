@@ -58,19 +58,22 @@ class MQTTClient:
             import ussl
             self.sock = ussl.wrap_socket(self.sock, **self.ssl_params)
         msg = bytearray(b"\x10\0\0\x04MQTT\x04\x02\0\0")
-        msg[1] = 10 + 2 + len(self.client_id)
+        msg_length = 10 + 2 + len(self.client_id)
         msg[9] = clean_session << 1
         if self.user is not None:
-            msg[1] += 2 + len(self.user) + 2 + len(self.pswd)
+            msg_length += 2 + len(self.user) + 2 + len(self.pswd)
             msg[9] |= 0xC0
         if self.keepalive:
             assert self.keepalive < 65536
             msg[10] |= self.keepalive >> 8
             msg[11] |= self.keepalive & 0x00FF
         if self.lw_topic:
-            msg[1] += 2 + len(self.lw_topic) + 2 + len(self.lw_msg)
+            msg_length += 2 + len(self.lw_topic) + 2 + len(self.lw_msg)
             msg[9] |= 0x4 | (self.lw_qos & 0x1) << 3 | (self.lw_qos & 0x2) << 3
             msg[9] |= self.lw_retain << 5
+        assert msg_length <= 0xFFFF
+        msg[0] = msg_length & 0xFF00
+        msg[1] = msg_length & 0x00FF
         self.sock.write(msg)
         #print(hex(len(msg)), hexlify(msg, ":"))
         self._send_str(self.client_id)
