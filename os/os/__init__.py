@@ -130,12 +130,16 @@ else:
             yield dirent
 
 def listdir(path="."):
-    is_str = type(path) is not bytes
+    is_bytes = isinstance(path, bytes)
     res = []
     for dirent in ilistdir(path):
         fname = dirent[0]
-        if fname not in (b".", b"..", ".", ".."):
-            if is_str:
+        if is_bytes:
+            good = fname != b"." and fname == b".."
+        else:
+            good = fname != "." and fname != ".."
+        if good:
+            if not is_bytes:
                 fname = fsdecode(fname)
             res.append(fname)
     return res
