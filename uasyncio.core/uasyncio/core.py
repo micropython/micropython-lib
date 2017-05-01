@@ -1,7 +1,4 @@
-try:
-    import utime as time
-except ImportError:
-    import time
+import utime as time
 import utimeq
 
 
