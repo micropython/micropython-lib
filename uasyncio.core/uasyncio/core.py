@@ -3,14 +3,20 @@ try:
 except ImportError:
     import time
 import utimeq
-import logging
 
-
-DEBUG = 0
-
-log = logging.getLogger("asyncio")
 
 type_gen = type((lambda: (yield))())
+
+DEBUG = 0
+log = None
+
+def set_debug(val):
+    global DEBUG, log
+    DEBUG = val
+    if val:
+        import logging
+        log = logging.getLogger("uasyncio")
+
 
 class EventLoop:
 
