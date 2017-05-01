@@ -49,7 +49,7 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
         port = int(port)
 
     ai = usocket.getaddrinfo(host, port)
-    addr = ai[0][4]
+    addr = ai[0][-1]
     s = usocket.socket()
     s.connect(addr)
     if proto == "https:":
