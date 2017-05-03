@@ -6,14 +6,17 @@ class MQTTException(Exception):
     pass
 
 class MQTTClient:
+    MQTTv31=3
+    MQTTv311=4
 
     def __init__(self, client_id, server, port=0, user=None, password=None, keepalive=0,
-                 ssl=False, ssl_params={}):
+                 proto=MQTTv311, ssl=False, ssl_params={}):
         if port == 0:
             port = 8883 if ssl else 1883
         self.client_id = client_id
         self.sock = None
         self.addr = socket.getaddrinfo(server, port)[0][-1]
+        self.proto = proto
         self.ssl = ssl
         self.ssl_params = ssl_params
         self.pid = 0
@@ -59,20 +62,22 @@ class MQTTClient:
             self.sock = ussl.wrap_socket(self.sock, **self.ssl_params)
         premsg = bytearray(b"\x10\0\0\0\0\0")
         msg = bytearray(b"\x04MQTT\x04\x02\0\0")
+        if(self.proto==MQTTClient.MQTTv31):
+            msg = bytearray(b"\x06MQIsdp\x03\x02\0\0")
 
-        sz = 10 + 2 + len(self.client_id)
-        msg[6] = clean_session << 1
+        sz = 3 + len(msg) + len(self.client_id)
+        msg[-3] = clean_session << 1
         if self.user is not None:
             sz += 2 + len(self.user) + 2 + len(self.pswd)
-            msg[6] |= 0xC0
+            msg[-3] |= 0xC0
         if self.keepalive:
             assert self.keepalive < 65536
-            msg[7] |= self.keepalive >> 8
-            msg[8] |= self.keepalive & 0x00FF
+            msg[-2] |= self.keepalive >> 8
+            msg[-1] |= self.keepalive & 0x00FF
         if self.lw_topic:
             sz += 2 + len(self.lw_topic) + 2 + len(self.lw_msg)
-            msg[6] |= 0x4 | (self.lw_qos & 0x1) << 3 | (self.lw_qos & 0x2) << 3
-            msg[6] |= self.lw_retain << 5
+            msg[-3] |= 0x4 | (self.lw_qos & 0x1) << 3 | (self.lw_qos & 0x2) << 3
+            msg[-3] |= self.lw_retain << 5
 
         i = 1
         while sz > 0x7f:
