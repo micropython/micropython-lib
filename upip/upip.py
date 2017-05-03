@@ -145,9 +145,10 @@ def url_open(url):
 
 def get_pkg_metadata(name):
     f = url_open("https://pypi.python.org/pypi/%s/json" % name)
-    s = f.read()
-    f.close()
-    return json.loads(s)
+    try:
+        return json.load(f)
+    finally:
+        f.close()
 
 
 def fatal(msg, exc=None):
