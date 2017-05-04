@@ -9,13 +9,12 @@ class LED:
     def off(self):
         self.f.write(b"0")
 
+    def set(self, v):
+        self.f.write(b"{}".format(max(0, min(255, v)))
+
     def get(self):
         self.f.seek(0)
         return int(self.f.read())
 
     def toggle(self):
-        v = self.get()
-        if v:
-            self.off()
-        else:
-            self.on()
+        self.set(255 if self.get() else 0)
