@@ -104,6 +104,10 @@ import usocket
 warn_ussl = True
 def url_open(url):
     global warn_ussl
+
+    if debug:
+        print(url)
+
     proto, _, host, urlpath = url.split('/', 3)
     try:
         ai = usocket.getaddrinfo(host, 443)
