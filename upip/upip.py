@@ -129,7 +129,7 @@ def url_open(url):
     if status != b"200":
         s.close()
         exc = ValueError(status)
-        if status == b"404":
+        if status == b"404" or status == b"301":
             fatal("Package not found", exc)
         fatal("Unexpected error querying for package", exc)
     while 1:
