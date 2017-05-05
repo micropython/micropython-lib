@@ -49,8 +49,12 @@ def recompress_latest(dir):
     recompress(latest)
 
 
-EXCLUDE = [r".+/setup.py"]
-INCLUDE = [r".+\.py", r".+\.egg-info/(PKG-INFO|requires\.txt)"]
+FILTERS = [
+    # include, exclude, repeat
+    (r".+\.egg-info/(PKG-INFO|requires\.txt)", r"setup.py$"),
+    (r".+\.py$", r"[^/]+$"),
+    (None, r".+\.egg-info/.+"),
+]
 
 
 outbuf = io.BytesIO()
@@ -60,18 +64,29 @@ def filter_tar(name):
     fout = tarfile.open(fileobj=outbuf, mode="w")
     for info in fin:
 #        print(info)
-        include = None
-        for p in EXCLUDE:
-            if re.match(p, info.name):
-                include = False
-                break
-        if include is None:
-            for p in INCLUDE:
-                if re.match(p, info.name):
-                    include = True
-                    print("Including:", info.name)
-        if not include:
+        if not "/" in info.name:
             continue
+        fname = info.name.split("/", 1)[1]
+        include = None
+
+        for inc_re, exc_re in FILTERS:
+            if include is None and inc_re:
+                if re.match(inc_re, fname):
+                    include = True
+
+            if include is None and exc_re:
+                if re.match(exc_re, fname):
+                    include = False
+
+        if include is None:
+            include = True
+
+        if include:
+            print("Including:", fname)
+        else:
+            print("Excluding:", fname)
+            continue
+
         farch = fin.extractfile(info)
         fout.addfile(info, farch)
     fout.close()
