@@ -7,7 +7,7 @@ sys.path.append("..")
 import optimize_upip
 
 setup(name='micropython-upip',
-      version='1.1.6',
+      version='1.2',
       description='Simple package manager for MicroPython.',
       long_description='Simple self-hosted package manager for MicroPython (requires usocket, ussl, uzlib, uctypes builtin modules). Compatible only with packages without custom setup.py code.',
       url='https://github.com/micropython/micropython-lib',
