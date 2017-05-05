@@ -173,10 +173,12 @@ def install_pkg(pkg_spec, install_path):
     print("Installing %s %s from %s" % (pkg_spec, latest_ver, package_url))
     package_fname = op_basename(package_url)
     f1 = url_open(package_url)
-    f2 = uzlib.DecompIO(f1, gzdict_sz)
-    f3 = tarfile.TarFile(fileobj=f2)
-    meta = install_tar(f3, install_path)
-    f1.close()
+    try:
+        f2 = uzlib.DecompIO(f1, gzdict_sz)
+        f3 = tarfile.TarFile(fileobj=f2)
+        meta = install_tar(f3, install_path)
+    finally:
+        f1.close()
     del f3
     del f2
     gc.collect()
