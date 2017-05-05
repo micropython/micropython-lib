@@ -100,7 +100,7 @@ class StreamReader:
         return buf
 
     def readline(self):
-        if __debug__:
+        if DEBUG and __debug__:
             log.debug("StreamReader.readline()")
         buf = b""
         while True:
@@ -156,7 +156,7 @@ class StreamWriter:
             sz -= res
             yield IOWrite(self.s)
             #assert s2.fileno() == self.s.fileno()
-            if __debug__:
+            if DEBUG and __debug__:
                 log.debug("StreamWriter.awrite(): can write more")
 
     def aclose(self):
@@ -182,7 +182,7 @@ def open_connection(host, port):
     except OSError as e:
         if e.args[0] != uerrno.EINPROGRESS:
             raise
-    if __debug__:
+    if DEBUG and __debug__:
         log.debug("open_connection: After connect")
     yield IOWrite(s)
 #    if __debug__:
@@ -193,7 +193,8 @@ def open_connection(host, port):
 
 
 def start_server(client_coro, host, port, backlog=10):
-    log.debug("start_server(%s, %s)", host, port)
+    if DEBUG and __debug__:
+        log.debug("start_server(%s, %s)", host, port)
     s = _socket.socket()
     s.setblocking(False)
 
@@ -203,10 +204,10 @@ def start_server(client_coro, host, port, backlog=10):
     s.bind(addr)
     s.listen(backlog)
     while True:
-        if __debug__:
+        if DEBUG and __debug__:
             log.debug("start_server: Before accept")
         yield IORead(s)
-        if __debug__:
+        if DEBUG and __debug__:
             log.debug("start_server: After iowait")
         s2, client_addr = s.accept()
         s2.setblocking(False)
