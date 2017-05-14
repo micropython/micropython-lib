@@ -99,13 +99,9 @@ class EventLoop:
                         if isinstance(ret, SleepMs):
                             delay = arg
                         elif isinstance(ret, IORead):
-#                            self.add_reader(ret.obj.fileno(), lambda self, c, f: self.call_soon(c, f), self, cb, ret.obj)
-#                            self.add_reader(ret.obj.fileno(), lambda c, f: self.call_soon(c, f), cb, ret.obj)
-#                            self.add_reader(arg.fileno(), lambda cb: self.call_soon(cb), cb)
                             self.add_reader(arg, cb)
                             continue
                         elif isinstance(ret, IOWrite):
-#                            self.add_writer(arg.fileno(), lambda cb: self.call_soon(cb), cb)
                             self.add_writer(arg, cb)
                             continue
                         elif isinstance(ret, IOReadDone):
