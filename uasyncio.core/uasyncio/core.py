@@ -25,7 +25,7 @@ class EventLoop:
 
     def create_task(self, coro):
         # CPython 3.4.2
-        self.call_later_ms_(0, coro)
+        self.call_later_ms(0, coro)
         # CPython asyncio incompatibility: we don't return Task object
 
     def call_soon(self, callback, *args):
@@ -34,7 +34,7 @@ class EventLoop:
     def call_later(self, delay, callback, *args):
         self.call_at(time.ticks_add(self.time(), int(delay * 1000)), callback, *args)
 
-    def call_later_ms_(self, delay, callback, args=()):
+    def call_later_ms(self, delay, callback, args=()):
         self.call_at_(time.ticks_add(self.time(), delay), callback, args)
 
     def call_at(self, time, callback, *args):
@@ -124,7 +124,7 @@ class EventLoop:
                     if __debug__ and DEBUG:
                         log.debug("Coroutine finished: %s", cb)
                     continue
-                self.call_later_ms_(delay, cb, args)
+                self.call_later_ms(delay, cb, args)
 
     def run_until_complete(self, coro):
         def _run_and_stop():
