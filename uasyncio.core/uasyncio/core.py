@@ -94,8 +94,6 @@ class EventLoop:
                         log.debug("Coroutine %s yield result: %s", cb, ret)
                     if isinstance(ret, SysCall1):
                         arg = ret.arg
-                        if isinstance(ret, Sleep):
-                            delay = int(arg * 1000)
                         if isinstance(ret, SleepMs):
                             delay = arg
                         elif isinstance(ret, IORead):
@@ -152,9 +150,6 @@ class SysCall1(SysCall):
 
     def __init__(self, arg):
         self.arg = arg
-
-class Sleep(SysCall1):
-    pass
 
 class StopLoop(SysCall1):
     pass
