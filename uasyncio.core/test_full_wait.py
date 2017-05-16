@@ -24,7 +24,7 @@ class MockEventLoop(uasyncio.EventLoop):
 
 
 loop = MockEventLoop()
-loop.call_later_ms_(500, lambda: loop.msgs.append("I should be run second, time: %s" % loop.time()))
+loop.call_later_ms(500, lambda: loop.msgs.append("I should be run second, time: %s" % loop.time()))
 try:
     loop.run_forever()
 except StopIteration:
