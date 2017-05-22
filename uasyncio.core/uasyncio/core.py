@@ -128,6 +128,9 @@ class EventLoop:
         self.call_soon(_run_and_stop())
         self.run_forever()
 
+    def stop(self):
+        self.call_soon((lambda: (yield StopLoop(0)))())
+
     def close(self):
         pass
 
