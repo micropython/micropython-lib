@@ -119,7 +119,10 @@ class EventLoop:
                     if __debug__ and DEBUG:
                         log.debug("Coroutine finished: %s", cb)
                     continue
-                self.call_later_ms(delay, cb, args)
+                # Currently all syscalls don't return anything, so we don't
+                # need to feed anything to the next invocation of coroutine.
+                # If that changes, need to pass that value below.
+                self.call_later_ms(delay, cb)
 
     def run_until_complete(self, coro):
         def _run_and_stop():
