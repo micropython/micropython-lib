@@ -9,5 +9,6 @@
   baz
   
 </u:GetConnectionTypeInfo>
+<!-- Comments, you won't see me after tokenize. -->
 </s:Body>
 </s:Envelope>
