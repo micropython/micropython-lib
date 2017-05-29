@@ -76,12 +76,10 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
     l = s.readline()
     protover, status, msg = l.split(None, 2)
     status = int(status)
-    #print(protover, status, msg)
     while True:
         l = s.readline()
         if not l or l == b"\r\n":
             break
-        #print(l)
         if l.startswith(b"Transfer-Encoding:"):
             if b"chunked" in l:
                 raise ValueError("Unsupported " + l)
