@@ -41,7 +41,7 @@ cd = os.chdir
 mkdir = os.mkdir
 mv = os.rename
 rm = os.remove
-rmdir = os.rmdir
+rmdir = os.remove
 
 def head(f, n=10):
     with open(f) as f:
