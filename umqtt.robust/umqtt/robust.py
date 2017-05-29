@@ -3,11 +3,7 @@ from . import simple
 
 class MQTTClient(simple.MQTTClient):
 
-    DELAY = 2
     DEBUG = False
-
-    def delay(self, i):
-        utime.sleep(self.DELAY)
 
     def log(self, in_reconnect, e):
         if self.DEBUG:
@@ -17,14 +13,14 @@ class MQTTClient(simple.MQTTClient):
                 print("mqtt: %r" % e)
 
     def reconnect(self):
-        i = 0
+        d = 0
         while 1:
             try:
                 return super().connect(False)
             except OSError as e:
                 self.log(True, e)
-                i += 1
-                self.delay(i)
+                d += 1
+                utime.sleep(d)
 
     def publish(self, topic, msg, retain=False, qos=0):
         while 1:
