@@ -12,6 +12,6 @@ micropython -O -X heapsize=200wK test_http_server_medium.py &
 
 sleep 1
 
-ab -n10000 -c100 http://localhost:8081/
+ab -n10000 -c100 http://127.0.0.1:8081/
 
 kill %1
