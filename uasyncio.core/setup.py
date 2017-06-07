@@ -7,7 +7,7 @@ sys.path.append("..")
 import optimize_upip
 
 setup(name='micropython-uasyncio.core',
-      version='1.4.1',
+      version='1.4.2',
       description='uasyncio.core module for MicroPython',
       long_description='Lightweight implementation of asyncio-like library built around native Python coroutines. (Core event loop).',
       url='https://github.com/micropython/micropython-lib',
