@@ -12,7 +12,7 @@ def set_debug(val):
     DEBUG = val
     if val:
         import logging
-        log = logging.getLogger("uasyncio")
+        log = logging.getLogger("uasyncio.core")
 
 
 class EventLoop:
