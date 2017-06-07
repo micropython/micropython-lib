@@ -4,6 +4,17 @@ import usocket as _socket
 from uasyncio.core import *
 
 
+DEBUG = 0
+log = None
+
+def set_debug(val):
+    global DEBUG, log
+    DEBUG = val
+    if val:
+        import logging
+        log = logging.getLogger("uasyncio")
+
+
 class PollEventLoop(EventLoop):
 
     def __init__(self, len=42):
