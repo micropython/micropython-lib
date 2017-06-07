@@ -25,10 +25,11 @@ class MQTTClient(simple.MQTTClient):
         while 1:
             try:
                 ret = super().connect(False)
-                for topic, qos in self.subscriptions:
-                    if self.DEBUG:
-                        print("mqtt resubscribe: %r" % topic)
-                    super().subscribe(topic, qos)
+                if not ret:
+                    for topic, qos in self.subscriptions:
+                        if self.DEBUG:
+                            print("mqtt resubscribe: %r" % topic)
+                        super().subscribe(topic, qos)
                 return ret
             except OSError as e:
                 self.log(True, e)
