@@ -171,6 +171,11 @@ class StreamWriter:
             if DEBUG and __debug__:
                 log.debug("StreamWriter.awrite(): can write more")
 
+    # Write piecewise content from iterable (usually, a generator)
+    def awriteiter(self, iterable):
+        for buf in iterable:
+            yield from self.awrite(buf)
+
     def aclose(self):
         yield IOWriteDone(self.s)
         self.s.close()
