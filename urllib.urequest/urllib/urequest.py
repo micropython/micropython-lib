@@ -25,7 +25,7 @@ def urlopen(url, data=None, method="GET"):
     s = usocket.socket()
     s.connect(addr)
     if proto == "https:":
-        s = ussl.wrap_socket(s)
+        s = ussl.wrap_socket(s, server_hostname=host)
 
     s.write(method)
     s.write(b" /")
