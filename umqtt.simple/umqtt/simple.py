@@ -13,7 +13,8 @@ class MQTTClient:
             port = 8883 if ssl else 1883
         self.client_id = client_id
         self.sock = None
-        self.addr = socket.getaddrinfo(server, port)[0][-1]
+        self.server = server
+        self.port = port
         self.ssl = ssl
         self.ssl_params = ssl_params
         self.pid = 0
@@ -53,7 +54,8 @@ class MQTTClient:
 
     def connect(self, clean_session=True):
         self.sock = socket.socket()
-        self.sock.connect(self.addr)
+        addr = socket.getaddrinfo(self.server, self.port)[0][-1]
+        self.sock.connect(addr)
         if self.ssl:
             import ussl
             self.sock = ussl.wrap_socket(self.sock, **self.ssl_params)
