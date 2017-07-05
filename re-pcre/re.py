@@ -41,6 +41,8 @@ class PCREMatch:
         self.offsets = offsets
 
     def group(self, *n):
+        if not n:
+            return self.s[self.offsets[0]:self.offsets[1]]
         if len(n) == 1:
             return self.s[self.offsets[n[0]*2]:self.offsets[n[0]*2+1]]
         return tuple(self.s[self.offsets[i*2]:self.offsets[i*2+1]] for i in n)
