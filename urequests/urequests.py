@@ -6,6 +6,7 @@ class Response:
         self.raw = f
         self.encoding = "utf-8"
         self._cached = None
+        self.response_headers = {}
 
     def close(self):
         if self.raw:
@@ -16,7 +17,10 @@ class Response:
     @property
     def content(self):
         if self._cached is None:
-            self._cached = self.raw.read()
+            if "content-length" in self.response_headers:
+                self._cached = self.raw.read(int(self.response_headers["content-length"]))
+            else:
+                self._cached = self.raw.read()
             self.raw.close()
             self.raw = None
         return self._cached
@@ -75,8 +79,10 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
 
     l = s.readline()
     protover, status, msg = l.split(None, 2)
-    status = int(status)
     #print(protover, status, msg)
+    resp = Response(s)
+    resp.status_code = int(status)
+    resp.reason = msg.rstrip()
     while True:
         l = s.readline()
         if not l or l == b"\r\n":
@@ -87,10 +93,11 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
                 raise ValueError("Unsupported " + l)
         elif l.startswith(b"Location:") and not 200 <= status <= 299:
             raise NotImplementedError("Redirects not yet supported")
+        else:
+            key, value = l.decode("utf-8").split(":",1)
+            # RFC 2616 Section 4.2: Field names are case-insensitive.
+            resp.response_headers[key.lower()] = value.rstrip()
 
-    resp = Response(s)
-    resp.status_code = status
-    resp.reason = msg.rstrip()
     return resp
 
 

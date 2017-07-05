@@ -7,7 +7,6 @@ r = requests.get("http://api.xively.com/")
 print(r)
 print(r.content)
 print(r.text)
-print(r.content)
 print(r.json())
 
 # It's mandatory to close response objects as soon as you finished
