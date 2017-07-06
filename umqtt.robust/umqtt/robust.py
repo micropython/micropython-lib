@@ -34,10 +34,10 @@ class MQTTClient(simple.MQTTClient):
                 self.log(False, e)
             self.reconnect()
 
-    def wait_msg(self):
+    def wait_msg(self, blocking=True):
         while 1:
             try:
-                return super().wait_msg()
+                return super().wait_msg(blocking)
             except OSError as e:
                 self.log(False, e)
             self.reconnect()
