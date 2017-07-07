@@ -91,10 +91,10 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
         if l.startswith(b"Transfer-Encoding:"):
             if b"chunked" in l:
                 raise ValueError("Unsupported " + l)
-        elif l.startswith(b"Location:") and not 200 <= status <= 299:
+        elif l.startswith(b"Location:") and not 200 <= resp.status_code <= 299:
             raise NotImplementedError("Redirects not yet supported")
         else:
-            key, value = l.decode("utf-8").split(":",1)
+            key, value = l.decode("utf-8").split(":", 1)
             # RFC 2616 Section 4.2: Field names are case-insensitive.
             resp.response_headers[key.lower()] = value.rstrip()
 
