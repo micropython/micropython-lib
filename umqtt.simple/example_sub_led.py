@@ -47,3 +47,6 @@ def main(server=SERVER):
             c.wait_msg()
     finally:
         c.disconnect()
+
+if __name__ == "__main__":
+    main()
