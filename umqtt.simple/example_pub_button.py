@@ -28,3 +28,6 @@ def main(server=SERVER):
         time.sleep_ms(200)
 
     c.disconnect()
+
+if __name__ == "__main__":
+    main()
