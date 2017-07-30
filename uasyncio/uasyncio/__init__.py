@@ -25,6 +25,7 @@ class PollEventLoop(EventLoop):
     def add_reader(self, sock, cb, *args):
         if DEBUG and __debug__:
             log.debug("add_reader%s", (sock, cb, args))
+        self.reg_objects += 1
         if args:
             self.poller.register(sock, select.POLLIN)
             self.objmap[id(sock)] = (cb, args)
@@ -35,12 +36,15 @@ class PollEventLoop(EventLoop):
     def remove_reader(self, sock):
         if DEBUG and __debug__:
             log.debug("remove_reader(%s)", sock)
+        if self.reg_objects:
+            self.reg_objects -= 1
         self.poller.unregister(sock)
         del self.objmap[id(sock)]
 
     def add_writer(self, sock, cb, *args):
         if DEBUG and __debug__:
             log.debug("add_writer%s", (sock, cb, args))
+        self.reg_objects += 1
         if args:
             self.poller.register(sock, select.POLLOUT)
             self.objmap[id(sock)] = (cb, args)
@@ -51,6 +55,8 @@ class PollEventLoop(EventLoop):
     def remove_writer(self, sock):
         if DEBUG and __debug__:
             log.debug("remove_writer(%s)", sock)
+        if self.reg_objects:
+            self.reg_objects -= 1
         try:
             self.poller.unregister(sock)
             self.objmap.pop(id(sock), None)
