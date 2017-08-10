@@ -7,7 +7,7 @@ sys.path.append("..")
 import optimize_upip
 
 setup(name='micropython-base64',
-      version='3.3.3-3',
+      version='3.3.3-4',
       description='CPython base64 module ported to MicroPython',
       long_description='This is a module ported from CPython standard library to be compatible with\nMicroPython interpreter. Usually, this means applying small patches for\nfeatures not supported (yet, or at all) in MicroPython. Sometimes, heavier\nchanges are required. Note that CPython modules are written with availability\nof vast resources in mind, and may not work for MicroPython ports with\nlimited heap. If you are affected by such a case, please help reimplement\nthe module from scratch.',
       url='https://github.com/micropython/micropython-lib',
@@ -18,4 +18,4 @@ setup(name='micropython-base64',
       license='Python',
       cmdclass={'optimize_upip': optimize_upip.OptimizeUpip},
       py_modules=['base64'],
-      install_requires=['micropython-struct'])
+      install_requires=['micropython-binascii', 'micropython-re-pcre', 'micropython-struct'])
