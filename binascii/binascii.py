@@ -68,7 +68,7 @@ def a2b_base64(ascii):
             #
             if leftbits >= 8:
                 leftbits -= 8
-                res.append((leftchar >> leftbits).to_bytes(1))
+                res.append((leftchar >> leftbits).to_bytes(1, 'big'))
                 leftchar &= ((1 << leftbits) - 1)
             #
             last_char_was_a_pad = False
