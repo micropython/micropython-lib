@@ -1,4 +1,4 @@
-from binascii import hexlify, unhexlify
+from binascii import *
 import utime
 
 data = b'zlutoucky kun upel dabelske ody'
@@ -11,6 +11,8 @@ data2 = unhexlify(h)
 
 if data2 != data:
     raise Exception("Error")
+
+a2b_base64(b"as==") == b'j'
 
 start = utime.time()
 for x in range(100000):
