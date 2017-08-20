@@ -59,9 +59,12 @@ class EventLoop:
                     t = self.q.peektime()
                     tnow = self.time()
                     delay = time.ticks_diff(t, tnow)
-                    if delay <= 0:
-                        break
+                    if delay < 0:
+                        delay = 0
+                    # Always call wait(), to give a chance to I/O scheduling
                     self.wait(delay)
+                    if delay == 0:
+                        break
 
                 self.q.pop(cur_task)
                 t = cur_task[0]
