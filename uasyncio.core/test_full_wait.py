@@ -31,4 +31,6 @@ except StopIteration:
     pass
 
 print(loop.msgs)
-assert loop.msgs == ['I should be run first, time: 100', 'I should be run second, time: 500']
+# .wait() is now called on each loop iteration, and for our mock case, it means that
+# at the time of running, self.time() will be skewed by 100 virtual time units.
+assert loop.msgs == ['I should be run first, time: 200', 'I should be run second, time: 600']
