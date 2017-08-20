@@ -7,7 +7,7 @@ sys.path.append("..")
 import optimize_upip
 
 setup(name='micropython-xmltok',
-      version='0.1.1',
+      version='0.2',
       description='xmltok module for MicroPython',
       long_description='Simple XML tokenizer',
       url='https://github.com/micropython/micropython-lib',
