@@ -28,13 +28,10 @@ def _c_tm_to_tuple(tm):
 
 def strftime(format, t=None):
     if t is None:
-        t = time()
+        t = localtime()
 
-    t = int(t)
-    a = array.array('i', [t])
-    tm_p = localtime_(a)
     buf = bytearray(32)
-    l = strftime_(buf, 32, format, tm_p)
+    l = strftime_(buf, 32, format, _tuple_to_c_tm(t))
     return str(buf[:l], "utf-8")
 
 
