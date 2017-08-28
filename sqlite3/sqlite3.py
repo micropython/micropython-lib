@@ -1,3 +1,4 @@
+import sys
 import ffilib
 
 
@@ -87,7 +88,7 @@ class Cursor:
         b = bytearray(4)
         s = sqlite3_prepare(self.h, sql, -1, b, None)
         check_error(self.h, s)
-        self.stmnt = int.from_bytes(b)
+        self.stmnt = int.from_bytes(b, sys.byteorder)
         #print("stmnt", self.stmnt)
         self.num_cols = sqlite3_column_count(self.stmnt)
         #print("num_cols", self.num_cols)
@@ -130,7 +131,7 @@ class Cursor:
 def connect(fname):
     b = bytearray(4)
     sqlite3_open(fname, b)
-    h = int.from_bytes(b)
+    h = int.from_bytes(b, sys.byteorder)
     return Connections(h)
 
 
