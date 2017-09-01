@@ -1,8 +1,90 @@
+from ucollections import OrderedDict
 import usocket
+
+class HttpHeaderDict(OrderedDict):
+
+    def __init__(self, *args, **kwargs):
+        if len(kwargs) > 0:
+            raise NotImplementedError('Keyword arguments not supported')
+        super().__init__(*args)
+
+        # For some reason, the MicroPython "dict" implementation populates the
+        # dictionary during the "__new__" call, instead of the "__init__" call
+        # as expected.  Trying to intercept this "__new__" call consistently
+        # results in a bus error.  Hence, the simplest solution is to just
+        # clear the parent class' data store prior to putting this instance
+        # into service.
+        self.clear()
+
+    def __getitem__(self, key):
+        return b','.join(super().__getitem__(key.lower())[1:])
+
+    def __setitem__(self, key, value):
+        lower_key = key.lower()
+        try:
+            current_value = super().__getitem__(lower_key)
+            current_value.append(value)
+        except KeyError:
+            super().__setitem__(lower_key, [key, value])
+
+    def __delitem__(self, key):
+        super().__delitem__(key.lower())
+
+    def __contains__(self, key):
+        return key.lower() in super().keys()
+
+    def copy(self):
+        raise NotImplementedError('copy() method not supported')
+
+    @classmethod
+    def fromkeys(cls, keys, value=None):
+        raise NotImplementedError('fromkeys(...) method not supported')
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def items(self):
+        for key in self.keys():
+            yield (key, self[key])
+
+    def keys(self):
+        for key in super().keys():
+            yield super().__getitem__(key.lower())[0]
+
+    def pop(self, key, default=None):
+        value = self[key]
+        del self[key]
+        return value
+
+    def setdefault(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            self[key] = default
+            return default
+
+    def values(self):
+        for key in super().keys():
+            yield self[key]
+
+    def update(self, source=None, **kwargs):
+        if len(kwargs) > 0:
+            raise NotImplementedError('Keyword arguments not supported')
+        if source is not None:
+            for key, value in source.items() if isinstance(source, dict) else source:
+                self[key] = value
+
+    def __repr__(self):
+        return '%s(%r)' % (self.__class__.__name__, list(self.items()))
+
 
 class Response:
 
-    def __init__(self, f):
+    def __init__(self, headers, f):
+        self.headers = headers
         self.raw = f
         self.encoding = "utf-8"
         self._cached = None
@@ -81,21 +163,32 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
         protover, status, msg = l.split(None, 2)
         status = int(status)
         #print(protover, status, msg)
+
+        headers = HttpHeaderDict()
         while True:
             l = s.readline()
             if not l or l == b"\r\n":
                 break
-            #print(l)
-            if l.startswith(b"Transfer-Encoding:"):
-                if b"chunked" in l:
-                    raise ValueError("Unsupported " + l)
-            elif l.startswith(b"Location:") and not 200 <= status <= 299:
+            key, value = [e.strip() for e in l.split(b':', 1)]
+            headers[key] = value
+
+        try:
+            if headers[b'Transfer-Encoding'] == b'chunked':
+                raise ValueError("Unsupported Transfer-Encoding: " + headers[b'Transfer-Encoding'])
+        except KeyError:
+            pass
+
+        try:
+            if not 200 <= status <= 299 and b'Location' in headers:
                 raise NotImplementedError("Redirects not yet supported")
+        except KeyError:
+            pass
+
     except OSError:
         s.close()
         raise
 
-    resp = Response(s)
+    resp = Response(headers, s)
     resp.status_code = status
     resp.reason = msg.rstrip()
     return resp
