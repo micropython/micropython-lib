@@ -172,15 +172,22 @@ def run_class(c, test_result):
         if name.startswith("test"):
             print(name, end=' ...')
             m = getattr(o, name)
+            set_up()
             try:
-                set_up()
                 test_result.testsRun += 1
                 m()
-                tear_down()
                 print(" ok")
             except SkipTest as e:
                 print(" skipped:", e.args[0])
                 test_result.skippedNum += 1
+            except:
+                print(" FAIL")
+                test_result.failuresNum += 1
+                # Uncomment to investigate failure in detail
+                #raise
+                continue
+            finally:
+                tear_down()
 
 
 def main(module="__main__"):
