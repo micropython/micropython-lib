@@ -1,6 +1,6 @@
 import sys
 import os
-from multiprocessing import Process, Pipe, Connection
+from multiprocessing import Process, Pipe
 
 def f(conn):
     conn.send([42, None, 'hello'])
@@ -9,11 +9,14 @@ def f(conn):
 
 if __name__ == '__main__':
     parent_conn, child_conn = Pipe(False)
-    print(parent_conn, child_conn)
+    #print(parent_conn, child_conn)
     p = Process(target=f, args=(child_conn,))
+
     # Extension: need to call this for uPy
-    p.register_pipe(parent_conn, child_conn)
+    if sys.implementation.name == "micropython":
+        p.register_pipe(parent_conn, child_conn)
+
     p.start()
-    print(parent_conn.recv())
-    print(parent_conn.recv())
+    parent_conn.recv() == [42, None, 'hello']
+    parent_conn.recv() == [42, 42, 42]
     p.join()

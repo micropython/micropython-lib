@@ -4,4 +4,4 @@ def f(x):
     return x*x
 
 pool = Pool(4)
-print(pool.apply(f, (10,)))
+assert pool.apply(f, (10,)) == 100
