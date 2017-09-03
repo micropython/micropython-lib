@@ -151,6 +151,16 @@ class TestRunner:
         res = TestResult()
         for c in suite.tests:
             run_class(c, res)
+
+        print("Ran %d tests\n" % res.testsRun)
+        if res.failuresNum > 0 or res.errorsNum > 0:
+            print("FAILED (failures=%d, errors=%d)" % (res.failuresNum, res.errorsNum))
+        else:
+            msg = "OK"
+            if res.skippedNum > 0:
+                msg += " (%d skipped)" % res.skippedNum
+            print(msg)
+
         return res
 
 class TestResult:
@@ -203,7 +213,3 @@ def main(module="__main__"):
         suite.addTest(c)
     runner = TestRunner()
     result = runner.run(suite)
-    msg = "Ran %d tests" % result.testsRun
-    if result.skippedNum > 0:
-        msg += " (%d skipped)" % result.skippedNum
-    print(msg)
