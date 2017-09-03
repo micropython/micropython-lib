@@ -13,10 +13,6 @@ def run_unittest(*classes):
         suite.addTest(c)
     runner = unittest.TestRunner()
     result = runner.run(suite)
-    msg = "Ran %d tests" % result.testsRun
-    if result.skippedNum > 0:
-        msg += " (%d skipped)" % result.skippedNum
-    print(msg)
 
 def can_symlink():
     return False
