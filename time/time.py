@@ -67,3 +67,7 @@ def perf_counter():
 
 def process_time():
     return clock()
+
+
+daylight = 0
+timezone = 0
