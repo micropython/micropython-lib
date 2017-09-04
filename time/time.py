@@ -40,7 +40,7 @@ def localtime(t=None):
         t = time()
 
     t = int(t)
-    a = ustruct.pack('i', t)
+    a = ustruct.pack('l', t)
     tm_p = localtime_(a)
     return _c_tm_to_tuple(uctypes.bytearray_at(tm_p, 36))
 
@@ -50,7 +50,7 @@ def gmtime(t=None):
         t = time()
 
     t = int(t)
-    a = ustruct.pack('i', t)
+    a = ustruct.pack('l', t)
     tm_p = gmtime_(a)
     return _c_tm_to_tuple(uctypes.bytearray_at(tm_p, 36))
 
