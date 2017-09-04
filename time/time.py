@@ -25,6 +25,9 @@ def _c_tm_to_tuple(tm):
     t = ustruct.unpack("@iiiiiiiii", tm)
     return tuple([t[5] + 1900, t[4] + 1, t[3], t[2], t[1], t[0], (t[6] - 1) % 7, t[7] + 1, t[8]])
 
+def struct_time(tm):
+    return tm
+
 
 def strftime(format, t=None):
     if t is None:
