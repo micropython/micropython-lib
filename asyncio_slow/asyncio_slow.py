@@ -47,7 +47,7 @@ class EventLoop:
         self.call_soon(_cb)
 
     def run_until_complete(self, coro):
-        t = async(coro)
+        t = ensure_future(coro)
         t.add_done_callback(lambda a: self.stop())
         self.run_forever()
 
@@ -109,7 +109,7 @@ def coroutine(f):
     return f
 
 
-def async(coro):
+def ensure_future(coro):
     if isinstance(coro, Future):
         return coro
     return Task(coro)
@@ -136,7 +136,7 @@ def wait(coro_list, loop=_def_event_loop):
     w = _Wait(len(coro_list))
 
     for c in coro_list:
-        t = async(c)
+        t = ensure_future(c)
         t.add_done_callback(lambda val: w._done())
 
     return w
