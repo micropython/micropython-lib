@@ -16,9 +16,11 @@ class Response:
     @property
     def content(self):
         if self._cached is None:
-            self._cached = self.raw.read()
-            self.raw.close()
-            self.raw = None
+            try:
+                self._cached = self.raw.read()
+            finally:
+                self.raw.close()
+                self.raw = None
         return self._cached
 
     @property
