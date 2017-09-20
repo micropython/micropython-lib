@@ -133,6 +133,10 @@ def skip(msg):
         return _inner
     return _decor
 
+def skipIf(cond, msg):
+    if not cond:
+        return lambda x: x
+    return skip(msg)
 
 def skipUnless(cond, msg):
     if cond:
