@@ -95,6 +95,14 @@ class XMLTokenizer:
                     yield from self.lex_attrs_till()
                     self.expect("?")
                     self.expect(">")
+                elif self.match("!"):
+                    self.expect("-")
+                    self.expect("-")
+                    last3 = ''
+                    while True:
+                        last3 = last3[-2:] + self.getch()
+                        if last3 == "-->":
+                            break
                 else:
                     tag = self.getnsident()
                     yield (START_TAG, tag)

@@ -15,7 +15,11 @@ expected = [
 ('END_TAG', ('s', 'Envelope')),
 ]
 
+dir = "."
+if "/" in __file__:
+    dir = __file__.rsplit("/", 1)[0]
+
 ex = iter(expected)
-for i in xmltok.tokenize(open("test.xml")):
+for i in xmltok.tokenize(open(dir + "/test.xml")):
     #print(i)
     assert i == next(ex)

@@ -13,7 +13,7 @@ trans_5C = bytes((x ^ 0x5C) for x in range(256))
 trans_36 = bytes((x ^ 0x36) for x in range(256))
 
 def translate(d, t):
-    return b''.join([ chr(t[x]).encode('ascii') for x in d ])
+    return bytes(t[x] for x in d)
 
 # The size of the digests returned by HMAC depends on the underlying
 # hashing module used.  Use digest_size from the instance of HMAC instead.

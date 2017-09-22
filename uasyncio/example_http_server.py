@@ -15,7 +15,6 @@ import logging
 #logging.basicConfig(level=logging.INFO)
 logging.basicConfig(level=logging.DEBUG)
 loop = asyncio.get_event_loop()
-mem_info()
 loop.call_soon(asyncio.start_server(serve, "127.0.0.1", 8081))
 loop.run_forever()
 loop.close()

@@ -2,6 +2,7 @@ import re
 
 m = re.search(r"a+", "caaab")
 assert m.group(0) == "aaa"
+assert m.group() == "aaa"
 
 m = re.match(r"(?ms)foo.*\Z", "foo\nbar")
 assert m.group(0) == "foo\nbar"

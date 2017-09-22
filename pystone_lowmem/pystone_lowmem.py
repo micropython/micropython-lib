@@ -96,7 +96,7 @@ def Proc0(loops=LOOPS):
     starttime = ticks_ms()
     for i in range(loops):
         pass
-    nulltime = ticks_diff(starttime, ticks_ms())
+    nulltime = ticks_diff(ticks_ms(), starttime)
 
     PtrGlbNext = Record()
     PtrGlb = Record()
@@ -134,7 +134,7 @@ def Proc0(loops=LOOPS):
         IntLoc2 = 7 * (IntLoc3 - IntLoc2) - IntLoc1
         IntLoc1 = Proc2(IntLoc1)
 
-    benchtime = ticks_diff(starttime, ticks_ms()) - nulltime
+    benchtime = ticks_diff(ticks_ms(), starttime) - nulltime
     if benchtime == 0:
         loopsPerBenchtime = 0
     else:

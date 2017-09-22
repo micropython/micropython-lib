@@ -5,7 +5,7 @@ import uasyncio as asyncio
 def serve(reader, writer):
     #print(reader, writer)
     #print("================")
-    yield from reader.read(256)
+    yield from reader.read(512)
     yield from writer.awrite("HTTP/1.0 200 OK\r\n\r\nHello.\r\n")
     yield from writer.aclose()
     #print("Finished processing request")

@@ -13,7 +13,8 @@ class MQTTClient:
             port = 8883 if ssl else 1883
         self.client_id = client_id
         self.sock = None
-        self.addr = socket.getaddrinfo(server, port)[0][-1]
+        self.server = server
+        self.port = port
         self.ssl = ssl
         self.ssl_params = ssl_params
         self.pid = 0
@@ -21,6 +22,10 @@ class MQTTClient:
         self.user = user
         self.pswd = password
         self.keepalive = keepalive
+        self.lw_topic = None
+        self.lw_msg = None
+        self.lw_qos = 0
+        self.lw_retain = False
 
     def _send_str(self, s):
         self.sock.write(struct.pack("!H", len(s)))
@@ -39,25 +44,52 @@ class MQTTClient:
     def set_callback(self, f):
         self.cb = f
 
+    def set_last_will(self, topic, msg, retain=False, qos=0):
+        assert 0 <= qos <= 2
+        assert topic
+        self.lw_topic = topic
+        self.lw_msg = msg
+        self.lw_qos = qos
+        self.lw_retain = retain
+
     def connect(self, clean_session=True):
         self.sock = socket.socket()
-        self.sock.connect(self.addr)
+        addr = socket.getaddrinfo(self.server, self.port)[0][-1]
+        self.sock.connect(addr)
         if self.ssl:
             import ussl
             self.sock = ussl.wrap_socket(self.sock, **self.ssl_params)
-        msg = bytearray(b"\x10\0\0\x04MQTT\x04\x02\0\0")
-        msg[1] = 10 + 2 + len(self.client_id)
-        msg[9] = clean_session << 1
+        premsg = bytearray(b"\x10\0\0\0\0\0")
+        msg = bytearray(b"\x04MQTT\x04\x02\0\0")
+
+        sz = 10 + 2 + len(self.client_id)
+        msg[6] = clean_session << 1
         if self.user is not None:
-            msg[1] += 2 + len(self.user) + 2 + len(self.pswd)
-            msg[9] |= 0xC0
+            sz += 2 + len(self.user) + 2 + len(self.pswd)
+            msg[6] |= 0xC0
         if self.keepalive:
             assert self.keepalive < 65536
-            msg[10] |= self.keepalive >> 8
-            msg[11] |= self.keepalive & 0x00FF
+            msg[7] |= self.keepalive >> 8
+            msg[8] |= self.keepalive & 0x00FF
+        if self.lw_topic:
+            sz += 2 + len(self.lw_topic) + 2 + len(self.lw_msg)
+            msg[6] |= 0x4 | (self.lw_qos & 0x1) << 3 | (self.lw_qos & 0x2) << 3
+            msg[6] |= self.lw_retain << 5
+
+        i = 1
+        while sz > 0x7f:
+            premsg[i] = (sz & 0x7f) | 0x80
+            sz >>= 7
+            i += 1
+        premsg[i] = sz
+
+        self.sock.write(premsg, i + 2)
         self.sock.write(msg)
         #print(hex(len(msg)), hexlify(msg, ":"))
         self._send_str(self.client_id)
+        if self.lw_topic:
+            self._send_str(self.lw_topic)
+            self._send_str(self.lw_msg)
         if self.user is not None:
             self._send_str(self.user)
             self._send_str(self.pswd)
@@ -117,7 +149,7 @@ class MQTTClient:
         #print(hex(len(pkt)), hexlify(pkt, ":"))
         self.sock.write(pkt)
         self._send_str(topic)
-        self.sock.write(b'\x00' if not qos else b'\x01')
+        self.sock.write((qos).to_bytes(1, "little"))
         while 1:
             op = self.wait_msg()
             if op == 0x90:

@@ -1,34 +1,19 @@
-def upip_import(mod, sub=None):
-    try:
-        mod_ = mod
-        if sub:
-            mod_ += "_" + sub
-        return __import__("upip_" + mod_)
-    except ImportError:
-        m = __import__(mod)
-        if sub:
-            return getattr(m, sub)
-        return m
-
-sys = upip_import("sys")
+import sys
+import gc
 import uos as os
 import uerrno as errno
+import ujson as json
+import uzlib
+import upip_utarfile as tarfile
+gc.collect()
 
-gzip = upip_import("gzip")
-try:
-    tarfile = upip_import("utarfile")
-except ImportError:
-    tarfile = upip_import("tarfile")
-try:
-    json = upip_import("ujson")
-except ImportError:
-    json = upip_import("json")
-
-
-DEFAULT_MICROPYPATH = "~/.micropython/lib:/usr/lib/micropython"
 
 debug = False
-cleanup_files = [".pkg.tar"]
+install_path = None
+cleanup_files = []
+gzdict_sz = 16 + 15
+
+file_buf = bytearray(512)
 
 class NotFoundError(Exception):
     pass
@@ -47,11 +32,17 @@ def op_split(path):
 def op_basename(path):
     return op_split(path)[1]
 
+# Expects *file* name
 def _makedirs(name, mode=0o777):
     ret = False
     s = ""
-    for c in name.rstrip("/").split("/"):
-        s += c + "/"
+    comps = name.rstrip("/").split("/")[:-1]
+    if comps[0] == "":
+        s = "/"
+    for c in comps:
+        if s and s[-1] != "/":
+            s += "/"
+        s += c
         try:
             os.mkdir(s)
             ret = True
@@ -63,13 +54,13 @@ def _makedirs(name, mode=0o777):
 
 
 def save_file(fname, subf):
-    outf = open(fname, "wb")
-    while True:
-        buf = subf.read(1024)
-        if not buf:
-            break
-        outf.write(buf)
-    outf.close()
+    global file_buf
+    with open(fname, "wb") as outf:
+        while True:
+            sz = subf.readinto(file_buf)
+            if not sz:
+                break
+            outf.write(file_buf, sz)
 
 def install_tar(f, prefix):
     meta = {}
@@ -94,38 +85,44 @@ def install_tar(f, prefix):
 
         if save:
             outfname = prefix + fname
-            if info.type == tarfile.DIRTYPE:
-                if _makedirs(outfname):
-                    print("Created " + outfname)
-            else:
+            if info.type != tarfile.DIRTYPE:
                 if debug:
                     print("Extracting " + outfname)
+                _makedirs(outfname)
                 subf = f.extractfile(info)
                 save_file(outfname, subf)
     return meta
 
 def expandhome(s):
-    h = os.getenv("HOME")
-    s = s.replace("~/", h + "/")
+    if "~/" in s:
+        h = os.getenv("HOME")
+        s = s.replace("~/", h + "/")
     return s
 
-try:
-    import ussl
-    import usocket
-    warn_ussl = True
-    def download(url, local_name):
-        global warn_ussl
-        proto, _, host, urlpath = url.split('/', 3)
-        ai = usocket.getaddrinfo(host, 443)
-        #print("Address infos:", ai)
-        addr = ai[0][4]
+import ussl
+import usocket
+warn_ussl = True
+def url_open(url):
+    global warn_ussl
 
-        s = usocket.socket()
+    if debug:
+        print(url)
+
+    proto, _, host, urlpath = url.split('/', 3)
+    try:
+        ai = usocket.getaddrinfo(host, 443)
+    except OSError as e:
+        fatal("Unable to resolve %s (no Internet?)" % host, e)
+    #print("Address infos:", ai)
+    addr = ai[0][4]
+
+    s = usocket.socket(ai[0][0])
+    try:
         #print("Connect address:", addr)
         s.connect(addr)
 
         if proto == "https:":
-            s = ussl.wrap_socket(s)
+            s = ussl.wrap_socket(s, server_hostname=host)
             if warn_ussl:
                 print("Warning: %s SSL certificate is not validated" % host)
                 warn_ussl = False
@@ -135,143 +132,73 @@ try:
         l = s.readline()
         protover, status, msg = l.split(None, 2)
         if status != b"200":
-            raise OSError()
+            if status == b"404" or status == b"301":
+                raise NotFoundError("Package not found")
+            raise ValueError(status)
         while 1:
             l = s.readline()
             if not l:
-                raise OSError()
+                raise ValueError("Unexpected EOF in HTTP headers")
             if l == b'\r\n':
                 break
-        with open(local_name, "wb") as f:
-            while 1:
-                l = s.read(1024)
-                if not l:
-                    break
-                f.write(l)
+    except Exception as e:
+        s.close()
+        raise e
 
-except ImportError:
-
-    def download(url, local_name):
-        if debug:
-            print("wget -q %s -O %s" % (url, local_name))
-        rc = os.system("wget -q %s -O %s" % (url, local_name))
-        if local_name not in cleanup_files:
-            cleanup_files.append(local_name)
-        if rc == 8 * 256:
-            raise NotFoundError
+    return s
 
 
 def get_pkg_metadata(name):
-    download("https://pypi.python.org/pypi/%s/json" % name, ".pkg.json")
-    with open(".pkg.json") as f:
-        s = f.read()
-    return json.loads(s)
+    f = url_open("https://pypi.python.org/pypi/%s/json" % name)
+    try:
+        return json.load(f)
+    finally:
+        f.close()
 
 
-def fatal(msg):
-    print(msg)
+def fatal(msg, exc=None):
+    print("Error:", msg)
+    if exc and debug:
+        raise exc
     sys.exit(1)
-
-def gzdecompress(package_fname):
-    f = open(package_fname, "rb")
-    zipdata = f.read()
-    data = gzip.decompress(zipdata)
-    return data
-
-def gzdecompress_(package_fname):
-    os.system("gzip -d -c %s > ungz" % package_fname)
-    with open("ungz", "rb") as f:
-        return f.read()
 
 def install_pkg(pkg_spec, install_path):
     data = get_pkg_metadata(pkg_spec)
 
     latest_ver = data["info"]["version"]
     packages = data["releases"][latest_ver]
+    del data
+    gc.collect()
     assert len(packages) == 1
     package_url = packages[0]["url"]
     print("Installing %s %s from %s" % (pkg_spec, latest_ver, package_url))
     package_fname = op_basename(package_url)
-    download(package_url, package_fname)
+    f1 = url_open(package_url)
+    try:
+        f2 = uzlib.DecompIO(f1, gzdict_sz)
+        f3 = tarfile.TarFile(fileobj=f2)
+        meta = install_tar(f3, install_path)
+    finally:
+        f1.close()
+    del f3
+    del f2
+    gc.collect()
+    return meta
 
-    data = gzdecompress(package_fname)
-
-    f = open(".pkg.tar", "wb")
-    f.write(data)
-    f.close()
-
-    f = tarfile.TarFile(".pkg.tar")
-    return install_tar(f, install_path)
-
-def cleanup():
-    for fname in cleanup_files:
-        try:
-            os.unlink(fname)
-        except OSError:
-            print("Warning: Cannot delete " + fname)
-
-def help():
-    print("""\
-upip - Simple PyPI package manager for MicroPython
-Usage: micropython -m upip install [-p <path>] <package>... | -r <requirements.txt>
-
-If -p is not given, packages will be installed to first path component of
-MICROPYPATH, or to ~/.micropython/lib/ by default.
-Note: only MicroPython packages (usually, micropython-*) are supported for
-installation, upip does not support arbitrary code in setup.py.""")
-    sys.exit(1)
-
-def main():
-    global debug
-    install_path = None
-
-    if len(sys.argv) < 2 or sys.argv[1] == "-h" or sys.argv[1] == "--help":
-        help()
-
-    if sys.argv[1] != "install":
-        fatal("Only 'install' command supported")
-
-    to_install = []
-
-    i = 2
-    while i < len(sys.argv) and sys.argv[i][0] == "-":
-        opt = sys.argv[i]
-        i += 1
-        if opt == "-h" or opt == "--help":
-            help()
-        elif opt == "-p":
-            install_path = sys.argv[i]
-            i += 1
-        elif opt == "-r":
-            list_file = sys.argv[i]
-            i += 1
-            with open(list_file) as f:
-                while True:
-                    l = f.readline()
-                    if not l:
-                        break
-                    to_install.append(l.rstrip())
-        elif opt == "--debug":
-            debug = True
-        else:
-            fatal("Unknown/unsupported option: " + opt)
+def install(to_install, install_path=None):
+    # Calculate gzip dictionary size to use
+    global gzdict_sz
+    sz = gc.mem_free() + gc.mem_alloc()
+    if sz <= 65536:
+        gzdict_sz = 16 + 12
 
     if install_path is None:
-        install_path = os.getenv("MICROPYPATH") or DEFAULT_MICROPYPATH
-
-    install_path = install_path.split(":", 1)[0]
-
-    install_path = expandhome(install_path)
-
+        install_path = get_install_path()
     if install_path[-1] != "/":
         install_path += "/"
-
+    if not isinstance(to_install, list):
+        to_install = [to_install]
     print("Installing to: " + install_path)
-
-    to_install.extend(sys.argv[i:])
-    if not to_install:
-        help()
-
     # sets would be perfect here, but don't depend on them
     installed = []
     try:
@@ -289,11 +216,92 @@ def main():
             if deps:
                 deps = deps.decode("utf-8").split("\n")
                 to_install.extend(deps)
-    except NotFoundError:
-        print("Error: cannot find '%s' package (or server error), packages may be partially installed" \
-            % pkg_spec, file=sys.stderr)
+    except Exception as e:
+        print("Error installing '{}': {}, packages may be partially installed".format(
+                pkg_spec, e),
+            file=sys.stderr)
+
+def get_install_path():
+    global install_path
+    if install_path is None:
+        # sys.path[0] is current module's path
+        install_path = sys.path[1]
+    install_path = expandhome(install_path)
+    return install_path
+
+def cleanup():
+    for fname in cleanup_files:
+        try:
+            os.unlink(fname)
+        except OSError:
+            print("Warning: Cannot delete " + fname)
+
+def help():
+    print("""\
+upip - Simple PyPI package manager for MicroPython
+Usage: micropython -m upip install [-p <path>] <package>... | -r <requirements.txt>
+import upip; upip.install(package_or_list, [<path>])
+
+If <path> is not given, packages will be installed into sys.path[1]
+(can be set from MICROPYPATH environment variable, if current system
+supports that).""")
+    print("Current value of sys.path[1]:", sys.path[1])
+    print("""\
+
+Note: only MicroPython packages (usually, named micropython-*) are supported
+for installation, upip does not support arbitrary code in setup.py.
+""")
+
+def main():
+    global debug
+    global install_path
+    install_path = None
+
+    if len(sys.argv) < 2 or sys.argv[1] == "-h" or sys.argv[1] == "--help":
+        help()
+        return
+
+    if sys.argv[1] != "install":
+        fatal("Only 'install' command supported")
+
+    to_install = []
+
+    i = 2
+    while i < len(sys.argv) and sys.argv[i][0] == "-":
+        opt = sys.argv[i]
+        i += 1
+        if opt == "-h" or opt == "--help":
+            help()
+            return
+        elif opt == "-p":
+            install_path = sys.argv[i]
+            i += 1
+        elif opt == "-r":
+            list_file = sys.argv[i]
+            i += 1
+            with open(list_file) as f:
+                while True:
+                    l = f.readline()
+                    if not l:
+                        break
+                    if l[0] == "#":
+                        continue
+                    to_install.append(l.rstrip())
+        elif opt == "--debug":
+            debug = True
+        else:
+            fatal("Unknown/unsupported option: " + opt)
+
+    to_install.extend(sys.argv[i:])
+    if not to_install:
+        help()
+        return
+
+    install(to_install)
 
     if not debug:
         cleanup()
 
-main()
+
+if __name__ == "__main__":
+    main()

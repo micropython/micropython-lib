@@ -1,4 +1,4 @@
-import uasyncio as asyncio
+import uasyncio.core as asyncio
 import time
 
 

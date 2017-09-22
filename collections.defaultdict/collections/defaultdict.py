@@ -27,6 +27,9 @@ class defaultdict:
     def __delitem__(self, key):
         del self.d[key]
 
+    def __contains__(self, key):
+        return key in self.d
+
     def __missing__(self, key):
         if self.default_factory is None:
             raise KeyError(key)

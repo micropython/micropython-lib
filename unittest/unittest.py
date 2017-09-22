@@ -133,6 +133,10 @@ def skip(msg):
         return _inner
     return _decor
 
+def skipIf(cond, msg):
+    if not cond:
+        return lambda x: x
+    return skip(msg)
 
 def skipUnless(cond, msg):
     if cond:
@@ -151,6 +155,16 @@ class TestRunner:
         res = TestResult()
         for c in suite.tests:
             run_class(c, res)
+
+        print("Ran %d tests\n" % res.testsRun)
+        if res.failuresNum > 0 or res.errorsNum > 0:
+            print("FAILED (failures=%d, errors=%d)" % (res.failuresNum, res.errorsNum))
+        else:
+            msg = "OK"
+            if res.skippedNum > 0:
+                msg += " (%d skipped)" % res.skippedNum
+            print(msg)
+
         return res
 
 class TestResult:
@@ -170,17 +184,24 @@ def run_class(c, test_result):
     tear_down = getattr(o, "tearDown", lambda: None)
     for name in dir(o):
         if name.startswith("test"):
-            print(name, end=' ...')
+            print("%s (%s) ..." % (name, c.__qualname__), end="")
             m = getattr(o, name)
+            set_up()
             try:
-                set_up()
                 test_result.testsRun += 1
                 m()
-                tear_down()
                 print(" ok")
             except SkipTest as e:
                 print(" skipped:", e.args[0])
                 test_result.skippedNum += 1
+            except:
+                print(" FAIL")
+                test_result.failuresNum += 1
+                # Uncomment to investigate failure in detail
+                #raise
+                continue
+            finally:
+                tear_down()
 
 
 def main(module="__main__"):
@@ -196,7 +217,3 @@ def main(module="__main__"):
         suite.addTest(c)
     runner = TestRunner()
     result = runner.run(suite)
-    msg = "Ran %d tests" % result.testsRun
-    if result.skippedNum > 0:
-        msg += " (%d skipped)" % result.skippedNum
-    print(msg)

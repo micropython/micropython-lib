@@ -54,6 +54,8 @@ follows MQTT control operations, and maps them to class methods:
 * ``publish()`` - Publish a message.
 * ``subscribe()`` - Subscribe to a topic.
 * ``set_callback()`` - Set callback for received subscription messages.
+* ``set_last_will()`` - Set MQTT "last will" message. Should be called
+  *before* connect().
 * ``wait_msg()`` - Wait for a server message. A subscription message will be
   delivered to a callback set with set_callback(), any other messages
   will be processed internally.

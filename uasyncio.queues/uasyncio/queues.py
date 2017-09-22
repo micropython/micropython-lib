@@ -61,7 +61,7 @@ class Queue:
 
             yield from queue.put(item)
         """
-        while self.qsize() > self.maxsize and self.maxsize:
+        while self.qsize() >= self.maxsize and self.maxsize:
             yield from sleep(self._attempt_delay)
         self._put(val)
 

@@ -1,18 +1,20 @@
 import sys
 # Remove current dir from sys.path, otherwise setuptools will peek up our
-# module instead of system.
+# module instead of system's.
 sys.path.pop(0)
 from setuptools import setup
-
+sys.path.append("..")
+import optimize_upip
 
 setup(name='micropython-upip',
-      version='0.7',
+      version='1.2.1',
       description='Simple package manager for MicroPython.',
-      long_description='Simple package manager for MicroPython, targetting to be self-hosted (but not yet there). Compatible only with packages without custom setup.py code.',
-      url='https://github.com/micropython/micropython/issues/405',
+      long_description='Simple self-hosted package manager for MicroPython (requires usocket, ussl, uzlib, uctypes builtin modules). Compatible only with packages without custom setup.py code.',
+      url='https://github.com/micropython/micropython-lib',
       author='Paul Sokolovsky',
       author_email='micro-python@googlegroups.com',
       maintainer='MicroPython Developers',
       maintainer_email='micro-python@googlegroups.com',
       license='MIT',
-      py_modules=['upip', 'upip_errno', 'upip_gzip', 'upip_utarfile'])
+      cmdclass={'optimize_upip': optimize_upip.OptimizeUpip},
+      py_modules=['upip', 'upip_utarfile'])

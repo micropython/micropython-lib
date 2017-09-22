@@ -1,3 +1,4 @@
+import sys
 import ffilib
 import array
 
@@ -40,6 +41,8 @@ class PCREMatch:
         self.offsets = offsets
 
     def group(self, *n):
+        if not n:
+            return self.s[self.offsets[0]:self.offsets[1]]
         if len(n) == 1:
             return self.s[self.offsets[n[0]*2]:self.offsets[n[0]*2+1]]
         return tuple(self.s[self.offsets[i*2]:self.offsets[i*2+1]] for i in n)
@@ -65,9 +68,9 @@ class PCREPattern:
 
     def search(self, s, pos=0, endpos=-1, _flags=0):
         assert endpos == -1, "pos: %d, endpos: %d" % (pos, endpos)
-        buf = bytes(4)
+        buf = array.array('i', [0])
         pcre_fullinfo(self.obj, None, PCRE_INFO_CAPTURECOUNT, buf)
-        cap_count = int.from_bytes(buf)
+        cap_count = buf[0]
         ov = array.array('i', [0, 0, 0] * (cap_count + 1))
         num = pcre_exec(self.obj, None, s, len(s), pos, _flags, ov, len(ov))
         if num == -1:

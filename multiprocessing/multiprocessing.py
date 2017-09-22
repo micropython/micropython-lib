@@ -44,14 +44,14 @@ class Connection:
 
     def send(self, obj):
         s = pickle.dumps(obj)
-        self.f.write(len(s).to_bytes(4))
+        self.f.write(len(s).to_bytes(4, "little"))
         self.f.write(s)
 
     def recv(self):
         s = self.f.read(4)
         if not s:
             raise EOFError
-        l = int.from_bytes(s)
+        l = int.from_bytes(s, "little")
         s = self.f.read(l)
         if not s:
             raise EOFError
