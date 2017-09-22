@@ -10,7 +10,14 @@ TESTFN = '@test'
 def run_unittest(*classes):
     suite = unittest.TestSuite()
     for c in classes:
-        suite.addTest(c)
+        if isinstance(c, str):
+            c = __import__(c)
+            for name in dir(c):
+                obj = getattr(c, name)
+                if isinstance(obj, type) and issubclass(obj, unittest.TestCase):
+                    suite.addTest(obj)
+        else:
+            suite.addTest(c)
     runner = unittest.TestRunner()
     result = runner.run(suite)
 
