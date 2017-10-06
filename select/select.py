@@ -27,6 +27,9 @@ EPOLL_CTL_ADD = 1
 EPOLL_CTL_DEL = 2
 EPOLL_CTL_MOD = 3
 
+# Not included in uselect.
+POLLPRI = 0x002
+
 # TODO: struct epoll_event's 2nd member is union of uint64_t, etc.
 # On x86, uint64_t is 4-byte aligned, on many other platforms - 8-byte.
 # Until uctypes module can assign native struct offset, use dirty hack
