@@ -3,6 +3,7 @@ import ustruct as struct
 import os
 import errno
 import ffilib
+from uselect import *
 
 
 libc = ffilib.libc()
