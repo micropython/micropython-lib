@@ -3,6 +3,7 @@ import ustruct as struct
 import os
 import errno
 import ffilib
+import utime
 from uselect import *
 
 
@@ -73,11 +74,17 @@ class Epoll:
 
     def poll_ms(self, timeout=-1):
         s = bytearray(self.evbuf)
+        if timeout >= 0:
+            deadline = utime.ticks_add(utime.ticks_ms(), timeout)
         while True:
             n = epoll_wait(self.epfd, s, 1, timeout)
             if not os.check_error(n):
                 break
-            # TODO: what about timeout value?
+            if timeout >= 0:
+                timeout = utime.ticks_diff(deadline, utime.ticks_ms())
+                if timeout < 0:
+                    n = 0
+                    break
         res = []
         if n > 0:
             vals = struct.unpack(epoll_event, s)
