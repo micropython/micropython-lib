@@ -48,8 +48,9 @@ class GlobTests(unittest.TestCase):
         res = glob.glob(p)
         self.assertEqual(list(glob.iglob(p)), res)
         bres = [os.fsencode(x) for x in res]
-        self.assertEqual(glob.glob(os.fsencode(p)), bres)
-        self.assertEqual(list(glob.iglob(os.fsencode(p))), bres)
+# Bytes globbing is not support on MicroPython
+#        self.assertEqual(glob.glob(os.fsencode(p)), bres)
+#        self.assertEqual(list(glob.iglob(os.fsencode(p))), bres)
         return res
 
     def assertSequencesEqual_noorder(self, l1, l2):
@@ -121,6 +122,7 @@ class GlobTests(unittest.TestCase):
                       {self.norm('aaa') + os.sep, self.norm('aab') + os.sep},
                       ])
 
+    @unittest.skip("unsupported on MicroPython")
     def test_glob_bytes_directory_with_trailing_slash(self):
         # Same as test_glob_directory_with_trailing_slash, but with a
         # bytes argument.
@@ -158,8 +160,8 @@ class GlobTests(unittest.TestCase):
         eq(self.glob('sym1'), [self.norm('sym1')])
         eq(self.glob('sym2'), [self.norm('sym2')])
 
-#    @unittest.skipUnless(sys.platform == "win32", "Win32 specific test")
-    def _test_glob_magic_in_drive(self):
+    @unittest.skipUnless(sys.platform == "win32", "Win32 specific test")
+    def test_glob_magic_in_drive(self):
         eq = self.assertSequencesEqual_noorder
         eq(glob.glob('*:'), [])
         eq(glob.glob(b'*:'), [])
