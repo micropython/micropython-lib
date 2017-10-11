@@ -55,6 +55,7 @@ class FnmatchTestCase(unittest.TestCase):
         check('AbC', 'abc', 0, fnmatchcase)
         check('abc', 'AbC', 0, fnmatchcase)
 
+    @unittest.skip("unsupported on MicroPython")
     def test_bytes(self):
         self.check_match(b'test', b'te*')
         self.check_match(b'test\xff', b'te*\xff')
