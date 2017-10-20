@@ -71,7 +71,7 @@ class Epoll:
         os.check_error(r)
         del self.registry[fd]
 
-    def poll(self, timeout=-1):
+    def poll_ms(self, timeout=-1):
         s = bytearray(self.evbuf)
         while True:
             n = epoll_wait(self.epfd, s, 1, timeout)
@@ -83,6 +83,9 @@ class Epoll:
             vals = struct.unpack(epoll_event, s)
             res.append((vals[1], vals[0]))
         return res
+
+    def poll(self, timeout=-1):
+        return self.poll_ms(-1 if timeout == -1 else timeout * 1000)
 
     def close(self):
         os.close(self.epfd)
