@@ -4,6 +4,7 @@ import os
 import errno
 import ffilib
 import utime
+import math
 from uselect import *
 
 
@@ -92,7 +93,7 @@ class Epoll:
         return res
 
     def poll(self, timeout=-1):
-        return self.poll_ms(-1 if timeout == -1 else timeout * 1000)
+        return self.poll_ms(-1 if timeout == -1 else math.ceil(timeout * 1000))
 
     def close(self):
         os.close(self.epfd)
