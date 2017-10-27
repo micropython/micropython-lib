@@ -3,4 +3,3 @@ type = package
 version = 1.5
 author = Paul Sokolovsky
 long_desc = Lightweight implementation of asyncio-like library built around native Python coroutines. (Core event loop).
-depends = logging

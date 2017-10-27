@@ -17,5 +17,4 @@ setup(name='micropython-uasyncio.core',
       maintainer_email='micro-python@googlegroups.com',
       license='MIT',
       cmdclass={'optimize_upip': optimize_upip.OptimizeUpip},
-      packages=['uasyncio'],
-      install_requires=['micropython-logging'])
+      packages=['uasyncio'])
