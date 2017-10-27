@@ -116,6 +116,9 @@ class EventLoop:
                     elif ret is None:
                         # Just reschedule
                         pass
+                    elif ret is False:
+                        # Don't reschedule
+                        continue
                     else:
                         assert False, "Unsupported coroutine yield value: %r (of type %r)" % (ret, type(ret))
                 except StopIteration as e:
