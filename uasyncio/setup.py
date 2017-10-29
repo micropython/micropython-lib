@@ -7,9 +7,9 @@ sys.path.append("..")
 import optimize_upip
 
 setup(name='micropython-uasyncio',
-      version='1.2.2',
-      description='uasyncio module for MicroPython',
-      long_description='Lightweight asyncio-like library built around native Python coroutines, not around un-Python devices like callback mess.',
+      version='1.2.3',
+      description='Lightweight asyncio-like library for MicroPython, built around native Python coroutines.',
+      long_description=open('README.rst').read(),
       url='https://github.com/micropython/micropython-lib',
       author='Paul Sokolovsky',
       author_email='micro-python@googlegroups.com',
