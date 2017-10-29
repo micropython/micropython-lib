@@ -19,6 +19,7 @@ class EventLoop:
 
     def __init__(self, len=42):
         self.q = utimeq.utimeq(len)
+        self.reg_objects = 0
 
     def time(self):
         return time.ticks_ms()
@@ -53,6 +54,8 @@ class EventLoop:
         cur_task = [0, 0, 0]
         while True:
             if self.q:
+                if self.reg_objects and time.ticks_diff(self.q.peektime(), self.time()) <= 0:
+                    self.wait(0)  # Ensure pending IO gets scheduled.
                 # wait() may finish prematurely due to I/O completion,
                 # and schedule new, earlier than before tasks to run.
                 while 1:
