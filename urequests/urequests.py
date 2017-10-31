@@ -1,5 +1,13 @@
 import usocket
 
+
+try:
+    IPPROTO_TCP = usocket.IPPROTO_TCP
+except AttributeError:
+    from micropython import const
+    IPPROTO_TCP = const(6)
+
+
 class Response:
 
     def __init__(self, f):
@@ -50,8 +58,12 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
         host, port = host.split(":", 1)
         port = int(port)
 
-    ai = usocket.getaddrinfo(host, port)
-    addr = ai[0][-1]
+    for ai in usocket.getaddrinfo(host, port):
+        if ai[:3] == (usocket.AF_INET, usocket.SOCK_STREAM, IPPROTO_TCP):
+            addr = ai[-1]
+            break
+    else:
+        raise OSError(-2, "No supported address found.")
 
     s = usocket.socket()
     try:
