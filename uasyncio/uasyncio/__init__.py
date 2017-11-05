@@ -73,6 +73,13 @@ class PollEventLoop(EventLoop):
         if res:
             for sock, ev in res:
                 cb = self.objmap[id(sock)]
+                if ev & (select.POLLHUP | select.POLLERR):
+                    # These events are returned even if not requested, and
+                    # are sticky, i.e. will be returned again and again.
+                    # If the caller doesn't do proper error handling and
+                    # unregister this sock, we'll busy-loop on it, so we
+                    # as well can unregister it now "just in case".
+                    self.remove_reader(sock)
                 if DEBUG and __debug__:
                     log.debug("Calling IO callback: %r", cb)
                 if isinstance(cb, tuple):
