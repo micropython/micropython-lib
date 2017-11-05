@@ -6,14 +6,15 @@ def partial(func, *args, **kwargs):
     return _partial
 
 
-def update_wrapper(wrapper, wrapped):
+def update_wrapper(wrapper, wrapped, assigned=None, updated=None):
     # Dummy impl
     return wrapper
 
 
-def wraps(wrapped):
+def wraps(wrapped, assigned=None, updated=None):
     # Dummy impl
     return lambda x: x
+
 
 def reduce(function, iterable, initializer=None):
     it = iter(iterable)
