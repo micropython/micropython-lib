@@ -7,14 +7,15 @@ sys.path.append("..")
 import optimize_upip
 
 setup(name='micropython-gettext',
-      version='0.0.1',
-      description='Dummy gettext module for MicroPython',
-      long_description='This is a dummy implementation of a module for MicroPython standard library.\nIt contains zero or very little functionality, and primarily intended to\navoid import errors (using idea that even if an application imports a\nmodule, it may be not using it onevery code path, so may work at least\npartially). It is expected that more complete implementation of the module\nwill be provided later. Please help with the development if you are\ninterested in this module.',
+      version='0.1',
+      description='gettext module for MicroPython',
+      long_description="This is a module reimplemented specifically for MicroPython standard library,\nwith efficient and lean design in mind. Note that this module is likely work\nin progress and likely supports just a subset of CPython's corresponding\nmodule. Please help with the development if you are interested in this\nmodule.",
       url='https://github.com/micropython/micropython-lib',
-      author='MicroPython Developers',
+      author='Riccardo Magliocchetti',
       author_email='micro-python@googlegroups.com',
       maintainer='MicroPython Developers',
       maintainer_email='micro-python@googlegroups.com',
       license='MIT',
       cmdclass={'optimize_upip': optimize_upip.OptimizeUpip},
-      py_modules=['gettext'])
+      py_modules=['gettext'],
+      install_requires=['micropython-ffilib'])
