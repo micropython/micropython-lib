@@ -18,7 +18,6 @@ def serve(reader, writer):
         yield from writer.awrite(s * 100)
         yield from writer.awrite(s * 400000)
         yield from writer.awrite("=== END ===")
-        yield from writer.aclose()
     except OSError as e:
         if e.args[0] == errno.EPIPE:
             print("EPIPE")
@@ -26,6 +25,8 @@ def serve(reader, writer):
             print("ECONNRESET")
         else:
             raise
+    finally:
+        yield from writer.aclose()
 
 
 import logging
