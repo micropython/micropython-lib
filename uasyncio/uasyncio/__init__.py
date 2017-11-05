@@ -90,28 +90,33 @@ class PollEventLoop(EventLoop):
 
 class StreamReader:
 
-    def __init__(self, s):
-        self.s = s
+    def __init__(self, polls, ios=None):
+        if ios is None:
+            ios = polls
+        self.polls = polls
+        self.ios = ios
 
     def read(self, n=-1):
         while True:
-            yield IORead(self.s)
-            res = self.s.read(n)
+            yield IORead(self.polls)
+            res = self.ios.read(n)
             if res is not None:
                 break
-            log.warn("Empty read")
+            # This should not happen for real sockets, but can easily
+            # happen for stream wrappers (ssl, websockets, etc.)
+            #log.warn("Empty read")
         if not res:
-            yield IOReadDone(self.s)
+            yield IOReadDone(self.polls)
         return res
 
     def readexactly(self, n):
         buf = b""
         while n:
-            yield IORead(self.s)
-            res = self.s.read(n)
+            yield IORead(self.polls)
+            res = self.ios.read(n)
             assert res is not None
             if not res:
-                yield IOReadDone(self.s)
+                yield IOReadDone(self.polls)
                 break
             buf += res
             n -= len(res)
@@ -122,11 +127,11 @@ class StreamReader:
             log.debug("StreamReader.readline()")
         buf = b""
         while True:
-            yield IORead(self.s)
-            res = self.s.readline()
+            yield IORead(self.polls)
+            res = self.ios.readline()
             assert res is not None
             if not res:
-                yield IOReadDone(self.s)
+                yield IOReadDone(self.polls)
                 break
             buf += res
             if buf[-1] == 0x0a:
@@ -136,11 +141,11 @@ class StreamReader:
         return buf
 
     def aclose(self):
-        yield IOReadDone(self.s)
-        self.s.close()
+        yield IOReadDone(self.polls)
+        self.ios.close()
 
     def __repr__(self):
-        return "<StreamReader %r>" % self.s
+        return "<StreamReader %r %r>" % (self.polls, self.ios)
 
 
 class StreamWriter:
