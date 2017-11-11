@@ -60,3 +60,6 @@ def captured_output(stream_name):
 
 def captured_stderr():
     return captured_output("stderr")
+
+def requires_IEEE_754(f):
+    return f
