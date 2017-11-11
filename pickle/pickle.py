@@ -12,5 +12,11 @@ def load(f):
 
 def loads(s):
     d = {}
+    if "(" in s:
+        qualname = s.split("(", 1)[0]
+        if "." in qualname:
+            pkg = qualname.rsplit(".", 1)[0]
+            mod = __import__(pkg)
+            d[pkg] = mod
     exec("v=" + s, d)
     return d["v"]
