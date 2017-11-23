@@ -1,5 +1,5 @@
 try:
-    import uhashlibxx
+    import uhashlib
     sha256 = uhashlib.sha256
 
     if hasattr(uhashlib, 'sha1'):
