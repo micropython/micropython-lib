@@ -16,3 +16,6 @@ def randrange(start, stop=None):
         if r < upper:
             break
     return r + start
+
+def randint(start, stop):
+    return randrange(start, stop + 1)
