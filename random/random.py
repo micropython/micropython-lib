@@ -19,3 +19,9 @@ def randrange(start, stop=None):
 
 def randint(start, stop):
     return randrange(start, stop + 1)
+
+def shuffle(seq):
+    l = len(seq)
+    for i in range(l):
+        j = randrange(l)
+        seq[i], seq[j] = seq[j], seq[i]
