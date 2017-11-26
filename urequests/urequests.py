@@ -53,7 +53,7 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
     ai = usocket.getaddrinfo(host, port)
     addr = ai[0][-1]
 
-    s = usocket.socket()
+    s = usocket.socket(ai[0][0], ai[0][1])
     try:
         s.connect(addr)
         if proto == "https:":
