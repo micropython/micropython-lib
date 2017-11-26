@@ -156,7 +156,7 @@ def main():
             data["dist_name"] = dirname
         if "name" not in data:
             data["name"] = module
-        if data["long_desc"] == "README.rst":
+        if data["long_desc"] in ("README", "README.rst"):
             data["long_desc"] = "open(%r).read()" % data["long_desc"]
         else:
             data["long_desc"] = repr(data["long_desc"])
