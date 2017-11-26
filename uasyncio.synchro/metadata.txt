@@ -1,0 +1,5 @@
+srctype = micropython-lib
+type = package
+version = 0.1
+desc = Synchronization primitives for uasyncio.
+depends = uasyncio.core
