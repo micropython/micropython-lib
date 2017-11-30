@@ -71,6 +71,7 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
             assert data is None
             import ujson
             data = ujson.dumps(json)
+            s.write(b"Content-Type: application/json\r\n")
         if data:
             s.write(b"Content-Length: %d\r\n" % len(data))
         s.write(b"\r\n")
