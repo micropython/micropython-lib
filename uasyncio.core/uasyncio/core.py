@@ -19,6 +19,10 @@ class EventLoop:
 
     def __init__(self, len=42):
         self.q = utimeq.utimeq(len)
+        # Current task being run. Task is a top-level coroutine scheduled
+        # in the event loop (sub-coroutines executed transparently by
+        # yield from/await, event loop "doesn't see" them).
+        self.cur_task = None
 
     def time(self):
         return time.ticks_ms()
@@ -72,6 +76,7 @@ class EventLoop:
                 args = cur_task[2]
                 if __debug__ and DEBUG:
                     log.debug("Next coroutine to run: %s", (t, cb, args))
+                self.cur_task = cb
 #                __main__.mem_info()
             else:
                 self.wait(-1)
