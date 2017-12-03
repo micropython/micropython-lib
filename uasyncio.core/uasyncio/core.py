@@ -15,6 +15,10 @@ def set_debug(val):
         log = logging.getLogger("uasyncio.core")
 
 
+class TimeoutError(Exception):
+    pass
+
+
 class EventLoop:
 
     def __init__(self, len=42):
@@ -218,6 +222,35 @@ class SleepMs(SysCall1):
 
 _stop_iter = StopIteration()
 sleep_ms = SleepMs()
+
+
+class TimeoutObj:
+    def __init__(self, coro):
+        self.coro = coro
+
+
+def wait_for_ms(coro, timeout):
+
+    def waiter(coro, timeout_obj):
+        res = yield from coro
+        if __debug__ and DEBUG:
+            log.debug("waiter: cancelling %s", timeout_obj)
+        timeout_obj.coro = None
+        return res
+
+    def timeout_func(timeout_obj):
+        if timeout_obj.coro:
+            if __debug__ and DEBUG:
+                log.debug("timeout_func: cancelling %s", timeout_obj.coro)
+            timeout_obj.coro.pend_throw(TimeoutError())
+
+    timeout_obj = TimeoutObj(_event_loop.cur_task)
+    _event_loop.call_later_ms(timeout, timeout_func, timeout_obj)
+    return (yield from waiter(coro, timeout_obj))
+
+
+def wait_for(coro, timeout):
+    return wait_for_ms(coro, int(timeout * 1000))
 
 
 def coroutine(f):
