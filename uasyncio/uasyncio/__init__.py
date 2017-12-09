@@ -199,7 +199,7 @@ class StreamWriter:
         return "<StreamWriter %r>" % self.s
 
 
-def open_connection(host, port):
+def open_connection(host, port, ssl=False):
     if DEBUG and __debug__:
         log.debug("open_connection(%s, %s)", host, port)
     s = _socket.socket()
@@ -218,6 +218,13 @@ def open_connection(host, port):
 #        assert s2.fileno() == s.fileno()
     if DEBUG and __debug__:
         log.debug("open_connection: After iowait: %s", s)
+    if ssl:
+        print("Warning: uasyncio SSL support is alpha")
+        import ussl
+        s.setblocking(True)
+        s2 = ussl.wrap_socket(s)
+        s.setblocking(False)
+        return StreamReader(s, s2), StreamWriter(s2, {})
     return StreamReader(s), StreamWriter(s, {})
 
 
