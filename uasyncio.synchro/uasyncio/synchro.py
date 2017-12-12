@@ -23,6 +23,6 @@ class Lock:
             if not self.locked:
                 self.locked = True
                 return True
-            #print("putting", core.get_event_loop().cur_coro, "on waiting list")
-            self.wlist.append(core.get_event_loop().cur_coro)
+            #print("putting", core.get_event_loop().cur_task, "on waiting list")
+            self.wlist.append(core.get_event_loop().cur_task)
             yield False
