@@ -104,9 +104,11 @@ class EventLoop:
                         if isinstance(ret, SleepMs):
                             delay = arg
                         elif isinstance(ret, IORead):
+                            cb.pend_throw(False)
                             self.add_reader(arg, cb)
                             continue
                         elif isinstance(ret, IOWrite):
+                            cb.pend_throw(False)
                             self.add_writer(arg, cb)
                             continue
                         elif isinstance(ret, IOReadDone):
@@ -242,7 +244,10 @@ def wait_for_ms(coro, timeout):
         if timeout_obj.coro:
             if __debug__ and DEBUG:
                 log.debug("timeout_func: cancelling %s", timeout_obj.coro)
-            timeout_obj.coro.pend_throw(TimeoutError())
+            prev = timeout_obj.coro.pend_throw(TimeoutError())
+            #print("prev pend", prev)
+            if prev is False:
+                _event_loop.call_soon(timeout_obj.coro)
 
     timeout_obj = TimeoutObj(_event_loop.cur_task)
     _event_loop.call_later_ms(timeout, timeout_func, timeout_obj)
