@@ -21,7 +21,7 @@ import re
 import io
 
 from distutils.filelist import FileList
-from distutils.command.sdist import sdist as _sdist
+from setuptools.command.sdist import sdist as _sdist
 
 
 def gzip_4k(inf, fname):
