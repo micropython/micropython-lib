@@ -95,7 +95,11 @@ def make_resource_module(manifest_files):
             last_pkg = None
             r_file = None
             for fname in resources:
-                pkg, res_name = fname.split("/", 1)
+                try:
+                    pkg, res_name = fname.split("/", 1)
+                except ValueError:
+                    print("not treating %s as a resource" % fname)
+                    continue
                 if last_pkg != pkg:
                     last_pkg = pkg
                     if r_file:
