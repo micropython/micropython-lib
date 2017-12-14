@@ -85,6 +85,7 @@ class PollEventLoop(EventLoop):
                 if isinstance(cb, tuple):
                     cb[0](*cb[1])
                 else:
+                    cb.pend_throw(None)
                     self.call_soon(cb)
 
 
