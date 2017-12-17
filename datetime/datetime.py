@@ -505,8 +505,10 @@ class timedelta:
                              self._seconds * other,
                              self._microseconds * other)
         if isinstance(other, float):
-            a, b = other.as_integer_ratio()
-            return self * a / b
+            #a, b = other.as_integer_ratio()
+            #return self * a / b
+            usec = self._to_microseconds()
+            return timedelta(0, 0, round(usec * other))
         return NotImplemented
 
     __rmul__ = __mul__
@@ -533,8 +535,9 @@ class timedelta:
         if isinstance(other, int):
             return timedelta(0, 0, usec / other)
         if isinstance(other, float):
-            a, b = other.as_integer_ratio()
-            return timedelta(0, 0, b * usec / a)
+#            a, b = other.as_integer_ratio()
+#            return timedelta(0, 0, b * usec / a)
+            return timedelta(0, 0, round(usec / other))
 
     def __mod__(self, other):
         if isinstance(other, timedelta):
