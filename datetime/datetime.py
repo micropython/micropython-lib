@@ -1552,7 +1552,7 @@ class datetime(date):
         Optional argument sep specifies the separator between date and
         time, default 'T'.
         """
-        s = ("%04d-%02d-%02d%c" % (self._year, self._month, self._day,
+        s = ("%04d-%02d-%02d%s" % (self._year, self._month, self._day,
                                   sep) +
                 _format_time(self._hour, self._minute, self._second,
                              self._microsecond))
