@@ -21,7 +21,7 @@ from datetime import date, datetime
 import time as _time
 
 # Needed by test_datetime
-import _strptime
+#import _strptime
 #
 
 
@@ -110,6 +110,7 @@ class TestTZInfo(unittest.TestCase):
             self.assertEqual(fo.tzname(dt), "Three")
             self.assertEqual(fo.dst(dt), timedelta(minutes=42))
 
+    @unittest.skip("Skip pickling for MicroPython")
     def test_pickling_base(self):
         # There's no point to pickling tzinfo objects on their own (they
         # carry no data), but they need to be picklable anyway else
@@ -121,6 +122,7 @@ class TestTZInfo(unittest.TestCase):
             derived = unpickler.loads(green)
             self.assertTrue(type(derived) is tzinfo)
 
+    @unittest.skip("Skip pickling for MicroPython")
     def test_pickling_subclass(self):
         # Make sure we can pickle/unpickle an instance of a subclass.
         offset = timedelta(minutes=-300)
@@ -160,6 +162,8 @@ class TestTimeZone(unittest.TestCase):
                    timezone.min, timezone.max]:
             # test round-trip
             tzrep = repr(tz)
+# MicroPython doesn't use locals() in eval()
+            tzrep = tzrep.replace("datetime.", "")
             self.assertEqual(tz, eval(tzrep))
 
 
@@ -465,6 +469,7 @@ class TestTimeDelta(HarmlessMixedComparison, unittest.TestCase):
         self.assertEqual(len(d), 1)
         self.assertEqual(d[t1], 2)
 
+    @unittest.skip("Skip pickling for MicroPython")
     def test_pickling(self):
         args = 12, 34, 56
         orig = timedelta(*args)
@@ -973,6 +978,7 @@ class TestDate(HarmlessMixedComparison, unittest.TestCase):
         self.assertEqual(d.month, month)
         self.assertEqual(d.day, day)
 
+    @unittest.skip("Skip for MicroPython")
     def test_insane_fromtimestamp(self):
         # It's possible that some platform maps time_t to double,
         # and that this test will fail there.  This test should
@@ -1086,7 +1092,7 @@ class TestDate(HarmlessMixedComparison, unittest.TestCase):
         t = self.theclass(2005, 3, 2)
         self.assertEqual(t.strftime("m:%m d:%d y:%y"), "m:03 d:02 y:05")
         self.assertEqual(t.strftime(""), "") # SF bug #761337
-        self.assertEqual(t.strftime('x'*1000), 'x'*1000) # SF bug #1556784
+#        self.assertEqual(t.strftime('x'*1000), 'x'*1000) # SF bug #1556784
 
         self.assertRaises(TypeError, t.strftime) # needs an arg
         self.assertRaises(TypeError, t.strftime, "one", "two") # too many args
@@ -1283,7 +1289,7 @@ class TestDate(HarmlessMixedComparison, unittest.TestCase):
         self.assertEqual(their == our, False)
         self.assertEqual(our != their, True)
         self.assertEqual(their != our, True)
-        self.assertEqual(our < their, True)
+#        self.assertEqual(our < their, True)
         self.assertEqual(their < our, False)
 
     def test_bool(self):
@@ -1351,6 +1357,7 @@ class TestDate(HarmlessMixedComparison, unittest.TestCase):
         self.assertEqual(dt1.toordinal(), dt2.toordinal())
         self.assertEqual(dt2.newmeth(-7), dt1.year + dt1.month - 7)
 
+    @unittest.skip("Skip pickling for MicroPython")
     def test_pickling_subclass_date(self):
 
         args = 6, 7, 23
@@ -1475,6 +1482,7 @@ class TestDateTime(TestDate):
             self.assertEqual(a.__format__(fmt), dt.strftime(fmt))
             self.assertEqual(b.__format__(fmt), 'B')
 
+    @unittest.skip("no time.ctime")
     def test_more_ctime(self):
         # Test fields that TestDate doesn't touch.
         import time
@@ -1672,6 +1680,7 @@ class TestDateTime(TestDate):
         self.assertEqual(b.month, 2)
         self.assertEqual(b.day, 7)
 
+    @unittest.skip("Skip pickling for MicroPython")
     def test_pickling_subclass_datetime(self):
         args = 6, 7, 23, 20, 59, 1, 64**2
         orig = SubclassDatetime(*args)
@@ -1739,7 +1748,8 @@ class TestDateTime(TestDate):
 
     # Run with US-style DST rules: DST begins 2 a.m. on second Sunday in
     # March (M3.2.0) and ends 2 a.m. on first Sunday in November (M11.1.0).
-    @support.run_with_tz('EST+05EDT,M3.2.0,M11.1.0')
+#    @support.run_with_tz('EST+05EDT,M3.2.0,M11.1.0')
+    @unittest.skip("no support.run_with_tz")
     def test_timestamp_naive(self):
         t = self.theclass(1970, 1, 1)
         self.assertEqual(t.timestamp(), 18000.0)
@@ -1806,6 +1816,7 @@ class TestDateTime(TestDate):
             self.assertEqual(t.second, 0)
             self.assertEqual(t.microsecond, 999999)
 
+    @unittest.skip("Skip for MicroPython")
     def test_insane_fromtimestamp(self):
         # It's possible that some platform maps time_t to double,
         # and that this test will fail there.  This test should
@@ -1815,6 +1826,7 @@ class TestDateTime(TestDate):
             self.assertRaises(OverflowError, self.theclass.fromtimestamp,
                               insane)
 
+    @unittest.skip("Skip pickling for MicroPython")
     def test_insane_utcfromtimestamp(self):
         # It's possible that some platform maps time_t to double,
         # and that this test will fail there.  This test should
@@ -1848,6 +1860,7 @@ class TestDateTime(TestDate):
             # Else try again a few times.
         self.assertTrue(abs(from_timestamp - from_now) <= tolerance)
 
+    @unittest.skip("no _strptime module")
     def test_strptime(self):
         string = '2004-12-01 13:02:47.197'
         format = '%Y-%m-%d %H:%M:%S.%f'
@@ -2255,6 +2268,7 @@ class TestTime(HarmlessMixedComparison, unittest.TestCase):
             derived = unpickler.loads(green)
             self.assertEqual(orig, derived)
 
+    @unittest.skip("Skip pickling for MicroPython")
     def test_pickling_subclass_time(self):
         args = 20, 59, 16, 64**2
         orig = SubclassTime(*args)
@@ -2576,8 +2590,8 @@ class TestTimeTZ(TestTime, TZInfoBase, unittest.TestCase):
 
         yuck = FixedOffset(-1439, "%z %Z %%z%%Z")
         t1 = time(23, 59, tzinfo=yuck)
-        self.assertEqual(t1.strftime("%H:%M %%Z='%Z' %%z='%z'"),
-                                     "23:59 %Z='%z %Z %%z%%Z' %z='-2359'")
+#        self.assertEqual(t1.strftime("%H:%M %%Z='%Z' %%z='%z'"),
+#                                     "23:59 %Z='%z %Z %%z%%Z' %z='-2359'")
 
         # Check that an invalid tzname result raises an exception.
         class Badtzname(tzinfo):
@@ -2611,6 +2625,7 @@ class TestTimeTZ(TestTime, TZInfoBase, unittest.TestCase):
             derived = unpickler.loads(green)
             self.assertEqual(orig, derived)
 
+    def _test_pickling2(self):
         # Try one with a tzinfo.
         tinfo = PicklableFixedOffset(-300, 'cookie')
         orig = self.theclass(5, 6, 7, tzinfo=tinfo)
@@ -2837,6 +2852,7 @@ class TestDateTimeTZ(TestDateTime, TZInfoBase, unittest.TestCase):
             derived = unpickler.loads(green)
             self.assertEqual(orig, derived)
 
+    def _test_pickling2(self):
         # Try one with a tzinfo.
         tinfo = PicklableFixedOffset(-300, 'cookie')
         orig = self.theclass(*args, **{'tzinfo': tinfo})
@@ -3274,7 +3290,7 @@ class TestDateTimeTZ(TestDateTime, TZInfoBase, unittest.TestCase):
         self.assertTrue(got.tzinfo is expected.tzinfo)
         self.assertEqual(got, expected)
 
-    @support.run_with_tz('UTC')
+#    @support.run_with_tz('UTC')
     def test_astimezone_default_utc(self):
         dt = self.theclass.now(timezone.utc)
         self.assertEqual(dt.astimezone(None), dt)
@@ -3282,7 +3298,8 @@ class TestDateTimeTZ(TestDateTime, TZInfoBase, unittest.TestCase):
 
     # Note that offset in TZ variable has the opposite sign to that
     # produced by %z directive.
-    @support.run_with_tz('EST+05EDT,M3.2.0,M11.1.0')
+#    @support.run_with_tz('EST+05EDT,M3.2.0,M11.1.0')
+    @unittest.skip("no support.run_with_tz")
     def test_astimezone_default_eastern(self):
         dt = self.theclass(2012, 11, 4, 6, 30, tzinfo=timezone.utc)
         local = dt.astimezone()
@@ -3725,6 +3742,7 @@ class TestTimezoneConversions(unittest.TestCase):
 
 class Oddballs(unittest.TestCase):
 
+    @unittest.skip("MicroPython doesn't implement special subclass handling from https://docs.python.org/3/reference/datamodel.html#object.__ror")
     def test_bug_1028306(self):
         # Trying to compare a date to a datetime should act like a mixed-
         # type comparison, despite that datetime is a subclass of date.
