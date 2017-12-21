@@ -1,3 +1,3 @@
-srctype=dummy
-type=module
-version = 0.0.2
+srctype = cpython
+type = module
+version = 3.3.3-1
