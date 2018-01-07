@@ -1,3 +1,10 @@
+#
+# upip - Package manager for MicroPython
+#
+# Copyright (c) 2015-2018 Paul Sokolovsky
+#
+# Licensed under the MIT license.
+#
 import sys
 import gc
 import uos as os
