@@ -15,7 +15,11 @@ def set_debug(val):
         log = logging.getLogger("uasyncio.core")
 
 
-class TimeoutError(Exception):
+class CancelledError(Exception):
+    pass
+
+
+class TimeoutError(CancelledError):
     pass
 
 
@@ -136,6 +140,10 @@ class EventLoop:
                     if __debug__ and DEBUG:
                         log.debug("Coroutine finished: %s", cb)
                     continue
+                except CancelledError as e:
+                    if __debug__ and DEBUG:
+                        log.debug("Coroutine cancelled: %s", cb)
+                    continue
                 # Currently all syscalls don't return anything, so we don't
                 # need to feed anything to the next invocation of coroutine.
                 # If that changes, need to pass that value below.
@@ -224,6 +232,12 @@ class SleepMs(SysCall1):
 
 _stop_iter = StopIteration()
 sleep_ms = SleepMs()
+
+
+def cancel(coro):
+    prev = coro.pend_throw(CancelledError())
+    if prev is False:
+        _event_loop.call_soon(coro)
 
 
 class TimeoutObj:
