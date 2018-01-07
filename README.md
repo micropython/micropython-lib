@@ -1,20 +1,22 @@
 micropython-lib
 ===============
 micropython-lib is a project to develop a non-monolothic standard library
-for MicroPython (https://github.com/micropython/micropython). Each module
-or package is available as a separate distribution package from PyPI. Each
-module comes from one of the following sources (and thus each module has
-its own licensing terms):
+for "advanced" MicroPython fork (https://github.com/pfalcon/micropython).
+Each module or package is available as a separate distribution package from
+PyPI. Each module comes from one of the following sources (and thus each
+module has its own licensing terms):
 
 * written from scratch specifically for MicroPython
 * ported from CPython
 * ported from some other Python implementation, e.g. PyPy
 * some modules actually aren't implemented yet and are dummy
 
-Note that the main target of micropython-lib is a "Unix" port of MicroPython.
-Actual system requirements vary per module. For example, if a module is not
-related to I/O, it may work without problems on bare-metal ports too (e.g.
-pyboard).
+Note that the main target of micropython-lib is a "Unix" port of the
+aforementioned fork of MicroPython. Actual system requirements vary per
+module. Majority of modules are compatible with the upstream MicroPython,
+though some may require additional functionality/optimizations present in
+the "advanced" fork. Modules not related to I/O may also work without
+problems on bare-metal ports, not just on "Unix" port (e.g. pyboard).
 
 
 Usage
