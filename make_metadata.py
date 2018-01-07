@@ -68,7 +68,7 @@ This is MicroPython compatibility module, allowing applications using
 MicroPython-specific features to run on CPython.
 """
 
-MICROPYTHON_DEVELS = 'MicroPython Developers'
+MICROPYTHON_DEVELS = 'micropython-lib Developers'
 MICROPYTHON_DEVELS_EMAIL = 'micro-python@googlegroups.com'
 CPYTHON_DEVELS = 'CPython Developers'
 CPYTHON_DEVELS_EMAIL = 'python-dev@python.org'
