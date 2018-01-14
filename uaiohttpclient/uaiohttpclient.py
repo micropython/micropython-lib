@@ -67,8 +67,8 @@ def request(method, url):
         reader = yield from request_raw(method, url)
         headers = []
         sline = yield from reader.readline()
-        protover, status, msg = sline.split(None, 2)
-        status = int(status)
+        sline = sline.split(None, 2)
+        status = int(sline[1])
         chunked = False
         while True:
             line = yield from reader.readline()
