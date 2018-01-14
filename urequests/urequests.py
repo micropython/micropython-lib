@@ -79,9 +79,12 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
             s.write(data)
 
         l = s.readline()
-        protover, status, msg = l.split(None, 2)
-        status = int(status)
-        #print(protover, status, msg)
+        #print(l)
+        l = l.split(None, 2)
+        status = int(l[1])
+        reason = ""
+        if len(l) > 2:
+            reason = l[2].rstrip()
         while True:
             l = s.readline()
             if not l or l == b"\r\n":
@@ -98,7 +101,7 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
 
     resp = Response(s)
     resp.status_code = status
-    resp.reason = msg.rstrip()
+    resp.reason = reason
     return resp
 
 
