@@ -45,9 +45,9 @@ def urlopen(url, data=None, method="GET"):
             s.write(data)
 
         l = s.readline()
-        protover, status, msg = l.split(None, 2)
-        status = int(status)
-        #print(protover, status, msg)
+        l = l.split(None, 2)
+        #print(l)
+        status = int(l[1])
         while True:
             l = s.readline()
             if not l or l == b"\r\n":
