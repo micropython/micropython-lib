@@ -18,5 +18,4 @@ def loads(s):
             pkg = qualname.rsplit(".", 1)[0]
             mod = __import__(pkg)
             d[pkg] = mod
-    exec("v=" + s, d)
-    return d["v"]
+    return eval(s, d)
