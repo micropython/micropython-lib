@@ -20,12 +20,12 @@ def urlopen(url, data=None, method="GET"):
         host, port = host.split(":", 1)
         port = int(port)
 
-    ai = usocket.getaddrinfo(host, port)
-    addr = ai[0][4]
+    ai = usocket.getaddrinfo(host, port, 0, usocket.SOCK_STREAM)
+    ai = ai[0]
 
-    s = usocket.socket()
+    s = usocket.socket(ai[0], ai[1], ai[2])
     try:
-        s.connect(addr)
+        s.connect(ai[-1])
         if proto == "https:":
             s = ussl.wrap_socket(s, server_hostname=host)
 
