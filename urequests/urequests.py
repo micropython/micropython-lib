@@ -50,12 +50,12 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
         host, port = host.split(":", 1)
         port = int(port)
 
-    ai = usocket.getaddrinfo(host, port)
-    addr = ai[0][-1]
+    ai = usocket.getaddrinfo(host, port, 0, usocket.SOCK_STREAM)
+    ai = ai[0]
 
-    s = usocket.socket()
+    s = usocket.socket(ai[0], ai[1], ai[2])
     try:
-        s.connect(addr)
+        s.connect(ai[-1])
         if proto == "https:":
             s = ussl.wrap_socket(s, server_hostname=host)
         s.write(b"%s /%s HTTP/1.0\r\n" % (method, path))
