@@ -7,13 +7,13 @@ sys.path.append("..")
 import optimize_upip
 
 setup(name='micropython-uasyncio',
-      version='1.4',
+      version='1.4.1',
       description='Lightweight asyncio-like library for MicroPython, built around native Python coroutines.',
       long_description=open('README.rst').read(),
       url='https://github.com/micropython/micropython-lib',
       author='Paul Sokolovsky',
       author_email='micro-python@googlegroups.com',
-      maintainer='MicroPython Developers',
+      maintainer='micropython-lib Developers',
       maintainer_email='micro-python@googlegroups.com',
       license='MIT',
       cmdclass={'optimize_upip': optimize_upip.OptimizeUpip},
