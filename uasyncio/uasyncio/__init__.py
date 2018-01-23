@@ -203,12 +203,12 @@ class StreamWriter:
 def open_connection(host, port, ssl=False):
     if DEBUG and __debug__:
         log.debug("open_connection(%s, %s)", host, port)
-    s = _socket.socket()
+    ai = _socket.getaddrinfo(host, port, 0, _socket.SOCK_STREAM)
+    ai = ai[0]
+    s = _socket.socket(ai[0], ai[1], ai[2])
     s.setblocking(False)
-    ai = _socket.getaddrinfo(host, port)
-    addr = ai[0][4]
     try:
-        s.connect(addr)
+        s.connect(ai[-1])
     except OSError as e:
         if e.args[0] != uerrno.EINPROGRESS:
             raise
@@ -232,13 +232,13 @@ def open_connection(host, port, ssl=False):
 def start_server(client_coro, host, port, backlog=10):
     if DEBUG and __debug__:
         log.debug("start_server(%s, %s)", host, port)
-    s = _socket.socket()
+    ai = _socket.getaddrinfo(host, port, 0, _socket.SOCK_STREAM)
+    ai = ai[0]
+    s = _socket.socket(ai[0], ai[1], ai[2])
     s.setblocking(False)
 
-    ai = _socket.getaddrinfo(host, port)
-    addr = ai[0][4]
     s.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1)
-    s.bind(addr)
+    s.bind(ai[-1])
     s.listen(backlog)
     while True:
         if DEBUG and __debug__:
