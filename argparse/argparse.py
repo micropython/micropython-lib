@@ -144,24 +144,36 @@ class ArgumentParser:
             print("  %-16s%s" % (', '.join(opt.names) + render_arg(opt), opt.help))
 
     def parse_args(self, args=None):
+        return self._parse_args_impl(args, False)
+
+    def parse_known_args(self, args=None):
+        return self._parse_args_impl(args, True)
+
+    def _parse_args_impl(self, args, return_unknown):
         if args is None:
             args = sys.argv[1:]
         else:
             args = args[:]
         try:
-            return self._parse_args(args)
+            return self._parse_args(args, return_unknown)
         except _ArgError as e:
             self.usage(False)
             print("error:", e)
             sys.exit(2)
 
-    def _parse_args(self, args):
+    def _parse_args(self, args, return_unknown):
         # add optional args with defaults
         arg_dest = []
         arg_vals = []
         for opt in self.opt:
             arg_dest.append(opt.dest)
             arg_vals.append(opt.default)
+
+        # deal with unknown arguments, if needed
+        unknown = []
+        def consume_unknown():
+            while args and not args[0].startswith("-"):
+                unknown.append(args.pop(0))
 
         # parse all args
         parsed_pos = False
@@ -179,15 +191,26 @@ class ArgumentParser:
                         found = True
                         break
                 if not found:
-                    raise _ArgError("unknown option %s" % a)
+                    if return_unknown:
+                        unknown.append(a)
+                        consume_unknown()
+                    else:
+                        raise _ArgError("unknown option %s" % a)
             else:
                 # positional arg
                 if parsed_pos:
-                    raise _ArgError("extra args: %s" % " ".join(args))
+                    if return_unknown:
+                        unknown = unknown + args
+                        break
+                    else:
+                        raise _ArgError("extra args: %s" % " ".join(args))
                 for pos in self.pos:
                     arg_dest.append(pos.dest)
                     arg_vals.append(pos.parse(pos.names[0], args))
                 parsed_pos = True
+                if return_unknown:
+                    consume_unknown()
 
         # build and return named tuple with arg values
-        return namedtuple("args", arg_dest)(*arg_vals)
+        values = namedtuple("args", arg_dest)(*arg_vals)
+        return (values, unknown) if return_unknown else values

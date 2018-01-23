@@ -44,3 +44,25 @@ args = parser.parse_args(["a", "b"])
 assert args.files1 == ["a", "b"] and args.files2 == []
 args = parser.parse_args(["a", "b", "c"])
 assert args.files1 == ["a", "b"] and args.files2 == ["c"]
+
+parser = argparse.ArgumentParser()
+parser.add_argument("a", nargs=2)
+parser.add_argument("-b")
+args, rest = parser.parse_known_args(["a", "b", "-b", "2"])
+assert args.a == ["a", "b"] and args.b == "2"
+assert rest == []
+args, rest = parser.parse_known_args(["-b", "2", "a", "b", "c"])
+assert args.a == ["a", "b"] and args.b == "2"
+assert rest == ["c"]
+args, rest = parser.parse_known_args(["a", "b", "-b", "2", "c"])
+assert args.a == ["a", "b"] and args.b == "2"
+assert rest == ["c"]
+args, rest = parser.parse_known_args(["-b", "2", "a", "b", "-", "c"])
+assert args.a == ["a", "b"] and args.b == "2"
+assert rest == ["-", "c"]
+args, rest = parser.parse_known_args(["a", "b", "-b", "2", "-", "x", "y"])
+assert args.a == ["a", "b"] and args.b == "2"
+assert rest == ["-", "x", "y"]
+args, rest = parser.parse_known_args(["a", "b", "c", "-b", "2", "--x", "5", "1"])
+assert args.a == ["a", "b"] and args.b == "2"
+assert rest == ["c", "--x", "5", "1"]
