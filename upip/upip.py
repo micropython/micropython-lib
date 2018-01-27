@@ -117,16 +117,16 @@ def url_open(url):
 
     proto, _, host, urlpath = url.split('/', 3)
     try:
-        ai = usocket.getaddrinfo(host, 443)
+        ai = usocket.getaddrinfo(host, 443, 0, usocket.SOCK_STREAM)
     except OSError as e:
         fatal("Unable to resolve %s (no Internet?)" % host, e)
     #print("Address infos:", ai)
-    addr = ai[0][4]
+    ai = ai[0]
 
-    s = usocket.socket(ai[0][0])
+    s = usocket.socket(ai[0], ai[1], ai[2])
     try:
         #print("Connect address:", addr)
-        s.connect(addr)
+        s.connect(ai[-1])
 
         if proto == "https:":
             s = ussl.wrap_socket(s, server_hostname=host)
