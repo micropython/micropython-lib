@@ -7,13 +7,13 @@ sys.path.append("..")
 import optimize_upip
 
 setup(name='micropython-upip',
-      version='1.2.2',
+      version='1.2.3',
       description='Simple package manager for MicroPython.',
       long_description='Simple self-hosted package manager for MicroPython (requires usocket, ussl, uzlib, uctypes builtin modules). Compatible only with packages without custom setup.py code.',
       url='https://github.com/micropython/micropython-lib',
       author='Paul Sokolovsky',
       author_email='micro-python@googlegroups.com',
-      maintainer='MicroPython Developers',
+      maintainer='micropython-lib Developers',
       maintainer_email='micro-python@googlegroups.com',
       license='MIT',
       cmdclass={'optimize_upip': optimize_upip.OptimizeUpip},
