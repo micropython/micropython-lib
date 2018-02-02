@@ -161,7 +161,7 @@ def main():
         else:
             data["long_desc"] = repr(data["long_desc"])
 
-        data["modules"] = "'" + data["name"].split(".", 1)[0] + "'"
+        data["modules"] = "'" + data["name"].rsplit(".", 1)[0] + "'"
         if "extra_modules" in data:
             data["modules"] += ", " + ", ".join(["'" + x.strip() + "'" for x in data["extra_modules"].split(",")])
 
