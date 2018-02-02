@@ -4,7 +4,7 @@ import sys
 sys.path.pop(0)
 from setuptools import setup
 sys.path.append("..")
-import optimize_upip
+import sdist_upip
 
 setup(name='micropython-_markupbase',
       version='3.3.3-1',
@@ -16,6 +16,6 @@ setup(name='micropython-_markupbase',
       maintainer='micropython-lib Developers',
       maintainer_email='micro-python@googlegroups.com',
       license='Python',
-      cmdclass={'optimize_upip': optimize_upip.OptimizeUpip},
+      cmdclass={'sdist': sdist_upip.sdist},
       py_modules=['_markupbase'],
       install_requires=['micropython-re-pcre'])

@@ -4,7 +4,7 @@ import sys
 sys.path.pop(0)
 from setuptools import setup
 sys.path.append("..")
-import optimize_upip
+import sdist_upip
 
 setup(name='micropython-email.errors',
       version='0.5.1',
@@ -16,5 +16,5 @@ setup(name='micropython-email.errors',
       maintainer='micropython-lib Developers',
       maintainer_email='micro-python@googlegroups.com',
       license='Python',
-      cmdclass={'optimize_upip': optimize_upip.OptimizeUpip},
+      cmdclass={'sdist': sdist_upip.sdist},
       packages=['email'])

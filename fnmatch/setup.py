@@ -4,7 +4,7 @@ import sys
 sys.path.pop(0)
 from setuptools import setup
 sys.path.append("..")
-import optimize_upip
+import sdist_upip
 
 setup(name='micropython-fnmatch',
       version='0.5.2',
@@ -16,6 +16,6 @@ setup(name='micropython-fnmatch',
       maintainer='micropython-lib Developers',
       maintainer_email='micro-python@googlegroups.com',
       license='Python',
-      cmdclass={'optimize_upip': optimize_upip.OptimizeUpip},
+      cmdclass={'sdist': sdist_upip.sdist},
       py_modules=['fnmatch'],
       install_requires=['micropython-os', 'micropython-os.path', 'micropython-posixpath', 'micropython-re-pcre'])

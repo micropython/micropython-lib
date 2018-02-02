@@ -4,7 +4,7 @@ import sys
 sys.path.pop(0)
 from setuptools import setup
 sys.path.append("..")
-import optimize_upip
+import sdist_upip
 
 setup(name='micropython-uasyncio.queues',
       version='0.1.2',
@@ -16,6 +16,6 @@ setup(name='micropython-uasyncio.queues',
       maintainer='micropython-lib Developers',
       maintainer_email='micro-python@googlegroups.com',
       license='MIT',
-      cmdclass={'optimize_upip': optimize_upip.OptimizeUpip},
+      cmdclass={'sdist': sdist_upip.sdist},
       packages=['uasyncio'],
       install_requires=['micropython-uasyncio.core', 'micropython-collections.deque'])

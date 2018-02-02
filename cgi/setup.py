@@ -4,7 +4,7 @@ import sys
 sys.path.pop(0)
 from setuptools import setup
 sys.path.append("..")
-import optimize_upip
+import sdist_upip
 
 setup(name='micropython-cgi',
       version='3.3.3-2',
@@ -16,5 +16,5 @@ setup(name='micropython-cgi',
       maintainer='micropython-lib Developers',
       maintainer_email='micro-python@googlegroups.com',
       license='Python',
-      cmdclass={'optimize_upip': optimize_upip.OptimizeUpip},
+      cmdclass={'sdist': sdist_upip.sdist},
       py_modules=['cgi'])

@@ -4,7 +4,7 @@ import sys
 sys.path.pop(0)
 from setuptools import setup
 sys.path.append("..")
-import optimize_upip
+import sdist_upip
 
 setup(name='micropython-uu',
       version='0.5.1',
@@ -16,6 +16,6 @@ setup(name='micropython-uu',
       maintainer='micropython-lib Developers',
       maintainer_email='micro-python@googlegroups.com',
       license='Python',
-      cmdclass={'optimize_upip': optimize_upip.OptimizeUpip},
+      cmdclass={'sdist': sdist_upip.sdist},
       py_modules=['uu'],
       install_requires=['micropython-binascii', 'micropython-os'])
