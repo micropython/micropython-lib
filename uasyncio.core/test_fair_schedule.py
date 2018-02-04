@@ -4,11 +4,12 @@
 import uasyncio.core as asyncio
 
 
-COROS = 5
-ITERS = 5
+COROS = 10
+ITERS = 20
 
 
 result = []
+test_finished = False
 
 
 async def coro(n):
@@ -18,10 +19,12 @@ async def coro(n):
 
 
 async def done():
+    global test_finished
     while True:
         if len(result) == COROS * ITERS:
             #print(result)
             assert result == list(range(COROS)) * ITERS
+            test_finished = True
             return
         yield
 
@@ -32,3 +35,5 @@ for n in range(COROS):
     loop.create_task(coro(n))
 
 loop.run_until_complete(done())
+
+assert test_finished
