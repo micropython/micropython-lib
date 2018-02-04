@@ -1,6 +1,6 @@
 srctype = micropython-lib
 type = package
-version = 1.4.1
+version = 1.4.2
 author = Paul Sokolovsky
 desc = Lightweight asyncio-like library for MicroPython, built around native Python coroutines.
 long_desc = README.rst
