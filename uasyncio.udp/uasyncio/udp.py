@@ -49,7 +49,7 @@ def sendto(s, buf, addr=None):
         #print("send res:", res)
         if res == len(buf):
             return
-        print("asento: IOWrite")
+        print("sendto: IOWrite")
         yield core.IOWrite(s)
 
 def close(s):
