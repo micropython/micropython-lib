@@ -1,6 +1,6 @@
 srctype = micropython-lib
 type = package
-version = 1.7.2
+version = 2.0
 author = Paul Sokolovsky
 desc = Lightweight asyncio-like library for MicroPython, built around native Python coroutines. (Core event loop).
 long_desc = Lightweight asyncio-like library for MicroPython, built around native Python coroutines. (Core event loop).
