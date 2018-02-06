@@ -7,7 +7,7 @@ sys.path.append("..")
 import sdist_upip
 
 setup(name='micropython-uasyncio',
-      version='1.4.2',
+      version='2.0',
       description='Lightweight asyncio-like library for MicroPython, built around native Python coroutines.',
       long_description=open('README.rst').read(),
       url='https://github.com/micropython/micropython-lib',
