@@ -1,6 +1,6 @@
 srctype = micropython-lib
 type = package
-version = 0.1
+version = 0.1.1
 author = Paul Sokolovsky
 desc = UDP support for MicroPython's uasyncio
 depends = uasyncio
