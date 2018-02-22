@@ -1,3 +1,6 @@
+import sys
+
+
 class SkipTest(Exception):
     pass
 
@@ -217,3 +220,5 @@ def main(module="__main__"):
         suite.addTest(c)
     runner = TestRunner()
     result = runner.run(suite)
+    # Terminate with non zero return code in case of failures
+    sys.exit(result.failuresNum > 0)
