@@ -30,6 +30,9 @@ class Logger:
             return l
         return "LVL%s" % level
 
+    def isEnabledFor(self, level):
+        return level >= (self.level or _level)
+
     def log(self, level, msg, *args):
         if level >= (self.level or _level):
             _stream.write("%s:%s:" % (self._level_str(level), self.name))
