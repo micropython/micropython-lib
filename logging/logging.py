@@ -19,18 +19,24 @@ _stream = sys.stderr
 
 class Logger:
 
+    level = NOTSET
+
     def __init__(self, name):
-        self.level = NOTSET
         self.name = name
 
     def _level_str(self, level):
-        if level in _level_dict:
-            return _level_dict[level]
-        return "LVL" + str(level)
+        l = _level_dict.get(level)
+        if l is not None:
+            return l
+        return "LVL%s" % level
 
     def log(self, level, msg, *args):
         if level >= (self.level or _level):
-            print(("%s:%s:" + msg) % ((self._level_str(level), self.name) + args), file=_stream)
+            _stream.write("%s:%s:" % (self._level_str(level), self.name))
+            if not args:
+                print(msg, file=_stream)
+            else:
+                print(msg % args, file=_stream)
 
     def debug(self, msg, *args):
         self.log(DEBUG, msg, *args)
