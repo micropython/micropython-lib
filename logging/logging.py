@@ -30,6 +30,9 @@ class Logger:
             return l
         return "LVL%s" % level
 
+    def setLevel(self, level):
+        self.level = level
+
     def isEnabledFor(self, level):
         return level >= (self.level or _level)
 
