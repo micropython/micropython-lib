@@ -34,7 +34,15 @@ class Response:
 
 
 def request(
-    method, url, data=None, json=None, headers={}, stream=None, parse_headers=True, auth=None
+    method,
+    url,
+    data=None,
+    json=None,
+    headers={},
+    stream=None,
+    auth=None,
+    timeout=None,
+    parse_headers=True,
 ):
     redirect = None  # redirection url, None means no redirection
     chunked_data = data and getattr(data, "__iter__", None) and not getattr(data, "__len__", None)
@@ -73,6 +81,12 @@ def request(
         resp_d = {}
 
     s = usocket.socket(ai[0], usocket.SOCK_STREAM, ai[2])
+
+    if timeout is not None:
+        # Note: settimeout is not supported on all platforms, will raise
+        # an AttributeError if not available.
+        s.settimeout(timeout)
+
     try:
         s.connect(ai[-1])
         if proto == "https:":
