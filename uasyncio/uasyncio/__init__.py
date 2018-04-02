@@ -240,18 +240,22 @@ def start_server(client_coro, host, port, backlog=10):
     s.setsockopt(_socket.SOL_SOCKET, _socket.SO_REUSEADDR, 1)
     s.bind(ai[-1])
     s.listen(backlog)
-    while True:
-        if DEBUG and __debug__:
-            log.debug("start_server: Before accept")
-        yield IORead(s)
-        if DEBUG and __debug__:
-            log.debug("start_server: After iowait")
-        s2, client_addr = s.accept()
-        s2.setblocking(False)
-        if DEBUG and __debug__:
-            log.debug("start_server: After accept: %s", s2)
-        extra = {"peername": client_addr}
-        yield client_coro(StreamReader(s2), StreamWriter(s2, extra))
+
+    try:
+        while True:
+            if DEBUG and __debug__:
+                log.debug("start_server: Before accept")
+            yield IORead(s)
+            if DEBUG and __debug__:
+                log.debug("start_server: After iowait")
+            s2, client_addr = s.accept()
+            s2.setblocking(False)
+            if DEBUG and __debug__:
+                log.debug("start_server: After accept: %s", s2)
+            extra = {"peername": client_addr}
+            yield client_coro(StreamReader(s2), StreamWriter(s2, extra))
+    except GeneratorExit:
+        s.close()
 
 
 import uasyncio.core
