@@ -22,15 +22,15 @@ problems on bare-metal ports, not just on "Unix" port (e.g. pyboard).
 Usage
 -----
 micropython-lib packages are published on PyPI (Python Package Index),
-the standard Python community package repository: http://pypi.python.org/ .
+the standard Python community package repository: https://pypi.org/ .
 On PyPI, you can search for MicroPython related packages and read
 additional package information. By convention, all micropython-lib package
 names are prefixed with "micropython-" (the reverse is not true - some
 package starting with "micropython-" aren't part of micropython-lib and
 were released by 3rd parties).
 
-Browse available packages
-[via this URL](https://pypi.python.org/pypi?%3Aaction=search&term=micropython).
+Browse available packages [via this
+URL](https://pypi.org/search/?q=&o=&c=Programming+Language+%3A%3A+Python+%3A%3A+Implementation+%3A%3A+MicroPython).
 
 To install packages from PyPI for usage on your local system, use the
 `upip` tool, which is MicroPython's native package manager, similar to
