@@ -81,6 +81,8 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
         l = s.readline()
         #print(l)
         l = l.split(None, 2)
+        if len(l) <= 1:
+            return Response(s)
         status = int(l[1])
         reason = ""
         if len(l) > 2:
