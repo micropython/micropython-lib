@@ -30,7 +30,12 @@ class Logger:
 
     def log(self, level, msg, *args):
         if level >= (self.level or _level):
-            print(("%s:%s:" + msg) % ((self._level_str(level), self.name) + args), file=_stream)
+            if _log_file:
+                # esp8266 requires that the file be closed
+                with open(_log_file, 'a') as log:
+                    log.write(("%s:%s:" + msg + "\n") % ((self._level_str(level), self.name) + args))
+            else:
+                print(("%s:%s:" + msg) % ((self._level_str(level), self.name) + args))
 
     def debug(self, msg, *args):
         self.log(DEBUG, msg, *args)
@@ -50,6 +55,7 @@ class Logger:
 
 _level = INFO
 _loggers = {}
+_log_file = None
 
 def getLogger(name):
     if name in _loggers:
@@ -65,11 +71,11 @@ def debug(msg, *args):
     getLogger(None).debug(msg, *args)
 
 def basicConfig(level=INFO, filename=None, stream=None, format=None):
-    global _level, _stream
+    global _level, _stream, _log_file
     _level = level
-    if stream:
-        _stream = stream
-    if filename is not None:
-        print("logging.basicConfig: filename arg is not supported")
+    _log_file = filename
+    if not filename:
+        if stream:
+            _stream = stream
     if format is not None:
         print("logging.basicConfig: format arg is not supported")
