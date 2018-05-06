@@ -1,11 +1,23 @@
 import usocket
 
+ITER_CHUNK_SIZE = 128
+
 class Response:
 
     def __init__(self, f):
         self.raw = f
         self.encoding = "utf-8"
+        self._content_consumed = False
         self._cached = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
+    def __iter__(self):
+        return self.iter_content()
 
     def close(self):
         if self.raw:
@@ -30,6 +42,47 @@ class Response:
     def json(self):
         import ujson
         return ujson.loads(self.content)
+
+    def iter_content(self, chunk_size=ITER_CHUNK_SIZE):
+        def generate():
+            while True:
+                chunk = self.raw.read(chunk_size)
+                if not chunk:
+                    break
+                yield chunk
+            self._content_consumed = True
+
+        if self._content_consumed:
+            raise RuntimeError("response already consumed")
+        elif chunk_size is not None and not isinstance(chunk_size, int):
+            raise TypeError("chunk_size must be an int, it is instead a %s."
+                            % type(chunk_size))
+
+        return generate()
+
+    def iter_lines(self, chunk_size=ITER_CHUNK_SIZE, delimiter=None):
+        pending = None
+
+        for chunk in self.iter_content(chunk_size=chunk_size):
+
+            if pending is not None:
+                chunk = pending + chunk
+
+            if delimiter:
+                lines = chunk.split(delimiter)
+            else:
+                lines = chunk.split(b'\n')
+
+            if lines and lines[-1] and chunk and lines[-1][-1] == chunk[-1]:
+                pending = lines.pop()
+            else:
+                pending = None
+
+            for line in lines:
+                yield line
+
+        if pending is not None:
+            yield pending
 
 
 def request(method, url, data=None, json=None, headers={}, stream=None):
