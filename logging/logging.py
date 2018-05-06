@@ -31,9 +31,8 @@ class Logger:
     def log(self, level, msg, *args):
         if level >= (self.level or _level):
             if _log_file:
-                # esp8266 requires that the file be closed
-                with open(_log_file, 'a') as log:
-                    log.write(("%s:%s:" + msg + "\n") % ((self._level_str(level), self.name) + args))
+                _log_file.write(("%s:%s:" + msg + "\n") % ((self._level_str(level), self.name) + args))
+                _log_file.flush()
             else:
                 print(("%s:%s:" + msg) % ((self._level_str(level), self.name) + args))
 
@@ -73,8 +72,9 @@ def debug(msg, *args):
 def basicConfig(level=INFO, filename=None, stream=None, format=None):
     global _level, _stream, _log_file
     _level = level
-    _log_file = filename
-    if not filename:
+    if filename:
+        _log_file = open(filename, 'a')
+    else:
         if stream:
             _stream = stream
     if format is not None:
