@@ -34,7 +34,7 @@ class Logger:
                 _log_file.write(("%s:%s:" + msg + "\n") % ((self._level_str(level), self.name) + args))
                 _log_file.flush()
             else:
-                print(("%s:%s:" + msg) % ((self._level_str(level), self.name) + args))
+                print(("%s:%s:" + msg) % ((self._level_str(level), self.name) + args), file=_stream)
 
     def debug(self, msg, *args):
         self.log(DEBUG, msg, *args)
