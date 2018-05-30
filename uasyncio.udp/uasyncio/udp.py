@@ -45,7 +45,7 @@ def recvfrom(s, n):
 
 def sendto(s, buf, addr=None):
     while 1:
-        res = s.sendto(buf, 0, addr)
+        res = s.sendto(buf, addr)
         #print("send res:", res)
         if res == len(buf):
             return

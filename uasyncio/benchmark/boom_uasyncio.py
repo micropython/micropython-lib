@@ -19,7 +19,7 @@ def validate(resp):
     no = int(l.split()[1])
     seen.append(no)
     c = t.count(l + "\r\n")
-    assert c == 400101
+    assert c == 400101, str(c)
     assert t.endswith("=== END ===")
 
     cnt += 1

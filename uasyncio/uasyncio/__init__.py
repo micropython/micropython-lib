@@ -17,8 +17,8 @@ def set_debug(val):
 
 class PollEventLoop(EventLoop):
 
-    def __init__(self, len=42):
-        EventLoop.__init__(self, len)
+    def __init__(self, runq_len=16, waitq_len=16):
+        EventLoop.__init__(self, runq_len, waitq_len)
         self.poller = select.poll()
         self.objmap = {}
 
