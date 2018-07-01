@@ -4,6 +4,7 @@ import ucollections
 
 
 type_gen = type((lambda: (yield))())
+type_genf = type((lambda: (yield)))  # Type of a generator function
 
 DEBUG = 0
 log = None
@@ -38,6 +39,7 @@ class EventLoop:
         return time.ticks_ms()
 
     def create_task(self, coro):
+        assert not isinstance(coro, type_genf), 'Generator function is not iterable.'
         # CPython 3.4.2
         self.call_later_ms(0, coro)
         # CPython asyncio incompatibility: we don't return Task object
@@ -173,6 +175,7 @@ class EventLoop:
             self.wait(delay)
 
     def run_until_complete(self, coro):
+        assert not isinstance(coro, type_genf), 'Generator function is not iterable.'
         def _run_and_stop():
             yield from coro
             yield StopLoop(0)
