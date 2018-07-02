@@ -51,7 +51,7 @@ def request_raw(method, url):
 
     host_port = host.rsplit("@", 1)[-1]
     try:
-        host, port = host_port.rsplit(":", 1)[-1]
+        host, port = host_port.rsplit(":", 1)
     except ValueError:
         host = host_port
         port = 80
