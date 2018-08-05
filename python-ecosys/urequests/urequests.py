@@ -33,7 +33,7 @@ class Response:
         return ujson.loads(self.content)
 
 
-def request(method, url, data=None, json=None, headers={}, stream=None):
+def request(method, url, data=None, json=None, headers={}, stream=None, parse_headers=True):
     try:
         proto, dummy, host, path = url.split("/", 3)
     except ValueError:
@@ -54,6 +54,10 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
 
     ai = usocket.getaddrinfo(host, port, 0, usocket.SOCK_STREAM)
     ai = ai[0]
+
+    resp_d = None
+    if parse_headers is not False:
+        resp_d = {}
 
     s = usocket.socket(ai[0], ai[1], ai[2])
     try:
@@ -98,6 +102,14 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
                     raise ValueError("Unsupported " + l)
             elif l.startswith(b"Location:") and not 200 <= status <= 299:
                 raise NotImplementedError("Redirects not yet supported")
+            if parse_headers is False:
+                pass
+            elif parse_headers is True:
+                l = str(l, "utf-8")
+                k, v = l.split(":", 1)
+                resp_d[k] = v.strip()
+            else:
+                parse_headers(l, resp_d)
     except OSError:
         s.close()
         raise
@@ -105,6 +117,8 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
     resp = Response(s)
     resp.status_code = status
     resp.reason = reason
+    if resp_d is not None:
+        resp.headers = resp_d
     return resp
 
 
