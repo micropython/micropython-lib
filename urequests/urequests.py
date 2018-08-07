@@ -32,7 +32,8 @@ class Response:
         return ujson.loads(self.content)
 
 
-def request(method, url, data=None, json=None, headers={}, stream=None):
+def request(method, url, data=None, json=None, headers={}, stream=None,
+            response_class=Response):
     try:
         proto, dummy, host, path = url.split("/", 3)
     except ValueError:
@@ -85,6 +86,10 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
         reason = ""
         if len(l) > 2:
             reason = l[2].rstrip()
+
+        resp = response_class(s)
+        set_header = getattr(resp, 'set_header', None)
+
         while True:
             l = s.readline()
             if not l or l == b"\r\n":
@@ -95,11 +100,13 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
                     raise ValueError("Unsupported " + l)
             elif l.startswith(b"Location:") and not 200 <= status <= 299:
                 raise NotImplementedError("Redirects not yet supported")
+
+            if set_header:
+                set_header(l)
     except OSError:
         s.close()
         raise
 
-    resp = Response(s)
     resp.status_code = status
     resp.reason = reason
     return resp
