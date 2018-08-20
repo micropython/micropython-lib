@@ -99,9 +99,15 @@ class MQTTClient:
             raise MQTTException(resp[3])
         return resp[2] & 1
 
-    def disconnect(self):
-        self.sock.write(b"\xe0\0")
-        self.sock.close()
+    def disconnect(self, force_close=False):
+        try:
+            self.sock.write(b"\xe0\0")
+        except OSError:
+            if force_close:
+                self.sock.close()
+            raise
+        else:
+            self.sock.close()
 
     def ping(self):
         self.sock.write(b"\xc0\0")
