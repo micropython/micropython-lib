@@ -1,5 +1,4 @@
 import usocket as socket
-#from ubinascii import hexlify
 
 class MQTTException(Exception):
     pass
@@ -89,9 +88,7 @@ class MQTTClient:
             msg[7] |= self.lw_retain << 5
 
         plen = self._varlen_encode(sz, premsg, 1)
-        #print(hex(len(premsg[:plen])), hexlify(premsg[:plen], ":"))
         self.sock.write(premsg, plen)
-        #print(hex(len(msg)), hexlify(msg, ":"))
         self.sock.write(msg)
         self._send_str(self.client_id)
         if self.lw_topic:
@@ -121,7 +118,6 @@ class MQTTClient:
         if qos > 0:
             sz += 2
         plen = self._varlen_encode(sz, pkt, 1)
-        #print(hex(len(pkt[:plen])), hexlify(pkt[:plen], ":"))
         self.sock.write(pkt, plen)
         self._send_str(topic)
         if qos > 0:
@@ -148,7 +144,6 @@ class MQTTClient:
         sz = 2 + 2 + len(topic) + 1
         plen = self._varlen_encode(sz, pkt, 1)
         pkt[plen:plen + 2] = self.pid.to_bytes(2, 'big')
-        #print(hex(len(pkt[:plen + 2])), hexlify(pkt[:plen + 2], ":"))
         self.sock.write(pkt, plen + 2)
         self._send_str(topic)
         self.sock.write(qos.to_bytes(1, "little"))
@@ -156,7 +151,6 @@ class MQTTClient:
             op = self.wait_msg()
             if op == 0x90:
                 resp = self.sock.read(4)
-                #print(resp)
                 assert resp[1] == pkt[plen] and resp[2] == pkt[plen + 1]
                 if resp[3] == 0x80:
                     raise MQTTException(resp[3])
