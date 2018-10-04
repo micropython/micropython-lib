@@ -32,7 +32,10 @@ class Response:
         return ujson.loads(self.content)
 
 
-def request(method, url, data=None, json=None, headers={}, stream=None):
+def request(method, url, data=None, json=None, headers={}, stream=None, auth=None):
+    if auth is not None:
+        headers.update(encode_basic_auth(auth[0], auth[1]))
+
     try:
         proto, dummy, host, path = url.split("/", 3)
     except ValueError:
@@ -122,3 +125,9 @@ def patch(url, **kw):
 
 def delete(url, **kw):
     return request("DELETE", url, **kw)
+
+def encode_basic_auth(username, password):
+    import ubinascii
+    formated = b"{}:{}".format(username, password)
+    formated = ubinascii.b2a_base64(formated)[:-1].decode("ascii")
+    return {'Authorization' : 'Basic {}'.format(formated)}
