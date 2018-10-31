@@ -120,12 +120,12 @@ class TestCase:
 
         try:
             func(*args, **kwargs)
-            assert False, "%r not raised" % exc
         except Exception as e:
             if isinstance(e, exc):
                 return
             raise
 
+        assert False, "%r not raised" % exc
 
 
 def skip(msg):
