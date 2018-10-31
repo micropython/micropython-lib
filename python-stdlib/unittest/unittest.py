@@ -1,5 +1,13 @@
 import sys
 
+try:
+    import io
+    import traceback
+except ImportError:
+    import uio as io
+
+    traceback = None
+
 
 class SkipTest(Exception):
     pass
@@ -160,7 +168,7 @@ class TestRunner:
     def run(self, suite):
         res = TestResult()
         for c in suite.tests:
-            run_class(c, res)
+            res.exceptions.extend(run_class(c, res))
 
         print("Ran %d tests\n" % res.testsRun)
         if res.failuresNum > 0 or res.errorsNum > 0:
@@ -180,9 +188,19 @@ class TestResult:
         self.failuresNum = 0
         self.skippedNum = 0
         self.testsRun = 0
+        self.exceptions = []
 
     def wasSuccessful(self):
         return self.errorsNum == 0 and self.failuresNum == 0
+
+
+def capture_exc(e):
+    buf = io.StringIO()
+    if hasattr(sys, "print_exception"):
+        sys.print_exception(e, buf)
+    elif traceback is not None:
+        traceback.print_exception(None, e, sys.exc_info()[2], file=buf)
+    return buf.getvalue()
 
 
 # TODO: Uncompliant
@@ -190,6 +208,7 @@ def run_class(c, test_result):
     o = c()
     set_up = getattr(o, "setUp", lambda: None)
     tear_down = getattr(o, "tearDown", lambda: None)
+    exceptions = []
     for name in dir(o):
         if name.startswith("test"):
             print("%s (%s) ..." % (name, c.__qualname__), end="")
@@ -202,14 +221,14 @@ def run_class(c, test_result):
             except SkipTest as e:
                 print(" skipped:", e.args[0])
                 test_result.skippedNum += 1
-            except:
+            except Exception as ex:
+                exceptions.append(capture_exc(ex))
                 print(" FAIL")
                 test_result.failuresNum += 1
-                # Uncomment to investigate failure in detail
-                # raise
                 continue
             finally:
                 tear_down()
+    return exceptions
 
 
 def main(module="__main__"):
@@ -225,5 +244,9 @@ def main(module="__main__"):
         suite.addTest(c)
     runner = TestRunner()
     result = runner.run(suite)
+    if result.exceptions:
+        sep = "\n----------------------------------------------------------------------\n"
+        print(sep)
+        print(sep.join(result.exceptions))
     # Terminate with non zero return code in case of failures
     sys.exit(result.failuresNum > 0)
