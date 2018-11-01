@@ -219,7 +219,7 @@ def main(module="__main__"):
             if isinstance(c, object) and isinstance(c, type) and issubclass(c, TestCase):
                 yield c
 
-    m = __import__(module)
+    m = __import__(module) if isinstance(module, str) else module
     suite = TestSuite()
     for c in test_cases(m):
         suite.addTest(c)
