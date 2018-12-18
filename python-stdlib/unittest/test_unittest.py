@@ -37,7 +37,7 @@ class TestUnittestAssertions(unittest.TestCase):
         with self.assertRaises(AssertionError):
             self.assertNotAlmostEqual(float("inf"), float("inf"))
 
-    def test_AmostEqualWithDelta(self):
+    def test_AlmostEqualWithDelta(self):
         self.assertAlmostEqual(1.1, 1.0, delta=0.5)
         self.assertAlmostEqual(1.0, 1.1, delta=0.5)
         self.assertNotAlmostEqual(1.1, 1.0, delta=0.05)
