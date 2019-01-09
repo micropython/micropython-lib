@@ -9,5 +9,8 @@ for i in t:
     if i.type == utarfile.DIRTYPE:
         os.makedirs(i.name)
     else:
-        f = t.extractfile(i)
-        shutil.copyfileobj(f, open(i.name, "wb"))
+        f1 = t.extractfile(i)
+        f2 = open(i.name, "wb")
+        shutil.copyfileobj(f1, f2)
+        f2.close()
+        
