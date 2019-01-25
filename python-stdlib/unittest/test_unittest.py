@@ -111,6 +111,21 @@ class TestUnittestAssertions(unittest.TestCase):
     def testSkip(self):
         self.assertFail("this should be skipped")
 
+    def testAssert(self):
+
+        e1 = None
+        try:
+
+            def func_under_test(a):
+                assert a > 10
+
+            self.assertRaises(AssertionError, func_under_test, 20)
+        except AssertionError as e:
+            e1 = e
+
+        if not e1 or "not raised" not in e1.args[0]:
+            self.fail("Expected to catch lack of AssertionError from assert in func_under_test")
+
 
 if __name__ == "__main__":
     unittest.main()
