@@ -1,3 +1,7 @@
+**WARNING: this is stale, unmaintained repository. Up-to-date upstream
+project is at https://github.com/pfalcon/micropython-lib**
+
+
 micropython-lib
 ===============
 micropython-lib is a project to develop a non-monolothic standard library
