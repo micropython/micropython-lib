@@ -109,7 +109,7 @@ class TestUnittestAssertions(unittest.TestCase):
 
     @unittest.skip("test of skipping")
     def testSkip(self):
-        self.assertFail("this should be skipped")
+        self.fail("this should be skipped")
 
     def testAssert(self):
 
