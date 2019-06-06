@@ -55,7 +55,7 @@ class EventLoop:
     def call_later_ms(self, delay, callback, *args):
         if not delay:
             return self.call_soon(callback, *args)
-        self.call_at_(time.ticks_add(self.time(), delay), callback, args)
+        self.call_at_(time.ticks_add(self.time(), int(delay)), callback, args)
 
     def call_at_(self, time, callback, args=()):
         if __debug__ and DEBUG:
