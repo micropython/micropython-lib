@@ -21,6 +21,7 @@ class AssertRaisesContext:
         return self
 
     def __exit__(self, exc_type, exc_value, tb):
+        self.exception = exc_value
         if exc_type is None:
             assert False, "%r not raised" % self.expected
         if issubclass(exc_type, self.expected):
