@@ -7,6 +7,7 @@
 #
 import sys
 import gc
+import re
 import uos as os
 import uerrno as errno
 import ujson as json
@@ -19,11 +20,16 @@ debug = False
 install_path = None
 cleanup_files = []
 gzdict_sz = 16 + 15
+name_regex = re.compile(r'^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])(.*)$', re.I)
 
 file_buf = bytearray(512)
 
 class NotFoundError(Exception):
     pass
+
+class NoVersionError(Exception):
+    pass
+
 
 def op_split(path):
     if path == "":
@@ -169,16 +175,17 @@ def fatal(msg, exc=None):
         raise exc
     sys.exit(1)
 
-def install_pkg(pkg_spec, install_path):
-    data = get_pkg_metadata(pkg_spec)
+def install_pkg(pkg, install_path):
+    data = get_pkg_metadata(pkg['name'])
+    
+    ver = pkg.get('version', data["info"]["version"]) # defaults to latest
 
-    latest_ver = data["info"]["version"]
-    packages = data["releases"][latest_ver]
+    packages = data["releases"][ver]
     del data
     gc.collect()
     assert len(packages) == 1
     package_url = packages[0]["url"]
-    print("Installing %s %s from %s" % (pkg_spec, latest_ver, package_url))
+    print("Installing %s %s from %s" % (pkg['name'], ver, package_url))
     package_fname = op_basename(package_url)
     f1 = url_open(package_url)
     try:
@@ -215,7 +222,8 @@ def install(to_install, install_path=None):
             pkg_spec = to_install.pop(0)
             if pkg_spec in installed:
                 continue
-            meta = install_pkg(pkg_spec, install_path)
+            pkg = parse_version(pkg_spec)
+            meta = install_pkg(pkg, install_path)
             installed.append(pkg_spec)
             if debug:
                 print(meta)
@@ -243,6 +251,90 @@ def cleanup():
         except OSError:
             print("Warning: Cannot delete " + fname)
 
+def parse_version(string):
+    """
+        Parse Version
+
+        This function takes a string and gets all versioning infromation for
+        pypi according to PEP508
+
+        Written by: Stephan Kashkarov 2019
+    """
+
+    pkg = {}
+    pkg['name'], versioning = re.match(name_regex, string).groups()
+    data = get_pkg_metadata(pkg['name'])
+
+    # Removes "Extra" arguments
+    if ";" in versioning:
+        versioning = versioning.split(";")[0].split(",")
+
+    # Version arguments
+    """
+        pkg['version'] if not implicity define (i.e. ==) is considered
+        to be either None or a list of the available ranges in the format
+        [Start, Stop]
+    """
+    for arg in versioning:
+        arg = arg.strip()
+
+
+        if arg[:2] == "==":
+            if float(arg[2:]) in data["releases"]:
+                pkg['version'] = arg[2:]
+                return pkg
+            else:
+                raise NoVersionError()
+
+
+        # elif arg[:2] == "<=":
+        #     if pkg['version']:
+        #         if check_larger(data["releases"][-1], pkg['version'][0], False) == 1:
+        #             raise NoVersionError()
+        #     else:
+        #         if isinstance(pkg['version'], list):
+        #             pkg['version'] = merge_ranges(
+        #                 [arg[:2], data["releases"][-1],],
+        #                 pkg['version']
+        #             )
+        #         else:
+        #             pkg['version'] = [arg[:2], data["releases"][-1],],
+
+
+        # elif arg[:2] == ">=":
+        #     if pkg['version']:
+        #         if check_larger(data["releases"][-1], pkg['version'][0], False) == 0:
+        #             raise NoVersionError()
+        #     else:
+        #         if isinstance(pkg['version'], list):
+        #             pkg['version'] = merge_ranges(
+        #                 [data["releases"][0], arg[:2]],
+        #                 pkg['version']
+        #             )
+        #         else:
+        #             pkg['version'] = [data["releases"][0], arg[:2]]
+        
+        # elif arg[:2] == ">":
+        #     if pkg['version']:
+        #         if data["releases"][0] >= pkg['version'][0]:
+        #             raise NoVersionError()
+        #     else:
+        #         if isinstance(pkg['version'], list):
+        #             pkg['version'] = merge_ranges(
+        #                 [data["releases"][0], arg[:2] + 0.1],
+        #                 pkg['version']
+        #             )
+        #         else:
+        #             pkg['version'] = [data["releases"][0], arg[:2]]
+
+
+
+# def merge_ranges(range1, range2):
+#     pass
+
+# def check_larger(range1, range2, equal=True):
+#     pass
+
 def help():
     print("""\
 upip - Simple PyPI package manager for MicroPython
@@ -268,7 +360,7 @@ def main():
         help()
         return
 
-    if sys.argv[1] != "install":
+    if sys.argv[1] not in ["install"]:
         fatal("Only 'install' command supported")
 
     to_install = []
