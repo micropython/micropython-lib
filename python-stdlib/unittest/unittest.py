@@ -43,6 +43,16 @@ class TestCase:
             msg = "%r not expected to be equal %r" % (x, y)
         assert x != y, msg
 
+    def assertLessEqual(self, x, y, msg=None):
+        if msg is None:
+            msg = "%r is expected to be <= %r" % (x, y)
+        assert x <= y, msg
+
+    def assertGreaterEqual(self, x, y, msg=None):
+        if msg is None:
+            msg = "%r is expected to be >= %r" % (x, y)
+        assert x >= y, msg
+
     def assertAlmostEqual(self, x, y, places=None, msg="", delta=None):
         if x == y:
             return
