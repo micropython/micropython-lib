@@ -7,6 +7,7 @@
 # Note that if you'll use other -n value, you should update NUM_REQS below
 # to match.
 #
+from __future__ import print_function
 
 NUM_REQS = 1000
 seen = []
@@ -25,9 +26,9 @@ def validate(resp):
     cnt += 1
     if cnt == NUM_REQS:
         seen.sort()
-        print
-        print seen
-        print
+        print()
+        print(seen)
+        print()
         el = None
         for i in seen:
             if el is None:
