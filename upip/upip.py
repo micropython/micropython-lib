@@ -282,7 +282,7 @@ def parse_version(string):
         while substr[index - 1] not in ['=', '>', '<']:
             index -= 1
         operation = substr[:index].strip()
-        version = [int(x) for x in substr[index:].strip().split('.')]  # "3.0.1" -> [3, 0, 1]
+        version = [int(x) if x != "*" else "*" for x in substr[index:].strip().split('.')]  # "3.0.1" -> [3, 0, 1] && "4.2.*" -> [4, 2, "*"]
         parameters.append((operation, version))
 
     versions = [[int(y) for y in x.split(".")] for x in data["releases"].keys()]
@@ -290,23 +290,42 @@ def parse_version(string):
     # reduces list using operators
     while parameters:
         operator, version = parameters.pop(0)
-        if operator == "==" or operator == "===":
-            if version in versions:
+        if operator == "==":
+            # Check wildcard
+            if "*" in versions:
+                for v in versions:
+                    if len(v) > len(version):
+                        if v[:len(version)] != version:
+                            versions.remove(v)
+
+            # direct version
+            elif version in versions:
                 pkg['version'] = version
                 return pkg, data
+        
+        # more then operators
+        elif ">" in operator:
+            # removes wildcards
+            version.pop()
 
-        elif operator == ">":
-            versions = filter(versions, lambda x: ver_list_cmp(version, x) > 0)
+            if operator == ">":
+                versions = filter(versions, lambda x: ver_list_cmp(version, x) > 0)
 
-        elif operator == ">=":
-            versions = filter(versions, lambda x: ver_list_cmp(version, x) >= 0)
+            elif operator == ">=":
+                versions = filter(versions, lambda x: ver_list_cmp(version, x) >= 0)
 
-        elif operator == "<":
-            versions = filter(versions, lambda x: ver_list_cmp(version, x) < 0)
+        # less then operator
+        if "<" in operator:
+            # removes wildcards
+            version.replace("*", 0)
 
-        elif operator == "<=":
-            versions = filter(versions, lambda x: ver_list_cmp(version, x) <= 0)
+            if operator == "<":
+                versions = filter(versions, lambda x: ver_list_cmp(version, x) < 0)
 
+            elif operator == "<=":
+                versions = filter(versions, lambda x: ver_list_cmp(version, x) <= 0)
+
+        # Arbitrary operator
         elif operator == "~=":
             parameters.extend([("<=", version[:-1]), (">=", version)])
 
