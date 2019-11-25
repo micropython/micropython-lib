@@ -321,6 +321,8 @@ def parse_version(string):
             parameters.extend([("<=", version[:-1]), (">=", version)])
             continue
 
+    if not versions:
+        raise NoVersionError
     # returns max suitable operator
     pkg['version'] = max(versions)
     return pkg, data
