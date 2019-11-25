@@ -254,7 +254,7 @@ def parse_version(string):
         Parse Version
 
         This function takes a string and gets all versioning infromation for
-        pypi according to PEP508
+        pypi according to PEP508 and PEP440
 
         Written by: Stephan Kashkarov 2019
     """
@@ -268,6 +268,7 @@ def parse_version(string):
         versioning = versioning.split(";")[0].split(",")
 
     # split version parameters ie "<=3.2.3, > 2.7.1, !=3.0.1" -> [('<=', [3, 2, 3]), ('>', [2, 7, 1]), ('!=', [3, 0, 1])]
+    # Does not support letters in the version name (i.e. 1.2.5rc3)
     parameters = []
     index = 0
     while len(versioning):
@@ -288,7 +289,7 @@ def parse_version(string):
 
     # reduces list using operators
     while parameters:
-        operator, version = parameters.pop()
+        operator, version = parameters.pop(0)
         if operator == "==" or operator == "===":
             if version in versions:
                 pkg['version'] = version
@@ -320,22 +321,21 @@ def ver_list_cmp(list1, list2):
         This function takes two version lists (i.e [3,2,7]) and
         returns -1 if list zero is larger and 1 list one is larger
         otherwise the function will return 0
+
+        Written by: Stephan Kashkarov 2019
     """
 
     # ensures verion lengths are equivelent
     if len(list1) != len(list2):
-        print("diff")
         if len(list1) > len(list2):
             list2.append(0)
             list1 = list1[:len(list2)]
         else:
             list1.append(0)
             list2 = list2[:len(list1)]
-        print(f"new: {list1}, {list2}")
 
     # checks versions iteratatively
     for x, y in zip(list1, list2):
-        print(x, y)
         if x > y:
             return -1
         elif y > x:
