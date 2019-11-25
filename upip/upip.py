@@ -267,7 +267,7 @@ def parse_version(string):
     if ";" in versioning:
         versioning = versioning.split(";")[0].split(",")
 
-    # split version parameters ie "<=3.2.3, > 2.7.1, !=3.0.1" -> [('<=', '3.2.3'), ('>', '2.7.1'), ('!=', '3.0.1')]
+    # split version parameters ie "<=3.2.3, > 2.7.1, !=3.0.1" -> [('<=', [3, 2, 3]), ('>', [2, 7, 1]), ('!=', [3, 0, 1])]
     parameters = []
     index = 0
     while len(versioning):
@@ -281,10 +281,10 @@ def parse_version(string):
         while substr[index - 1] not in ['=', '>', '<']:
             index -= 1
         operation = substr[:index].strip()
-        version = substr[index:].strip()
+        version = [int(x) for x in substr[index:].strip().split('.')]  # "3.0.1" -> [3, 0, 1]
         parameters.append((operation, version))
 
-    versions = data["releases"].keys()
+    versions = [[int(y) for y in x.split(".")] for x in data["releases"].keys()]
 
     for operator, version in parameters:
         if operator == "==":
@@ -292,11 +292,41 @@ def parse_version(string):
                 pkg['version'] = version
                 return pkg, data
 
+        if operator == ">":
+            pass
 
 
     # return pkg, data
 
+def ver_list_cmp(list1, list2):
+    """
+        version list compaire
 
+        This function takes two version lists (i.e [3,2,7]) and
+        returns 0 if list zero is larger and 1 list one is larger
+        otherwise the function will return -1
+    """
+
+    # ensures verion lengths are equivelent
+    if len(list1) != len(list2):
+        print("diff")
+        if len(list1) > len(list2):
+            list2.append(0)
+            list1 = list1[:len(list2)]
+        else:
+            list1.append(0)
+            list2 = list2[:len(list1)]
+        print(f"new: {list1}, {list2}")
+
+    # checks versions iteratatively
+    for x, y in zip(list1, list2):
+        print(x, y)
+        if x > y:
+            return 0
+        elif y > x:
+            return 1
+
+    return -1
 
 def help():
     print("""\
