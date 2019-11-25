@@ -175,9 +175,7 @@ def fatal(msg, exc=None):
         raise exc
     sys.exit(1)
 
-def install_pkg(pkg, install_path):
-    data = get_pkg_metadata(pkg['name'])
-    
+def install_pkg(pkg, install_path, data):
     ver = pkg.get('version', data["info"]["version"]) # defaults to latest
 
     packages = data["releases"][ver]
@@ -222,8 +220,8 @@ def install(to_install, install_path=None):
             pkg_spec = to_install.pop(0)
             if pkg_spec in installed:
                 continue
-            pkg = parse_version(pkg_spec)
-            meta = install_pkg(pkg, install_path)
+            pkg, data = parse_version(pkg_spec)
+            meta = install_pkg(pkg, install_path, data)
             installed.append(pkg_spec)
             if debug:
                 print(meta)
@@ -269,71 +267,36 @@ def parse_version(string):
     if ";" in versioning:
         versioning = versioning.split(";")[0].split(",")
 
-    # Version arguments
-    """
-        pkg['version'] if not implicity define (i.e. ==) is considered
-        to be either None or a list of the available ranges in the format
-        [Start, Stop]
-    """
-    for arg in versioning:
-        arg = arg.strip()
+    # split version parameters ie "<=3.2.3, > 2.7.1, !=3.0.1" -> [('<=', '3.2.3'), ('>', '2.7.1'), ('!=', '3.0.1')]
+    parameters = []
+    index = 0
+    while len(versioning):
+        index = versioning.find(',')
+        if index != -1:
+            substr = versioning[:index]
+            versioning = versioning[index + 1:]
+        else:
+            substr = versioning
+            versioning = ""
+        while substr[index - 1] not in ['=', '>', '<']:
+            index -= 1
+        operation = substr[:index].strip()
+        version = substr[index:].strip()
+        parameters.append((operation, version))
 
+    versions = data["releases"].keys()
 
-        if arg[:2] == "==":
-            if float(arg[2:]) in data["releases"]:
-                pkg['version'] = arg[2:]
-                return pkg
-            else:
-                raise NoVersionError()
-
-
-        # elif arg[:2] == "<=":
-        #     if pkg['version']:
-        #         if check_larger(data["releases"][-1], pkg['version'][0], False) == 1:
-        #             raise NoVersionError()
-        #     else:
-        #         if isinstance(pkg['version'], list):
-        #             pkg['version'] = merge_ranges(
-        #                 [arg[:2], data["releases"][-1],],
-        #                 pkg['version']
-        #             )
-        #         else:
-        #             pkg['version'] = [arg[:2], data["releases"][-1],],
-
-
-        # elif arg[:2] == ">=":
-        #     if pkg['version']:
-        #         if check_larger(data["releases"][-1], pkg['version'][0], False) == 0:
-        #             raise NoVersionError()
-        #     else:
-        #         if isinstance(pkg['version'], list):
-        #             pkg['version'] = merge_ranges(
-        #                 [data["releases"][0], arg[:2]],
-        #                 pkg['version']
-        #             )
-        #         else:
-        #             pkg['version'] = [data["releases"][0], arg[:2]]
-        
-        # elif arg[:2] == ">":
-        #     if pkg['version']:
-        #         if data["releases"][0] >= pkg['version'][0]:
-        #             raise NoVersionError()
-        #     else:
-        #         if isinstance(pkg['version'], list):
-        #             pkg['version'] = merge_ranges(
-        #                 [data["releases"][0], arg[:2] + 0.1],
-        #                 pkg['version']
-        #             )
-        #         else:
-        #             pkg['version'] = [data["releases"][0], arg[:2]]
+    for operator, version in parameters:
+        if operator == "==":
+            if version in versions:
+                pkg['version'] = version
+                return pkg, data
 
 
 
-# def merge_ranges(range1, range2):
-#     pass
+    # return pkg, data
 
-# def check_larger(range1, range2, equal=True):
-#     pass
+
 
 def help():
     print("""\
