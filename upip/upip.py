@@ -294,6 +294,7 @@ def parse_version(string):
             # Check wildcard
             if "*" in versions:
                 parameters.append((">=", version[:-1])) # queues wildcard
+                continue
 
             # direct version
             elif version in versions:
@@ -303,7 +304,7 @@ def parse_version(string):
         # removes wildcards
         version.pop()
 
-        elif operator == ">":
+        if operator == ">":
             versions = filter(versions, lambda x: ver_list_cmp(version, x) > 0)
 
         elif operator == ">=":
@@ -318,6 +319,7 @@ def parse_version(string):
         # Arbitrary operator
         elif operator == "~=":
             parameters.extend([("<=", version[:-1]), (">=", version)])
+            continue
 
     # returns max suitable operator
     pkg['version'] = max(versions)
