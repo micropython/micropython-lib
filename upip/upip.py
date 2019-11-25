@@ -286,25 +286,40 @@ def parse_version(string):
 
     versions = [[int(y) for y in x.split(".")] for x in data["releases"].keys()]
 
-    for operator, version in parameters:
-        if operator == "==":
+    # reduces list using operators
+    while parameters:
+        operator, version = parameters.pop()
+        if operator == "==" or operator == "===":
             if version in versions:
                 pkg['version'] = version
                 return pkg, data
 
-        if operator == ">":
-            pass
+        elif operator == ">":
+            versions = filter(versions, lambda x: ver_list_cmp(version, x) > 0)
 
+        elif operator == ">=":
+            versions = filter(versions, lambda x: ver_list_cmp(version, x) >= 0)
 
-    # return pkg, data
+        elif operator == "<":
+            versions = filter(versions, lambda x: ver_list_cmp(version, x) < 0)
+
+        elif operator == "<=":
+            versions = filter(versions, lambda x: ver_list_cmp(version, x) <= 0)
+
+        elif operator == "~=":
+            parameters.extend([("<=", version[:-1]), (">=", version)])
+
+    # returns max suitable operator
+    pkg['version'] = max(versions)
+    return pkg, data
 
 def ver_list_cmp(list1, list2):
     """
         version list compaire
 
         This function takes two version lists (i.e [3,2,7]) and
-        returns 0 if list zero is larger and 1 list one is larger
-        otherwise the function will return -1
+        returns -1 if list zero is larger and 1 list one is larger
+        otherwise the function will return 0
     """
 
     # ensures verion lengths are equivelent
@@ -322,11 +337,11 @@ def ver_list_cmp(list1, list2):
     for x, y in zip(list1, list2):
         print(x, y)
         if x > y:
-            return 0
+            return -1
         elif y > x:
             return 1
 
-    return -1
+    return 0
 
 def help():
     print("""\
