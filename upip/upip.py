@@ -305,16 +305,16 @@ def parse_version(string):
         version.pop()
 
         if operator == ">":
-            versions = filter(versions, lambda x: ver_list_cmp(version, x) > 0)
-
-        elif operator == ">=":
-            versions = filter(versions, lambda x: ver_list_cmp(version, x) >= 0)
-
-        elif operator == "<":
             versions = filter(versions, lambda x: ver_list_cmp(version, x) < 0)
 
-        elif operator == "<=":
+        elif operator == ">=":
             versions = filter(versions, lambda x: ver_list_cmp(version, x) <= 0)
+
+        elif operator == "<":
+            versions = filter(versions, lambda x: ver_list_cmp(version, x) > 0)
+
+        elif operator == "<=":
+            versions = filter(versions, lambda x: ver_list_cmp(version, x) >= 0)
 
         # Arbitrary operator
         elif operator == "~=":
