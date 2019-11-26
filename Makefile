@@ -1,4 +1,4 @@
-PREFIX = ~/.micropython/lib
+PREFIX ?= ~/.micropython/lib
 
 all:
 
