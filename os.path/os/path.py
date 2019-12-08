@@ -15,6 +15,8 @@ def normpath(s):
                 sp.pop()
         elif d != ".":
             sp.append(d)
+    if len(sp) == 0:
+        return "/"
     if sp[0] == "":
         if len(sp) == 1:
             sp[0] = "."
