@@ -237,6 +237,8 @@ def run_class(c, test_result):
                 exceptions.append(capture_exc(ex))
                 print(" FAIL")
                 test_result.failuresNum += 1
+                # Uncomment to investigate failure in detail
+                # raise
                 continue
             finally:
                 tear_down()
