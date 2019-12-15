@@ -170,16 +170,16 @@ def skipUnless(cond, msg):
 
 class TestSuite:
     def __init__(self):
-        self.tests = []
+        self._tests = []
 
     def addTest(self, cls):
-        self.tests.append(cls)
+        self._tests.append(cls)
 
 
 class TestRunner:
     def run(self, suite):
         res = TestResult()
-        for c in suite.tests:
+        for c in suite._tests:
             res.exceptions.extend(run_class(c, res))
 
         print("Ran %d tests\n" % res.testsRun)
