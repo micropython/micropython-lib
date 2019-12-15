@@ -223,8 +223,10 @@ def run_class(c, test_result):
     exceptions = []
     for name in dir(o):
         if name.startswith("test"):
-            print("%s (%s) ..." % (name, c.__qualname__), end="")
             m = getattr(o, name)
+            if not callable(m):
+                continue
+            print("%s (%s) ..." % (name, c.__qualname__), end="")
             set_up()
             try:
                 test_result.testsRun += 1
