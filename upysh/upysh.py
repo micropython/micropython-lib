@@ -38,9 +38,12 @@ class TREE:
         self.__call__()
         return ""
 
-    def __call__(self, path=".", level=0, is_last=False, is_root=True,
-                 carrier="    "):
-        l = os.listdir(path)
+   def __call__(self, path=".", level=0, is_last=False, is_root=True,
+                 carrier="    ", hidden=False):
+        if hidden:
+            l = os.listdir(path)
+        else:
+            l = [f for f in os.listdir(path) if not f.startswith('.')]
         nf = len([file for file in os.listdir(path) if not os.stat(file)[0] & 0x4000])
         nd = len(l) - nf
         ns_f, ns_d = 0, 0
