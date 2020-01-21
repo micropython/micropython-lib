@@ -104,7 +104,7 @@ def request(method, url, data=None, json=None, headers={}, stream=None, timeout=
             elif l.startswith(b"Location:") and not 200 <= status <= 299:
                 location = str(l[10:])[2:-5]
                 #print ("\n\n\n"+location+"\n\n\n")
-                return request('GET',location,None,None,{},None,0.5)
+                return request('GET',location)
                 # throw NotImplementedError("Redirects not yet supported")
     except OSError:
         s.close()
