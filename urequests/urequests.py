@@ -87,7 +87,7 @@ def request(method, url, data=None, json=None, headers={}, stream=None, timeout=
             s.write(data)
 
         l = s.readline()
-        print(l)
+        #print(l)
         l = l.split(None, 2)
         status = int(l[1])
         reason = ""
@@ -97,13 +97,13 @@ def request(method, url, data=None, json=None, headers={}, stream=None, timeout=
             l = s.readline()
             if not l or l == b"\r\n":
                 break
-            print(l)
+            #print(l)
             if l.startswith(b"Transfer-Encoding:"):
                 if b"chunked" in l:
                     raise ValueError("Unsupported " + l)
             elif l.startswith(b"Location:") and not 200 <= status <= 299:
                 location = str(l[10:])[2:-5]
-                print ("\n\n\n"+location+"\n\n\n")
+                #print ("\n\n\n"+location+"\n\n\n")
                 return request('GET',location,None,None,{},None,0.5)
                 # throw NotImplementedError("Redirects not yet supported")
     except OSError:
