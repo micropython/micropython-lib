@@ -1,3 +1,8 @@
+# uRequest extension
+# + Socket timeout ( default 0.5 )
+# + HTTP Redirection
+
+
 import usocket
 
 class Response:
@@ -32,7 +37,7 @@ class Response:
         return ujson.loads(self.content)
 
 
-def request(method, url, data=None, json=None, headers={}, stream=None):
+def request(method, url, data=None, json=None, headers={}, stream=None, timeout=0.5):
     try:
         proto, dummy, host, path = url.split("/", 3)
     except ValueError:
@@ -51,9 +56,12 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
         port = int(port)
 
     ai = usocket.getaddrinfo(host, port, 0, usocket.SOCK_STREAM)
+
     ai = ai[0]
 
     s = usocket.socket(ai[0], ai[1], ai[2])
+    # set timeout
+    s.settimeout(timeout)
     try:
         s.connect(ai[-1])
         if proto == "https:":
@@ -79,7 +87,7 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
             s.write(data)
 
         l = s.readline()
-        #print(l)
+        print(l)
         l = l.split(None, 2)
         status = int(l[1])
         reason = ""
@@ -89,12 +97,15 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
             l = s.readline()
             if not l or l == b"\r\n":
                 break
-            #print(l)
+            print(l)
             if l.startswith(b"Transfer-Encoding:"):
                 if b"chunked" in l:
                     raise ValueError("Unsupported " + l)
             elif l.startswith(b"Location:") and not 200 <= status <= 299:
-                raise NotImplementedError("Redirects not yet supported")
+                location = str(l[10:])[2:-5]
+                print ("\n\n\n"+location+"\n\n\n")
+                return request('GET',location,None,None,{},None,0.5)
+                # throw NotImplementedError("Redirects not yet supported")
     except OSError:
         s.close()
         raise
