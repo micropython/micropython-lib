@@ -180,7 +180,7 @@ class TestRunner:
     def run(self, suite):
         res = TestResult()
         for c in suite._tests:
-            res.exceptions.extend(run_class(c, res))
+            res.exceptions.extend(run_suite(c, res))
 
         print("Ran %d tests\n" % res.testsRun)
         if res.failuresNum > 0 or res.errorsNum > 0:
@@ -216,8 +216,11 @@ def capture_exc(e):
 
 
 # TODO: Uncompliant
-def run_class(c, test_result):
-    o = c()
+def run_suite(c, test_result):
+    if isinstance(c, type):
+        o = c()
+    else:
+        o = c
     set_up = getattr(o, "setUp", lambda: None)
     tear_down = getattr(o, "tearDown", lambda: None)
     exceptions = []
