@@ -30,6 +30,9 @@ class AssertRaisesContext:
 
 
 class TestCase:
+    def __init__(self):
+        pass
+
     def fail(self, msg=""):
         assert False, msg
 
