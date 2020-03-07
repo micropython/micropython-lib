@@ -99,7 +99,7 @@ def request(method, url, data=None, json=None, headers={}, stream=None, parse_he
             # print(l)
             if l.startswith(b"Transfer-Encoding:"):
                 if b"chunked" in l:
-                    raise ValueError("Unsupported " + l)
+                    raise ValueError("Unsupported " + str(l, "utf-8"))
             elif l.startswith(b"Location:") and not 200 <= status <= 299:
                 raise NotImplementedError("Redirects not yet supported")
             if parse_headers is False:
