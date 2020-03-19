@@ -1,3 +1,0 @@
-srctype = cpython-backport
-type = module
-version = 0.2.1
