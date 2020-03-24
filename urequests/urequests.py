@@ -1,4 +1,5 @@
 import usocket
+import ure
 from parse import urlencode
 
 class Response:
@@ -21,6 +22,64 @@ class Response:
             self.raw = None
         self._cached = None
 
+    # extracts data from a stream, if the direct conversion of the result to a string consumes too much memory
+    # result is an array with the results startStr+found between+endstring
+    def extract(self, _startStr, _endStr):
+        # we prepare an array to store
+        results = []
+        # prepare regex to reduces spaces to on space
+        # and remove cr/linefeeds
+        removeWhiteSpaces = ure.compile("(  )+")
+        removeCR = ure.compile("[\r\n]")
+        endOfStream = False
+        _startStrBytes = bytes(_startStr, 'utf-8')
+        _endStrBytes = bytes(_endStr, 'utf-8')
+        # start with mininum length of the search String
+        # if it is smaller than the start - end
+        pageStreamBytes = self.raw.read(len(_startStr))
+        if len(pageStreamBytes) < len(_startStr):
+            endOfStream = True
+        # we must convert the searchstring to bytes als not for all charcters uft-8 encoding is working
+        # like in Curacao (special c)
+        while not endOfStream:
+            if pageStreamBytes == _startStrBytes:
+                # we found a matching string
+                # print('Start found %s ' % pageStreamBytes.decode('utf-8'))
+                # we need to find the end
+                endOfTag = False
+                read = self.raw.read(len(_endStr))
+                if len(read) == 0:
+                    endOfStream = True
+                pageStreamBytes += read
+                while ((not endOfStream) and (not endOfTag)):
+                    # comparing the string with the find method is easier
+                    # than comparing the bytes
+                    if (pageStreamBytes.decode('utf-8')).find(_endStr) > 0:
+                        endOfTag = True
+                        result = removeWhiteSpaces.sub('', pageStreamBytes.decode('utf-8'))
+                        result = removeCR.sub('', result)
+                        results.append(result)
+                        # print('Result: %s' % result)
+                    else:
+                        # read and Append
+                        read = self.raw.read(1)
+                        if len(read) == 0:
+                            endOfStream = True
+                        else:
+                            pageStreamBytes += read
+                            # print('End not Found %s' % pageStreamBytes.decode('utf-8'))
+            else:
+                # we did not find a matching string
+                # and reduce by one character before we add the next
+                # print('not found %s' % pageStream)
+                pageStreamBytes = pageStreamBytes[1:len(_startStrBytes)]
+            read = self.raw.read(1)
+            if len(read) == 0:
+                endOfStream = True
+            pageStreamBytes = pageStreamBytes + read
+        self.close()
+        return results
+        
     @property
     def content(self):
         if self._cached is None:
