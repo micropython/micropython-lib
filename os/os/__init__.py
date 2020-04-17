@@ -45,6 +45,7 @@ if libc:
     write_ = libc.func("i", "write", "iPi")
     close_ = libc.func("i", "close", "i")
     dup_ = libc.func("i", "dup", "i")
+    dup2_ = libc.func("i", "dup2", "ii")
     access_ = libc.func("i", "access", "si")
     fork_ = libc.func("i", "fork", "")
     pipe_ = libc.func("i", "pipe", "p")
@@ -185,6 +186,11 @@ def close(fd):
 
 def dup(fd):
     r = dup_(fd)
+    check_error(r)
+    return r
+
+def dup2(oldfd, newfd):
+    r = dup2_(oldfd, newfd)
     check_error(r)
     return r
 
