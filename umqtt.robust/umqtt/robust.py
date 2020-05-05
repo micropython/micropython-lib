@@ -16,11 +16,18 @@ class MQTTClient(simple.MQTTClient):
             else:
                 print("mqtt: %r" % e)
 
+    def connect(self, clean_session=True):
+        self.block = True
+        super().connect(clean_session)
+
     def reconnect(self):
         i = 0
         while 1:
             try:
-                return super().connect(False)
+                ret = super().connect(False)
+                if not self.block:
+                    self.sock.setblocking(False)
+                return ret
             except OSError as e:
                 self.log(True, e)
                 i += 1
@@ -41,3 +48,12 @@ class MQTTClient(simple.MQTTClient):
             except OSError as e:
                 self.log(False, e)
             self.reconnect()
+
+
+    def check_msg(self):
+        # memorizing the non blocking state in case of connection failure,
+        # we don't want to get stuck after reconnection
+        self.block = False
+        ret = super().check_msg()
+        self.block = True
+        return ret
