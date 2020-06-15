@@ -52,6 +52,10 @@ import types
 #import weakref
 #from copyreg import dispatch_table
 #import builtins
+try:
+    from collections import OrderedDict
+except ImportError:
+    OrderedDict = None
 
 class Error(Exception):
     pass
@@ -241,6 +245,8 @@ def _deepcopy_dict(x, memo):
         y[deepcopy(key, memo)] = deepcopy(value, memo)
     return y
 d[dict] = _deepcopy_dict
+if OrderedDict is not None:
+    d[OrderedDict] = _deepcopy_dict
 if PyStringMap is not None:
     d[PyStringMap] = _deepcopy_dict
 
