@@ -87,7 +87,7 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
             reason = l[2].rstrip()
         while True:
             l = s.readline()
-            if not l or l == b"\r\n":
+            if not l or l == b"\n" or l == b"\r\n":
                 break
             #print(l)
             if l.startswith(b"Transfer-Encoding:"):
