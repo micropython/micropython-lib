@@ -58,6 +58,11 @@ class Error(Exception):
 error = Error   # backward compatibility
 
 try:
+    from ucollections import OrderedDict
+except ImportError:
+    OrderedDict = None
+
+try:
     from org.python.core import PyStringMap
 except ImportError:
     PyStringMap = None
@@ -121,6 +126,8 @@ def _copy_with_constructor(x):
     return type(x)(x)
 for t in (list, dict, set):
     d[t] = _copy_with_constructor
+if OrderedDict is not None:
+    d[OrderedDict] = _copy_with_constructor
 
 def _copy_with_copy_method(x):
     return x.copy()
@@ -235,12 +242,14 @@ def _deepcopy_tuple(x, memo):
 d[tuple] = _deepcopy_tuple
 
 def _deepcopy_dict(x, memo):
-    y = {}
+    y = type(x)()
     memo[id(x)] = y
     for key, value in x.items():
         y[deepcopy(key, memo)] = deepcopy(value, memo)
     return y
 d[dict] = _deepcopy_dict
+if OrderedDict is not None:
+    d[OrderedDict] = _deepcopy_dict
 if PyStringMap is not None:
     d[PyStringMap] = _deepcopy_dict
 
