@@ -18,4 +18,4 @@ setup(name='micropython-fnmatch',
       license='Python',
       cmdclass={'sdist': sdist_upip.sdist},
       py_modules=['fnmatch'],
-      install_requires=['micropython-os', 'micropython-os.path', 'micropython-posixpath', 'micropython-re-pcre'])
+      install_requires=['micropython-os', 'micropython-os.path', 'micropython-re-pcre'])

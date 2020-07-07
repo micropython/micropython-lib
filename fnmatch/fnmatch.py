@@ -11,7 +11,6 @@ corresponding to PATTERN.  (It does not compile it.)
 """
 import os
 import os.path
-import posixpath
 import re
 #import functools
 
@@ -51,15 +50,9 @@ def filter(names, pat):
     result = []
     pat = os.path.normcase(pat)
     match = _compile_pattern(pat)
-    if os.path is posixpath:
-        # normcase on posix is NOP. Optimize it away from the loop.
-        for name in names:
-            if match(name):
-                result.append(name)
-    else:
-        for name in names:
-            if match(os.path.normcase(name)):
-                result.append(name)
+    for name in names:
+        if match(os.path.normcase(name)):
+            result.append(name)
     return result
 
 def fnmatchcase(name, pat):
