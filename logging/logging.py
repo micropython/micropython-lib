@@ -17,9 +17,25 @@ _level_dict = {
 
 _stream = sys.stderr
 
+class LogRecord:
+    def __init__(self):
+        self.__dict__ = {}
+
+    def __getattr__(self, key):
+        return self.__dict__[key]
+
+class Handler:
+    def __init__(self):
+        pass
+
+    def setFormatter(self, fmtr):
+        pass
+
 class Logger:
 
     level = NOTSET
+    handlers = []
+    record = LogRecord()
 
     def __init__(self, name):
         self.name = name
@@ -37,12 +53,19 @@ class Logger:
         return level >= (self.level or _level)
 
     def log(self, level, msg, *args):
-        if level >= (self.level or _level):
-            _stream.write("%s:%s:" % (self._level_str(level), self.name))
-            if not args:
-                print(msg, file=_stream)
+        if self.isEnabledFor(level):
+            level = self._level_str(level)
+            if args:
+                msg = msg % args
+            if self.handlers:
+                d = self.record.__dict__
+                d["levelname"] = level
+                d["message"] = msg
+                d["name"] = self.name
+                for h in self.handlers:
+                    h.emit(self.record)
             else:
-                print(msg % args, file=_stream)
+                print(level, ":", self.name, ":", msg, sep="", file=_stream)
 
     def debug(self, msg, *args):
         self.log(DEBUG, msg, *args)
@@ -66,11 +89,13 @@ class Logger:
     def exception(self, msg, *args):
         self.exc(sys.exc_info()[1], msg, *args)
 
+    def addHandler(self, hndlr):
+        self.handlers.append(hndlr)
 
 _level = INFO
 _loggers = {}
 
-def getLogger(name):
+def getLogger(name="root"):
     if name in _loggers:
         return _loggers[name]
     l = Logger(name)
@@ -78,10 +103,10 @@ def getLogger(name):
     return l
 
 def info(msg, *args):
-    getLogger(None).info(msg, *args)
+    getLogger().info(msg, *args)
 
 def debug(msg, *args):
-    getLogger(None).debug(msg, *args)
+    getLogger().debug(msg, *args)
 
 def basicConfig(level=INFO, filename=None, stream=None, format=None):
     global _level, _stream
