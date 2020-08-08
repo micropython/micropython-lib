@@ -33,6 +33,9 @@ class TestCase:
     def __init__(self):
         pass
 
+    def skipTest(self, reason):
+        raise SkipTest(reason)
+
     def fail(self, msg=""):
         assert False, msg
 
