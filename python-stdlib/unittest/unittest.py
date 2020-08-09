@@ -29,9 +29,20 @@ class AssertRaisesContext:
         return False
 
 
+class NullContext:
+    def __enter__(self):
+        pass
+
+    def __exit__(self, a, b, c):
+        pass
+
+
 class TestCase:
     def __init__(self):
         pass
+
+    def subTest(self, msg=None, **params):
+        return NullContext()
 
     def skipTest(self, reason):
         raise SkipTest(reason)
