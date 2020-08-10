@@ -161,6 +161,9 @@ class TestCase:
 
         assert False, "%r not raised" % exc
 
+    def assertWarns(self, warn):
+        return NullContext()
+
 
 def skip(msg):
     def _decor(fun):
