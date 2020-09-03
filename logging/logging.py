@@ -54,18 +54,19 @@ class Logger:
 
     def log(self, level, msg, *args):
         if self.isEnabledFor(level):
-            level = self._level_str(level)
+            levelname = self._level_str(level)
             if args:
                 msg = msg % args
             if self.handlers:
                 d = self.record.__dict__
-                d["levelname"] = level
+                d["levelname"] = levelname
+                d["levelno"] = level
                 d["message"] = msg
                 d["name"] = self.name
                 for h in self.handlers:
                     h.emit(self.record)
             else:
-                print(level, ":", self.name, ":", msg, sep="", file=_stream)
+                print(levelname, ":", self.name, ":", msg, sep="", file=_stream)
 
     def debug(self, msg, *args):
         self.log(DEBUG, msg, *args)
