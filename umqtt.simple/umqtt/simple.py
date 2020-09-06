@@ -1,6 +1,7 @@
 import usocket as socket
 import ustruct as struct
 from ubinascii import hexlify
+import uselect
 
 class MQTTException(Exception):
     pass
@@ -26,6 +27,7 @@ class MQTTClient:
         self.lw_msg = None
         self.lw_qos = 0
         self.lw_retain = False
+        self.poller = uselect.poll()
 
     def _send_str(self, s):
         self.sock.write(struct.pack("!H", len(s)))
@@ -52,7 +54,7 @@ class MQTTClient:
         self.lw_qos = qos
         self.lw_retain = retain
 
-    def connect(self, clean_session=True):
+    def connect(self, clean_session=True, timeout=None):
         self.sock = socket.socket()
         addr = socket.getaddrinfo(self.server, self.port)[0][-1]
         self.sock.connect(addr)
@@ -83,6 +85,11 @@ class MQTTClient:
             i += 1
         premsg[i] = sz
 
+        if timeout:  # Checking output availability
+            self.poller.register(self.sock, uselect.POLLOUT)
+            if not poller.poll(timeout):
+                raise OSError("Connection request timed out")
+
         self.sock.write(premsg, i + 2)
         self.sock.write(msg)
         #print(hex(len(msg)), hexlify(msg, ":"))
@@ -93,6 +100,12 @@ class MQTTClient:
         if self.user is not None:
             self._send_str(self.user)
             self._send_str(self.pswd)
+
+        if timeout:  # Checking input availability
+            self.poller.modify(self.sock, uselect.POLLIN)
+            if not poller.poll(timeout):
+                raise OSError("Connection response timed out")
+
         resp = self.sock.read(4)
         assert resp[0] == 0x20 and resp[1] == 0x02
         if resp[3] != 0:
