@@ -26,8 +26,14 @@ class TimeoutError(CancelledError):
 
 class EventLoop:
 
-    def __init__(self, runq_len=16, waitq_len=16):
+    def __init__(self, runq_len=16, waitq_len=16, ioq_len=0):
         self.runq = ucollections.deque((), runq_len, True)
+        self.ioq_len = ioq_len
+        if ioq_len:
+            self.ioq = ucollections.deque((), ioq_len, True)
+            self._call_io = self._call_now
+        else:
+            self._call_io = self.call_soon
         self.waitq = utimeq.utimeq(waitq_len)
         # Current task being run. Task is a top-level coroutine scheduled
         # in the event loop (sub-coroutines executed transparently by
@@ -41,6 +47,13 @@ class EventLoop:
         # CPython 3.4.2
         self.call_later_ms(0, coro)
         # CPython asyncio incompatibility: we don't return Task object
+
+    def _call_now(self, callback, *args):
+        if __debug__ and DEBUG:
+            log.debug("Scheduling in ioq: %s", (callback, args))
+        self.ioq.append(callback)
+        if not isinstance(callback, type_gen):
+            self.ioq.append(args)
 
     def call_soon(self, callback, *args):
         if __debug__ and DEBUG:
@@ -88,13 +101,25 @@ class EventLoop:
             l = len(self.runq)
             if __debug__ and DEBUG:
                 log.debug("Entries in runq: %d", l)
-            while l:
-                cb = self.runq.popleft()
-                l -= 1
+            cur_q = self.runq  # Default: always get tasks from runq
+            dl = 1
+            while l or self.ioq_len:
+                if self.ioq_len:
+                    self.wait(0)  # Schedule I/O. Can append to ioq.
+                    if self.ioq:
+                        cur_q = self.ioq
+                        dl = 0
+                    elif l == 0:
+                        break
+                    else:
+                        cur_q = self.runq
+                        dl = 1
+                l -= dl
+                cb = cur_q.popleft()
                 args = ()
                 if not isinstance(cb, type_gen):
-                    args = self.runq.popleft()
-                    l -= 1
+                    args = cur_q.popleft()
+                    l -= dl
                     if __debug__ and DEBUG:
                         log.info("Next callback to run: %s", (cb, args))
                     cb(*args)
@@ -125,8 +150,12 @@ class EventLoop:
                             continue
                         elif isinstance(ret, IOReadDone):
                             self.remove_reader(arg)
+                            self._call_io(cb, args)  # Next call produces StopIteration
+                            continue
                         elif isinstance(ret, IOWriteDone):
                             self.remove_writer(arg)
+                            self._call_io(cb, args)
+                            continue
                         elif isinstance(ret, StopLoop):
                             return arg
                         else:
@@ -218,10 +247,10 @@ class IOWriteDone(SysCall1):
 
 _event_loop = None
 _event_loop_class = EventLoop
-def get_event_loop(runq_len=16, waitq_len=16):
+def get_event_loop(runq_len=16, waitq_len=16, ioq_len=0):
     global _event_loop
     if _event_loop is None:
-        _event_loop = _event_loop_class(runq_len, waitq_len)
+        _event_loop = _event_loop_class(runq_len, waitq_len, ioq_len)
     return _event_loop
 
 def sleep(secs):

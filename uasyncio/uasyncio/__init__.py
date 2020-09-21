@@ -17,8 +17,8 @@ def set_debug(val):
 
 class PollEventLoop(EventLoop):
 
-    def __init__(self, runq_len=16, waitq_len=16):
-        EventLoop.__init__(self, runq_len, waitq_len)
+    def __init__(self, runq_len=16, waitq_len=16, fast_io=0):
+        EventLoop.__init__(self, runq_len, waitq_len, fast_io)
         self.poller = select.poll()
         self.objmap = {}
 
@@ -68,25 +68,22 @@ class PollEventLoop(EventLoop):
         # We need one-shot behavior (second arg of 1 to .poll())
         res = self.poller.ipoll(delay, 1)
         #log.debug("poll result: %s", res)
-        # Remove "if res" workaround after
-        # https://github.com/micropython/micropython/issues/2716 fixed.
-        if res:
-            for sock, ev in res:
-                cb = self.objmap[id(sock)]
-                if ev & (select.POLLHUP | select.POLLERR):
-                    # These events are returned even if not requested, and
-                    # are sticky, i.e. will be returned again and again.
-                    # If the caller doesn't do proper error handling and
-                    # unregister this sock, we'll busy-loop on it, so we
-                    # as well can unregister it now "just in case".
-                    self.remove_reader(sock)
-                if DEBUG and __debug__:
-                    log.debug("Calling IO callback: %r", cb)
-                if isinstance(cb, tuple):
-                    cb[0](*cb[1])
-                else:
-                    cb.pend_throw(None)
-                    self.call_soon(cb)
+        for sock, ev in res:
+            cb = self.objmap[id(sock)]
+            if ev & (select.POLLHUP | select.POLLERR):
+                # These events are returned even if not requested, and
+                # are sticky, i.e. will be returned again and again.
+                # If the caller doesn't do proper error handling and
+                # unregister this sock, we'll busy-loop on it, so we
+                # as well can unregister it now "just in case".
+                self.remove_reader(sock)
+            if DEBUG and __debug__:
+                log.debug("Calling IO callback: %r", cb)
+            if isinstance(cb, tuple):
+                cb[0](*cb[1])
+            else:
+                cb.pend_throw(None)
+                self._call_io(cb)
 
 
 class StreamReader:
