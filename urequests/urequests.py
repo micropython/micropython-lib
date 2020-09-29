@@ -32,7 +32,12 @@ class Response:
         return ujson.loads(self.content)
 
 
+def is_chunked_data(data):
+    return getattr(data, '__iter__', None) and not getattr(data, '__len__', None)
+
 def request(method, url, data=None, json=None, headers={}, stream=None):
+    chunked = data and is_chunked_data(data)
+
     try:
         proto, dummy, host, path = url.split("/", 3)
     except ValueError:
@@ -73,10 +78,20 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
             data = ujson.dumps(json)
             s.write(b"Content-Type: application/json\r\n")
         if data:
-            s.write(b"Content-Length: %d\r\n" % len(data))
+            if chunked:
+                s.write(b'Transfer-Encoding: chunked\r\n')
+            else:
+                s.write(b"Content-Length: %d\r\n" % len(data))
         s.write(b"\r\n")
         if data:
-            s.write(data)
+            if chunked:
+                for chunk in data:
+                    s.write(b'%x\r\n' % len(chunk))
+                    s.write(chunk)
+                    s.write(b'\r\n')
+                s.write('0\r\n\r\n')
+            else:
+                s.write(data)
 
         l = s.readline()
         #print(l)
