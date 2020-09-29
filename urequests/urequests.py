@@ -33,10 +33,11 @@ class Response:
 
 
 def is_chunked_data(data):
-    return getattr(data, '__iter__', None) and not getattr(data, '__len__', None)
+    return getattr(data, "__iter__", None) and not getattr(data, "__len__", None)
 
 def request(method, url, data=None, json=None, headers={}, stream=None):
     chunked = data and is_chunked_data(data)
+    redirect = None #redirection url, None means no redirection
 
     try:
         proto, dummy, host, path = url.split("/", 3)
@@ -79,17 +80,17 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
             s.write(b"Content-Type: application/json\r\n")
         if data:
             if chunked:
-                s.write(b'Transfer-Encoding: chunked\r\n')
+                s.write(b"Transfer-Encoding: chunked\r\n")
             else:
                 s.write(b"Content-Length: %d\r\n" % len(data))
         s.write(b"\r\n")
         if data:
             if chunked:
                 for chunk in data:
-                    s.write(b'%x\r\n' % len(chunk))
+                    s.write(b"%x\r\n" % len(chunk))
                     s.write(chunk)
-                    s.write(b'\r\n')
-                s.write('0\r\n\r\n')
+                    s.write(b"\r\n")
+                s.write("0\r\n\r\n")
             else:
                 s.write(data)
 
@@ -109,15 +110,25 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
                 if b"chunked" in l:
                     raise ValueError("Unsupported " + l)
             elif l.startswith(b"Location:") and not 200 <= status <= 299:
-                raise NotImplementedError("Redirects not yet supported")
+                if status in [301, 302, 303, 307, 308]:
+                    redirect = l[10:-2].decode()
+                else:
+                    raise NotImplementedError("Redirect %d not yet supported" % status)
     except OSError:
         s.close()
         raise
 
-    resp = Response(s)
-    resp.status_code = status
-    resp.reason = reason
-    return resp
+    if redirect:
+        s.close()
+        if status in [301, 302, 303]:
+            return request("GET", redirect, None, None, headers, stream)
+        else:
+            return request(method, redirect, data, json, headers, stream)
+    else:
+        resp = Response(s)
+        resp.status_code = status
+        resp.reason = reason
+        return resp
 
 
 def head(url, **kw):
