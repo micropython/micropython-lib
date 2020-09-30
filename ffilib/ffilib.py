@@ -1,4 +1,4 @@
-import sys
+import usys as sys
 try:
     import ffi
 except ImportError:
