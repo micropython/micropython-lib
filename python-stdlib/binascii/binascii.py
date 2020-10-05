@@ -331,7 +331,7 @@ def a2b_base64(ascii):
 table_b2a_base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
 
-def b2a_base64(bin):
+def b2a_base64(bin, newline=True):
     "Base64-code line of data."
 
     newlength = (len(bin) + 2) // 3
@@ -357,5 +357,6 @@ def b2a_base64(bin):
     elif leftbits == 4:
         res.append(table_b2a_base64[(leftchar & 0xF) << 2])
         res.append(PAD)
-    res.append("\n")
+    if newline:
+        res.append("\n")
     return "".join(res).encode("ascii")
