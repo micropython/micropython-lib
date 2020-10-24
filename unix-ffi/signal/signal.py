@@ -12,6 +12,8 @@ libc = ffilib.libc()
 
 signal_i = libc.func("i", "signal", "ii")
 signal_p = libc.func("i", "signal", "ip")
+alarm = libc.func("I", "alarm", "I")
+pause = libc.func("i", "pause", "")
 
 
 def signal(n, handler):
