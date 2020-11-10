@@ -54,7 +54,11 @@ class MQTTClient:
 
     def connect(self, clean_session=True):
         self.sock = socket.socket()
-        addr = socket.getaddrinfo(self.server, self.port)[0][-1]
+        addr=None
+         if(re.match("^((25[0-5]|2[0-4]\d|[01]?\d\d?)\.)((25[0-5]|2[0-4]\d|[01]?\d\d?)\.)((25[0-5]|2[0-4]\d|[01]?\d\d?)\.)(25[0-5]|2[0-4]\d|[01]?\d\d?)$",self.server)):
+            addr=(self.server,self.port)
+        else:
+            addr = socket.getaddrinfo(self.server, self.port)[0][-1]
         self.sock.connect(addr)
         if self.ssl:
             import ussl
