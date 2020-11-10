@@ -52,6 +52,7 @@ import types
 #import weakref
 #from copyreg import dispatch_table
 #import builtins
+dispatch_table = {}
 
 class Error(Exception):
     pass
