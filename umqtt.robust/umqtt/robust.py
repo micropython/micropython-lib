@@ -20,7 +20,7 @@ class MQTTClient(simple.MQTTClient):
         i = 0
         while 1:
             try:
-                return super().connect(False)
+                return self.connect(False)
             except OSError as e:
                 self.log(True, e)
                 i += 1
