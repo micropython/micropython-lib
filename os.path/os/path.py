@@ -7,7 +7,20 @@ def normcase(s):
     return s
 
 def normpath(s):
-    return s
+    s = s.split("/")
+    sp = []
+    for d in s:
+        if d == "..":
+            if len(sp) > 0:
+                sp.pop()
+        elif d != ".":
+            sp.append(d)
+    if len(sp) == 0:
+        return "/"
+    if sp[0] == "":
+        if len(sp) == 1:
+            sp[0] = "."
+    return "/".join(sp)
 
 def abspath(s):
     if s[0] != "/":
