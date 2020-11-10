@@ -52,6 +52,10 @@ import types
 #import weakref
 #from copyreg import dispatch_table
 #import builtins
+try:
+    from collections import OrderedDict
+except ImportError:
+    OrderedDict = None
 
 class Error(Exception):
     pass
