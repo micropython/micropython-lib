@@ -31,7 +31,7 @@ class XMLTokenizer:
     def nextch(self):
         self.c = self.f.read(1)
         if not self.c:
-            raise StopIteration
+            raise EOFError
         return self.c
 
     def skip_ws(self):
@@ -87,36 +87,39 @@ class XMLTokenizer:
 
     def tokenize(self):
         while not self.eof():
-            if self.match("<"):
-                if self.match("/"):
-                    yield (END_TAG, self.getnsident())
-                    self.expect(">")
-                elif self.match("?"):
-                    yield (PI, self.getident())
-                    yield from self.lex_attrs_till()
-                    self.expect("?")
-                    self.expect(">")
-                elif self.match("!"):
-                    self.expect("-")
-                    self.expect("-")
-                    last3 = ""
-                    while True:
-                        last3 = last3[-2:] + self.getch()
-                        if last3 == "-->":
-                            break
-                else:
-                    tag = self.getnsident()
-                    yield (START_TAG, tag)
-                    yield from self.lex_attrs_till()
+            try:
+                if self.match("<"):
                     if self.match("/"):
-                        yield (END_TAG, tag)
-                    self.expect(">")
-            else:
-                text = ""
-                while self.curch() != "<":
-                    text += self.getch()
-                if text:
-                    yield (TEXT, text)
+                        yield (END_TAG, self.getnsident())
+                        self.expect(">")
+                    elif self.match("?"):
+                        yield (PI, self.getident())
+                        yield from self.lex_attrs_till()
+                        self.expect("?")
+                        self.expect(">")
+                    elif self.match("!"):
+                        self.expect("-")
+                        self.expect("-")
+                        last3 = ""
+                        while True:
+                            last3 = last3[-2:] + self.getch()
+                            if last3 == "-->":
+                                break
+                    else:
+                        tag = self.getnsident()
+                        yield (START_TAG, tag)
+                        yield from self.lex_attrs_till()
+                        if self.match("/"):
+                            yield (END_TAG, tag)
+                        self.expect(">")
+                else:
+                    text = ""
+                    while self.curch() != "<":
+                        text += self.getch()
+                    if text:
+                        yield (TEXT, text)
+            except EOFError:
+                pass
 
 
 def gfind(gen, pred):
