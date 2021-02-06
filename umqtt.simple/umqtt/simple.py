@@ -41,6 +41,9 @@ class MQTTClient:
                 return n
             sh += 7
 
+    def _next_pid(self):
+        self.pid = ((self.pid)%0xffff)+1
+
     def set_callback(self, f):
         self.cb = f
 
@@ -123,7 +126,7 @@ class MQTTClient:
         self.sock.write(pkt, i + 1)
         self._send_str(topic)
         if qos > 0:
-            self.pid += 1
+            self._next_pid()
             pid = self.pid
             struct.pack_into("!H", pkt, 0, pid)
             self.sock.write(pkt, 2)
@@ -144,7 +147,7 @@ class MQTTClient:
     def subscribe(self, topic, qos=0):
         assert self.cb is not None, "Subscribe callback is not set"
         pkt = bytearray(b"\x82\0\0\0")
-        self.pid += 1
+        self._next_pid()
         struct.pack_into("!BH", pkt, 1, 2 + 2 + len(topic) + 1, self.pid)
         #print(hex(len(pkt)), hexlify(pkt, ":"))
         self.sock.write(pkt)
