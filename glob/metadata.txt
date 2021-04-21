@@ -1,4 +1,4 @@
 srctype = cpython
 type = module
-version = 0.5.2
-depends = os, re-pcre, fnmatch
+version = 0.5.3
+depends = os, sys, re-pcre, fnmatch
