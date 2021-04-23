@@ -35,10 +35,10 @@ def fnmatch(name, pat):
     [seq]   matches any character in seq
     [!seq]  matches any char not in seq
 
-    An initial period in FILENAME is not special.
+    An initial period in FILENAME is not special
     Both FILENAME and PATTERN are first case-normalized
     if the operating system requires it.
-    If you don't want this, use fnmatchcase(FILENAME, PATTERN).
+    If you don't want this, use fnmatchcase(FILENAME, PATTERN)
     """
     name = os.path.normcase(name)
     pat = os.path.normcase(pat)
