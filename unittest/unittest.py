@@ -180,6 +180,12 @@ class TestResult:
     def wasSuccessful(self):
         return self.errorsNum == 0 and self.failuresNum == 0
 
+
+def print_exc():
+    e = sys.exc_info()[1]
+    sys.print_exception(e, sys.stdout)
+
+
 # TODO: Uncompliant
 def run_class(c, test_result):
     o = c()
@@ -200,8 +206,7 @@ def run_class(c, test_result):
             except:
                 print(" FAIL")
                 test_result.failuresNum += 1
-                # Uncomment to investigate failure in detail
-                #raise
+                print_exc()
                 continue
             finally:
                 tear_down()
