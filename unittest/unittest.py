@@ -182,13 +182,15 @@ class TestResult:
 
 
 def print_exception(e):
+    print("-" * 80)
+
     try:
-        print("-"*80)
         sys.print_exception(e, sys.stdout)
     except Exception:
         # just print exception
-        print("EXCEPTION: ", e)
-    print("-"*80)
+        print("EXCEPTION:", e)
+
+    print("-" * 80)
 
 
 # TODO: Uncompliant
