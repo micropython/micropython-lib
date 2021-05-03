@@ -3,7 +3,7 @@ import ustruct as struct
 import errno as errno_
 import stat as stat_
 import ffilib
-import uos
+import uos, sys
 
 R_OK = const(4)
 W_OK = const(2)
@@ -73,6 +73,9 @@ def raise_error():
 stat = uos.stat
 
 def getcwd():
+    if (sys.platform == 'uefi') and (sys.implementation.name == 'micropython'):
+     return uos.getcwd()
+
     buf = bytearray(512)
     return getcwd_(buf, 512)
 
@@ -189,6 +192,14 @@ def dup(fd):
     return r
 
 def access(path, mode):
+    if (sys.platform == 'uefi') and (sys.implementation.name == 'micropython'):
+     rstat = uos.stat(path)
+     if rstat:
+      lmode = rstat.st_mode
+      return (lmode & mode) == mode
+
+     raise TypeError( 'rstat was %s' % (rstat) )
+
     return access_(path, mode) == 0
 
 def chdir(dir):
