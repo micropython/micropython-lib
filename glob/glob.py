@@ -2,7 +2,15 @@
 
 import os
 import os.path
-import re
+import sys
+
+if (sys.platform == 'uefi') and (sys.implementation.name == 'micropython'):
+     import _re as re
+elif (sys.implementation.name == 'micropython'):
+     import ure as re
+else: 
+     import re
+
 import fnmatch
 
 __all__ = ["glob", "iglob"]
