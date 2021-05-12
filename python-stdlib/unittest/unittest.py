@@ -41,6 +41,17 @@ class TestCase:
     def __init__(self):
         pass
 
+    def addCleanup(self, func, *args, **kwargs):
+        if not hasattr(self, "_cleanups"):
+            self._cleanups = []
+        self._cleanups.append((func, args, kwargs))
+
+    def doCleanups(self):
+        if hasattr(self, "_cleanups"):
+            while self._cleanups:
+                func, args, kwargs = self._cleanups.pop()
+                func(*args, **kwargs)
+
     def subTest(self, msg=None, **params):
         return NullContext()
 
@@ -271,6 +282,7 @@ def run_suite(c, test_result):
                 continue
             finally:
                 tear_down()
+                o.doCleanups()
     return exceptions
 
 
