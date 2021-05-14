@@ -208,7 +208,7 @@ class TestSuite:
 
     def run(self, result):
         for c in self._tests:
-            result.exceptions.extend(run_suite(c, result))
+            run_suite(c, result)
         return result
 
 
@@ -217,6 +217,8 @@ class TestRunner:
         res = TestResult()
         suite.run(res)
 
+        res.printErrors()
+        print("----------------------------------------------------------------------")
         print("Ran %d tests\n" % res.testsRun)
         if res.failuresNum > 0 or res.errorsNum > 0:
             print("FAILED (failures=%d, errors=%d)" % (res.failuresNum, res.errorsNum))
@@ -235,10 +237,32 @@ class TestResult:
         self.failuresNum = 0
         self.skippedNum = 0
         self.testsRun = 0
-        self.exceptions = []
+        self.errors = []
+        self.failures = []
 
     def wasSuccessful(self):
         return self.errorsNum == 0 and self.failuresNum == 0
+
+    def printErrors(self):
+        print()
+        self.printErrorList(self.errors)
+        self.printErrorList(self.failures)
+
+    def printErrorList(self, lst):
+        sep = "----------------------------------------------------------------------"
+        for c, e in lst:
+            print("======================================================================")
+            print(c)
+            print(sep)
+            print(e)
+
+    def __repr__(self):
+        # Format is compatible with CPython.
+        return "<unittest.result.TestResult run=%d errors=%d failures=%d>" % (
+            self.testsRun,
+            self.errorsNum,
+            self.failuresNum,
+        )
 
 
 def capture_exc(e):
@@ -274,9 +298,15 @@ def run_suite(c, test_result):
                 print(" skipped:", e.args[0])
                 test_result.skippedNum += 1
             except Exception as ex:
-                exceptions.append(capture_exc(ex))
-                print(" FAIL")
-                test_result.failuresNum += 1
+                ex_str = capture_exc(ex)
+                if isinstance(ex, AssertionError):
+                    test_result.failuresNum += 1
+                    test_result.failures.append(((name, c), ex_str))
+                    print(" FAIL")
+                else:
+                    test_result.errorsNum += 1
+                    test_result.errors.append(((name, c), ex_str))
+                    print(" ERROR")
                 # Uncomment to investigate failure in detail
                 # raise
                 continue
@@ -299,9 +329,5 @@ def main(module="__main__"):
         suite.addTest(c)
     runner = TestRunner()
     result = runner.run(suite)
-    if result.exceptions:
-        sep = "\n----------------------------------------------------------------------\n"
-        print(sep)
-        print(sep.join(result.exceptions))
     # Terminate with non zero return code in case of failures
-    sys.exit(result.failuresNum > 0)
+    sys.exit(result.failuresNum or result.errorsNum)
