@@ -276,6 +276,10 @@ def capture_exc(e):
 
 # TODO: Uncompliant
 def run_suite(c, test_result):
+    if isinstance(c, TestSuite):
+        c.run(test_result)
+        return
+
     if isinstance(c, type):
         o = c()
     else:
