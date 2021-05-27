@@ -104,8 +104,16 @@ class ArgumentParser:
             if not args:
                 args = [dest]
         list.append(
-            _Arg(args, dest, action, kwargs.get("nargs", None),
-                 const, default, kwargs.get("help", "")))
+            _Arg(
+                args,
+                dest,
+                action,
+                kwargs.get("nargs", None),
+                const,
+                default,
+                kwargs.get("help", ""),
+            )
+        )
 
     def usage(self, full):
         # print short usage
@@ -121,8 +129,9 @@ class ArgumentParser:
                     return " %s%s" % (arg.dest, arg.nargs)
             else:
                 return ""
+
         for opt in self.opt:
-            print(" [%s%s]" % (', '.join(opt.names), render_arg(opt)), end="")
+            print(" [%s%s]" % (", ".join(opt.names), render_arg(opt)), end="")
         for pos in self.pos:
             print(render_arg(pos), end="")
         print()
@@ -141,7 +150,7 @@ class ArgumentParser:
         print("\noptional args:")
         print("  -h, --help      show this message and exit")
         for opt in self.opt:
-            print("  %-16s%s" % (', '.join(opt.names) + render_arg(opt), opt.help))
+            print("  %-16s%s" % (", ".join(opt.names) + render_arg(opt), opt.help))
 
     def parse_args(self, args=None):
         return self._parse_args_impl(args, False)
@@ -171,6 +180,7 @@ class ArgumentParser:
 
         # deal with unknown arguments, if needed
         unknown = []
+
         def consume_unknown():
             while args and not args[0].startswith("-"):
                 unknown.append(args.pop(0))

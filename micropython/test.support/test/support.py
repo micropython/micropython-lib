@@ -5,7 +5,8 @@ import gc
 import contextlib
 
 
-TESTFN = '@test'
+TESTFN = "@test"
+
 
 def run_unittest(*classes):
     suite = unittest.TestSuite()
@@ -21,8 +22,10 @@ def run_unittest(*classes):
     runner = unittest.TestRunner()
     result = runner.run(suite)
 
+
 def can_symlink():
     return False
+
 
 def skip_unless_symlink(test):
     """Skip decorator for tests that require functional symlink"""
@@ -30,8 +33,10 @@ def skip_unless_symlink(test):
     msg = "Requires functional symlink implementation"
     return test if ok else unittest.skip(msg)(test)
 
+
 def create_empty_file(name):
     open(name, "w").close()
+
 
 @contextlib.contextmanager
 def disable_gc():
@@ -43,10 +48,12 @@ def disable_gc():
         if have_gc:
             gc.enable()
 
+
 def gc_collect():
     gc.collect()
     gc.collect()
     gc.collect()
+
 
 @contextlib.contextmanager
 def captured_output(stream_name):
@@ -58,8 +65,10 @@ def captured_output(stream_name):
     finally:
         setattr(sys, stream_name, org)
 
+
 def captured_stderr():
     return captured_output("stderr")
+
 
 def requires_IEEE_754(f):
     return f

@@ -8,11 +8,13 @@ type_gen = type((lambda: (yield))())
 DEBUG = 0
 log = None
 
+
 def set_debug(val):
     global DEBUG, log
     DEBUG = val
     if val:
         import logging
+
         log = logging.getLogger("uasyncio.core")
 
 
@@ -25,7 +27,6 @@ class TimeoutError(CancelledError):
 
 
 class EventLoop:
-
     def __init__(self, runq_len=16, waitq_len=16):
         self.runq = ucollections.deque((), runq_len, True)
         self.waitq = utimeq.utimeq(waitq_len)
@@ -130,7 +131,10 @@ class EventLoop:
                         elif isinstance(ret, StopLoop):
                             return arg
                         else:
-                            assert False, "Unknown syscall yielded: %r (of type %r)" % (ret, type(ret))
+                            assert False, "Unknown syscall yielded: %r (of type %r)" % (
+                                ret,
+                                type(ret),
+                            )
                     elif isinstance(ret, type_gen):
                         self.call_soon(ret)
                     elif isinstance(ret, int):
@@ -143,7 +147,10 @@ class EventLoop:
                         # Don't reschedule
                         continue
                     else:
-                        assert False, "Unsupported coroutine yield value: %r (of type %r)" % (ret, type(ret))
+                        assert False, "Unsupported coroutine yield value: %r (of type %r)" % (
+                            ret,
+                            type(ret),
+                        )
                 except StopIteration as e:
                     if __debug__ and DEBUG:
                         log.debug("Coroutine finished: %s", cb)
@@ -176,6 +183,7 @@ class EventLoop:
         def _run_and_stop():
             yield from coro
             yield StopLoop(0)
+
         self.call_soon(_run_and_stop())
         self.run_forever()
 
@@ -187,30 +195,34 @@ class EventLoop:
 
 
 class SysCall:
-
     def __init__(self, *args):
         self.args = args
 
     def handle(self):
         raise NotImplementedError
 
+
 # Optimized syscall with 1 arg
 class SysCall1(SysCall):
-
     def __init__(self, arg):
         self.arg = arg
+
 
 class StopLoop(SysCall1):
     pass
 
+
 class IORead(SysCall1):
     pass
+
 
 class IOWrite(SysCall1):
     pass
 
+
 class IOReadDone(SysCall1):
     pass
+
 
 class IOWriteDone(SysCall1):
     pass
@@ -218,40 +230,44 @@ class IOWriteDone(SysCall1):
 
 _event_loop = None
 _event_loop_class = EventLoop
+
+
 def get_event_loop(runq_len=16, waitq_len=16):
     global _event_loop
     if _event_loop is None:
         _event_loop = _event_loop_class(runq_len, waitq_len)
     return _event_loop
 
+
 def sleep(secs):
     yield int(secs * 1000)
 
+
 # Implementation of sleep_ms awaitable with zero heap memory usage
 class SleepMs(SysCall1):
-
     def __init__(self):
         self.v = None
         self.arg = None
 
     def __call__(self, arg):
         self.v = arg
-        #print("__call__")
+        # print("__call__")
         return self
 
     def __iter__(self):
-        #print("__iter__")
+        # print("__iter__")
         return self
 
     def __next__(self):
         if self.v is not None:
-            #print("__next__ syscall enter")
+            # print("__next__ syscall enter")
             self.arg = self.v
             self.v = None
             return self
-        #print("__next__ syscall exit")
+        # print("__next__ syscall exit")
         _stop_iter.__traceback__ = None
         raise _stop_iter
+
 
 _stop_iter = StopIteration()
 sleep_ms = SleepMs()
@@ -269,7 +285,6 @@ class TimeoutObj:
 
 
 def wait_for_ms(coro, timeout):
-
     def waiter(coro, timeout_obj):
         res = yield from coro
         if __debug__ and DEBUG:
@@ -282,7 +297,7 @@ def wait_for_ms(coro, timeout):
             if __debug__ and DEBUG:
                 log.debug("timeout_func: cancelling %s", timeout_obj.coro)
             prev = timeout_obj.coro.pend_throw(TimeoutError())
-            #print("prev pend", prev)
+            # print("prev pend", prev)
             if prev is False:
                 _event_loop.call_soon(timeout_obj.coro)
 
@@ -298,10 +313,12 @@ def wait_for(coro, timeout):
 def coroutine(f):
     return f
 
+
 #
 # The functions below are deprecated in uasyncio, and provided only
 # for compatibility with CPython asyncio
 #
+
 
 def ensure_future(coro, loop=_event_loop):
     _event_loop.call_soon(coro)

@@ -56,6 +56,7 @@ instructions.
 import gc
 import sys
 import time
+
 try:
     import itertools
 except ImportError:
@@ -82,12 +83,15 @@ def inner(_it, _timer):
     return _t1 - _t0
 """
 
+
 def reindent(src, indent):
     """Helper to reindent a multi-line statement."""
-    return src.replace("\n", "\n" + " "*indent)
+    return src.replace("\n", "\n" + " " * indent)
+
 
 def _template_func(setup, func):
     """Create a timer function. Used if the "statement" is a callable."""
+
     def inner(_it, _timer, _func=func):
         setup()
         _t0 = _timer()
@@ -95,7 +99,9 @@ def _template_func(setup, func):
             _func()
         _t1 = _timer()
         return _t1 - _t0
+
     return inner
+
 
 class Timer:
     """Class for timing execution speed of small code snippets.
@@ -123,11 +129,11 @@ class Timer:
                 setup = reindent(setup, 4)
                 src = template.format(stmt=stmt, setup=setup)
             elif callable(setup):
-                src = template.format(stmt=stmt, setup='_setup()')
-                ns['_setup'] = setup
+                src = template.format(stmt=stmt, setup="_setup()")
+                ns["_setup"] = setup
             else:
                 raise ValueError("setup is neither a string nor callable")
-            self.src = src # Save for traceback display
+            self.src = src  # Save for traceback display
             code = compile(src, dummy_src_name, "exec")
             exec(code, globals(), ns)
             self.inner = ns["inner"]
@@ -135,8 +141,10 @@ class Timer:
             self.src = None
             if isinstance(setup, str):
                 _setup = setup
+
                 def setup():
                     exec(_setup, globals(), ns)
+
             elif not callable(setup):
                 raise ValueError("setup is neither a string nor callable")
             self.inner = _template_func(setup, stmt)
@@ -161,11 +169,14 @@ class Timer:
         sent; it defaults to sys.stderr.
         """
         import linecache, traceback
+
         if self.src is not None:
-            linecache.cache[dummy_src_name] = (len(self.src),
-                                               None,
-                                               self.src.split("\n"),
-                                               dummy_src_name)
+            linecache.cache[dummy_src_name] = (
+                len(self.src),
+                None,
+                self.src.split("\n"),
+                dummy_src_name,
+            )
         # else the source is already stored somewhere else
 
         traceback.print_exc(file=file)
@@ -185,7 +196,7 @@ class Timer:
         else:
             it = [None] * number
         gcold = gc.isenabled()
-#        gc.disable()
+        #        gc.disable()
         try:
             timing = self.inner(it, self.timer)
         finally:
@@ -219,15 +230,18 @@ class Timer:
             r.append(t)
         return r
 
-def timeit(stmt="pass", setup="pass", timer=default_timer,
-           number=default_number):
+
+def timeit(stmt="pass", setup="pass", timer=default_timer, number=default_number):
     """Convenience function to create Timer object and call timeit method."""
     return Timer(stmt, setup, timer).timeit(number)
 
-def repeat(stmt="pass", setup="pass", timer=default_timer,
-           repeat=default_repeat, number=default_number):
+
+def repeat(
+    stmt="pass", setup="pass", timer=default_timer, repeat=default_repeat, number=default_number
+):
     """Convenience function to create Timer object and call repeat method."""
     return Timer(stmt, setup, timer).repeat(repeat, number)
+
 
 def main(args=None, *, _wrap_timer=None):
     """Main program, used when run as a script.
@@ -249,18 +263,20 @@ def main(args=None, *, _wrap_timer=None):
     if args is None:
         args = sys.argv[1:]
     import getopt
+
     try:
-        opts, args = getopt.getopt(args, "n:s:r:tcpvh",
-                                   ["number=", "setup=", "repeat=",
-                                    "time", "clock", "process",
-                                    "verbose", "help"])
+        opts, args = getopt.getopt(
+            args,
+            "n:s:r:tcpvh",
+            ["number=", "setup=", "repeat=", "time", "clock", "process", "verbose", "help"],
+        )
     except getopt.error as err:
         print(err)
         print("use -h/--help for command line help")
         return 2
     timer = default_timer
     stmt = "\n".join(args) or "pass"
-    number = 0 # auto-determine
+    number = 0  # auto-determine
     setup = []
     repeat = default_repeat
     verbose = 0
@@ -285,13 +301,14 @@ def main(args=None, *, _wrap_timer=None):
                 precision += 1
             verbose += 1
         if o in ("-h", "--help"):
-            print(__doc__, end=' ')
+            print(__doc__, end=" ")
             return 0
     setup = "\n".join(setup) or "pass"
     # Include the current directory, so that local imports work (sys.path
     # contains the directory of this script, rather than the current
     # directory)
     import os
+
     sys.path.insert(0, os.curdir)
     if _wrap_timer is not None:
         timer = _wrap_timer(timer)
@@ -299,7 +316,7 @@ def main(args=None, *, _wrap_timer=None):
     if number == 0:
         # determine number so that 0.2 <= total time < 2.0
         for i in range(1, 10):
-            number = 10**i
+            number = 10 ** i
             try:
                 x = t.timeit(number)
             except:
@@ -317,7 +334,7 @@ def main(args=None, *, _wrap_timer=None):
     best = min(r)
     if verbose:
         print("raw times:", " ".join(["%.*g" % (precision, x) for x in r]))
-    print("%d loops," % number, end=' ')
+    print("%d loops," % number, end=" ")
     usec = best * 1e6 / number
     if usec < 1000:
         print("best of %d: %.*g usec per loop" % (repeat, precision, usec))
@@ -329,6 +346,7 @@ def main(args=None, *, _wrap_timer=None):
             sec = msec / 1000
             print("best of %d: %.*g sec per loop" % (repeat, precision, sec))
     return None
+
 
 if __name__ == "__main__":
     sys.exit(main())

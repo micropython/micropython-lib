@@ -1,17 +1,18 @@
-#import zlib
+# import zlib
 import uzlib as zlib
 
-FTEXT    = 1
-FHCRC    = 2
-FEXTRA   = 4
-FNAME    = 8
+FTEXT = 1
+FHCRC = 2
+FEXTRA = 4
+FNAME = 8
 FCOMMENT = 16
 
+
 def decompress(data):
-    assert data[0] == 0x1f and data[1] == 0x8b
+    assert data[0] == 0x1F and data[1] == 0x8B
     assert data[2] == 8
     flg = data[3]
-    assert flg & 0xe0 == 0
+    assert flg & 0xE0 == 0
     i = 10
     if flg & FEXTRA:
         i += data[11] << 8 + data[10] + 2

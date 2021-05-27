@@ -1,5 +1,6 @@
 import usocket
 
+
 def urlopen(url, data=None, method="GET"):
     if data is not None and method == "GET":
         method = "POST"
@@ -12,6 +13,7 @@ def urlopen(url, data=None, method="GET"):
         port = 80
     elif proto == "https:":
         import ussl
+
         port = 443
     else:
         raise ValueError("Unsupported protocol: " + proto)
@@ -46,13 +48,13 @@ def urlopen(url, data=None, method="GET"):
 
         l = s.readline()
         l = l.split(None, 2)
-        #print(l)
+        # print(l)
         status = int(l[1])
         while True:
             l = s.readline()
             if not l or l == b"\r\n":
                 break
-            #print(l)
+            # print(l)
             if l.startswith(b"Transfer-Encoding:"):
                 if b"chunked" in l:
                     raise ValueError("Unsupported " + l)

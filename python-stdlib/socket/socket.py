@@ -10,6 +10,7 @@ INADDR_ANY = 0
 
 error = OSError
 
+
 def _resolve_addr(addr):
     if isinstance(addr, (bytes, bytearray)):
         return addr
@@ -23,14 +24,16 @@ def _resolve_addr(addr):
     a = getaddrinfo(a, addr[1], family)
     return a[0][4]
 
+
 def inet_aton(addr):
     return inet_pton(AF_INET, addr)
 
+
 def create_connection(addr, timeout=None, source_address=None):
     s = socket()
-    #print("Address:", addr)
+    # print("Address:", addr)
     ais = getaddrinfo(addr[0], addr[1])
-    #print("Address infos:", ais)
+    # print("Address infos:", ais)
     for ai in ais:
         try:
             s.connect(ai[4])
@@ -40,7 +43,6 @@ def create_connection(addr, timeout=None, source_address=None):
 
 
 class socket(_socket.socket):
-
     def accept(self):
         s, addr = super().accept()
         addr = _socket.sockaddr(addr)

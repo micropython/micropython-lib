@@ -7,8 +7,16 @@ for sym in "CERT_NONE", "CERT_OPTIONAL", "CERT_REQUIRED":
         globals()[sym] = object()
 
 
-def wrap_socket(sock, keyfile=None, certfile=None, server_side=False,
-                cert_reqs=CERT_NONE, *, ca_certs=None, server_hostname=None):
+def wrap_socket(
+    sock,
+    keyfile=None,
+    certfile=None,
+    server_side=False,
+    cert_reqs=CERT_NONE,
+    *,
+    ca_certs=None,
+    server_hostname=None
+):
     # TODO: More arguments accepted by CPython could also be handled here.
     # That would allow us to accept ca_certs as a positional argument, which
     # we should.

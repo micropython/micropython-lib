@@ -1,7 +1,7 @@
 from uasyncio import StreamReader
 
-class MockSock:
 
+class MockSock:
     def __init__(self, data_list):
         self.data = data_list
 
@@ -12,11 +12,15 @@ class MockSock:
             return b""
 
 
-mock = MockSock([
-    b"line1\n",
-    b"parts ", b"of ", b"line2\n",
-    b"unterminated",
-])
+mock = MockSock(
+    [
+        b"line1\n",
+        b"parts ",
+        b"of ",
+        b"line2\n",
+        b"unterminated",
+    ]
+)
 
 
 def func():
@@ -25,6 +29,7 @@ def func():
     assert await sr.readline() == b"parts of line2\n"
     assert await sr.readline() == b"unterminated"
     assert await sr.readline() == b""
+
 
 for i in func():
     pass

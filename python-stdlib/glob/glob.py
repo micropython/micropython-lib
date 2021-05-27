@@ -7,6 +7,7 @@ import fnmatch
 
 __all__ = ["glob", "iglob"]
 
+
 def glob(pathname):
     """Return a list of paths matching a pathname pattern.
 
@@ -17,6 +18,7 @@ def glob(pathname):
 
     """
     return list(iglob(pathname))
+
 
 def iglob(pathname):
     """Return an iterator which yields the paths matching a pathname pattern.
@@ -51,14 +53,16 @@ def iglob(pathname):
         for name in glob_in_dir(dirname, basename):
             yield os.path.join(dirname, name)
 
+
 # These 2 helper functions non-recursively glob inside a literal directory.
 # They return a list of basenames. `glob1` accepts a pattern while `glob0`
 # takes a literal basename (so it only has to check for its existence).
 
+
 def glob1(dirname, pattern):
     if not dirname:
         if isinstance(pattern, bytes):
-            dirname = bytes(os.curdir, 'ASCII')
+            dirname = bytes(os.curdir, "ASCII")
         else:
             dirname = os.curdir
     try:
@@ -68,6 +72,7 @@ def glob1(dirname, pattern):
     if not _ishidden(pattern):
         names = [x for x in names if not _ishidden(x)]
     return fnmatch.filter(names, pattern)
+
 
 def glob0(dirname, basename):
     if not basename:
@@ -81,8 +86,9 @@ def glob0(dirname, basename):
     return []
 
 
-magic_check = re.compile('[*?[]')
-magic_check_bytes = re.compile(b'[*?[]')
+magic_check = re.compile("[*?[]")
+magic_check_bytes = re.compile(b"[*?[]")
+
 
 def has_magic(s):
     if isinstance(s, bytes):
@@ -91,5 +97,6 @@ def has_magic(s):
         match = magic_check.search(s)
     return match is not None
 
+
 def _ishidden(path):
-    return path[0] in ('.', b'.'[0])
+    return path[0] in (".", b"."[0])

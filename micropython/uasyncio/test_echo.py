@@ -1,11 +1,11 @@
 from uasyncio import get_event_loop, open_connection, start_server, sleep_ms
 from unittest import main, TestCase
 
-class EchoTestCase(TestCase):
 
+class EchoTestCase(TestCase):
     def test_client_server(self):
-        '''Simple client-server echo test'''
-        sockaddr = ('127.0.0.1', 8080)
+        """Simple client-server echo test"""
+        sockaddr = ("127.0.0.1", 8080)
         l = get_event_loop()
 
         async def echo_server(reader, writer):
@@ -23,10 +23,10 @@ class EchoTestCase(TestCase):
 
         result = []
         l.create_task(start_server(echo_server, *sockaddr))
-        l.run_until_complete(echo_client(b'Hello\r\n', result))
+        l.run_until_complete(echo_client(b"Hello\r\n", result))
 
-        self.assertEqual(result[0], b'Hello\r\n')
+        self.assertEqual(result[0], b"Hello\r\n")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

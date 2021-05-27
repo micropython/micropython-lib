@@ -4,7 +4,7 @@
 
 """A parser of RFC 2822 and MIME email messages."""
 
-__all__ = ['Parser', 'HeaderParser', 'BytesParser', 'BytesHeaderParser']
+__all__ = ["Parser", "HeaderParser", "BytesParser", "BytesHeaderParser"]
 
 import warnings
 from io import StringIO, TextIOWrapper
@@ -14,7 +14,6 @@ from email.message import Message
 from email._policybase import compat32
 
 
-
 class Parser:
     def __init__(self, _class=Message, policy=compat32):
         """Parser of RFC 2822 and MIME email messages.
@@ -69,7 +68,6 @@ class Parser:
         return self.parse(StringIO(text), headersonly=headersonly)
 
 
-
 class HeaderParser(Parser):
     def parse(self, fp, headersonly=True):
         return Parser.parse(self, fp, True)
@@ -77,9 +75,8 @@ class HeaderParser(Parser):
     def parsestr(self, text, headersonly=True):
         return Parser.parsestr(self, text, True)
 
-
-class BytesParser:
 
+class BytesParser:
     def __init__(self, *args, **kw):
         """Parser of binary RFC 2822 and MIME email messages.
 
@@ -106,10 +103,9 @@ class BytesParser:
         parsing after reading the headers or not.  The default is False,
         meaning it parses the entire contents of the file.
         """
-        fp = TextIOWrapper(fp, encoding='ascii', errors='surrogateescape')
+        fp = TextIOWrapper(fp, encoding="ascii", errors="surrogateescape")
         with fp:
             return self.parser.parse(fp, headersonly)
-
 
     def parsebytes(self, text, headersonly=False):
         """Create a message structure from a byte string.
@@ -119,7 +115,7 @@ class BytesParser:
         not.  The default is False, meaning it parses the entire contents of
         the file.
         """
-        text = text.decode('ASCII', errors='surrogateescape')
+        text = text.decode("ASCII", errors="surrogateescape")
         return self.parser.parsestr(text, headersonly)
 
 

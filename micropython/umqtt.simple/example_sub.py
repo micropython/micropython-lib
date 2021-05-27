@@ -8,6 +8,7 @@ from umqtt.simple import MQTTClient
 def sub_cb(topic, msg):
     print((topic, msg))
 
+
 def main(server="localhost"):
     c = MQTTClient("umqtt_client", server)
     c.set_callback(sub_cb)
@@ -25,6 +26,7 @@ def main(server="localhost"):
             time.sleep(1)
 
     c.disconnect()
+
 
 if __name__ == "__main__":
     main()

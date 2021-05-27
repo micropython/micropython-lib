@@ -1,7 +1,7 @@
 from uasyncio import StreamReader
 
-class MockSock:
 
+class MockSock:
     def __init__(self, data_list):
         self.data = data_list
 
@@ -12,11 +12,18 @@ class MockSock:
             return b""
 
 
-mock = MockSock([
-    b"123",
-    b"234", b"5",
-    b"a", b"b", b"c", b"d", b"e",
-])
+mock = MockSock(
+    [
+        b"123",
+        b"234",
+        b"5",
+        b"a",
+        b"b",
+        b"c",
+        b"d",
+        b"e",
+    ]
+)
 
 
 def func():
@@ -26,6 +33,7 @@ def func():
     assert await sr.readexactly(5) == b"abcde"
     # This isn't how it should be, but the current behavior
     assert await sr.readexactly(10) == b""
+
 
 for i in func():
     pass

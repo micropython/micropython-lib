@@ -1,8 +1,9 @@
 import uasyncio.core as asyncio
 import time
 import logging
+
 logging.basicConfig(level=logging.DEBUG)
-#asyncio.set_debug(True)
+# asyncio.set_debug(True)
 
 
 def cb():

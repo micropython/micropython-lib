@@ -5,10 +5,10 @@
 """Header encoding and decoding functionality."""
 
 __all__ = [
-    'Header',
-    'decode_header',
-    'make_header',
-    ]
+    "Header",
+    "decode_header",
+    "make_header",
+]
 
 import re
 import binascii
@@ -18,21 +18,23 @@ import email.base64mime
 
 from email.errors import HeaderParseError
 from email import charset as _charset
+
 Charset = _charset.Charset
 
-NL = '\n'
-SPACE = ' '
-BSPACE = b' '
-SPACE8 = ' ' * 8
-EMPTYSTRING = ''
+NL = "\n"
+SPACE = " "
+BSPACE = b" "
+SPACE8 = " " * 8
+EMPTYSTRING = ""
 MAXLINELEN = 78
-FWS = ' \t'
+FWS = " \t"
 
-USASCII = Charset('us-ascii')
-UTF8 = Charset('utf-8')
+USASCII = Charset("us-ascii")
+UTF8 = Charset("utf-8")
 
 # Match encoded-word strings in the form =?charset?q?Hello_World?=
-ecre = re.compile(r'''
+ecre = re.compile(
+    r"""
   =\?                   # literal =?
   (?P<charset>[^?]*?)   # non-greedy up to the next ? is the charset
   \?                    # literal ?
@@ -40,24 +42,24 @@ ecre = re.compile(r'''
   \?                    # literal ?
   (?P<encoded>.*?)      # non-greedy up to the next ?= is the encoded string
   \?=                   # literal ?=
-  ''', re.VERBOSE | re.IGNORECASE | re.MULTILINE)
+  """,
+    re.VERBOSE | re.IGNORECASE | re.MULTILINE,
+)
 
 # Field name regexp, including trailing colon, but not separating whitespace,
 # according to RFC 2822.  Character range is from tilde to exclamation mark.
 # For use with .match()
-fcre = re.compile(r'[\041-\176]+:$')
+fcre = re.compile(r"[\041-\176]+:$")
 
 # Find a header embedded in a putative header value.  Used to check for
 # header injection attack.
-_embeded_header = re.compile(r'\n[^ \t]+:')
+_embeded_header = re.compile(r"\n[^ \t]+:")
 
 
-
 # Helpers
 _max_append = email.quoprimime._max_append
 
 
-
 def decode_header(header):
     """Decode a message header value without converting charset.
 
@@ -73,9 +75,11 @@ def decode_header(header):
     occurs (e.g. a base64 decoding exception).
     """
     # If it is a Header object, we can just return the encoded chunks.
-    if hasattr(header, '_chunks'):
-        return [(_charset._encode(string, str(charset)), str(charset))
-                    for string, charset in header._chunks]
+    if hasattr(header, "_chunks"):
+        return [
+            (_charset._encode(string, str(charset)), str(charset))
+            for string, charset in header._chunks
+        ]
     # If no encoding, just return the header with no charset.
     if not ecre.search(header):
         return [(header, None)]
@@ -101,10 +105,11 @@ def decode_header(header):
     # Now loop over words and remove words that consist of whitespace
     # between two encoded strings.
     import sys
+
     droplist = []
     for n, w in enumerate(words):
-        if n>1 and w[1] and words[n-2][1] and words[n-1][0].isspace():
-            droplist.append(n-1)
+        if n > 1 and w[1] and words[n - 2][1] and words[n - 1][0].isspace():
+            droplist.append(n - 1)
     for d in reversed(droplist):
         del words[d]
 
@@ -116,28 +121,28 @@ def decode_header(header):
         if encoding is None:
             # This is an unencoded word.
             decoded_words.append((encoded_string, charset))
-        elif encoding == 'q':
+        elif encoding == "q":
             word = email.quoprimime.header_decode(encoded_string)
             decoded_words.append((word, charset))
-        elif encoding == 'b':
-            paderr = len(encoded_string) % 4   # Postel's law: add missing padding
+        elif encoding == "b":
+            paderr = len(encoded_string) % 4  # Postel's law: add missing padding
             if paderr:
-                encoded_string += '==='[:4 - paderr]
+                encoded_string += "==="[: 4 - paderr]
             try:
                 word = email.base64mime.decode(encoded_string)
             except binascii.Error:
-                raise HeaderParseError('Base64 decoding error')
+                raise HeaderParseError("Base64 decoding error")
             else:
                 decoded_words.append((word, charset))
         else:
-            raise AssertionError('Unexpected encoding: ' + encoding)
+            raise AssertionError("Unexpected encoding: " + encoding)
     # Now convert all words to bytes and collapse consecutive runs of
     # similarly encoded words.
     collapsed = []
     last_word = last_charset = None
     for word, charset in decoded_words:
         if isinstance(word, str):
-            word = bytes(word, 'raw-unicode-escape')
+            word = bytes(word, "raw-unicode-escape")
         if last_word is None:
             last_word = word
             last_charset = charset
@@ -153,9 +158,7 @@ def decode_header(header):
     return collapsed
 
 
-
-def make_header(decoded_seq, maxlinelen=None, header_name=None,
-                continuation_ws=' '):
+def make_header(decoded_seq, maxlinelen=None, header_name=None, continuation_ws=" "):
     """Create a Header from a sequence of pairs as returned by decode_header()
 
     decode_header() takes a header value string and returns a sequence of
@@ -166,8 +169,7 @@ def make_header(decoded_seq, maxlinelen=None, header_name=None,
     instance.  Optional maxlinelen, header_name, and continuation_ws are as in
     the Header constructor.
     """
-    h = Header(maxlinelen=maxlinelen, header_name=header_name,
-               continuation_ws=continuation_ws)
+    h = Header(maxlinelen=maxlinelen, header_name=header_name, continuation_ws=continuation_ws)
     for s, charset in decoded_seq:
         # None means us-ascii but we can simply pass it on to h.append()
         if charset is not None and not isinstance(charset, Charset):
@@ -176,11 +178,16 @@ def make_header(decoded_seq, maxlinelen=None, header_name=None,
     return h
 
 
-
 class Header:
-    def __init__(self, s=None, charset=None,
-                 maxlinelen=None, header_name=None,
-                 continuation_ws=' ', errors='strict'):
+    def __init__(
+        self,
+        s=None,
+        charset=None,
+        maxlinelen=None,
+        header_name=None,
+        continuation_ws=" ",
+        errors="strict",
+    ):
         """Create a MIME-compliant header that can contain many character sets.
 
         Optional s is the initial header value.  If None, the initial header
@@ -240,15 +247,15 @@ class Header:
             # a space (trailing or leading depending on transition)
             nextcs = charset
             if nextcs == _charset.UNKNOWN8BIT:
-                original_bytes = string.encode('ascii', 'surrogateescape')
-                string = original_bytes.decode('ascii', 'replace')
+                original_bytes = string.encode("ascii", "surrogateescape")
+                string = original_bytes.decode("ascii", "replace")
             if uchunks:
                 hasspace = string and self._nonctext(string[0])
-                if lastcs not in (None, 'us-ascii'):
-                    if nextcs in (None, 'us-ascii') and not hasspace:
+                if lastcs not in (None, "us-ascii"):
+                    if nextcs in (None, "us-ascii") and not hasspace:
                         uchunks.append(SPACE)
                         nextcs = None
-                elif nextcs not in (None, 'us-ascii') and not lastspace:
+                elif nextcs not in (None, "us-ascii") and not lastspace:
                     uchunks.append(SPACE)
             lastspace = string and self._nonctext(string[-1])
             lastcs = nextcs
@@ -266,7 +273,7 @@ class Header:
     def __ne__(self, other):
         return not self == other
 
-    def append(self, s, charset=None, errors='strict'):
+    def append(self, s, charset=None, errors="strict"):
         """Append a string to the MIME header.
 
         Optional charset, if given, should be a Charset instance or the name
@@ -292,29 +299,28 @@ class Header:
         elif not isinstance(charset, Charset):
             charset = Charset(charset)
         if not isinstance(s, str):
-            input_charset = charset.input_codec or 'us-ascii'
+            input_charset = charset.input_codec or "us-ascii"
             if input_charset == _charset.UNKNOWN8BIT:
-                s = s.decode('us-ascii', 'surrogateescape')
+                s = s.decode("us-ascii", "surrogateescape")
             else:
                 s = s.decode(input_charset, errors)
         # Ensure that the bytes we're storing can be decoded to the output
         # character set, otherwise an early error is raised.
-        output_charset = charset.output_codec or 'us-ascii'
+        output_charset = charset.output_codec or "us-ascii"
         if output_charset != _charset.UNKNOWN8BIT:
             try:
                 s.encode(output_charset, errors)
             except UnicodeEncodeError:
-                if output_charset!='us-ascii':
+                if output_charset != "us-ascii":
                     raise
                 charset = UTF8
         self._chunks.append((s, charset))
 
     def _nonctext(self, s):
-        """True if string s is not a ctext character of RFC822.
-        """
-        return s in (' ', '\t', '(', ')', '\\')
+        """True if string s is not a ctext character of RFC822."""
+        return s in (" ", "\t", "(", ")", "\\")
 
-    def encode(self, splitchars=';, \t', maxlinelen=None, linesep='\n'):
+    def encode(self, splitchars=";, \t", maxlinelen=None, linesep="\n"):
         r"""Encode a message header into an RFC-compliant format.
 
         There are many issues involved in converting a given string for use in
@@ -355,35 +361,34 @@ class Header:
         # _ValueFormatter algorithm much simpler.
         if maxlinelen == 0:
             maxlinelen = 1000000
-        formatter = _ValueFormatter(self._headerlen, maxlinelen,
-                                    self._continuation_ws, splitchars)
+        formatter = _ValueFormatter(self._headerlen, maxlinelen, self._continuation_ws, splitchars)
         lastcs = None
         hasspace = lastspace = None
         for string, charset in self._chunks:
             if hasspace is not None:
                 hasspace = string and self._nonctext(string[0])
                 import sys
-                if lastcs not in (None, 'us-ascii'):
-                    if not hasspace or charset not in (None, 'us-ascii'):
+
+                if lastcs not in (None, "us-ascii"):
+                    if not hasspace or charset not in (None, "us-ascii"):
                         formatter.add_transition()
-                elif charset not in (None, 'us-ascii') and not lastspace:
+                elif charset not in (None, "us-ascii") and not lastspace:
                     formatter.add_transition()
             lastspace = string and self._nonctext(string[-1])
             lastcs = charset
             hasspace = False
             lines = string.splitlines()
             if lines:
-                formatter.feed('', lines[0], charset)
+                formatter.feed("", lines[0], charset)
             else:
-                formatter.feed('', '', charset)
+                formatter.feed("", "", charset)
             for line in lines[1:]:
                 formatter.newline()
                 if charset.header_encoding is not None:
-                    formatter.feed(self._continuation_ws, ' ' + line.lstrip(),
-                                   charset)
+                    formatter.feed(self._continuation_ws, " " + line.lstrip(), charset)
                 else:
                     sline = line.lstrip()
-                    fws = line[:len(line)-len(sline)]
+                    fws = line[: len(line) - len(sline)]
                     formatter.feed(fws, sline, charset)
             if len(lines) > 1:
                 formatter.newline()
@@ -391,8 +396,9 @@ class Header:
             formatter.add_transition()
         value = formatter._str(linesep)
         if _embeded_header.search(value):
-            raise HeaderParseError("header value appears to contain "
-                "an embedded header: {!r}".format(value))
+            raise HeaderParseError(
+                "header value appears to contain " "an embedded header: {!r}".format(value)
+            )
         return value
 
     def _normalize(self):
@@ -414,7 +420,6 @@ class Header:
         self._chunks = chunks
 
 
-
 class _ValueFormatter:
     def __init__(self, headerlen, maxlen, continuation_ws, splitchars):
         self._maxlen = maxlen
@@ -433,7 +438,7 @@ class _ValueFormatter:
 
     def newline(self):
         end_of_line = self._current_line.pop()
-        if end_of_line != (' ', ''):
+        if end_of_line != (" ", ""):
             self._current_line.push(*end_of_line)
         if len(self._current_line) > 0:
             if self._current_line.is_onlyws():
@@ -443,7 +448,7 @@ class _ValueFormatter:
         self._current_line.reset()
 
     def add_transition(self):
-        self._current_line.push(' ', '')
+        self._current_line.push(" ", "")
 
     def feed(self, fws, string, charset):
         # If the charset has no header encoding (i.e. it is an ASCII encoding)
@@ -502,12 +507,12 @@ class _ValueFormatter:
         # where we would sometimes *introduce* FWS after a splitchar, or the
         # algorithm before that, where we would turn all white space runs into
         # single spaces or tabs.)
-        parts = re.split("(["+FWS+"]+)", fws+string)
+        parts = re.split("([" + FWS + "]+)", fws + string)
         if parts[0]:
-            parts[:0] = ['']
+            parts[:0] = [""]
         else:
             parts.pop(0)
-        for fws, part in zip(*[iter(parts)]*2):
+        for fws, part in zip(*[iter(parts)] * 2):
             self._append_chunk(fws, part)
 
     def _append_chunk(self, fws, string):
@@ -516,13 +521,13 @@ class _ValueFormatter:
             # Find the best split point, working backward from the end.
             # There might be none, on a long first line.
             for ch in self._splitchars:
-                for i in range(self._current_line.part_count()-1, 0, -1):
+                for i in range(self._current_line.part_count() - 1, 0, -1):
                     if ch.isspace():
                         fws = self._current_line[i][0]
-                        if fws and fws[0]==ch:
+                        if fws and fws[0] == ch:
                             break
-                    prevpart = self._current_line[i-1][1]
-                    if prevpart and prevpart[-1]==ch:
+                    prevpart = self._current_line[i - 1][1]
+                    if prevpart and prevpart[-1] == ch:
                         break
                 else:
                     continue
@@ -535,7 +540,7 @@ class _ValueFormatter:
                     if not fws:
                         # We don't use continuation_ws here because the whitespace
                         # after a header should always be a space.
-                        fws = ' '
+                        fws = " "
                 self._current_line.push(fws, part)
                 return
             remainder = self._current_line.pop_from(i)
@@ -544,7 +549,6 @@ class _ValueFormatter:
 
 
 class _Accumulator(list):
-
     def __init__(self, initial_size=0):
         self._initial_size = initial_size
         super().__init__()
@@ -558,17 +562,15 @@ class _Accumulator(list):
         return popped
 
     def pop(self):
-        if self.part_count()==0:
-            return ('', '')
+        if self.part_count() == 0:
+            return ("", "")
         return super().pop()
 
     def __len__(self):
-        return sum((len(fws)+len(part) for fws, part in self),
-                   self._initial_size)
+        return sum((len(fws) + len(part) for fws, part in self), self._initial_size)
 
     def __str__(self):
-        return EMPTYSTRING.join((EMPTYSTRING.join((fws, part))
-                                for fws, part in self))
+        return EMPTYSTRING.join((EMPTYSTRING.join((fws, part)) for fws, part in self))
 
     def reset(self, startval=None):
         if startval is None:
@@ -577,7 +579,7 @@ class _Accumulator(list):
         self._initial_size = 0
 
     def is_onlyws(self):
-        return self._initial_size==0 and (not self or str(self).isspace())
+        return self._initial_size == 0 and (not self or str(self).isspace())
 
     def part_count(self):
         return super().__len__()

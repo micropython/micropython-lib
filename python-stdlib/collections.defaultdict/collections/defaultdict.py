@@ -1,5 +1,4 @@
 class defaultdict:
-
     @staticmethod
     def __new__(cls, default_factory=None, **kwargs):
         # Some code (e.g. urllib.urlparse) expects that basic defaultdict

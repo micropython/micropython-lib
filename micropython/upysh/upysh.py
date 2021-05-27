@@ -1,8 +1,8 @@
 import sys
 import os
 
-class LS:
 
+class LS:
     def __repr__(self):
         self.__call__()
         return ""
@@ -17,13 +17,14 @@ class LS:
             else:
                 print("% 8d %s" % (st[6], f))
 
-class PWD:
 
+class PWD:
     def __repr__(self):
         return os.getcwd()
 
     def __call__(self):
         return self.__repr__()
+
 
 class CLEAR:
     def __repr__(self):
@@ -43,15 +44,19 @@ mv = os.rename
 rm = os.remove
 rmdir = os.rmdir
 
+
 def head(f, n=10):
     with open(f) as f:
         for i in range(n):
             l = f.readline()
-            if not l: break
+            if not l:
+                break
             sys.stdout.write(l)
+
 
 def cat(f):
     head(f, 1 << 30)
+
 
 def newfile(path):
     print("Type file contents line by line, finish with EOF (Ctrl+D).")
@@ -64,10 +69,10 @@ def newfile(path):
             f.write(l)
             f.write("\n")
 
-class Man():
 
+class Man:
     def __repr__(self):
-        return("""
+        return """
 upysh is intended to be imported using:
 from upysh import *
 
@@ -77,7 +82,8 @@ upysh commands:
 pwd, cd("new_dir"), ls, ls(...), head(...), cat(...)
 newfile(...), mv("old", "new"), rm(...), mkdir(...), rmdir(...),
 clear
-""")
+"""
+
 
 man = Man()
 

@@ -4,7 +4,8 @@ import sys
 
 _h = None
 
-names = ('libc.so', 'libc.so.0', 'libc.so.6', 'libc.dylib')
+names = ("libc.so", "libc.so.0", "libc.so.6", "libc.dylib")
+
 
 def get():
     global _h
@@ -23,6 +24,7 @@ def get():
 def set_names(n):
     global names
     names = n
+
 
 # Find out bitness of the platform, even if long ints are not supported
 # TODO: All bitness differences should be removed from micropython-lib, and

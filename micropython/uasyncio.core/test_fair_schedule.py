@@ -22,7 +22,7 @@ async def done():
     global test_finished
     while True:
         if len(result) == COROS * ITERS:
-            #print(result)
+            # print(result)
             assert result == list(range(COROS)) * ITERS
             test_finished = True
             return

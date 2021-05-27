@@ -1,5 +1,4 @@
 class LED:
-
     def __init__(self, id):
         self.f = open("/sys/class/leds/%s/brightness" % id, "r+b")
 

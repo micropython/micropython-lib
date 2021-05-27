@@ -14,13 +14,16 @@ def print_stream(resp):
             break
         print(line.rstrip())
 
+
 def run(url):
     resp = yield from aiohttp.request("GET", url)
     print(resp)
     yield from print_stream(resp)
 
+
 import sys
 import logging
+
 logging.basicConfig(level=logging.INFO)
 url = sys.argv[1]
 loop = asyncio.get_event_loop()

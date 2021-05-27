@@ -2,7 +2,6 @@ import uasyncio as asyncio
 
 
 class ClientResponse:
-
     def __init__(self, reader):
         self.content = reader
 
@@ -14,23 +13,22 @@ class ClientResponse:
 
 
 class ChunkedClientResponse(ClientResponse):
-
     def __init__(self, reader):
         self.content = reader
         self.chunk_size = 0
 
-    def read(self, sz=4*1024*1024):
+    def read(self, sz=4 * 1024 * 1024):
         if self.chunk_size == 0:
             l = yield from self.content.readline()
-            #print("chunk line:", l)
+            # print("chunk line:", l)
             l = l.split(b";", 1)[0]
             self.chunk_size = int(l, 16)
-            #print("chunk size:", self.chunk_size)
+            # print("chunk size:", self.chunk_size)
             if self.chunk_size == 0:
                 # End of message
                 sep = yield from self.content.read(2)
                 assert sep == b"\r\n"
-                return b''
+                return b""
         data = yield from self.content.read(min(sz, self.chunk_size))
         self.chunk_size -= len(data)
         if self.chunk_size == 0:
@@ -54,9 +52,13 @@ def request_raw(method, url):
     # Use protocol 1.0, because 1.1 always allows to use chunked transfer-encoding
     # But explicitly set Connection: close, even though this should be default for 1.0,
     # because some servers misbehave w/o it.
-    query = "%s /%s HTTP/1.0\r\nHost: %s\r\nConnection: close\r\nUser-Agent: compat\r\n\r\n" % (method, path, host)
-    yield from writer.awrite(query.encode('latin-1'))
-#    yield from writer.aclose()
+    query = "%s /%s HTTP/1.0\r\nHost: %s\r\nConnection: close\r\nUser-Agent: compat\r\n\r\n" % (
+        method,
+        path,
+        host,
+    )
+    yield from writer.awrite(query.encode("latin-1"))
+    #    yield from writer.aclose()
     return reader
 
 

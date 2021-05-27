@@ -51,14 +51,15 @@ this means that that help by doc string feature doesn't work.
 completions have also been stripped out.
 """
 
-#import string, sys
-import sys	# MiroPython doesn't yet have a string module
+# import string, sys
+import sys  # MiroPython doesn't yet have a string module
 
 __all__ = ["Cmd"]
 
-PROMPT = '(Cmd) '
-#IDENTCHARS = string.ascii_letters + string.digits + '_'
-IDENTCHARS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'
+PROMPT = "(Cmd) "
+# IDENTCHARS = string.ascii_letters + string.digits + '_'
+IDENTCHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+
 
 class Cmd:
     """A simple framework for writing line-oriented command interpreters.
@@ -72,10 +73,11 @@ class Cmd:
     in order to inherit Cmd's methods and encapsulate action methods.
 
     """
+
     prompt = PROMPT
     identchars = IDENTCHARS
-    ruler = '='
-    lastcmd = ''
+    ruler = "="
+    lastcmd = ""
     intro = None
     doc_leader = ""
     doc_header = "Documented commands (type help <topic>):"
@@ -114,7 +116,7 @@ class Cmd:
             if intro is not None:
                 self.intro = intro
             if self.intro:
-                self.stdout.write(str(self.intro)+"\n")
+                self.stdout.write(str(self.intro) + "\n")
             stop = None
             while not stop:
                 if self.cmdqueue:
@@ -124,15 +126,15 @@ class Cmd:
                         try:
                             line = input(self.prompt)
                         except EOFError:
-                            line = 'EOF'
+                            line = "EOF"
                     else:
                         self.stdout.write(self.prompt)
                         self.stdout.flush()
                         line = self.stdin.readline()
                         if not len(line):
-                            line = 'EOF'
+                            line = "EOF"
                         else:
-                            line = line.rstrip('\r\n')
+                            line = line.rstrip("\r\n")
                 line = self.precmd(line)
                 stop = self.onecmd(line)
                 stop = self.postcmd(stop, line)
@@ -170,15 +172,16 @@ class Cmd:
         line = line.strip()
         if not line:
             return None, None, line
-        elif line[0] == '?':
-            line = 'help ' + line[1:]
-        elif line[0] == '!':
-            if hasattr(self, 'do_shell'):
-                line = 'shell ' + line[1:]
+        elif line[0] == "?":
+            line = "help " + line[1:]
+        elif line[0] == "!":
+            if hasattr(self, "do_shell"):
+                line = "shell " + line[1:]
             else:
                 return None, None, line
         i, n = 0, len(line)
-        while i < n and line[i] in self.identchars: i = i+1
+        while i < n and line[i] in self.identchars:
+            i = i + 1
         cmd, arg = line[:i], line[i:].strip()
         return cmd, arg, line
 
@@ -198,13 +201,13 @@ class Cmd:
         if cmd is None:
             return self.default(line)
         self.lastcmd = line
-        if line == 'EOF' :
-            self.lastcmd = ''
-        if cmd == '':
+        if line == "EOF":
+            self.lastcmd = ""
+        if cmd == "":
             return self.default(line)
         else:
             try:
-                func = getattr(self, 'do_' + cmd)
+                func = getattr(self, "do_" + cmd)
             except AttributeError:
                 return self.default(line)
             return func(arg)
@@ -226,7 +229,7 @@ class Cmd:
         returns.
 
         """
-        self.stdout.write('*** Unknown syntax: %s\n'%line)
+        self.stdout.write("*** Unknown syntax: %s\n" % line)
 
     def get_names(self):
         # This method used to pull in base class attributes
@@ -238,9 +241,9 @@ class Cmd:
         if arg:
             # XXX check arg syntax
             try:
-                func = getattr(self, 'help_' + arg)
+                func = getattr(self, "help_" + arg)
             except AttributeError:
-                self.stdout.write("%s\n"%str(self.nohelp % (arg,)))
+                self.stdout.write("%s\n" % str(self.nohelp % (arg,)))
                 return
             func()
         else:
@@ -249,33 +252,33 @@ class Cmd:
             cmds_undoc = []
             help = {}
             for name in names:
-                if name[:5] == 'help_':
-                    help[name[5:]]=1
+                if name[:5] == "help_":
+                    help[name[5:]] = 1
             names.sort()
             # There can be duplicates if routines overridden
-            prevname = ''
+            prevname = ""
             for name in names:
-                if name[:3] == 'do_':
+                if name[:3] == "do_":
                     if name == prevname:
                         continue
                     prevname = name
-                    cmd=name[3:]
+                    cmd = name[3:]
                     if cmd in help:
                         cmds_doc.append(cmd)
                         del help[cmd]
                     else:
                         cmds_undoc.append(cmd)
-            self.stdout.write("%s\n"%str(self.doc_leader))
-            self.print_topics(self.doc_header,   cmds_doc,   15,80)
-            self.print_topics(self.misc_header,  list(help.keys()),15,80)
-            self.print_topics(self.undoc_header, cmds_undoc, 15,80)
+            self.stdout.write("%s\n" % str(self.doc_leader))
+            self.print_topics(self.doc_header, cmds_doc, 15, 80)
+            self.print_topics(self.misc_header, list(help.keys()), 15, 80)
+            self.print_topics(self.undoc_header, cmds_undoc, 15, 80)
 
     def print_topics(self, header, cmds, cmdlen, maxcol):
         if cmds:
-            self.stdout.write("%s\n"%str(header))
+            self.stdout.write("%s\n" % str(header))
             if self.ruler:
-                self.stdout.write("%s\n"%str(self.ruler * len(header)))
-            self.columnize(cmds, maxcol-1)
+                self.stdout.write("%s\n" % str(self.ruler * len(header)))
+            self.columnize(cmds, maxcol - 1)
             self.stdout.write("\n")
 
     def columnize(self, list, displaywidth=80):
@@ -288,24 +291,22 @@ class Cmd:
             self.stdout.write("<empty>\n")
             return
 
-        nonstrings = [i for i in range(len(list))
-                        if not isinstance(list[i], str)]
+        nonstrings = [i for i in range(len(list)) if not isinstance(list[i], str)]
         if nonstrings:
-            raise TypeError("list[i] not a string for i in %s"
-                            % ", ".join(map(str, nonstrings)))
+            raise TypeError("list[i] not a string for i in %s" % ", ".join(map(str, nonstrings)))
         size = len(list)
         if size == 1:
-            self.stdout.write('%s\n'%str(list[0]))
+            self.stdout.write("%s\n" % str(list[0]))
             return
         # Try every row count from 1 upwards
         for nrows in range(1, len(list)):
-            ncols = (size+nrows-1) // nrows
+            ncols = (size + nrows - 1) // nrows
             colwidths = []
             totwidth = -2
             for col in range(ncols):
                 colwidth = 0
                 for row in range(nrows):
-                    i = row + nrows*col
+                    i = row + nrows * col
                     if i >= size:
                         break
                     x = list[i]
@@ -323,7 +324,7 @@ class Cmd:
         for row in range(nrows):
             texts = []
             for col in range(ncols):
-                i = row + nrows*col
+                i = row + nrows * col
                 if i >= size:
                     x = ""
                 else:
@@ -332,6 +333,6 @@ class Cmd:
             while texts and not texts[-1]:
                 del texts[-1]
             for col in range(len(texts)):
-                #texts[col] = texts[col].ljust(colwidths[col])
-                texts[col] = '%-*s' % (colwidths[col], texts[col])
-            self.stdout.write("%s\n"%str("  ".join(texts)))
+                # texts[col] = texts[col].ljust(colwidths[col])
+                texts[col] = "%-*s" % (colwidths[col], texts[col])
+            self.stdout.write("%s\n" % str("  ".join(texts)))

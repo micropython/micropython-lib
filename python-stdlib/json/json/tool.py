@@ -13,16 +13,17 @@ Usage::
 import sys
 import json
 
+
 def main():
     if len(sys.argv) == 1:
         infile = sys.stdin
         outfile = sys.stdout
     elif len(sys.argv) == 2:
-        infile = open(sys.argv[1], 'r')
+        infile = open(sys.argv[1], "r")
         outfile = sys.stdout
     elif len(sys.argv) == 3:
-        infile = open(sys.argv[1], 'r')
-        outfile = open(sys.argv[2], 'w')
+        infile = open(sys.argv[1], "r")
+        outfile = open(sys.argv[2], "w")
     else:
         raise SystemExit(sys.argv[0] + " [infile [outfile]]")
     with infile:
@@ -31,10 +32,9 @@ def main():
         except ValueError as e:
             raise SystemExit(e)
     with outfile:
-        json.dump(obj, outfile, sort_keys=True,
-                  indent=4, separators=(',', ': '))
-        outfile.write('\n')
+        json.dump(obj, outfile, sort_keys=True, indent=4, separators=(",", ": "))
+        outfile.write("\n")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

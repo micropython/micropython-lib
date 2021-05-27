@@ -7,7 +7,7 @@
 
 import re
 
-__all__ = ['TextWrapper', 'wrap', 'fill', 'dedent', 'indent', 'shorten']
+__all__ = ["TextWrapper", "wrap", "fill", "dedent", "indent", "shorten"]
 
 # Hardcode the recognized whitespace characters to the US-ASCII
 # whitespace characters.  The main reason for doing this is that in
@@ -17,7 +17,8 @@ __all__ = ['TextWrapper', 'wrap', 'fill', 'dedent', 'indent', 'shorten']
 # same as any other whitespace char, which is clearly wrong (it's a
 # *non-breaking* space), 2) possibly cause problems with Unicode,
 # since 0xa0 is not in range(128).
-_whitespace = '\t\n\x0b\x0c\r '
+_whitespace = "\t\n\x0b\x0c\r "
+
 
 class TextWrapper:
     """
@@ -69,7 +70,7 @@ class TextWrapper:
     """
 
     unicode_whitespace_trans = {}
-    uspace = ord(' ')
+    uspace = ord(" ")
     for x in _whitespace:
         unicode_whitespace_trans[ord(x)] = uspace
 
@@ -80,38 +81,42 @@ class TextWrapper:
     #   Hello/ /there/ /--/ /you/ /goof-/ball,/ /use/ /the/ /-b/ /option!
     # (after stripping out empty strings).
     wordsep_re = re.compile(
-        r'(\s+|'                                  # any whitespace
-        r'[^\s\w]*\w+[^0-9\W]-(?=\w+[^0-9\W])|'   # hyphenated words
-        r'(?<=[\w\!\"\'\&\.\,\?])-{2,}(?=\w))')   # em-dash
+        r"(\s+|"  # any whitespace
+        r"[^\s\w]*\w+[^0-9\W]-(?=\w+[^0-9\W])|"  # hyphenated words
+        r"(?<=[\w\!\"\'\&\.\,\?])-{2,}(?=\w))"
+    )  # em-dash
 
     # This less funky little regex just split on recognized spaces. E.g.
     #   "Hello there -- you goof-ball, use the -b option!"
     # splits into
     #   Hello/ /there/ /--/ /you/ /goof-ball,/ /use/ /the/ /-b/ /option!/
-    wordsep_simple_re = re.compile(r'(\s+)')
+    wordsep_simple_re = re.compile(r"(\s+)")
 
     # XXX this is not locale- or charset-aware -- string.lowercase
     # is US-ASCII only (and therefore English-only)
-    sentence_end_re = re.compile(r'[a-z]'             # lowercase letter
-                                 r'[\.\!\?]'          # sentence-ending punct.
-                                 r'[\"\']?'           # optional end-of-quote
-                                 r'\Z')               # end of chunk
+    sentence_end_re = re.compile(
+        r"[a-z]"  # lowercase letter
+        r"[\.\!\?]"  # sentence-ending punct.
+        r"[\"\']?"  # optional end-of-quote
+        r"\Z"
+    )  # end of chunk
 
-
-    def __init__(self,
-                 width=70,
-                 initial_indent="",
-                 subsequent_indent="",
-                 expand_tabs=True,
-                 replace_whitespace=True,
-                 fix_sentence_endings=False,
-                 break_long_words=True,
-                 drop_whitespace=True,
-                 break_on_hyphens=True,
-                 tabsize=8,
-                 *,
-                 max_lines=None,
-                 placeholder=' [...]'):
+    def __init__(
+        self,
+        width=70,
+        initial_indent="",
+        subsequent_indent="",
+        expand_tabs=True,
+        replace_whitespace=True,
+        fix_sentence_endings=False,
+        break_long_words=True,
+        drop_whitespace=True,
+        break_on_hyphens=True,
+        tabsize=8,
+        *,
+        max_lines=None,
+        placeholder=" [...]"
+    ):
         self.width = width
         self.initial_indent = initial_indent
         self.subsequent_indent = subsequent_indent
@@ -124,7 +129,6 @@ class TextWrapper:
         self.tabsize = tabsize
         self.max_lines = max_lines
         self.placeholder = placeholder
-
 
     # -- Private methods -----------------------------------------------
     # (possibly useful for subclasses to override)
@@ -141,7 +145,6 @@ class TextWrapper:
         if self.replace_whitespace:
             text = text.translate(self.unicode_whitespace_trans)
         return text
-
 
     def _split(self, text):
         """_split(text : string) -> [string]
@@ -176,9 +179,9 @@ class TextWrapper:
         """
         i = 0
         patsearch = self.sentence_end_re.search
-        while i < len(chunks)-1:
-            if chunks[i+1] == " " and patsearch(chunks[i]):
-                chunks[i+1] = "  "
+        while i < len(chunks) - 1:
+            if chunks[i + 1] == " " and patsearch(chunks[i]):
+                chunks[i + 1] = "  "
                 i += 2
             else:
                 i += 1
@@ -262,7 +265,7 @@ class TextWrapper:
 
             # First chunk on line is whitespace -- drop it, unless this
             # is the very beginning of the text (ie. no lines started yet).
-            if self.drop_whitespace and chunks[-1].strip() == '' and lines:
+            if self.drop_whitespace and chunks[-1].strip() == "" and lines:
                 del chunks[-1]
 
             while chunks:
@@ -284,34 +287,37 @@ class TextWrapper:
                 cur_len = sum(map(len, cur_line))
 
             # If the last chunk on this line is all whitespace, drop it.
-            if self.drop_whitespace and cur_line and cur_line[-1].strip() == '':
+            if self.drop_whitespace and cur_line and cur_line[-1].strip() == "":
                 cur_len -= len(cur_line[-1])
                 del cur_line[-1]
 
             if cur_line:
-                if (self.max_lines is None or
-                    len(lines) + 1 < self.max_lines or
-                    (not chunks or
-                     self.drop_whitespace and
-                     len(chunks) == 1 and
-                     not chunks[0].strip()) and cur_len <= width):
+                if (
+                    self.max_lines is None
+                    or len(lines) + 1 < self.max_lines
+                    or (
+                        not chunks
+                        or self.drop_whitespace
+                        and len(chunks) == 1
+                        and not chunks[0].strip()
+                    )
+                    and cur_len <= width
+                ):
                     # Convert current line back to a string and store it in
                     # list of all lines (return value).
-                    lines.append(indent + ''.join(cur_line))
+                    lines.append(indent + "".join(cur_line))
                 else:
                     while cur_line:
-                        if (cur_line[-1].strip() and
-                            cur_len + len(self.placeholder) <= width):
+                        if cur_line[-1].strip() and cur_len + len(self.placeholder) <= width:
                             cur_line.append(self.placeholder)
-                            lines.append(indent + ''.join(cur_line))
+                            lines.append(indent + "".join(cur_line))
                             break
                         cur_len -= len(cur_line[-1])
                         del cur_line[-1]
                     else:
                         if lines:
                             prev_line = lines[-1].rstrip()
-                            if (len(prev_line) + len(self.placeholder) <=
-                                    self.width):
+                            if len(prev_line) + len(self.placeholder) <= self.width:
                                 lines[-1] = prev_line + self.placeholder
                                 break
                         lines.append(indent + self.placeholder.lstrip())
@@ -351,6 +357,7 @@ class TextWrapper:
 
 # -- Convenience interface ---------------------------------------------
 
+
 def wrap(text, width=70, **kwargs):
     """Wrap a single paragraph of text, returning a list of wrapped lines.
 
@@ -364,6 +371,7 @@ def wrap(text, width=70, **kwargs):
     w = TextWrapper(width=width, **kwargs)
     return w.wrap(text)
 
+
 def fill(text, width=70, **kwargs):
     """Fill a single paragraph of text, returning a new string.
 
@@ -375,6 +383,7 @@ def fill(text, width=70, **kwargs):
     """
     w = TextWrapper(width=width, **kwargs)
     return w.fill(text)
+
 
 def shorten(text, width, **kwargs):
     """Collapse and truncate the given text to fit in the given width.
@@ -389,13 +398,14 @@ def shorten(text, width, **kwargs):
         'Hello [...]'
     """
     w = TextWrapper(width=width, max_lines=1, **kwargs)
-    return w.fill(' '.join(text.strip().split()))
+    return w.fill(" ".join(text.strip().split()))
 
 
 # -- Loosely related functionality -------------------------------------
 
-_whitespace_only_re = re.compile('^[ \t]+$', re.MULTILINE)
-_leading_whitespace_re = re.compile('(^[ \t]*)(?:[^ \t\n])', re.MULTILINE)
+_whitespace_only_re = re.compile("^[ \t]+$", re.MULTILINE)
+_leading_whitespace_re = re.compile("(^[ \t]*)(?:[^ \t\n])", re.MULTILINE)
+
 
 def dedent(text):
     """Remove any common leading whitespace from every line in `text`.
@@ -413,7 +423,7 @@ def dedent(text):
     # Look for the longest leading string of spaces and tabs common to
     # all lines.
     margin = None
-    text = _whitespace_only_re.sub('', text)
+    text = _whitespace_only_re.sub("", text)
     indents = _leading_whitespace_re.findall(text)
     for indent in indents:
         if margin is None:
@@ -438,11 +448,10 @@ def dedent(text):
     # sanity check (testing/debugging only)
     if 0 and margin:
         for line in text.split("\n"):
-            assert not line or line.startswith(margin), \
-                   "line = %r, margin = %r" % (line, margin)
+            assert not line or line.startswith(margin), "line = %r, margin = %r" % (line, margin)
 
     if margin:
-        text = re.sub(r'(?m)^' + margin, '', text)
+        text = re.sub(r"(?m)^" + margin, "", text)
     return text
 
 
@@ -455,16 +464,18 @@ def indent(text, prefix, predicate=None):
     consist solely of whitespace characters.
     """
     if predicate is None:
+
         def predicate(line):
             return line.strip()
 
     def prefixed_lines():
         for line in text.splitlines(True):
             yield (prefix + line if predicate(line) else line)
-    return ''.join(prefixed_lines())
+
+    return "".join(prefixed_lines())
 
 
 if __name__ == "__main__":
-    #print dedent("\tfoo\n\tbar")
-    #print dedent("  \thello there\n  \t  how are you?")
+    # print dedent("\tfoo\n\tbar")
+    # print dedent("  \thello there\n  \t  how are you?")
     print(dedent("Hello there.\n  This is indented."))

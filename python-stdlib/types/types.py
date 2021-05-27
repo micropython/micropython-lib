@@ -8,39 +8,56 @@ import sys
 # iterator.  Don't check the type!  Use hasattr to check for both
 # "__iter__" and "__next__" attributes instead.
 
-def _f(): pass
+
+def _f():
+    pass
+
+
 FunctionType = type(_f)
-LambdaType = type(lambda: None)         # Same as FunctionType
+LambdaType = type(lambda: None)  # Same as FunctionType
 CodeType = None  # TODO: Add better sentinel which can't match anything
 MappingProxyType = None  # TODO: Add better sentinel which can't match anything
 SimpleNamespace = None  # TODO: Add better sentinel which can't match anything
 
+
 def _g():
     yield 1
+
+
 GeneratorType = type(_g())
 
+
 class _C:
-    def _m(self): pass
+    def _m(self):
+        pass
+
+
 MethodType = type(_C()._m)
 
 BuiltinFunctionType = type(len)
-BuiltinMethodType = type([].append)     # Same as BuiltinFunctionType
+BuiltinMethodType = type([].append)  # Same as BuiltinFunctionType
 
 ModuleType = type(sys)
 
 try:
     raise TypeError
 except TypeError:
-#    tb = sys.exc_info()[2]
+    #    tb = sys.exc_info()[2]
     TracebackType = None  # TODO: Add better sentinel which can't match anything
     FrameType = None  # TODO: Add better sentinel which can't match anything
-    tb = None; del tb
+    tb = None
+    del tb
 
 # For Jython, the following two types are identical
 GetSetDescriptorType = None  # TODO: Add better sentinel which can't match anything
 MemberDescriptorType = None  # TODO: Add better sentinel which can't match anything
 
-del sys, _f, _g, _C,                              # Not for export
+del (
+    sys,
+    _f,
+    _g,
+    _C,
+)  # Not for export
 
 
 # Provide a PEP 3115 compliant mechanism for class creation
@@ -50,6 +67,7 @@ def new_class(name, bases=(), kwds=None, exec_body=None):
     if exec_body is not None:
         exec_body(ns)
     return meta(name, bases, ns, **kwds)
+
 
 def prepare_class(name, bases=(), kwds=None):
     """Call the __prepare__ method of the appropriate metaclass.
@@ -65,9 +83,9 @@ def prepare_class(name, bases=(), kwds=None):
     if kwds is None:
         kwds = {}
     else:
-        kwds = dict(kwds) # Don't alter the provided mapping
-    if 'metaclass' in kwds:
-        meta = kwds.pop('metaclass')
+        kwds = dict(kwds)  # Don't alter the provided mapping
+    if "metaclass" in kwds:
+        meta = kwds.pop("metaclass")
     else:
         if bases:
             meta = type(bases[0])
@@ -77,11 +95,12 @@ def prepare_class(name, bases=(), kwds=None):
         # when meta is a type, we first determine the most-derived metaclass
         # instead of invoking the initial candidate directly
         meta = _calculate_meta(meta, bases)
-    if hasattr(meta, '__prepare__'):
+    if hasattr(meta, "__prepare__"):
         ns = meta.__prepare__(name, bases, **kwds)
     else:
         ns = {}
     return meta, ns, kwds
+
 
 def _calculate_meta(meta, bases):
     """Calculate the most derived metaclass."""
@@ -94,8 +113,10 @@ def _calculate_meta(meta, bases):
             winner = base_meta
             continue
         # else:
-        raise TypeError("metaclass conflict: "
-                        "the metaclass of a derived class "
-                        "must be a (non-strict) subclass "
-                        "of the metaclasses of all its bases")
+        raise TypeError(
+            "metaclass conflict: "
+            "the metaclass of a derived class "
+            "must be a (non-strict) subclass "
+            "of the metaclasses of all its bases"
+        )
     return winner

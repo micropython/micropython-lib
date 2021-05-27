@@ -3,11 +3,17 @@ General functions for HTML manipulation.
 """
 
 
-_escape_map = {ord('&'): '&amp;', ord('<'): '&lt;', ord('>'): '&gt;'}
-_escape_map_full = {ord('&'): '&amp;', ord('<'): '&lt;', ord('>'): '&gt;',
-                    ord('"'): '&quot;', ord('\''): '&#x27;'}
+_escape_map = {ord("&"): "&amp;", ord("<"): "&lt;", ord(">"): "&gt;"}
+_escape_map_full = {
+    ord("&"): "&amp;",
+    ord("<"): "&lt;",
+    ord(">"): "&gt;",
+    ord('"'): "&quot;",
+    ord("'"): "&#x27;",
+}
 
 # NB: this is a candidate for a bytes/string polymorphic interface
+
 
 def escape(s, quote=True):
     """
@@ -17,6 +23,7 @@ def escape(s, quote=True):
     translated.
     """
     import string
+
     if quote:
         return string.translate(s, _escape_map_full)
     return string.translate(s, _escape_map)

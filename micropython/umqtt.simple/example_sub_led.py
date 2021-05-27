@@ -17,6 +17,7 @@ TOPIC = b"led"
 
 state = 0
 
+
 def sub_cb(topic, msg):
     global state
     print((topic, msg))
@@ -43,7 +44,7 @@ def main(server=SERVER):
 
     try:
         while 1:
-            #micropython.mem_info()
+            # micropython.mem_info()
             c.wait_msg()
     finally:
         c.disconnect()

@@ -1,6 +1,6 @@
 import json
 
-inp = ['foo', {'bar': ('baz', None, 1, 2)}]
+inp = ["foo", {"bar": ("baz", None, 1, 2)}]
 print(inp)
 
 s = json.dumps(inp)
@@ -10,4 +10,4 @@ outp = json.loads(s)
 print(outp)
 
 # Doesn't work because JSON doesn't have tuples
-#assert inp == outp
+# assert inp == outp

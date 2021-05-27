@@ -5,7 +5,6 @@ import sys, os, io, subprocess
 import quopri
 
 
-
 ENCSAMPLE = b"""\
 Here's a bunch of special=20
 
@@ -25,8 +24,9 @@ characters... have fun!
 """
 
 # First line ends with a space
-DECSAMPLE = b"Here's a bunch of special \n" + \
-b"""\
+DECSAMPLE = (
+    b"Here's a bunch of special \n"
+    + b"""\
 
 \xa1\xa2\xa3\xa4\xa5\xa6\xa7\xa8\xa9
 \xaa\xab\xac\xad\xae\xaf\xb0\xb1\xb2\xb3
@@ -42,6 +42,7 @@ b"""\
 
 characters... have fun!
 """
+)
 
 
 def withpythonimplementation(testfunc):
@@ -59,73 +60,91 @@ def withpythonimplementation(testfunc):
             finally:
                 quopri.b2a_qp = oldencode
                 quopri.a2b_qp = olddecode
-#    newtest.__name__ = testfunc.__name__
+
+    #    newtest.__name__ = testfunc.__name__
     return newtest
+
 
 class QuopriTestCase(unittest.TestCase):
     # Each entry is a tuple of (plaintext, encoded string).  These strings are
     # used in the "quotetabs=0" tests.
     STRINGS = (
         # Some normal strings
-        (b'hello', b'hello'),
-        (b'''hello
+        (b"hello", b"hello"),
+        (
+            b"""hello
         there
-        world''', b'''hello
+        world""",
+            b"""hello
         there
-        world'''),
-        (b'''hello
+        world""",
+        ),
+        (
+            b"""hello
         there
         world
-''', b'''hello
+""",
+            b"""hello
         there
         world
-'''),
-        (b'\201\202\203', b'=81=82=83'),
+""",
+        ),
+        (b"\201\202\203", b"=81=82=83"),
         # Add some trailing MUST QUOTE strings
-        (b'hello ', b'hello=20'),
-        (b'hello\t', b'hello=09'),
+        (b"hello ", b"hello=20"),
+        (b"hello\t", b"hello=09"),
         # Some long lines.  First, a single line of 108 characters
-        (b'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\xd8\xd9\xda\xdb\xdc\xdd\xde\xdfxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-         b'''xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx=D8=D9=DA=DB=DC=DD=DE=DFx=
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'''),
+        (
+            b"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\xd8\xd9\xda\xdb\xdc\xdd\xde\xdfxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            b"""xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx=D8=D9=DA=DB=DC=DD=DE=DFx=
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx""",
+        ),
         # A line of exactly 76 characters, no soft line break should be needed
-        (b'yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy',
-        b'yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy'),
+        (
+            b"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+            b"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        ),
         # A line of 77 characters, forcing a soft line break at position 75,
         # and a second line of exactly 2 characters (because the soft line
         # break `=' sign counts against the line length limit).
-        (b'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz',
-         b'''zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz=
-zz'''),
+        (
+            b"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+            b"""zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz=
+zz""",
+        ),
         # A line of 151 characters, forcing a soft line break at position 75,
         # with a second line of exactly 76 characters and no trailing =
-        (b'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz',
-         b'''zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz=
-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz'''),
+        (
+            b"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+            b"""zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz=
+zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz""",
+        ),
         # A string containing a hard line break, but which the first line is
         # 151 characters and the second line is exactly 76 characters.  This
         # should leave us with three lines, the first which has a soft line
         # break, and which the second and third do not.
-        (b'''yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz''',
-         b'''yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy=
+        (
+            b"""yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz""",
+            b"""yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy=
 yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz'''),
+zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz""",
+        ),
         # Now some really complex stuff ;)
         (DECSAMPLE, ENCSAMPLE),
-        )
+    )
 
     # These are used in the "quotetabs=1" tests.
     ESTRINGS = (
-        (b'hello world', b'hello=20world'),
-        (b'hello\tworld', b'hello=09world'),
-        )
+        (b"hello world", b"hello=20world"),
+        (b"hello\tworld", b"hello=09world"),
+    )
 
     # These are used in the "header=1" tests.
     HSTRINGS = (
-        (b'hello world', b'hello_world'),
-        (b'hello_world', b'hello=5Fworld'),
-        )
+        (b"hello world", b"hello_world"),
+        (b"hello_world", b"hello=5Fworld"),
+    )
 
     @withpythonimplementation
     def test_encodestring(self):
@@ -176,29 +195,32 @@ zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz''')
 
     def _test_scriptencode(self):
         (p, e) = self.STRINGS[-1]
-        process = subprocess.Popen([sys.executable, "-mquopri"],
-                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        process = subprocess.Popen(
+            [sys.executable, "-mquopri"], stdin=subprocess.PIPE, stdout=subprocess.PIPE
+        )
         self.addCleanup(process.stdout.close)
         cout, cerr = process.communicate(p)
         # On Windows, Python will output the result to stdout using
         # CRLF, as the mode of stdout is text mode. To compare this
         # with the expected result, we need to do a line-by-line comparison.
-        cout = cout.decode('latin-1').splitlines()
-        e = e.decode('latin-1').splitlines()
-        assert len(cout)==len(e)
+        cout = cout.decode("latin-1").splitlines()
+        e = e.decode("latin-1").splitlines()
+        assert len(cout) == len(e)
         for i in range(len(cout)):
             self.assertEqual(cout[i], e[i])
         self.assertEqual(cout, e)
 
     def _test_scriptdecode(self):
         (p, e) = self.STRINGS[-1]
-        process = subprocess.Popen([sys.executable, "-mquopri", "-d"],
-                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        process = subprocess.Popen(
+            [sys.executable, "-mquopri", "-d"], stdin=subprocess.PIPE, stdout=subprocess.PIPE
+        )
         self.addCleanup(process.stdout.close)
         cout, cerr = process.communicate(e)
-        cout = cout.decode('latin-1')
-        p = p.decode('latin-1')
+        cout = cout.decode("latin-1")
+        p = p.decode("latin-1")
         self.assertEqual(cout.splitlines(), p.splitlines())
+
 
 def test_main():
     support.run_unittest(QuopriTestCase)

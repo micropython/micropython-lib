@@ -16,7 +16,7 @@ roundtrip("str")
 roundtrip(b"bytes")
 roundtrip((1,))
 roundtrip([1, 2])
-roundtrip({1:2, 3: 4})
+roundtrip({1: 2, 3: 4})
 
 try:
     pickle.loads(b"1; import micropython")

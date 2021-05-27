@@ -10,9 +10,10 @@ except:
 
 done = False
 
+
 async def receiver():
     global done
-    with open('test_io_starve.py', 'rb') as f:
+    with open("test_io_starve.py", "rb") as f:
         sreader = asyncio.StreamReader(f)
         while True:
             await asyncio.sleep(0.1)
@@ -27,9 +28,10 @@ async def foo():
         await asyncio.sleep(0)
     loop.stop()
 
+
 loop = asyncio.get_event_loop()
 loop.create_task(foo())
 loop.create_task(receiver())
 loop.run_forever()
 assert done
-print('OK')
+print("OK")

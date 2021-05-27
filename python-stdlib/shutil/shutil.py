@@ -8,6 +8,7 @@ def rmtree(top):
             os.unlink(path + "/" + f)
         os.rmdir(path)
 
+
 def copyfileobj(src, dest, length=512):
     if hasattr(src, "readinto"):
         buf = bytearray(length)

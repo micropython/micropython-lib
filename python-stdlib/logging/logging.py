@@ -1,11 +1,11 @@
 import sys
 
 CRITICAL = 50
-ERROR    = 40
-WARNING  = 30
-INFO     = 20
-DEBUG    = 10
-NOTSET   = 0
+ERROR = 40
+WARNING = 30
+INFO = 20
+DEBUG = 10
+NOTSET = 0
 
 _level_dict = {
     CRITICAL: "CRIT",
@@ -17,6 +17,7 @@ _level_dict = {
 
 _stream = sys.stderr
 
+
 class LogRecord:
     def __init__(self):
         self.__dict__ = {}
@@ -24,12 +25,14 @@ class LogRecord:
     def __getattr__(self, key):
         return self.__dict__[key]
 
+
 class Handler:
     def __init__(self):
         pass
 
     def setFormatter(self, fmtr):
         pass
+
 
 class Logger:
 
@@ -93,8 +96,10 @@ class Logger:
     def addHandler(self, hndlr):
         self.handlers.append(hndlr)
 
+
 _level = INFO
 _loggers = {}
+
 
 def getLogger(name="root"):
     if name in _loggers:
@@ -103,11 +108,14 @@ def getLogger(name="root"):
     _loggers[name] = l
     return l
 
+
 def info(msg, *args):
     getLogger().info(msg, *args)
 
+
 def debug(msg, *args):
     getLogger().debug(msg, *args)
+
 
 def basicConfig(level=INFO, filename=None, stream=None, format=None):
     global _level, _stream

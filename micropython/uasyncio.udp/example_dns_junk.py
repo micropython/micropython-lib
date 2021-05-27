@@ -6,6 +6,7 @@ import uasyncio
 import uasyncio.udp
 import usocket
 
+
 def udp_req(addr):
     s = uasyncio.udp.socket()
     print(s)
@@ -18,6 +19,7 @@ def udp_req(addr):
 
 
 import logging
+
 logging.basicConfig(level=logging.INFO)
 
 addr = usocket.getaddrinfo("127.0.0.1", 53)[0][-1]

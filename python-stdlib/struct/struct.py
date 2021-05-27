@@ -1,7 +1,7 @@
 from ustruct import *
 
-class Struct:
 
+class Struct:
     def __init__(self, format):
         self.format = format
         self.size = calcsize(format)

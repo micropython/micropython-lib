@@ -10,11 +10,11 @@ from uselect import *
 
 libc = ffilib.libc()
 
-#int epoll_create(int size);
+# int epoll_create(int size);
 epoll_create = libc.func("i", "epoll_create", "i")
-#int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);
+# int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);
 epoll_ctl = libc.func("i", "epoll_ctl", "iiiP")
-#int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout);
+# int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout);
 epoll_wait = libc.func("i", "epoll_wait", "ipii")
 
 EPOLLIN = 0x001
@@ -24,7 +24,7 @@ EPOLLERR = 0x008
 EPOLLHUP = 0x010
 EPOLLRDHUP = 0x2000
 EPOLLONESHOT = 1 << 30
-EPOLLET  = 1 << 31
+EPOLLET = 1 << 31
 
 EPOLL_CTL_ADD = 1
 EPOLL_CTL_DEL = 2
@@ -46,14 +46,14 @@ elif struct.calcsize("IQ") == 12:
 else:
     epoll_event = "QO"
 
-class Epoll:
 
+class Epoll:
     def __init__(self, epfd):
         self.epfd = epfd
         self.evbuf = struct.pack(epoll_event, 0, None)
         self.registry = {}
 
-    def register(self, fd, eventmask=EPOLLIN|EPOLLPRI|EPOLLOUT, retval=None):
+    def register(self, fd, eventmask=EPOLLIN | EPOLLPRI | EPOLLOUT, retval=None):
         "retval is extension to stdlib, value to use in results from .poll()."
         if retval is None:
             retval = fd

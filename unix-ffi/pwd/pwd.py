@@ -10,8 +10,9 @@ libc = ffilib.libc()
 getpwnam_ = libc.func("P", "getpwnam", "s")
 
 
-struct_passwd = namedtuple("struct_passwd",
-    ["pw_name", "pw_passwd", "pw_uid", "pw_gid", "pw_gecos", "pw_dir", "pw_shell"])
+struct_passwd = namedtuple(
+    "struct_passwd", ["pw_name", "pw_passwd", "pw_uid", "pw_gid", "pw_gecos", "pw_dir", "pw_shell"]
+)
 
 
 def getpwnam(user):

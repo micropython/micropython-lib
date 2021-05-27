@@ -33,6 +33,7 @@ def recompress(fname):
     with Popen(["gzip", "-d", "-c", fname], stdout=PIPE).stdout as inf:
         gzip_4k(inf, fname)
 
+
 def find_latest(dir):
     res = []
     for fname in glob.glob(dir + "/*.gz"):
@@ -59,11 +60,12 @@ FILTERS = [
 
 outbuf = io.BytesIO()
 
+
 def filter_tar(name):
     fin = tarfile.open(name, "r:gz")
     fout = tarfile.open(fileobj=outbuf, mode="w")
     for info in fin:
-#        print(info)
+        #        print(info)
         if not "/" in info.name:
             continue
         fname = info.name.split("/", 1)[1]
@@ -93,8 +95,8 @@ def filter_tar(name):
     fin.close()
 
 
-
 from setuptools import Command
+
 
 class OptimizeUpip(Command):
 
@@ -115,7 +117,7 @@ class OptimizeUpip(Command):
 
 # For testing only
 if __name__ == "__main__":
-#    recompress_latest(sys.argv[1])
+    #    recompress_latest(sys.argv[1])
     filter_tar(sys.argv[1])
     outbuf.seek(0)
     gzip_4k(outbuf, sys.argv[1])

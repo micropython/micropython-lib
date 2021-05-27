@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # MicroPython will pick up glob from the current dir otherwise.
 import sys
+
 sys.path.pop(0)
 
 import glob
@@ -68,12 +69,13 @@ This is MicroPython compatibility module, allowing applications using
 MicroPython-specific features to run on CPython.
 """
 
-MICROPYTHON_DEVELS = 'micropython-lib Developers'
-MICROPYTHON_DEVELS_EMAIL = 'micro-python@googlegroups.com'
-CPYTHON_DEVELS = 'CPython Developers'
-CPYTHON_DEVELS_EMAIL = 'python-dev@python.org'
-PYPY_DEVELS = 'PyPy Developers'
-PYPY_DEVELS_EMAIL = 'pypy-dev@python.org'
+MICROPYTHON_DEVELS = "micropython-lib Developers"
+MICROPYTHON_DEVELS_EMAIL = "micro-python@googlegroups.com"
+CPYTHON_DEVELS = "CPython Developers"
+CPYTHON_DEVELS_EMAIL = "python-dev@python.org"
+PYPY_DEVELS = "PyPy Developers"
+PYPY_DEVELS_EMAIL = "pypy-dev@python.org"
+
 
 def parse_metadata(f):
     data = {}
@@ -142,7 +144,7 @@ def main():
                 data["license"] = "MIT"
         elif data["srctype"] == "cpython-backport":
             assert module.startswith("cpython-")
-            module = module[len("cpython-"):]
+            module = module[len("cpython-") :]
             data["author"] = MICROPYTHON_DEVELS
             data["author_email"] = MICROPYTHON_DEVELS_EMAIL
             data["maintainer"] = MICROPYTHON_DEVELS
@@ -163,7 +165,9 @@ def main():
 
         data["modules"] = "'" + data["name"].rsplit(".", 1)[0] + "'"
         if "extra_modules" in data:
-            data["modules"] += ", " + ", ".join(["'" + x.strip() + "'" for x in data["extra_modules"].split(",")])
+            data["modules"] += ", " + ", ".join(
+                ["'" + x.strip() + "'" for x in data["extra_modules"].split(",")]
+            )
 
         if "depends" in data:
             deps = ["micropython-" + x.strip() for x in data["depends"].split(",")]

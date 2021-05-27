@@ -19,7 +19,8 @@ def echo(reader, writer):
 
 
 import logging
-#logging.basicConfig(level=logging.INFO)
+
+# logging.basicConfig(level=logging.INFO)
 logging.basicConfig(level=logging.DEBUG)
 loop = uasyncio.get_event_loop()
 loop.create_task(uasyncio.start_server(echo, "127.0.0.1", 8081))

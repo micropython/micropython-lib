@@ -4,7 +4,6 @@ import select
 
 
 class Process:
-
     def __init__(self, group=None, target=None, name=None, args=(), kwargs={}):
         self.target = target
         self.args = args
@@ -34,7 +33,6 @@ class Process:
 
 
 class Connection:
-
     def __init__(self, fd):
         self.fd = fd
         self.f = open(fd)
@@ -68,7 +66,6 @@ def Pipe(duplex=True):
 
 
 class AsyncResult:
-
     def __init__(self, p, r):
         self.p = p
         self.r = r
@@ -90,7 +87,6 @@ class AsyncResult:
 
 
 class Pool:
-
     def __init__(self, num):
         self.num = num
 
@@ -99,12 +95,12 @@ class Pool:
         def _exec(w):
             r = f(*args, **kwargs)
             w.send(r)
+
         r, w = Pipe(False)
         p = Process(target=_exec, args=(w,))
         p.register_pipe(r, w)
         p.start()
         return p, r
-
 
     def apply(self, f, args=(), kwargs={}):
         p, r = self._apply(f, args, kwargs)

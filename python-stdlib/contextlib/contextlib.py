@@ -29,10 +29,13 @@ class closing(object):
             f.close()
 
     """
+
     def __init__(self, thing):
         self.thing = thing
+
     def __enter__(self):
         return self.thing
+
     def __exit__(self, *exc_info):
         self.thing.close()
 
@@ -66,6 +69,7 @@ class suppress:
         # See http://bugs.python.org/issue12029 for more details
         return exctype is not None and issubclass(exctype, self._exceptions)
 
+
 # Inspired by discussions on http://bugs.python.org/issue13585
 class ExitStack(object):
     """Context manager for dynamic management of a stack of exit callbacks
@@ -79,6 +83,7 @@ class ExitStack(object):
             # in the list raise an exception
 
     """
+
     def __init__(self):
         self._exit_callbacks = deque()
 
@@ -91,8 +96,10 @@ class ExitStack(object):
 
     def _push_cm_exit(self, cm, cm_exit):
         """Helper to correctly register callbacks to __exit__ methods"""
+
         def _exit_wrapper(*exc_details):
             return cm_exit(cm, *exc_details)
+
         self.push(_exit_wrapper)
 
     def push(self, exit):
@@ -113,17 +120,19 @@ class ExitStack(object):
             self._exit_callbacks.append(exit)
         else:
             self._push_cm_exit(exit, exit_method)
-        return exit # Allow use as a decorator
+        return exit  # Allow use as a decorator
 
     def callback(self, callback, *args, **kwds):
         """Registers an arbitrary callback and arguments.
 
         Cannot suppress exceptions.
         """
+
         def _exit_wrapper(exc_type, exc, tb):
             callback(*args, **kwds)
+
         self.push(_exit_wrapper)
-        return callback # Allow use as a decorator
+        return callback  # Allow use as a decorator
 
     def enter_context(self, cm):
         """Enters the supplied context manager

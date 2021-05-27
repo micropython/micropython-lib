@@ -1,17 +1,18 @@
 TEXT = "TEXT"
 START_TAG = "START_TAG"
-#START_TAG_DONE = "START_TAG_DONE"
+# START_TAG_DONE = "START_TAG_DONE"
 END_TAG = "END_TAG"
 PI = "PI"
-#PI_DONE = "PI_DONE"
+# PI_DONE = "PI_DONE"
 ATTR = "ATTR"
-#ATTR_VAL = "ATTR_VAL"
+# ATTR_VAL = "ATTR_VAL"
+
 
 class XMLSyntaxError(Exception):
     pass
 
-class XMLTokenizer:
 
+class XMLTokenizer:
     def __init__(self, f):
         self.f = f
         self.nextch()
@@ -46,7 +47,7 @@ class XMLTokenizer:
         ident = ""
         while True:
             c = self.curch()
-            if not(c.isalpha() or c.isdigit() or c in "_-."):
+            if not (c.isalpha() or c.isdigit() or c in "_-."):
                 break
             ident += self.getch()
         return ident
@@ -74,13 +75,13 @@ class XMLTokenizer:
     def lex_attrs_till(self):
         while self.isident():
             attr = self.getnsident()
-            #yield (ATTR, attr)
+            # yield (ATTR, attr)
             self.expect("=")
             self.expect('"')
             val = ""
             while self.curch() != '"':
                 val += self.getch()
-            #yield (ATTR_VAL, val)
+            # yield (ATTR_VAL, val)
             self.expect('"')
             yield (ATTR, attr, val)
 
@@ -98,7 +99,7 @@ class XMLTokenizer:
                 elif self.match("!"):
                     self.expect("-")
                     self.expect("-")
-                    last3 = ''
+                    last3 = ""
                     while True:
                         last3 = last3[-2:] + self.getch()
                         if last3 == "-->":
@@ -123,6 +124,7 @@ def gfind(gen, pred):
         if pred(i):
             return i
 
+
 def text_of(gen, tag):
     # Return text content of a leaf tag
     def match_tag(t):
@@ -137,6 +139,7 @@ def text_of(gen, tag):
     t, val = next(gen)
     assert t == TEXT
     return val
+
 
 def tokenize(file):
     return XMLTokenizer(file).tokenize()

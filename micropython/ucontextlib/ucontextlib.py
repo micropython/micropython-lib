@@ -9,6 +9,7 @@ Not implemented:
  - supress
 """
 
+
 class ContextDecorator(object):
     "A base class or mixin that enables context managers to work as decorators."
 
@@ -28,6 +29,7 @@ class ContextDecorator(object):
         def inner(*args, **kwds):
             with self._recreate_cm():
                 return func(*args, **kwds)
+
         return inner
 
 
@@ -101,6 +103,8 @@ def contextmanager(func):
             <cleanup>
 
     """
+
     def helper(*args, **kwds):
         return _GeneratorContextManager(func, *args, **kwds)
+
     return helper

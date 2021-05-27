@@ -12,6 +12,7 @@ NUM_REQS = 1000
 seen = []
 cnt = 0
 
+
 def validate(resp):
     global cnt
     t = resp.text

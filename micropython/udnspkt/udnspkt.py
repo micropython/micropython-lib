@@ -14,7 +14,7 @@ def skip_fqdn(buf):
         sz = buf.readbin("B")
         if not sz:
             break
-        if sz >= 0xc0:
+        if sz >= 0xC0:
             buf.readbin("B")
             break
         buf.read(sz)
@@ -50,29 +50,29 @@ def parse_resp(buf, is_ipv6):
     acnt = buf.readbin(">H")
     nscnt = buf.readbin(">H")
     addcnt = buf.readbin(">H")
-    #print(qcnt, acnt, nscnt, addcnt)
+    # print(qcnt, acnt, nscnt, addcnt)
 
     skip_fqdn(buf)
     v = buf.readbin(">H")
-    #print(v)
+    # print(v)
     v = buf.readbin(">H")
-    #print(v)
+    # print(v)
 
     for i in range(acnt):
-        #print("Resp #%d" % i)
-        #v = read_fqdn(buf)
-        #print(v)
+        # print("Resp #%d" % i)
+        # v = read_fqdn(buf)
+        # print(v)
         skip_fqdn(buf)
         t = buf.readbin(">H")
-        #print("Type", t)
+        # print("Type", t)
         v = buf.readbin(">H")
-        #print("Class", v)
+        # print("Class", v)
         v = buf.readbin(">I")
-        #print("TTL", v)
+        # print("TTL", v)
         rlen = buf.readbin(">H")
-        #print("rlen", rlen)
+        # print("rlen", rlen)
         rval = buf.read(rlen)
-        #print(rval)
+        # print(rval)
 
         if t == typ:
             return rval

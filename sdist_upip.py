@@ -47,11 +47,12 @@ FILTERS = [
 
 outbuf = io.BytesIO()
 
+
 def filter_tar(name):
     fin = tarfile.open(name, "r:gz")
     fout = tarfile.open(fileobj=outbuf, mode="w")
     for info in fin:
-#        print(info)
+        #        print(info)
         if not "/" in info.name:
             continue
         fname = info.name.split("/", 1)[1]
@@ -82,42 +83,41 @@ def filter_tar(name):
 
 
 def make_resource_module(manifest_files):
-        resources = []
-        # Any non-python file included in manifest is resource
-        for fname in manifest_files:
-            ext = fname.rsplit(".", 1)[1]
-            if ext != "py":
-                resources.append(fname)
+    resources = []
+    # Any non-python file included in manifest is resource
+    for fname in manifest_files:
+        ext = fname.rsplit(".", 1)[1]
+        if ext != "py":
+            resources.append(fname)
 
-        if resources:
-            print("creating resource module R.py")
-            resources.sort()
-            last_pkg = None
-            r_file = None
-            for fname in resources:
-                try:
-                    pkg, res_name = fname.split("/", 1)
-                except ValueError:
-                    print("not treating %s as a resource" % fname)
-                    continue
-                if last_pkg != pkg:
-                    last_pkg = pkg
-                    if r_file:
-                        r_file.write("}\n")
-                        r_file.close()
-                    r_file = open(pkg + "/R.py", "w")
-                    r_file.write("R = {\n")
+    if resources:
+        print("creating resource module R.py")
+        resources.sort()
+        last_pkg = None
+        r_file = None
+        for fname in resources:
+            try:
+                pkg, res_name = fname.split("/", 1)
+            except ValueError:
+                print("not treating %s as a resource" % fname)
+                continue
+            if last_pkg != pkg:
+                last_pkg = pkg
+                if r_file:
+                    r_file.write("}\n")
+                    r_file.close()
+                r_file = open(pkg + "/R.py", "w")
+                r_file.write("R = {\n")
 
-                with open(fname, "rb") as f:
-                    r_file.write("%r: %r,\n" % (res_name, f.read()))
+            with open(fname, "rb") as f:
+                r_file.write("%r: %r,\n" % (res_name, f.read()))
 
-            if r_file:
-                r_file.write("}\n")
-                r_file.close()
+        if r_file:
+            r_file.write("}\n")
+            r_file.close()
 
 
 class sdist(_sdist):
-
     def run(self):
         self.filelist = FileList()
         self.get_file_list()

@@ -12,7 +12,7 @@ def task(i, lock):
         yield from lock.acquire()
         print("Acquired lock in task", i)
         yield from asyncio.sleep(0.5)
-#        yield lock.release()
+        #        yield lock.release()
         lock.release()
 
 

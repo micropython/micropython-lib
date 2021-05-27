@@ -41,38 +41,40 @@ SIGRTMIN = __libc_current_sigrtmin()
 timer_create_ = librt.func("i", "timer_create", "ipp")
 timer_settime_ = librt.func("i", "timer_settime", "PiPp")
 
+
 def new(sdesc):
     buf = bytearray(uctypes.sizeof(sdesc))
     s = uctypes.struct(uctypes.addressof(buf), sdesc, uctypes.NATIVE)
     return s
 
+
 def timer_create(sig_id):
     sev = new(sigevent_t)
-    #print(sev)
+    # print(sev)
     sev.sigev_notify = SIGEV_SIGNAL
     sev.sigev_signo = SIGRTMIN + sig_id
-    timerid = array.array('P', [0])
+    timerid = array.array("P", [0])
     r = timer_create_(CLOCK_MONOTONIC, sev, timerid)
     os.check_error(r)
-    #print("timerid", hex(timerid[0]))
+    # print("timerid", hex(timerid[0]))
     return timerid[0]
+
 
 def timer_settime(tid, hz):
     period = 1000000000 // hz
     new_val = new(itimerspec_t)
     new_val.it_value.tv_nsec = period
     new_val.it_interval.tv_nsec = period
-    #print("new_val:", bytes(new_val))
+    # print("new_val:", bytes(new_val))
     old_val = new(itimerspec_t)
-    #print(new_val, old_val)
+    # print(new_val, old_val)
     r = timer_settime_(tid, 0, new_val, old_val)
     os.check_error(r)
-    #print("old_val:", bytes(old_val))
-    #print("timer_settime", r)
+    # print("old_val:", bytes(old_val))
+    # print("timer_settime", r)
 
 
 class Timer:
-
     def __init__(self, id, freq):
         self.id = id
         self.tid = timer_create(id)
@@ -82,8 +84,8 @@ class Timer:
         self.cb = cb
         timer_settime(self.tid, self.freq)
         org_sig = signal(SIGRTMIN + self.id, self.handler)
-        #print("Sig %d: %s" % (SIGRTMIN + self.id, org_sig))
+        # print("Sig %d: %s" % (SIGRTMIN + self.id, org_sig))
 
     def handler(self, signum):
-        #print('Signal handler called with signal', signum)
+        # print('Signal handler called with signal', signum)
         self.cb(self)

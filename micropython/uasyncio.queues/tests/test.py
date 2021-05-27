@@ -1,11 +1,11 @@
 from unittest import TestCase, run_class
 import sys
-sys.path.insert(0, '../uasyncio')
+
+sys.path.insert(0, "../uasyncio")
 import queues
 
 
 class QueueTestCase(TestCase):
-
     def _val(self, gen):
         """Returns val from generator."""
         while True:
@@ -53,5 +53,5 @@ class QueueTestCase(TestCase):
         self.assertTrue(q.full())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_class(QueueTestCase)

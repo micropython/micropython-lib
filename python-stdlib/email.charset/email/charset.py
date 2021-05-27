@@ -3,11 +3,11 @@
 # Contact: email-sig@python.org
 
 __all__ = [
-    'Charset',
-    'add_alias',
-    'add_charset',
-    'add_codec',
-    ]
+    "Charset",
+    "add_alias",
+    "add_charset",
+    "add_codec",
+]
 
 from functools import partial
 
@@ -18,93 +18,90 @@ from email import errors
 from email.encoders import encode_7or8bit
 
 
-
 # Flags for types of header encodings
-QP          = 1 # Quoted-Printable
-BASE64      = 2 # Base64
-SHORTEST    = 3 # the shorter of QP and base64, but only for headers
+QP = 1  # Quoted-Printable
+BASE64 = 2  # Base64
+SHORTEST = 3  # the shorter of QP and base64, but only for headers
 
 # In "=?charset?q?hello_world?=", the =?, ?q?, and ?= add up to 7
 RFC2047_CHROME_LEN = 7
 
-DEFAULT_CHARSET = 'us-ascii'
-UNKNOWN8BIT = 'unknown-8bit'
-EMPTYSTRING = ''
+DEFAULT_CHARSET = "us-ascii"
+UNKNOWN8BIT = "unknown-8bit"
+EMPTYSTRING = ""
 
 
-
 # Defaults
 CHARSETS = {
     # input        header enc  body enc output conv
-    'iso-8859-1':  (QP,        QP,      None),
-    'iso-8859-2':  (QP,        QP,      None),
-    'iso-8859-3':  (QP,        QP,      None),
-    'iso-8859-4':  (QP,        QP,      None),
+    "iso-8859-1": (QP, QP, None),
+    "iso-8859-2": (QP, QP, None),
+    "iso-8859-3": (QP, QP, None),
+    "iso-8859-4": (QP, QP, None),
     # iso-8859-5 is Cyrillic, and not especially used
     # iso-8859-6 is Arabic, also not particularly used
     # iso-8859-7 is Greek, QP will not make it readable
     # iso-8859-8 is Hebrew, QP will not make it readable
-    'iso-8859-9':  (QP,        QP,      None),
-    'iso-8859-10': (QP,        QP,      None),
+    "iso-8859-9": (QP, QP, None),
+    "iso-8859-10": (QP, QP, None),
     # iso-8859-11 is Thai, QP will not make it readable
-    'iso-8859-13': (QP,        QP,      None),
-    'iso-8859-14': (QP,        QP,      None),
-    'iso-8859-15': (QP,        QP,      None),
-    'iso-8859-16': (QP,        QP,      None),
-    'windows-1252':(QP,        QP,      None),
-    'viscii':      (QP,        QP,      None),
-    'us-ascii':    (None,      None,    None),
-    'big5':        (BASE64,    BASE64,  None),
-    'gb2312':      (BASE64,    BASE64,  None),
-    'euc-jp':      (BASE64,    None,    'iso-2022-jp'),
-    'shift_jis':   (BASE64,    None,    'iso-2022-jp'),
-    'iso-2022-jp': (BASE64,    None,    None),
-    'koi8-r':      (BASE64,    BASE64,  None),
-    'utf-8':       (SHORTEST,  BASE64, 'utf-8'),
-    }
+    "iso-8859-13": (QP, QP, None),
+    "iso-8859-14": (QP, QP, None),
+    "iso-8859-15": (QP, QP, None),
+    "iso-8859-16": (QP, QP, None),
+    "windows-1252": (QP, QP, None),
+    "viscii": (QP, QP, None),
+    "us-ascii": (None, None, None),
+    "big5": (BASE64, BASE64, None),
+    "gb2312": (BASE64, BASE64, None),
+    "euc-jp": (BASE64, None, "iso-2022-jp"),
+    "shift_jis": (BASE64, None, "iso-2022-jp"),
+    "iso-2022-jp": (BASE64, None, None),
+    "koi8-r": (BASE64, BASE64, None),
+    "utf-8": (SHORTEST, BASE64, "utf-8"),
+}
 
 # Aliases for other commonly-used names for character sets.  Map
 # them to the real ones used in email.
 ALIASES = {
-    'latin_1': 'iso-8859-1',
-    'latin-1': 'iso-8859-1',
-    'latin_2': 'iso-8859-2',
-    'latin-2': 'iso-8859-2',
-    'latin_3': 'iso-8859-3',
-    'latin-3': 'iso-8859-3',
-    'latin_4': 'iso-8859-4',
-    'latin-4': 'iso-8859-4',
-    'latin_5': 'iso-8859-9',
-    'latin-5': 'iso-8859-9',
-    'latin_6': 'iso-8859-10',
-    'latin-6': 'iso-8859-10',
-    'latin_7': 'iso-8859-13',
-    'latin-7': 'iso-8859-13',
-    'latin_8': 'iso-8859-14',
-    'latin-8': 'iso-8859-14',
-    'latin_9': 'iso-8859-15',
-    'latin-9': 'iso-8859-15',
-    'latin_10':'iso-8859-16',
-    'latin-10':'iso-8859-16',
-    'cp949':   'ks_c_5601-1987',
-    'euc_jp':  'euc-jp',
-    'euc_kr':  'euc-kr',
-    'ascii':   'us-ascii',
-    }
+    "latin_1": "iso-8859-1",
+    "latin-1": "iso-8859-1",
+    "latin_2": "iso-8859-2",
+    "latin-2": "iso-8859-2",
+    "latin_3": "iso-8859-3",
+    "latin-3": "iso-8859-3",
+    "latin_4": "iso-8859-4",
+    "latin-4": "iso-8859-4",
+    "latin_5": "iso-8859-9",
+    "latin-5": "iso-8859-9",
+    "latin_6": "iso-8859-10",
+    "latin-6": "iso-8859-10",
+    "latin_7": "iso-8859-13",
+    "latin-7": "iso-8859-13",
+    "latin_8": "iso-8859-14",
+    "latin-8": "iso-8859-14",
+    "latin_9": "iso-8859-15",
+    "latin-9": "iso-8859-15",
+    "latin_10": "iso-8859-16",
+    "latin-10": "iso-8859-16",
+    "cp949": "ks_c_5601-1987",
+    "euc_jp": "euc-jp",
+    "euc_kr": "euc-kr",
+    "ascii": "us-ascii",
+}
 
 
 # Map charsets to their Unicode codec strings.
 CODEC_MAP = {
-    'gb2312':      'eucgb2312_cn',
-    'big5':        'big5_tw',
+    "gb2312": "eucgb2312_cn",
+    "big5": "big5_tw",
     # Hack: We don't want *any* conversion for stuff marked us-ascii, as all
     # sorts of garbage might be sent to us in the guise of 7-bit us-ascii.
     # Let that stuff pass through without conversion to/from Unicode.
-    'us-ascii':    None,
-    }
+    "us-ascii": None,
+}
 
 
-
 # Convenience functions for extending the above mappings
 def add_charset(charset, header_enc=None, body_enc=None, output_charset=None):
     """Add character set properties to the global registry.
@@ -130,7 +127,7 @@ def add_charset(charset, header_enc=None, body_enc=None, output_charset=None):
     documentation for more information.
     """
     if body_enc == SHORTEST:
-        raise ValueError('SHORTEST not allowed for body_enc')
+        raise ValueError("SHORTEST not allowed for body_enc")
     CHARSETS[charset] = (header_enc, body_enc, output_charset)
 
 
@@ -153,17 +150,15 @@ def add_codec(charset, codecname):
     CODEC_MAP[charset] = codecname
 
 
-
 # Convenience function for encoding strings, taking into account
 # that they might be unknown-8bit (ie: have surrogate-escaped bytes)
 def _encode(string, codec):
     if codec == UNKNOWN8BIT:
-        return string.encode('ascii', 'surrogateescape')
+        return string.encode("ascii", "surrogateescape")
     else:
         return string.encode(codec)
 
 
-
 class Charset:
     """Map character sets to their email properties.
 
@@ -208,6 +203,7 @@ class Charset:
                   to the output_charset.  If no conversion codec is necessary,
                   this attribute will have the same value as the input_codec.
     """
+
     def __init__(self, input_charset=DEFAULT_CHARSET):
         # RFC 2046, $4.1.2 says charsets are not case sensitive.  We coerce to
         # unicode because its .lower() is locale insensitive.  If the argument
@@ -215,9 +211,9 @@ class Charset:
         # charset is ASCII, as the standard (RFC XXX) requires.
         try:
             if isinstance(input_charset, str):
-                input_charset.encode('ascii')
+                input_charset.encode("ascii")
             else:
-                input_charset = str(input_charset, 'ascii')
+                input_charset = str(input_charset, "ascii")
         except UnicodeError:
             raise errors.CharsetError(input_charset)
         input_charset = input_charset.lower()
@@ -226,8 +222,7 @@ class Charset:
         # We can try to guess which encoding and conversion to use by the
         # charset_map dictionary.  Try that first, but let the user override
         # it.
-        henc, benc, conv = CHARSETS.get(self.input_charset,
-                                        (SHORTEST, BASE64, None))
+        henc, benc, conv = CHARSETS.get(self.input_charset, (SHORTEST, BASE64, None))
         if not conv:
             conv = self.input_charset
         # Set the attributes, allowing the arguments to override the default.
@@ -236,10 +231,8 @@ class Charset:
         self.output_charset = ALIASES.get(conv, conv)
         # Now set the codecs.  If one isn't defined for input_charset,
         # guess and try a Unicode codec with the same name as input_codec.
-        self.input_codec = CODEC_MAP.get(self.input_charset,
-                                         self.input_charset)
-        self.output_codec = CODEC_MAP.get(self.output_charset,
-                                          self.output_charset)
+        self.input_codec = CODEC_MAP.get(self.input_charset, self.input_charset)
+        self.output_codec = CODEC_MAP.get(self.output_charset, self.output_charset)
 
     def __str__(self):
         return self.input_charset.lower()
@@ -267,9 +260,9 @@ class Charset:
         """
         assert self.body_encoding != SHORTEST
         if self.body_encoding == QP:
-            return 'quoted-printable'
+            return "quoted-printable"
         elif self.body_encoding == BASE64:
-            return 'base64'
+            return "base64"
         else:
             return encode_7or8bit
 
@@ -292,7 +285,7 @@ class Charset:
             output codec.
         :return: The encoded string, with RFC 2047 chrome.
         """
-        codec = self.output_codec or 'us-ascii'
+        codec = self.output_codec or "us-ascii"
         header_bytes = _encode(string, codec)
         # 7bit/8bit encodings return the string unchanged (modulo conversions)
         encoder_module = self._get_encoder(header_bytes)
@@ -318,7 +311,7 @@ class Charset:
         :return: Lines of encoded strings, each with RFC 2047 chrome.
         """
         # See which encoding we should use.
-        codec = self.output_codec or 'us-ascii'
+        codec = self.output_codec or "us-ascii"
         header_bytes = _encode(string, codec)
         encoder_module = self._get_encoder(header_bytes)
         encoder = partial(encoder_module.header_encode, charset=codec)
@@ -351,7 +344,7 @@ class Charset:
                 if not lines and not current_line:
                     lines.append(None)
                 else:
-                    separator = (' ' if lines else '')
+                    separator = " " if lines else ""
                     joined_line = EMPTYSTRING.join(current_line)
                     header_bytes = _encode(joined_line, codec)
                     lines.append(encoder(header_bytes))
@@ -404,9 +397,9 @@ class Charset:
             # being bytes has never been nailed down, so fixing that is a
             # longer term TODO.
             if isinstance(string, str):
-                string = string.encode(self.output_charset).decode('latin1')
+                string = string.encode(self.output_charset).decode("latin1")
             return email.quoprimime.body_encode(string)
         else:
             if isinstance(string, str):
-                string = string.encode(self.output_charset).decode('ascii')
+                string = string.encode(self.output_charset).decode("ascii")
             return string

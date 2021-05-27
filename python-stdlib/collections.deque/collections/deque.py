@@ -1,5 +1,4 @@
 class deque:
-
     def __init__(self, iterable=None):
         if iterable is None:
             self.q = []
@@ -34,4 +33,4 @@ class deque:
         yield from self.q
 
     def __str__(self):
-        return 'deque({})'.format(self.q)
+        return "deque({})".format(self.q)

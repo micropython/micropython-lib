@@ -3,6 +3,7 @@ def partial(func, *args, **kwargs):
         kw = kwargs.copy()
         kw.update(more_kwargs)
         return func(*(args + more_args), **kw)
+
     return _partial
 
 

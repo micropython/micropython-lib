@@ -17,8 +17,10 @@ def randrange(start, stop=None):
             break
     return r + start
 
+
 def randint(start, stop):
     return randrange(start, stop + 1)
+
 
 def shuffle(seq):
     l = len(seq)
