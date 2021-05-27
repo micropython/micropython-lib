@@ -627,7 +627,7 @@ class FieldStorage:
             return default
 
     def getfirst(self, key, default=None):
-        """ Return the first value received."""
+        """Return the first value received."""
         if key in self:
             value = self[key]
             if isinstance(value, list):
@@ -638,7 +638,7 @@ class FieldStorage:
             return default
 
     def getlist(self, key):
-        """ Return list of received values."""
+        """Return list of received values."""
         if key in self:
             value = self[key]
             if isinstance(value, list):
