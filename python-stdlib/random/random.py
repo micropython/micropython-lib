@@ -1,5 +1,20 @@
 from urandom import *
 
+_getrandbits32 = getrandbits
+
+
+def getrandbits(bits: int) -> int:
+    n = bits // 32
+    d = 0
+    for i in range(n):
+        d |= _getrandbits32(32) << (i * 32)
+
+    r = bits % 32
+    if r >= 1:
+        d |= _getrandbits32(r) << (n * 32)
+
+    return d
+
 
 def randrange(start, stop=None):
     if stop is None:
