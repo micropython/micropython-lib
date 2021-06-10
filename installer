@@ -1,29 +1,35 @@
 #!/usr/local/cpython-3.4/bin/python3
 
-"""Copy modules from here to --prefix."""
+"""
+Copy modules from here to --prefix.
+
+Note that we do not scan for directories; instead we have a hardcoded list in all_directories.
+"""
 
 import os
 import shutil
 import sys
 
 
-def usage(retval):
-    """Output a usage message."""
-    if retval == 0:
-        write = sys.stdout
-    else:
-        write = sys.stderr
-
-    write('Usage: {} --prefix ~/.micropython/lib --directories micropython python-ecosys python-stdlib tools unix-ffi'.format(
-        sys.argv[0]))
-
-    sys.exit(retval)
-
-
 prefix = os.path.expanduser('~/.micropython/lib')
 directories = []
 all_directories = ['micropython', 'python-ecosys', 'python-stdlib', 'tools', 'unix-ffi']
 
+
+def usage(retval):
+    """Output a usage message."""
+    if retval == 0:
+        write = sys.stdout.write
+    else:
+        write = sys.stderr.write
+
+    write('Usage: {} --prefix ~/.micropython/lib --directories {}\n'.format(sys.argv[0], ' '.join(all_directories)))
+    write('--directories, if provided, must be the last argument specified\n')
+
+    sys.exit(retval)
+
+
+# The getopt-like module du jour would be a little more concise, but that's much harder for a static analyzer to check.
 while sys.argv[1:]:
     if sys.argv[1] == '--prefix':
         prefix = os.path.expanduser(sys.argv[2])
