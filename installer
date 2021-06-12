@@ -129,11 +129,11 @@ def copy(source_dir, dest_dir):
     copytree(source_dir, dest_dir, symlinks=True, ignore=ignore, ignore_dangling_symlinks=False)
 
 
-os.makedirs(prefix, exist_ok=True)
+if __name__ == '__main__':
+    os.makedirs(prefix, exist_ok=True)
 
-
-for directory in directories:
-    print('Copying directory {}'.format(directory))
-    os.chdir(directory)
-    copy('.', prefix)
-    os.chdir('..')
+    for directory in directories:
+        print('Copying directory {}'.format(directory))
+        os.chdir(directory)
+        copy('.', prefix)
+        os.chdir('..')
