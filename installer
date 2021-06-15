@@ -1,4 +1,4 @@
-#!/usr/local/cpython-3.4/bin/python3
+#!/usr/bin/env python3
 
 """
 Copy modules from here to --prefix.
@@ -13,7 +13,7 @@ import sys
 
 prefix = os.path.expanduser('~/.micropython/lib')
 directories = []
-all_directories = ['micropython', 'python-ecosys', 'python-stdlib', 'tools', 'unix-ffi']
+all_directories = ['micropython', 'python-ecosys', 'python-stdlib', 'unix-ffi']
 
 
 def usage(retval):
