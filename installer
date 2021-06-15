@@ -117,7 +117,7 @@ def copytree(src, dst, symlinks=False, ignore=None, copy_function=shutil.copy2,
 
 def copy(source_dir, dest_dir):
     """Copy modules to a lib location."""
-    ignore = shutil.ignore_patterns('test_*', 'setup.py', 'dist', '*.ogg-info', '__pycache__')
+    ignore = shutil.ignore_patterns('test_*', 'setup.py', 'dist', '*.egg-info', '__pycache__')
     copytree(source_dir, dest_dir, symlinks=True, ignore=ignore, ignore_dangling_symlinks=False)
 
 
