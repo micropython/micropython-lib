@@ -377,6 +377,9 @@ class ClientCharacteristic(BaseClientCharacteristic):
     # Write to the Client Characteristic Configuration to subscribe to
     # notify/indications for this characteristic.
     async def subscribe(self, notify=True, indicate=False):
+        # Ensure that the generated notifications are dispatched in case the app
+        # hasn't awaited on notified/indicated yet.
+        self._register_with_connection()
         if cccd := await self.descriptor(bluetooth.UUID(_CCCD_UUID)):
             await cccd.write(struct.pack("<H", _CCCD_NOTIFY * notify + _CCCD_INDICATE * indicate))
         else:
