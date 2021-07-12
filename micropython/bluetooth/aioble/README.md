@@ -118,7 +118,7 @@ temp_char = await temp_service.characteristic(_ENV_SENSE_TEMP_UUID)
 
 data = await temp_char.read(timeout_ms=1000)
 
-temp_char.subscribe(notify=True)
+await temp_char.subscribe(notify=True)
 while True:
     data = await temp_char.notified()
 ```
