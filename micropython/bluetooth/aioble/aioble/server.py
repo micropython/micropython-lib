@@ -154,10 +154,11 @@ class Characteristic(BaseCharacteristic):
         self._value_handle = None
         self._initial = initial
 
-    def notify(self, connection, data=None):
+    def notify(self, connection=None, data=None):
         if not (self.flags & _FLAG_NOTIFY):
             raise ValueError("Not supported")
-        ble.gatts_notify(connection._conn_handle, self._value_handle, data)
+        for conn in (connection, ) if connection else DeviceConnection._connected.values():
+            ble.gatts_notify(conn._conn_handle, self._value_handle, data)
 
     async def indicate(self, connection, timeout_ms=1000):
         if not (self.flags & _FLAG_INDICATE):
