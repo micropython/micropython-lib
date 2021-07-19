@@ -199,6 +199,18 @@ def skipUnless(cond, msg):
     return skip(msg)
 
 
+def expectedFailure(test):
+    def test_exp_fail(*args, **kwargs):
+        try:
+            test(*args, **kwargs)
+        except:
+            pass
+        else:
+            assert False, "unexpected success"
+
+    return test_exp_fail
+
+
 class TestSuite:
     def __init__(self):
         self._tests = []
