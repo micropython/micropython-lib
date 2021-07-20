@@ -126,6 +126,22 @@ class TestUnittestAssertions(unittest.TestCase):
         if not e1 or "not raised" not in e1.args[0]:
             self.fail("Expected to catch lack of AssertionError from assert in func_under_test")
 
+    @unittest.expectedFailure
+    def testExpectedFailure(self):
+        self.assertEqual(1, 0)
+
+    def testExpectedFailureNot(self):
+        @unittest.expectedFailure
+        def testInner():
+            self.assertEqual(1, 1)
+
+        try:
+            testInner()
+        except:
+            pass
+        else:
+            self.fail("Unexpected success was not detected")
+
 
 if __name__ == "__main__":
     unittest.main()
