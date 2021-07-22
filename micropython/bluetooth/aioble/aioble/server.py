@@ -20,6 +20,7 @@ _registered_characteristics = {}
 _IRQ_GATTS_WRITE = const(3)
 _IRQ_GATTS_READ_REQUEST = const(4)
 _IRQ_GATTS_INDICATE_DONE = const(20)
+_IRQ_GATTS_SUBSCRIPTION_UPDATE = const(32)
 
 _FLAG_READ = const(0x0002)
 _FLAG_WRITE_NO_RESPONSE = const(0x0004)
@@ -48,6 +49,9 @@ def _server_irq(event, data):
     elif event == _IRQ_GATTS_INDICATE_DONE:
         conn_handle, value_handle, status = data
         Characteristic._indicate_done(conn_handle, value_handle, status)
+    elif event == _IRQ_GATTS_SUBSCRIPTION_UPDATE:
+        conn_handle, value_handle, subscribed_to_notifications, subscribed_to_indications = data
+        Characteristic._subscription_update(conn_handle, value_handle, subscribed_to_notifications, subscribed_to_indications)
 
 
 register_irq_handler(_server_irq)
@@ -153,6 +157,7 @@ class Characteristic(BaseCharacteristic):
         self.flags = flags
         self._value_handle = None
         self._initial = initial
+        self.subscribed_connections = []
 
     def notify(self, connection, data=None):
         if not (self.flags & _FLAG_NOTIFY):
@@ -189,6 +194,16 @@ class Characteristic(BaseCharacteristic):
                 assert connection == characteristic._indicate_connection
                 characteristic._indicate_status = status
                 characteristic._indicate_event.set()
+    
+    def _subscription_update(conn_handle, value_handle, subscribed_to_notifications, subscribed_to_indications):
+        if characteristic := _registered_characteristics.get(value_handle, None):
+            if connection := DeviceConnection._connected.get(conn_handle, None):
+                if subscribed_to_notifications or subscribed_to_indications:
+                    if not connection in characteristic.subscribed_connections:
+                        characteristic.subscribed_connections.append(connection)
+                elif (not subscribed_to_notifications) and (not subscribed_to_indications):
+                    if connection in characteristic.subscribed_connections:
+                        characteristic.subscribed_connections.remove(connection)
 
 
 class BufferedCharacteristic(Characteristic):
