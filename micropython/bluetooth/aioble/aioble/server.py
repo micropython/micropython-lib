@@ -83,11 +83,15 @@ class BaseCharacteristic:
             return ble.gatts_read(self._value_handle)
 
     # Write value to local db.
-    def write(self, data):
+    def write(self, data, send_update=False):
         if self._value_handle is None:
             self._initial = data
         else:
-            ble.gatts_write(self._value_handle, data)
+            if send_update:
+                # Send_update arg only added in 1.17, don't pass this arg unless required.
+                ble.gatts_write(self._value_handle, data, True)
+            else:
+                ble.gatts_write(self._value_handle, data)
 
     # Wait for a write on this characteristic.
     # Returns the device that did the write.
