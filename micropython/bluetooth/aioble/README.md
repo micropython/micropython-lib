@@ -3,7 +3,7 @@ aioble
 
 This library provides an object-oriented, asyncio-based wrapper for MicroPython's [ubluetooth](https://docs.micropython.org/en/latest/library/ubluetooth.html) API.
 
-**Note**: aioble requires MicroPython v1.15 or higher.
+**Note**: aioble requires MicroPython v1.17 or higher.
 
 Features
 --------

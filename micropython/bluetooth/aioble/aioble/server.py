@@ -88,12 +88,12 @@ class BaseCharacteristic:
         else:
             return ble.gatts_read(self._value_handle)
 
-    # Write value to local db.
-    def write(self, data):
+    # Write value to local db, and optionally notify/indicate subscribers.
+    def write(self, data, send_update=False):
         if self._value_handle is None:
             self._initial = data
         else:
-            ble.gatts_write(self._value_handle, data)
+            ble.gatts_write(self._value_handle, data, send_update)
 
     # Wait for a write on this characteristic. Returns the connection that did
     # the write, or a tuple of (connection, value) if capture is enabled for
