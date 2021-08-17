@@ -26,7 +26,8 @@ _PASSKEY_ACTION_NUMCMP = const(4)
 
 _DEFAULT_PATH = "ble_secrets.json"
 
-_secrets = {}
+# Maintain list of known keys, newest at the top.
+_secrets = []
 _modified = False
 _path = None
 
@@ -40,13 +41,13 @@ def load_secrets(path=None):
     _path = path or _path or _DEFAULT_PATH
 
     # Reset old secrets.
-    _secrets = {}
+    _secrets = []
     try:
         with open(_path, "r") as f:
             entries = json.load(f)
             for sec_type, key, value in entries:
                 # Decode bytes from hex.
-                _secrets[sec_type, binascii.a2b_base64(key)] = binascii.a2b_base64(value)
+                _secrets.append(((sec_type, binascii.a2b_base64(key)), binascii.a2b_base64(value)))
     except:
         log_warn("No secrets available")
 
@@ -66,7 +67,7 @@ def _save_secrets(arg=None):
         # strings).
         json_secrets = [
             (sec_type, binascii.b2a_base64(key), binascii.b2a_base64(value))
-            for (sec_type, key), value in _secrets.items()
+            for (sec_type, key), value in _secrets
         ]
         json.dump(json_secrets, f)
         _modified = False
@@ -97,13 +98,16 @@ def _security_irq(event, data):
 
         if value is None:
             # Delete secret.
-            if key not in _secrets:
-                return False
+            i = None
+            for i, k, v in enumerate(_secrets):
+                if k == key:
+                    break
+            if i is not None:
+                _secrets.pop(i)
 
-            del _secrets[key]
         else:
             # Save secret.
-            _secrets[key] = value
+            _secrets.insert(0, (key, value))
 
         # Queue up a save (don't synchronously write to flash).
         _modified = True
@@ -128,7 +132,11 @@ def _security_irq(event, data):
         else:
             # Return the secret for this key (or None).
             key = sec_type, bytes(key)
-            return _secrets.get(key, None)
+
+            for k, v in _secrets:
+                if k == key:
+                    return v
+            return None
 
     elif event == _IRQ_PASSKEY_ACTION:
         conn_handle, action, passkey = data
