@@ -4,6 +4,7 @@
 from micropython import const, schedule
 import uasyncio as asyncio
 import binascii
+import ustruct
 import json
 
 from .core import log_info, log_warn, ble, register_irq_handler
@@ -31,6 +32,9 @@ _secrets = []
 _modified = False
 _path = None
 
+connected_sec = None
+gatt_svc = None
+
 
 # Must call this before stack startup.
 def load_secrets(path=None):
@@ -45,9 +49,10 @@ def load_secrets(path=None):
     try:
         with open(_path, "r") as f:
             entries = json.load(f)
-            for sec_type, key, value in entries:
+            for sec_type, key, value, *digest in entries:
+                digest = digest[0] or None
                 # Decode bytes from hex.
-                _secrets.append(((sec_type, binascii.a2b_base64(key)), binascii.a2b_base64(value)))
+                _secrets.append(((sec_type, binascii.a2b_base64(key)), binascii.a2b_base64(value), digest))
     except:
         log_warn("No secrets available")
 
@@ -66,15 +71,15 @@ def _save_secrets(arg=None):
         # Convert bytes to hex strings (otherwise JSON will treat them like
         # strings).
         json_secrets = [
-            (sec_type, binascii.b2a_base64(key), binascii.b2a_base64(value))
-            for (sec_type, key), value in _secrets
+            (sec_type, binascii.b2a_base64(key), binascii.b2a_base64(value), digest)
+            for (sec_type, key), value, digest in _secrets
         ]
         json.dump(json_secrets, f)
         _modified = False
 
 
 def _security_irq(event, data):
-    global _modified
+    global _modified, connected_sec, gatt_svc
 
     if event == _IRQ_ENCRYPTION_UPDATE:
         # Connection has updated (usually due to pairing).
@@ -89,6 +94,19 @@ def _security_irq(event, data):
             if encrypted and connection._pair_event:
                 connection._pair_event.set()
 
+            if bonded and \
+                    None not in (gatt_svc, connected_sec) and \
+                    connected_sec[2] != gatt_svc.hexdigest:
+                gatt_svc.send_changed(connection)
+
+                # Update the hash in the database
+                _secrets.remove(connected_sec)
+                updated_sec = connected_sec[:-1] + (gatt_svc.hexdigest,)
+                _secrets.insert(0, updated_sec)
+                # Queue up a save (don't synchronously write to flash).
+                _modified = True
+                schedule(_save_secrets, None)
+
     elif event == _IRQ_SET_SECRET:
         sec_type, key, value = data
         key = sec_type, bytes(key)
@@ -98,16 +116,15 @@ def _security_irq(event, data):
 
         if value is None:
             # Delete secret.
-            i = None
-            for i, k, v in enumerate(_secrets):
-                if k == key:
-                    break
-            if i is not None:
-                _secrets.pop(i)
+            for to_delete in [
+                entry for entry in _secrets if entry[0] == key
+            ]:
+                _secrets.remove(to_delete)
 
         else:
             # Save secret.
-            _secrets.insert(0, (key, value))
+            current_digest = gatt_svc.hexdigest if gatt_svc else None
+            _secrets.insert(0, (key, value, current_digest))
 
         # Queue up a save (don't synchronously write to flash).
         _modified = True
@@ -123,7 +140,7 @@ def _security_irq(event, data):
         if key is None:
             # Return the index'th secret of this type.
             i = 0
-            for (t, _key), value in _secrets.items():
+            for (t, _key), value, digest in _secrets:
                 if t == sec_type:
                     if i == index:
                         return value
@@ -133,7 +150,7 @@ def _security_irq(event, data):
             # Return the secret for this key (or None).
             key = sec_type, bytes(key)
 
-            for k, v in _secrets:
+            for k, v, d in _secrets:
                 if k == key:
                     return v
             return None

@@ -228,9 +228,13 @@ class Descriptor(BaseCharacteristic):
 
 # Turn the Service/Characteristic/Descriptor classes into a registration tuple
 # and then extract their value handles.
-def register_services(*services):
+def register_services(*services, include_gatt_svc=True):
     ensure_active()
     _registered_characteristics.clear()
+    if include_gatt_svc:
+        from .services.generic_attribute_service import GenericAttributeService
+        gatt_svc = GenericAttributeService(services)
+        services = (gatt_svc,) + services
     handles = ble.gatts_register_services(tuple(s._tuple() for s in services))
     for i in range(len(services)):
         service_handles = handles[i]
