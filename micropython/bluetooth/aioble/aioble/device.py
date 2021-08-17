@@ -262,7 +262,7 @@ class DeviceConnection:
     def timeout(self, timeout_ms):
         return DeviceTimeout(self, timeout_ms)
 
-    async def exchange_mtu(self, mtu=None):
+    async def exchange_mtu(self, mtu=None, timeout_ms=1000):
         if not self.is_connected():
             raise ValueError("Not connected")
 
@@ -271,7 +271,8 @@ class DeviceConnection:
 
         self._mtu_event = self._mtu_event or asyncio.ThreadSafeFlag()
         ble.gattc_exchange_mtu(self._conn_handle)
-        await self._mtu_event.wait()
+        with self.timeout(timeout_ms):
+            await self._mtu_event.wait()
         return self.mtu
 
     # Wait for a connection on an L2CAP connection-oriented-channel.
