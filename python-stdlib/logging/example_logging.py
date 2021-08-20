@@ -1,24 +1,34 @@
 import logging
 
-logging.basicConfig(level=logging.INFO)
-log = logging.getLogger("test")
-log.debug("Test message: %d(%s)", 100, "foobar")
-log.info("Test message2: %d(%s)", 100, "foobar")
-log.warning("Test message3: %d(%s)")
-log.error("Test message4")
-log.critical("Test message5")
-logging.info("Test message6")
+# Example 1: Simple use, print to standard output
+def example1():
+    logging.debug('debug message')
+    logging.info('info message')
+    logging.warning('warn message')
+    logging.error('error message')
+    logging.critical('critical message')
 
-try:
-    1 / 0
-except:
-    log.exception("Some trouble (%s)", "expected")
+# Example 2: Log to a log file
+def example2():
+    logging.basicConfig(level=logging.DEBUG,filename='/logger.log',format='%(asctime)s :  %(message)s')
+    logging.debug('debug message should go to the log file')
+    logging.info('info message should go to the log file')
+    logging.warning('warn message should go to the log file')
+    logging.error('error message should go to the log file')
+    logging.critical('critical message should go to the log file')
 
+# Example 3: Record to a log file and print to standard output at the same time
+def example3():
+    logger=logging.getLogger()
 
-class MyHandler(logging.Handler):
-    def emit(self, record):
-        print("levelname=%(levelname)s name=%(name)s message=%(message)s" % record.__dict__)
+    fh = logging.FileHandler('/logger.log')
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    logger.setLevel(level = logging.DEBUG)
+    logger.addHandler(fh)
 
+    logger.debug('debug message')
+    logger.info('info message')
 
-logging.getLogger().addHandler(MyHandler())
-logging.info("Test message7")
+if __name__ == "__main__":
+    example3()
