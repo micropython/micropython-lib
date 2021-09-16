@@ -53,9 +53,13 @@ def pp(obj, *args, sort_dicts=False, **kwargs):
 def pprint(obj, stream=None, indent=1, depth=1, sort_dicts=True):
     """Simple implementation of a pretty-printer.
 
-    For simplicity, this does not recurse down.  It does not produce the same
-    output as the CPython implementation.  Instead, it is intended to simply
-    expand lists and dictionaries to multiple lines for easy viewing.
+    It does not produce the same output as the CPython implementation, but it's
+    close.  Instead, it is intended to simply expand lists and dictionaries to
+    multiple lines for easy viewing.  When the recursion depth has been
+    reached, the elements will be printed with repl(item) instead of the
+    CPython implementation of eliding the results (e.g., "{...}").  This is
+    because this implementation is not as safe as the CPython implementation
+    for deep recursion, which is detailed two paragraphs lower.
 
     Only expands containers.  Currently supported containers are set, list,
     dict, and tuple.
