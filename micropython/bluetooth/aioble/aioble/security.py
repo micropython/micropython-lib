@@ -106,8 +106,9 @@ def _security_irq(event, data):
             _secrets[key] = value
 
         # Queue up a save (don't synchronously write to flash).
-        _modified = True
-        schedule(_save_secrets, None)
+        if not _modified:
+            _modified = True
+            schedule(_save_secrets, None)
 
         return True
 
