@@ -1,0 +1,84 @@
+localtz.patch
+
+The CPython's implementation of `datetime.fromtimestamp()`,
+`datetime.astimezone()` and `datetime.timestamp()` for naive datetime objects
+relay on proper management of DST (daylight saving time) by `time.localtime()`
+for the timezone of interest. In the Unix port of MicroPython, this is
+accomplished by properly setting the TZ environment variable, e.g.
+`os.putenv("TZ", "Europe/Rome")`.
+
+Because real boards often lack a supportive `time.localtime()`, the source code
+in `datetime.py` has been removed as to save precious resources. If your board
+provide a proper implementation, you can restore the support to naive datetime
+objects by applying this patch, e.g. `patch -p1 < localtz.patch`.
+
+--- a/datetime.py
++++ b/datetime.py
+@@ -635,7 +635,10 @@ class datetime:
+         else:
+             us = 0
+         if tz is None:
+-            raise NotImplementedError
++            dt = cls(*_tmod.localtime(ts)[:6], microsecond=us, tzinfo=tz)
++            s = (dt - datetime(*_tmod.localtime(ts - 86400)[:6]))._us // 1_000_000 - 86400
++            if s < 0 and dt == datetime(*_tmod.localtime(ts + s)[:6]):
++                dt._fd = 1
+         else:
+             dt = cls(*_tmod.gmtime(ts)[:6], microsecond=us, tzinfo=tz)
+             dt = tz.fromutc(dt)
+@@ -812,13 +815,45 @@ class datetime:
+             return self
+         _tz = self._tz
+         if _tz is None:
+-            raise NotImplementedError
++            ts = int(self._mktime())
++            os = datetime(*_tmod.localtime(ts)[:6]) - datetime(*_tmod.gmtime(ts)[:6])
+         else:
+             os = _tz.utcoffset(self)
+         utc = self - os
+         utc = utc.replace(tzinfo=tz)
+         return tz.fromutc(utc)
+ 
++    def _mktime(self):
++        def local(u):
++            return (datetime(*_tmod.localtime(u)[:6]) - epoch)._us // 1_000_000
++
++        epoch = datetime.EPOCH.replace(tzinfo=None)
++        t, us = divmod((self - epoch)._us, 1_000_000)
++        ts = None
++
++        a = local(t) - t
++        u1 = t - a
++        t1 = local(u1)
++        if t1 == t:
++            u2 = u1 + (86400 if self.fold else -86400)
++            b = local(u2) - u2
++            if a == b:
++                ts = u1
++        else:
++            b = t1 - u1
++        if ts is None:
++            u2 = t - b
++            t2 = local(u2)
++            if t2 == t:
++                ts = u2
++            elif t1 == t:
++                ts = u1
++            elif self.fold:
++                ts = min(u1, u2)
++            else:
++                ts = max(u1, u2)
++        return ts + us / 1_000_000
++
+     def utcoffset(self):
+         return None if self._tz is None else self._tz.utcoffset(self)
+ 
+@@ -842,7 +877,7 @@ class datetime:
+ 
+     def timestamp(self):
+         if self._tz is None:
+-            raise NotImplementedError
++            return self._mktime()
+         else:
+             return (self - datetime.EPOCH).total_seconds()
+ 
