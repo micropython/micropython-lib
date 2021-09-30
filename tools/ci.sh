@@ -92,6 +92,7 @@ function ci_package_tests_run {
 
     for path in \
         micropython/ucontextlib \
+        python-stdlib/colorsys \
         python-stdlib/contextlib \
         python-stdlib/datetime \
         python-stdlib/fnmatch \
