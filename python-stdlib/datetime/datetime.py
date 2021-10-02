@@ -255,6 +255,10 @@ class datetime:
     def __str__(self):
         return self.isoformat(" ")
 
+    @property
+    def tzinfo(self):
+        return self._tz
+
     def utcoffset(self):
         return None if self._tz is None else self._tz.utcoffset(self)
 
