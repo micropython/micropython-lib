@@ -1,0 +1,4 @@
+srctype = cpython
+type = module
+version = 1.0.0
+author = Lorenzo Cappelletti
