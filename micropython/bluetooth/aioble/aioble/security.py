@@ -137,7 +137,7 @@ def _log_peers(heading=""):
 def _get_connection(key) -> DeviceConnection:
     if not key:
         return None
-    addr = bytes(reversed(key))
+    addr = bytes(reversed(key[-6:]))
     for connection in DeviceConnection._connected.values():
         if connection.device.addr == addr:
             return connection
@@ -149,7 +149,9 @@ def _security_irq(event, data):
     if event == _IRQ_ENCRYPTION_UPDATE:
         # Connection has updated (usually due to pairing).
         conn_handle, encrypted, authenticated, bonded, key_size = data
-        log_info("encryption update", conn_handle, encrypted, authenticated, bonded, key_size)
+        log_info("encryption update - handle:", conn_handle,
+                 "enc:", encrypted, "auth:", authenticated,
+                 "bond:", bonded, "key:", key_size)
         if connection := DeviceConnection._connected.get(conn_handle, None):
             connection.encrypted = encrypted
             connection.authenticated = authenticated
@@ -226,7 +228,7 @@ def _security_irq(event, data):
             key = bytes(key)
 
             if conn := _get_connection(key):
-                log_info("pairing started", conn)
+                log_info("encryption / pairing started", conn)
                 conn.pairing_in_progress = True
 
             for k, v in secrets:

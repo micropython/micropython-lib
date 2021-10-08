@@ -263,6 +263,11 @@ class DeviceConnection:
         ident[1:] = bytes(reversed(self.device.addr))
         unpair(ident)
 
+    def indicate_service_changed(self):
+        handle = self._conn_handle
+        if handle is not None:
+            ble.gap_indicate_service_changed(handle)
+
     def is_connected(self):
         return self._conn_handle is not None
 
