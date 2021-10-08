@@ -163,7 +163,7 @@ class DeviceConnection:
     _connected = {}
 
     def __init__(self, device):
-        self.device = device
+        self.device: Device = device
         device._connection = self
 
         self.encrypted = False
@@ -171,6 +171,7 @@ class DeviceConnection:
         self.bonded = False
         self.key_size = False
         self.mtu = None
+        self.pairing_in_progress = False
 
         self._conn_handle = None
 
