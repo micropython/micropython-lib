@@ -7,7 +7,7 @@ import binascii
 import json
 from . import core
 from .core import log_info, log_warn, ble, register_irq_handler
-from .device import DeviceConnection
+from .device import DeviceConnection, Device
 
 _IRQ_ENCRYPTION_UPDATE = const(28)
 _IRQ_GET_SECRET = const(29)
@@ -68,7 +68,7 @@ def load_secrets(path=None):
                 if len(secrets) > limit_peers:
                     if not keep_keys:
                         keep_keys = [key for key, _ in secrets[-limit_peers:]]
-                        log_info("Limiting keys to", keep_keys)
+                        log_warn("Limiting keys to", keep_keys)
                     
                     keep_entries = [entry for entry in secrets if entry[0] in keep_keys]
                     while len(keep_entries) < limit_peers:
@@ -134,6 +134,15 @@ def _log_peers(heading=""):
             log_info("  - %s: %s..." % (key, value[0:16]))
 
 
+def _get_connection(key) -> DeviceConnection:
+    if not key:
+        return None
+    addr = bytes(reversed(key))
+    for connection in DeviceConnection._connected.values():
+        if connection.device.addr == addr:
+            return connection
+
+
 def _security_irq(event, data):
     global _modified
 
@@ -146,6 +155,7 @@ def _security_irq(event, data):
             connection.authenticated = authenticated
             connection.bonded = bonded
             connection.key_size = key_size
+            connection.pairing_in_progress = False
             # TODO: Handle failure.
             if encrypted and connection._pair_event:
                 connection._pair_event.set()
@@ -214,6 +224,10 @@ def _security_irq(event, data):
         else:
             # Return the secret for this key (or None).
             key = bytes(key)
+
+            if conn := _get_connection(key):
+                log_info("pairing started", conn)
+                conn.pairing_in_progress = True
 
             for k, v in secrets:
                 if k == key:
