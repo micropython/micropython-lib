@@ -256,6 +256,13 @@ class DeviceConnection:
 
         await pair(self, *args, **kwargs)
 
+    def unpair(self):
+        from .security import unpair
+        ident = bytearray(7)
+        ident[0] = self.device.addr_type
+        ident[1:] = bytes(reversed(self.device.addr))
+        unpair(ident)
+
     def is_connected(self):
         return self._conn_handle is not None
 

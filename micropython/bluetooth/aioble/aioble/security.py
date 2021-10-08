@@ -256,6 +256,10 @@ def _security_irq(event, data):
 register_irq_handler(_security_irq)
 
 
+# Use device.unpair() rather than calling this directly.
+def unpair(addr):
+    ble.gap_unpair(addr)
+
 # Use device.pair() rather than calling this directly.
 async def pair(
     connection,
