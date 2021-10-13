@@ -243,6 +243,9 @@ class TestRunner:
         return res
 
 
+TextTestRunner = TestRunner
+
+
 class TestResult:
     def __init__(self):
         self.errorsNum = 0
