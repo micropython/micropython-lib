@@ -34,8 +34,13 @@ _FLAG_WRITE_ENCRYPTED = const(0x1000)
 _FLAG_WRITE_AUTHENTICATED = const(0x2000)
 _FLAG_WRITE_AUTHORIZED = const(0x4000)
 
+_FLAG_WRITE_CAPTURE = const(0x10000)
+
 _FLAG_DESC_READ = const(1)
 _FLAG_DESC_WRITE = const(2)
+
+
+_WRITE_CAPTURE_QUEUE_LIMIT = const(10)
 
 
 def _server_irq(event, data):
@@ -89,26 +94,62 @@ class BaseCharacteristic:
         else:
             ble.gatts_write(self._value_handle, data)
 
-    # Wait for a write on this characteristic.
-    # Returns the device that did the write.
+    # Wait for a write on this characteristic. Returns the connection that did
+    # the write, or a tuple of (connection, value) if capture is enabled for
+    # this characteristics.
     async def written(self, timeout_ms=None):
         if not self._write_event:
             raise ValueError()
-        data = self._write_connection
-        if data is None:
+
+        # If the queue is empty, then we need to wait. However, if the queue
+        # has a single item, we also need to do a no-op wait in order to
+        # clear the event flag (because the queue will become empty and
+        # therefore the event should be cleared).
+        if len(self._write_queue) <= 1:
             with DeviceTimeout(None, timeout_ms):
                 await self._write_event.wait()
-                data = self._write_connection
-        self._write_connection = None
-        return data
+
+        # Either we started > 1 item, or the wait completed successfully, return
+        # the front of the queue.
+        return self._write_queue.pop(0)
 
     def on_read(self, connection):
         return 0
 
     def _remote_write(conn_handle, value_handle):
         if characteristic := _registered_characteristics.get(value_handle, None):
-            characteristic._write_connection = DeviceConnection._connected.get(conn_handle, None)
-            characteristic._write_event.set()
+            # If we've gone from empty to one item, then wake something
+            # blocking on `await char.written()`.
+            wake = len(characteristic._write_queue) == 0
+
+            conn = DeviceConnection._connected.get(conn_handle, None)
+            q = characteristic._write_queue
+
+            if characteristic.flags & _FLAG_WRITE_CAPTURE:
+                # For capture, we append both the connection and the written
+                # value to the queue.
+                data = characteristic.read()
+                # Enforce queue length (drop oldest writes).
+                while len(q) > _WRITE_CAPTURE_QUEUE_LIMIT:
+                    log_warn("write capture overflow")
+                    q.pop(0)
+                q.append((conn, data))
+            else:
+                # Use the queue as a single slot -- either append or replace
+                # the first item. Note: `wake` here is a proxy for "is the
+                # queue empty".
+                if wake:
+                    q.append(conn)
+                else:
+                    q[0] = conn
+
+            if wake:
+                # Queue is now non-empty. If something is waiting, it will be
+                # worken. If something isn't waiting right now, then a future
+                # caller to `await char.written()` will see the queue is
+                # non-empty, and wait on the event if it's going to empty the
+                # queue.
+                characteristic._write_event.set()
 
     def _remote_read(conn_handle, value_handle):
         if characteristic := _registered_characteristics.get(value_handle, None):
@@ -126,6 +167,7 @@ class Characteristic(BaseCharacteristic):
         notify=False,
         indicate=False,
         initial=None,
+        capture=False,
     ):
         service.characteristics.append(self)
         self.descriptors = []
@@ -137,8 +179,13 @@ class Characteristic(BaseCharacteristic):
             flags |= (_FLAG_WRITE if write else 0) | (
                 _FLAG_WRITE_NO_RESPONSE if write_no_response else 0
             )
-            self._write_connection = None
+            if capture:
+                # Capture means that we keep track of all writes, and capture
+                # their values (and connection) in a queue. Otherwise we just
+                # track the most recent connection.
+                flags |= _FLAG_WRITE_CAPTURE
             self._write_event = asyncio.ThreadSafeFlag()
+            self._write_queue = []
         if notify:
             flags |= _FLAG_NOTIFY
         if indicate:
