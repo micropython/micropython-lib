@@ -302,36 +302,44 @@ def run_suite(c, test_result):
     set_up = getattr(o, "setUp", lambda: None)
     tear_down = getattr(o, "tearDown", lambda: None)
     exceptions = []
+
+    def run_one(m):
+        print("%s (%s) ..." % (name, c.__qualname__), end="")
+        set_up()
+        try:
+            test_result.testsRun += 1
+            m()
+            print(" ok")
+        except SkipTest as e:
+            print(" skipped:", e.args[0])
+            test_result.skippedNum += 1
+        except Exception as ex:
+            ex_str = capture_exc(ex)
+            if isinstance(ex, AssertionError):
+                test_result.failuresNum += 1
+                test_result.failures.append(((name, c), ex_str))
+                print(" FAIL")
+            else:
+                test_result.errorsNum += 1
+                test_result.errors.append(((name, c), ex_str))
+                print(" ERROR")
+            # Uncomment to investigate failure in detail
+            # raise
+        finally:
+            tear_down()
+            o.doCleanups()
+
+    if hasattr(o, "runTest"):
+        name = str(o)
+        run_one(o.runTest)
+        return
+
     for name in dir(o):
         if name.startswith("test"):
             m = getattr(o, name)
             if not callable(m):
                 continue
-            print("%s (%s) ..." % (name, c.__qualname__), end="")
-            set_up()
-            try:
-                test_result.testsRun += 1
-                m()
-                print(" ok")
-            except SkipTest as e:
-                print(" skipped:", e.args[0])
-                test_result.skippedNum += 1
-            except Exception as ex:
-                ex_str = capture_exc(ex)
-                if isinstance(ex, AssertionError):
-                    test_result.failuresNum += 1
-                    test_result.failures.append(((name, c), ex_str))
-                    print(" FAIL")
-                else:
-                    test_result.errorsNum += 1
-                    test_result.errors.append(((name, c), ex_str))
-                    print(" ERROR")
-                # Uncomment to investigate failure in detail
-                # raise
-                continue
-            finally:
-                tear_down()
-                o.doCleanups()
+            run_one(m)
     return exceptions
 
 
