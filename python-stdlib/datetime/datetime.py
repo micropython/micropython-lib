@@ -2,7 +2,6 @@
 
 __version__ = "2.0.0"
 
-# The following functions were (stolen and) adapted from Python's datetime.
 def _is_leap(year):
     return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
 
