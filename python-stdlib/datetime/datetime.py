@@ -360,6 +360,9 @@ class datetime:
         return year, month, day, hour, minute, second, tz, days, sign
 
 
+datetime.EPOCH = datetime(2000, 1, 1, tzinfo=timezone.utc)
+
+
 def fromisoformat(s):
     l = len(s)
     if l < 10 or s[4] != "-" or s[7] != "-":
