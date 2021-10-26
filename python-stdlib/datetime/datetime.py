@@ -12,18 +12,20 @@ def _days_before_year(year):
     return y * 365 + y // 4 - y // 100 + y // 400
 
 
+_DIM = (0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+
 def _days_in_month(year, month):
     # year, month -> number of days in that month in that year.
     if month == 2 and _is_leap(year):
         return 29
-    return (0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)[month]
+    return _DIM[month]
 
+
+_DBM = (0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334)
 
 def _days_before_month(year, month):
     # year, month -> number of days in year preceding first day of month.
-    return (0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334)[month] + (
-        month > 2 and _is_leap(year)
-    )
+    return _DBM[month] + (month > 2 and _is_leap(year))
 
 
 def _ymd2ord(year, month, day):
