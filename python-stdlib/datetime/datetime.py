@@ -373,13 +373,13 @@ def fromisoformat(s):
     day = int(s[8:10])
     hour = 0
     minute = 0
-    second = 0
-    microsecond = 0
+    sec = 0
+    usec = 0
     tz_sign = ""
     tz_hour = 0
     tz_minute = 0
-    tz_second = 0
-    tz_microsecond = 0
+    tz_sec = 0
+    tz_usec = 0
     i = 10
     if l > i and s[i] != "+":
         # parse time
@@ -396,17 +396,17 @@ def fromisoformat(s):
                 i += 3
                 if l - i < 0:
                     raise ValueError
-                second = int(s[i - 2 : i])
+                sec = int(s[i - 2 : i])
                 if l > i and s[i] == ".":
                     i += 4
                     if l - i < 0:
                         raise ValueError
-                    microsecond = 1000 * int(s[i - 3 : i])
+                    usec = 1000 * int(s[i - 3 : i])
                     if l > i and s[i] != "+":
                         i += 3
                         if l - i < 0:
                             raise ValueError
-                        microsecond += int(s[i - 3 : i])
+                        usec += int(s[i - 3 : i])
     if l > i:
         if s[i] not in "+-":
             raise ValueError
@@ -420,22 +420,22 @@ def fromisoformat(s):
             i += 3
             if l - i < 0:
                 raise ValueError
-            tz_second = int(s[i - 2 : i])
+            tz_sec = int(s[i - 2 : i])
             if l > i and s[i] == ".":
                 i += 7
                 if l - i < 0:
                     raise ValueError
-                tz_microsecond = int(s[i - 6 : i])
+                tz_usec = int(s[i - 6 : i])
     if l != i:
         raise ValueError
     if tz_sign:
-        td = timedelta(tz_hour, tz_minute, tz_second)
+        td = timedelta(tz_hour, tz_minute, tz_sec)
         if tz_sign == "-":
             td = -td
         tz = timezone(td)
     else:
         tz = None
-    return datetime(year, month, day, hour, minute, second, tz)
+    return datetime(year, month, day, hour, minute, sec, tz)
 
 
 def fromordinal(n):
