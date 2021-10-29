@@ -44,6 +44,7 @@ def _l2cap_irq(event, data):
                 _, _, psm, status = data
                 channel._status = status
                 channel._cid = None
+                connection._l2cap_channel = None
             elif event == _IRQ_L2CAP_RECV:
                 channel._data_ready = True
             elif event == _IRQ_L2CAP_SEND_READY:
@@ -155,8 +156,11 @@ class L2CAPChannel:
             return
 
         # Wait for the cid to be cleared by the disconnect IRQ.
+        ble.l2cap_disconnect(self._connection._conn_handle, self._cid)
+        await self.disconnected(timeout_ms)
+
+    async def disconnected(self, timeout_ms=1000):
         with self._connection.timeout(timeout_ms):
-            ble.l2cap_disconnect(self._connection._conn_handle, self._cid)
             while self._cid is not None:
                 await self._event.wait()
 
