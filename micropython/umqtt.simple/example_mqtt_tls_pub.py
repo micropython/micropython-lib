@@ -14,6 +14,9 @@ def main(server="localhost"):
                    keepalive=60,
                    ssl=True,
                    ssl_params=ssl_params)
+    c.connect()
+    c.publish(b"foo_topic", b"hello")
+    c.disconnect()
 
 
 if __name__ == "__main__":
