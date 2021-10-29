@@ -123,6 +123,25 @@ while True:
     data = await temp_char.notified()
 ```
 
+Open L2CAP channels: (Listener)
+
+```py
+channel = await connection.l2cap_accept(_L2CAP_PSN, _L2CAP_MTU)
+buf = bytearray(64)
+n = channel.recvinto(buf)
+channel.send(b'response')
+```
+
+Open L2CAP channels: (Initiator)
+
+```py
+channel = await connection.l2cap_connect(_L2CAP_PSN, _L2CAP_MTU)
+channel.send(b'request')
+buf = bytearray(64)
+n = channel.recvinto(buf)
+```
+
+
 Examples
 --------
 
