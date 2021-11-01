@@ -1,10 +1,6 @@
 # See https://github.com/python/cpython/blob/3.9/Lib/test/datetimetester.py
 import unittest
-from datetime import\
-        timedelta as td,\
-        timezone as tz,\
-        datetime as dt,\
-        fromisoformat as fif
+from datetime import timedelta as td, timezone as tz, datetime as dt, fromisoformat as fif
 
 
 ### timedelta ################################################################
@@ -17,8 +13,8 @@ t1 = td(2, 3, 4)
 t2 = td(2, 3, 4)
 t3 = td(2, 3, 5)
 
-class TestTimeDelta(unittest.TestCase):
 
+class TestTimeDelta(unittest.TestCase):
     def test_constructor01(self):
         self.assertEqual(td(), td(weeks=0, days=0, hours=0, minutes=0, seconds=0))
 
@@ -65,16 +61,22 @@ class TestTimeDelta(unittest.TestCase):
         self.assertEqual(td(microseconds=0.001), td(nanoseconds=1))
 
     def test_constant01(self):
-        self.assertTrue(td(0, 0, 0, 365*td.MINYEAR).total_seconds() >= -2**63 / 10**9)
+        self.assertTrue(td(0, 0, 0, 365 * td.MINYEAR).total_seconds() >= -(2 ** 63) / 10 ** 9)
 
     def test_constant02(self):
-        self.assertFalse(td(0, 0, 0, 365*(td.MINYEAR - 1)).total_seconds() >= -2**63 / 10**9)
+        self.assertFalse(
+            td(0, 0, 0, 365 * (td.MINYEAR - 1)).total_seconds() >= -(2 ** 63) / 10 ** 9
+        )
 
     def test_constant03(self):
-        self.assertTrue(td(23, 59, 59, 365*td.MAXYEAR).total_seconds() <= (2**63 - 1) / 10**9)
+        self.assertTrue(
+            td(23, 59, 59, 365 * td.MAXYEAR).total_seconds() <= (2 ** 63 - 1) / 10 ** 9
+        )
 
     def test_constant04(self):
-        self.assertFalse(td(23, 59, 59, 365*(td.MAXYEAR + 1)).total_seconds() <= (2**63 - 1)  /10**9)
+        self.assertFalse(
+            td(23, 59, 59, 365 * (td.MAXYEAR + 1)).total_seconds() <= (2 ** 63 - 1) / 10 ** 9
+        )
 
     def test_computation01(self):
         self.assertEqual(a + b + c, td(7, 6, 10))
@@ -270,40 +272,40 @@ class TestTimeDelta(unittest.TestCase):
         self.assertTrue(not t1 > t2)
 
     def test_compare07(self):
-            self.assertTrue(t1 < t3)
+        self.assertTrue(t1 < t3)
 
     def test_compare08(self):
-            self.assertTrue(t3 > t1)
+        self.assertTrue(t3 > t1)
 
     def test_compare09(self):
-            self.assertTrue(t1 <= t3)
+        self.assertTrue(t1 <= t3)
 
     def test_compare10(self):
-            self.assertTrue(t3 >= t1)
+        self.assertTrue(t3 >= t1)
 
     def test_compare11(self):
-            self.assertTrue(t1 != t3)
+        self.assertTrue(t1 != t3)
 
     def test_compare12(self):
-            self.assertTrue(t3 != t1)
+        self.assertTrue(t3 != t1)
 
     def test_compare13(self):
-            self.assertTrue(not t1 == t3)
+        self.assertTrue(not t1 == t3)
 
     def test_compare14(self):
-            self.assertTrue(not t3 == t1)
+        self.assertTrue(not t3 == t1)
 
     def test_compare15(self):
-            self.assertTrue(not t1 > t3)
+        self.assertTrue(not t1 > t3)
 
     def test_compare16(self):
-            self.assertTrue(not t3 < t1)
+        self.assertTrue(not t3 < t1)
 
     def test_compare17(self):
-            self.assertTrue(not t1 >= t3)
+        self.assertTrue(not t1 >= t3)
 
     def test_compare18(self):
-            self.assertTrue(not t3 <= t1)
+        self.assertTrue(not t3 <= t1)
 
     def test_str01(self):
         self.assertEqual(str(td(days=1)), "1d 00:00:00")
@@ -324,13 +326,18 @@ class TestTimeDelta(unittest.TestCase):
         self.assertEqual(str(td(2, 3, 4)), "02:03:04")
 
     def test_repr01(self):
-        self.assertEqual(repr(td(1)), "datetime.timedelta(seconds={})".format(1*3600.0))
+        self.assertEqual(repr(td(1)), "datetime.timedelta(seconds={})".format(1 * 3600.0))
 
     def test_repr02(self):
-        self.assertEqual(repr(td(10, 2)), "datetime.timedelta(seconds={})".format(10*3600 + 2*60.0))
+        self.assertEqual(
+            repr(td(10, 2)), "datetime.timedelta(seconds={})".format(10 * 3600 + 2 * 60.0)
+        )
 
     def test_repr03(self):
-        self.assertEqual(repr(td(-10, 2, 40)), "datetime.timedelta(seconds={})".format(-10*3600 + 2*60 + 40.0))
+        self.assertEqual(
+            repr(td(-10, 2, 40)),
+            "datetime.timedelta(seconds={})".format(-10 * 3600 + 2 * 60 + 40.0),
+        )
 
     def test_bool01(self):
         self.assertTrue(td(1))
@@ -381,6 +388,7 @@ class TestTimeDelta(unittest.TestCase):
 
 ### timezone #################################################################
 
+
 class Cet(tz):
     # Central European Time (see https://en.wikipedia.org/wiki/Summer_time_in_Europe)
 
@@ -391,7 +399,7 @@ class Cet(tz):
         return td(hours=1) if self.isdst(dt) else td(0)
 
     def tzname(self, dt):
-        return 'CEST' if self.isdst(dt) else 'CET'
+        return "CEST" if self.isdst(dt) else "CET"
 
     def isdst(self, dt):
         if dt is None:
@@ -402,54 +410,59 @@ class Cet(tz):
         if 3 < month < 10:
             return True
         if month == 3:
-            beg = 31 - (5*year//4 + 4) % 7 # last Sunday of March
-            if day < beg: return False
-            if day > beg: return True
+            beg = 31 - (5 * year // 4 + 4) % 7  # last Sunday of March
+            if day < beg:
+                return False
+            if day > beg:
+                return True
             return hour >= 3
         if month == 10:
-            end = 31 - (5*year//4 + 1) % 7 # last Sunday of October
-            if day < end: return True
-            if day > end: return False
+            end = 31 - (5 * year // 4 + 1) % 7  # last Sunday of October
+            if day < end:
+                return True
+            if day > end:
+                return False
             return hour < 3
         return False
+
 
 tz1 = tz(td(hours=-1))
 tz2 = Cet()
 
-class TestTimeZone(unittest.TestCase):
 
+class TestTimeZone(unittest.TestCase):
     def test_constructor01(self):
-        self.assertEqual(str(tz1), 'UTC-01:00')
+        self.assertEqual(str(tz1), "UTC-01:00")
 
     def test_constructor02(self):
-        self.assertEqual(str(tz2), 'CET')
+        self.assertEqual(str(tz2), "CET")
 
     def test_utcoffset01(self):
-        self.assertEqual(str(tz2.utcoffset(None)), '01:00:00')
+        self.assertEqual(str(tz2.utcoffset(None)), "01:00:00")
 
     def test_utcoffset02(self):
-        self.assertEqual(str(tz2.utcoffset(dt(2010, 3, 27, 12))), '01:00:00')
+        self.assertEqual(str(tz2.utcoffset(dt(2010, 3, 27, 12))), "01:00:00")
 
     def test_utcoffset03(self):
-        self.assertEqual(str(tz2.utcoffset(dt(2010, 3, 28, 12))), '02:00:00')
+        self.assertEqual(str(tz2.utcoffset(dt(2010, 3, 28, 12))), "02:00:00")
 
     def test_utcoffset04(self):
-        self.assertEqual(str(tz2.utcoffset(dt(2010, 10, 30, 12))), '02:00:00')
+        self.assertEqual(str(tz2.utcoffset(dt(2010, 10, 30, 12))), "02:00:00")
 
     def test_utcoffset05(self):
-        self.assertEqual(str(tz2.utcoffset(dt(2010, 10, 31, 12))), '01:00:00')
+        self.assertEqual(str(tz2.utcoffset(dt(2010, 10, 31, 12))), "01:00:00")
 
     def test_isoformat01(self):
-        self.assertEqual(tz2.isoformat(dt(2011, 1, 1)), 'UTC+01:00')
+        self.assertEqual(tz2.isoformat(dt(2011, 1, 1)), "UTC+01:00")
 
     def test_isoformat02(self):
-        self.assertEqual(tz2.isoformat(dt(2011, 8, 1)), 'UTC+02:00')
+        self.assertEqual(tz2.isoformat(dt(2011, 8, 1)), "UTC+02:00")
 
     def test_tzname01(self):
-        self.assertEqual(tz2.tzname(dt(2011, 1, 1)), 'CET')
+        self.assertEqual(tz2.tzname(dt(2011, 1, 1)), "CET")
 
     def test_tzname02(self):
-        self.assertEqual(tz2.tzname(dt(2011, 8, 1)), 'CEST')
+        self.assertEqual(tz2.tzname(dt(2011, 8, 1)), "CEST")
 
 
 ### datetime #################################################################
@@ -464,8 +477,8 @@ hour = td(hours=1)
 day = td(days=1)
 week = td(weeks=1)
 
-class TestTimeZone(unittest.TestCase):
 
+class TestTimeZone(unittest.TestCase):
     def test_constructor01(self):
         d = dt(2002, 3, 1, 12, 0)
         year, month, day, hour, minute, second, nanosecond, tz = d.tuple()
@@ -551,8 +564,7 @@ class TestTimeZone(unittest.TestCase):
 
     def test_computation01(self):
         d = d1 - d2
-        self.assertEqual(d.total_seconds(),
-                (46 * 365 + len(range(1956, 2002, 4)))*24*60*60)
+        self.assertEqual(d.total_seconds(), (46 * 365 + len(range(1956, 2002, 4))) * 24 * 60 * 60)
 
     def test_computation02(self):
         self.assertEqual(d4 + hour, dt(2002, 3, 2, 18, 6))
@@ -561,7 +573,7 @@ class TestTimeZone(unittest.TestCase):
         self.assertEqual(hour + d4, dt(2002, 3, 2, 18, 6))
 
     def test_computation03(self):
-        self.assertEqual(d4 + 10*hour, dt(2002, 3, 3, 3, 6))
+        self.assertEqual(d4 + 10 * hour, dt(2002, 3, 3, 3, 6))
 
     def test_computation04(self):
         self.assertEqual(d4 - hour, dt(2002, 3, 2, 16, 6))
@@ -573,7 +585,7 @@ class TestTimeZone(unittest.TestCase):
         self.assertEqual(d4 - hour, d4 + -hour)
 
     def test_computation07(self):
-        self.assertEqual(d4 - 20*hour, dt(2002, 3, 1, 21, 6))
+        self.assertEqual(d4 - 20 * hour, dt(2002, 3, 1, 21, 6))
 
     def test_computation08(self):
         self.assertEqual(d4 + day, dt(2002, 3, 3, 17, 6))
@@ -588,10 +600,10 @@ class TestTimeZone(unittest.TestCase):
         self.assertEqual(d4 - week, dt(2002, 2, 23, 17, 6))
 
     def test_computation12(self):
-        self.assertEqual(d4 + 52*week, dt(2003, 3, 1, 17, 6))
+        self.assertEqual(d4 + 52 * week, dt(2003, 3, 1, 17, 6))
 
     def test_computation13(self):
-        self.assertEqual(d4 - 52*week, dt(2001, 3, 3, 17, 6))
+        self.assertEqual(d4 - 52 * week, dt(2001, 3, 3, 17, 6))
 
     def test_computation14(self):
         self.assertEqual((d4 + week) - d4, week)
@@ -738,5 +750,5 @@ class TestTimeZone(unittest.TestCase):
         self.assertEqual(str(fif("1975-08-10 23:30:12+01:00")), "1975-08-10 23:30:12+01:00")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

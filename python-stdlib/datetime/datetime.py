@@ -2,6 +2,7 @@
 
 __version__ = "2.0.0"
 
+
 def _is_leap(year):
     return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
 
@@ -14,6 +15,7 @@ def _days_before_year(year):
 
 _DIM = (0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
+
 def _days_in_month(year, month):
     # year, month -> number of days in that month in that year.
     if month == 2 and _is_leap(year):
@@ -22,6 +24,7 @@ def _days_in_month(year, month):
 
 
 _DBM = (0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334)
+
 
 def _days_before_month(year, month):
     # year, month -> number of days in year preceding first day of month.
@@ -54,11 +57,32 @@ def _ord2ymd(n):
 
 
 class timedelta:
-    MINYEAR = -292   # timedelta( 0,  0,  0, -365*584).total_seconds() > -2**63 / 10**9
-    MAXYEAR = 292    # timedelta(23, 59, 59,  365*584).total_seconds() < (2**63 - 1) / 10**9
+    MINYEAR = -292  # timedelta( 0,  0,  0, -365*584).total_seconds() > -2**63 / 10**9
+    MAXYEAR = 292  # timedelta(23, 59, 59,  365*584).total_seconds() < (2**63 - 1) / 10**9
 
-    def __init__(self, hours=0, minutes=0, seconds=0, days=0, weeks=0, milliseconds=0, microseconds=0, nanoseconds=0):
-        self._ns = round(((((((weeks * 7 + days) * 24 + hours) * 60 + minutes) * 60 + seconds) * 1000 + milliseconds) * 1000 + microseconds) * 1000 + nanoseconds)
+    def __init__(
+        self,
+        hours=0,
+        minutes=0,
+        seconds=0,
+        days=0,
+        weeks=0,
+        milliseconds=0,
+        microseconds=0,
+        nanoseconds=0,
+    ):
+        self._ns = round(
+            (
+                (
+                    ((((weeks * 7 + days) * 24 + hours) * 60 + minutes) * 60 + seconds) * 1000
+                    + milliseconds
+                )
+                * 1000
+                + microseconds
+            )
+            * 1000
+            + nanoseconds
+        )
 
     def __repr__(self):
         return "datetime.timedelta(seconds={})".format(self.total_seconds())
@@ -234,7 +258,15 @@ class datetime:
         return self._ord
 
     def replace(
-        self, year=None, month=None, day=None, hour=None, minute=None, second=None, nanosecond=None, tzinfo=True
+        self,
+        year=None,
+        month=None,
+        day=None,
+        hour=None,
+        minute=None,
+        second=None,
+        nanosecond=None,
+        tzinfo=True,
     ):
         year_, month_, day_, hour_, minute_, second_, nanosec_, tz_ = self.tuple()
         if year is None:
@@ -268,8 +300,11 @@ class datetime:
         return dt + self._tz.isoformat(self, utc=False)
 
     def __repr__(self):
-        return "datetime.datetime(day=%d, nanosecond=%d, tzinfo=%s)" \
-                % (self._ord, self._time._ns, repr(self._tz))
+        return "datetime.datetime(day=%d, nanosecond=%d, tzinfo=%s)" % (
+            self._ord,
+            self._time._ns,
+            repr(self._tz),
+        )
 
     def __str__(self):
         return self.isoformat(" ")
@@ -321,7 +356,9 @@ class datetime:
             days += 1
             time += timedelta(days=days)
             days = -days
-        year, month, day, hour, minute, second, nanosec, tz = self._tuple(self._ord + days, time, self._tz)[:8]
+        year, month, day, hour, minute, second, nanosec, tz = self._tuple(
+            self._ord + days, time, self._tz
+        )[:8]
         return datetime(year, month, day, hour, minute, second, nanosec, tz)
 
     def __sub__(self, other):
@@ -443,7 +480,7 @@ def fromisoformat(s):
         tz = timezone(td)
     else:
         tz = None
-    return datetime(year, month, day, hour, minute, sec, usec*1000, tz)
+    return datetime(year, month, day, hour, minute, sec, usec * 1000, tz)
 
 
 def fromordinal(n):
