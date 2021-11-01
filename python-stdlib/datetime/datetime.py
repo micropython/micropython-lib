@@ -60,6 +60,12 @@ class timedelta:
     def __init__(self, hours=0, minutes=0, seconds=0, days=0, weeks=0):
         self._s = round((((weeks * 7 + days) * 24 + hours) * 60 + minutes) * 60 + seconds)
 
+    def __repr__(self):
+        return "datetime.timedelta(seconds=%d)" % self._s
+
+    def __str__(self):
+        return self.isoformat()
+
     def total_seconds(self):
         return self._s
 
@@ -70,6 +76,15 @@ class timedelta:
 
     def __sub__(self, other):
         return timedelta(seconds=self._s - other._s)
+
+    def __neg__(self):
+        return timedelta(seconds=-self._s)
+
+    def __pos__(self):
+        return self
+
+    def __abs__(self):
+        return timedelta(seconds=abs(self._s))
 
     def __mul__(self, other):
         return timedelta(seconds=round(other * self._s))
@@ -95,12 +110,6 @@ class timedelta:
         q, r = divmod(self._s, other._s)
         return q, timedelta(seconds=r)
 
-    def __neg__(self):
-        return timedelta(seconds=-self._s)
-
-    def __pos__(self):
-        return self
-
     def __eq__(self, other):
         return self._s == other._s
 
@@ -118,21 +127,6 @@ class timedelta:
 
     def __bool__(self):
         return self._s != 0
-
-    def __neg__(self):
-        return timedelta(seconds=-self._s)
-
-    def __pos__(self):
-        return self
-
-    def __abs__(self):
-        return timedelta(seconds=abs(self._s))
-
-    def __repr__(self):
-        return "datetime.timedelta(seconds=%d)" % self._s
-
-    def __str__(self):
-        return self.isoformat()
 
     def isoformat(self):
         t = self.tuple()
@@ -215,56 +209,9 @@ class datetime:
         self._time = timedelta(hour, minute, second)
         self._tz = tzinfo
 
-    def __add__(self, other):
-        time = self._time + other
-        sign, days, hour, minute, second = time.tuple()
-        if sign == "-":
-            days += 1
-            time += timedelta(days=days)
-            days = -days
-        year, month, day, hour, minute, second, tz = self._tuple(self._ord + days, time, self._tz)[:7]
-        return datetime(year, month, day, hour, minute, second, tz)
-
-    def __sub__(self, other):
-        if isinstance(other, timedelta):
-            return self + -other
-        elif isinstance(other, datetime):
-            days, time = self._sub(other)
-            return time + timedelta(days=days)
-        else:
-            raise TypeError
-
-    def __lt__(self, other):
-        return self._cmp(other) < 0
-
-    def __le__(self, other):
-        return self._cmp(other) <= 0
-
-    def __eq__(self, other):
-        return self._cmp(other) == 0
-
-    def __ge__(self, other):
-        return self._cmp(other) >= 0
-
-    def __gt__(self, other):
-        return self._cmp(other) > 0
-
-    def __repr__(self):
-        return "datetime.datetime(days=%d, seconds=%d, tzinfo=%s)" \
-                % (self._ord, self._time._s, repr(self._tz))
-
-    def __str__(self):
-        return self.isoformat(" ")
-
     @property
     def tzinfo(self):
         return self._tz
-
-    def utcoffset(self):
-        return None if self._tz is None else self._tz.utcoffset(self)
-
-    def dst(self):
-        return None if self._tz is None else self._tz.dst(self)
 
     def date(self):
         return datetime(0, 0, self.toordinal(), tzinfo=self._tz)
@@ -272,8 +219,8 @@ class datetime:
     def time(self):
         return timedelta(seconds=self._time.total_seconds())
 
-    def tzname(self):
-        return None if self._tz is None else self._tz.tzname(self)
+    def toordinal(self):
+        return self._ord
 
     def replace(
         self, year=None, month=None, day=None, hour=None, minute=None, second=None, tzinfo=True
@@ -301,26 +248,77 @@ class datetime:
         ret = self - self.utcoffset() + tz.utcoffset(self)
         return ret.replace(tzinfo=tz)
 
-    def dateisoformat(self):
-        return self.isoformat()[:10]
-
-    def timeisoformat(self):
-        return self.isoformat()[11:19]
-
     def isoformat(self, sep="T"):
         dt = ("%04d-%02d-%02d" + sep + "%02d:%02d:%02d") % self.tuple()[:6]
         if self._tz == None:
             return dt
         return dt + self._tz.isoformat(self, utc=False)
 
-    def toordinal(self):
-        return self._ord
+    def __repr__(self):
+        return "datetime.datetime(days=%d, seconds=%d, tzinfo=%s)" \
+                % (self._ord, self._time._s, repr(self._tz))
 
-    def isoweekday(self):
-        return self._ord % 7 or 7
+    def __str__(self):
+        return self.isoformat(" ")
 
-    def tuple(self):
-        return self._tuple(self._ord, self._time, self._tz)[:-2]
+    def utcoffset(self):
+        return None if self._tz is None else self._tz.utcoffset(self)
+
+    def tzname(self):
+        return None if self._tz is None else self._tz.tzname(self)
+
+    def dst(self):
+        return None if self._tz is None else self._tz.dst(self)
+
+    def __eq__(self, other):
+        return self._cmp(other) == 0
+
+    def __le__(self, other):
+        return self._cmp(other) <= 0
+
+    def __lt__(self, other):
+        return self._cmp(other) < 0
+
+    def __ge__(self, other):
+        return self._cmp(other) >= 0
+
+    def __gt__(self, other):
+        return self._cmp(other) > 0
+
+    def _cmp(self, other):
+        # Compare two datetime instances.
+        days, time = self._sub(other)
+        if days < 0:
+            return -1
+        if days > 0:
+            return 1
+
+        secs = time.total_seconds()
+        if secs < 0:
+            return -1
+        if secs > 0:
+            return 1
+
+        return 0
+
+    def __add__(self, other):
+        time = self._time + other
+        sign, days, hour, minute, second = time.tuple()
+        if sign == "-":
+            days += 1
+            time += timedelta(days=days)
+            days = -days
+        year, month, day, hour, minute, second, tz = self._tuple(self._ord + days, time, self._tz)[:7]
+        return datetime(year, month, day, hour, minute, second, tz)
+
+    def __sub__(self, other):
+        if isinstance(other, timedelta):
+            return self + -other
+        elif isinstance(other, datetime):
+            days, time = self._sub(other)
+            return time + timedelta(days=days)
+        else:
+            raise TypeError
 
     def _sub(self, other):
         # Subtract two datetime instances.
@@ -338,21 +336,17 @@ class datetime:
         time = dt1._time - dt2._time
         return days, time
 
-    def _cmp(self, other):
-        # Compare two datetime instances.
-        days, time = self._sub(other)
-        if days < 0:
-            return -1
-        if days > 0:
-            return 1
+    def isoweekday(self):
+        return self._ord % 7 or 7
 
-        secs = time.total_seconds()
-        if secs < 0:
-            return -1
-        if secs > 0:
-            return 1
+    def dateisoformat(self):
+        return self.isoformat()[:10]
 
-        return 0
+    def timeisoformat(self):
+        return self.isoformat()[11:19]
+
+    def tuple(self):
+        return self._tuple(self._ord, self._time, self._tz)[:-2]
 
     def _tuple(self, ordinal, time, tz):
         # Split a datetime to its components.
