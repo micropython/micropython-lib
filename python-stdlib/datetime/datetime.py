@@ -54,103 +54,113 @@ def _ord2ymd(n):
 
 
 class timedelta:
-    MINYEAR = -68   # timedelta( 0,  0,  0, -365*68).total_seconds() >= -2**31
-    MAXYEAR = 68    # timedelta(23, 59, 59,  365*68).total_seconds() <=  2**31 - 1
+    MINYEAR = -292   # timedelta( 0,  0,  0, -365*584).total_seconds() > -2**63 / 10**9
+    MAXYEAR = 292    # timedelta(23, 59, 59,  365*584).total_seconds() < (2**63 - 1) / 10**9
 
-    def __init__(self, hours=0, minutes=0, seconds=0, days=0, weeks=0):
-        self._s = round((((weeks * 7 + days) * 24 + hours) * 60 + minutes) * 60 + seconds)
+    def __init__(self, hours=0, minutes=0, seconds=0, days=0, weeks=0, milliseconds=0, microseconds=0, nanoseconds=0):
+        self._ns = round(((((((weeks * 7 + days) * 24 + hours) * 60 + minutes) * 60 + seconds) * 1000 + milliseconds) * 1000 + microseconds) * 1000 + nanoseconds)
 
     def __repr__(self):
-        return "datetime.timedelta(seconds=%d)" % self._s
+        return "datetime.timedelta(seconds={})".format(self.total_seconds())
 
     def __str__(self):
         return self.isoformat()
 
     def total_seconds(self):
-        return self._s
+        return self._ns / 1_000_000_000
+
+    @property
+    def nanoseconds(self):
+        return self._ns
 
     def __add__(self, other):
         if isinstance(other, datetime):
             return other + self
-        return timedelta(seconds=self._s + other._s)
+        return timedelta(nanoseconds=self._ns + other._ns)
 
     def __sub__(self, other):
-        return timedelta(seconds=self._s - other._s)
+        return timedelta(nanoseconds=self._ns - other._ns)
 
     def __neg__(self):
-        return timedelta(seconds=-self._s)
+        return timedelta(nanoseconds=-self._ns)
 
     def __pos__(self):
         return self
 
     def __abs__(self):
-        return timedelta(seconds=abs(self._s))
+        return -self if self._ns < 0 else self
 
     def __mul__(self, other):
-        return timedelta(seconds=round(other * self._s))
+        return timedelta(nanoseconds=round(other * self._ns))
 
     __rmul__ = __mul__
 
     def __truediv__(self, other):
         if isinstance(other, timedelta):
-            return self._s / other._s
+            return self._ns / other._ns
         else:
-            return timedelta(seconds=round(self._s / other))
+            return timedelta(nanoseconds=round(self._ns / other))
 
     def __floordiv__(self, other):
         if isinstance(other, timedelta):
-            return self._s // other._s
+            return self._ns // other._ns
         else:
-            return timedelta(seconds=int(self._s // other))
+            return timedelta(nanoseconds=int(self._ns // other))
 
     def __mod__(self, other):
-        return timedelta(seconds=self._s % other._s)
+        return timedelta(nanoseconds=self._ns % other._ns)
 
     def __divmod__(self, other):
-        q, r = divmod(self._s, other._s)
-        return q, timedelta(seconds=r)
+        q, r = divmod(self._ns, other._ns)
+        return q, timedelta(nanoseconds=r)
 
     def __eq__(self, other):
-        return self._s == other._s
+        return self._ns == other._ns
 
     def __le__(self, other):
-        return self._s <= other._s
+        return self._ns <= other._ns
 
     def __lt__(self, other):
-        return self._s < other._s
+        return self._ns < other._ns
 
     def __ge__(self, other):
-        return self._s >= other._s
+        return self._ns >= other._ns
 
     def __gt__(self, other):
-        return self._s > other._s
+        return self._ns > other._ns
 
     def __bool__(self):
-        return self._s != 0
+        return self._ns != 0
 
     def isoformat(self):
         t = self.tuple()
-        if 0 <= self._s < 86400:
-            return "%02d:%02d:%02d" % t[2:]
+        if 0 <= self._ns < 86400000000000:
+            s = str()
         else:
-            return "%s%dd %02d:%02d:%02d" % t
+            s = "%s%dd " % t[:2]
+        s += "%02d:%02d:%02d" % t[2:5]
+        us = round(t[5] / 1000)
+        if us:
+            s += f".{us:06d}"
+        return s
 
     def tuple(self, sign_pos=""):
-        s = self._s
-        if s < 0:
-            s *= -1
+        ns = self._ns
+        if ns < 0:
+            ns *= -1
             g = "-"
         else:
             g = sign_pos
+        s, ns = divmod(ns, 1_000_000_000)
         m, s = divmod(s, 60)
         h, m = divmod(m, 60)
         d, h = divmod(h, 24)
-        return g, d, h, m, s
+        return g, d, h, m, s, ns
 
 
-timedelta.min = timedelta(seconds=-2147483648)  # -2**31
-timedelta.max = timedelta(seconds=2147483647)  #  2**31 - 1
-timedelta.resolution = timedelta(seconds=1)
+timedelta.min = timedelta(seconds=-9223372036854775808)  # -2**63
+timedelta.max = timedelta(seconds=9223372036854775807)  #  2**63 - 1
+timedelta.resolution = timedelta(nanoseconds=1)
 
 
 class timezone:
@@ -181,7 +191,7 @@ class timezone:
         td = self.utcoffset(dt)
         if utc and not td:
             return "UTC"
-        sign, day, hour, minute, second = td.tuple("+")
+        sign, day, hour, minute, second, nanosec = td.tuple("+")
         return "%s%s%02d:%02d" % ("UTC" if utc else "", sign, hour, minute)
 
 
@@ -192,7 +202,7 @@ class datetime:
     MINYEAR = 1
     MAXYEAR = 9999
 
-    def __init__(self, year, month, day, hour=0, minute=0, second=0, tzinfo=None):
+    def __init__(self, year, month, day, hour=0, minute=0, second=0, nanosecond=0, tzinfo=None):
         if year == 0 and month == 0 and day > 0:
             self._ord = day
         elif (
@@ -202,11 +212,12 @@ class datetime:
             and 0 <= hour < 24
             and 0 <= minute < 60
             and 0 <= second < 60
+            and 0 <= nanosecond < 1_000_000_000
         ):
             self._ord = _ymd2ord(year, month, day)
         else:
             raise ValueError
-        self._time = timedelta(hour, minute, second)
+        self._time = timedelta(hour, minute, second, nanosecond)
         self._tz = tzinfo
 
     @property
@@ -217,15 +228,15 @@ class datetime:
         return datetime(0, 0, self.toordinal(), tzinfo=self._tz)
 
     def time(self):
-        return timedelta(seconds=self._time.total_seconds())
+        return timedelta(nanoseconds=self._time.nanoseconds)
 
     def toordinal(self):
         return self._ord
 
     def replace(
-        self, year=None, month=None, day=None, hour=None, minute=None, second=None, tzinfo=True
+        self, year=None, month=None, day=None, hour=None, minute=None, second=None, nanosecond=None, tzinfo=True
     ):
-        year_, month_, day_, hour_, minute_, second_, tz_ = self.tuple()
+        year_, month_, day_, hour_, minute_, second_, nanosec_, tz_ = self.tuple()
         if year is None:
             year = year_
         if month is None:
@@ -238,9 +249,11 @@ class datetime:
             minute = minute_
         if second is None:
             second = second_
+        if nanosecond is None:
+            nanosecond = nanosec_
         if tzinfo is True:
             tzinfo = tz_
-        return datetime(year, month, day, hour, minute, second, tzinfo)
+        return datetime(year, month, day, hour, minute, second, nanosecond, tzinfo)
 
     def astimezone(self, tz):
         if self._tz == None:
@@ -255,8 +268,8 @@ class datetime:
         return dt + self._tz.isoformat(self, utc=False)
 
     def __repr__(self):
-        return "datetime.datetime(days=%d, seconds=%d, tzinfo=%s)" \
-                % (self._ord, self._time._s, repr(self._tz))
+        return "datetime.datetime(day=%d, nanosecond=%d, tzinfo=%s)" \
+                % (self._ord, self._time._ns, repr(self._tz))
 
     def __str__(self):
         return self.isoformat(" ")
@@ -293,23 +306,23 @@ class datetime:
         if days > 0:
             return 1
 
-        secs = time.total_seconds()
-        if secs < 0:
+        ns = time.nanoseconds
+        if ns < 0:
             return -1
-        if secs > 0:
+        if ns > 0:
             return 1
 
         return 0
 
     def __add__(self, other):
         time = self._time + other
-        sign, days, hour, minute, second = time.tuple()
+        sign, days, hour, minute, second, nanosec = time.tuple()
         if sign == "-":
             days += 1
             time += timedelta(days=days)
             days = -days
-        year, month, day, hour, minute, second, tz = self._tuple(self._ord + days, time, self._tz)[:7]
-        return datetime(year, month, day, hour, minute, second, tz)
+        year, month, day, hour, minute, second, nanosec, tz = self._tuple(self._ord + days, time, self._tz)[:8]
+        return datetime(year, month, day, hour, minute, second, nanosec, tz)
 
     def __sub__(self, other):
         if isinstance(other, timedelta):
@@ -351,8 +364,8 @@ class datetime:
     def _tuple(self, ordinal, time, tz):
         # Split a datetime to its components.
         year, month, day = _ord2ymd(ordinal)
-        sign, days, hour, minute, second = time.tuple()
-        return year, month, day, hour, minute, second, tz, days, sign
+        sign, days, hour, minute, second, nanosec = time.tuple()
+        return year, month, day, hour, minute, second, nanosec, tz, days, sign
 
 
 datetime.EPOCH = datetime(2000, 1, 1, tzinfo=timezone.utc)
@@ -424,13 +437,13 @@ def fromisoformat(s):
     if l != i:
         raise ValueError
     if tz_sign:
-        td = timedelta(tz_hour, tz_minute, tz_sec)
+        td = timedelta(tz_hour, tz_minute, tz_sec, microseconds=tz_usec)
         if tz_sign == "-":
             td = -td
         tz = timezone(td)
     else:
         tz = None
-    return datetime(year, month, day, hour, minute, sec, tz)
+    return datetime(year, month, day, hour, minute, sec, usec*1000, tz)
 
 
 def fromordinal(n):

@@ -11,7 +11,7 @@ from datetime import\
 a = td(hours=7)
 b = td(minutes=6)
 c = td(seconds=10)
-s = td(seconds=1)
+ns = td(nanoseconds=1)
 t1 = td(2, 3, 4)
 t2 = td(2, 3, 4)
 t3 = td(2, 3, 5)
@@ -34,28 +34,46 @@ class TestTimeDelta(unittest.TestCase):
         self.assertEqual(td(minutes=1), td(seconds=60))
 
     def test_constructor06(self):
-        self.assertEqual(td(weeks=1.0 / 7), td(days=1))
+        self.assertEqual(td(seconds=1), td(milliseconds=1000))
 
     def test_constructor07(self):
-        self.assertEqual(td(days=1.0 / 24), td(hours=1))
+        self.assertEqual(td(milliseconds=1), td(microseconds=1000))
 
     def test_constructor08(self):
-        self.assertEqual(td(hours=1.0 / 60), td(minutes=1))
+        self.assertEqual(td(microseconds=1), td(nanoseconds=1000))
 
     def test_constructor09(self):
+        self.assertEqual(td(weeks=1.0 / 7), td(days=1))
+
+    def test_constructor10(self):
+        self.assertEqual(td(days=1.0 / 24), td(hours=1))
+
+    def test_constructor11(self):
+        self.assertEqual(td(hours=1.0 / 60), td(minutes=1))
+
+    def test_constructor12(self):
         self.assertEqual(td(minutes=1.0 / 60), td(seconds=1))
 
+    def test_constructor13(self):
+        self.assertEqual(td(seconds=0.001), td(milliseconds=1))
+
+    def test_constructor14(self):
+        self.assertEqual(td(milliseconds=0.001), td(microseconds=1))
+
+    def test_constructor15(self):
+        self.assertEqual(td(microseconds=0.001), td(nanoseconds=1))
+
     def test_constant01(self):
-        self.assertTrue(td(0, 0, 0, 365*td.MINYEAR).total_seconds() >= -2**31)
+        self.assertTrue(td(0, 0, 0, 365*td.MINYEAR).total_seconds() >= -2**63 / 10**9)
 
     def test_constant02(self):
-        self.assertFalse(td(0, 0, 0, 365*(td.MINYEAR - 1)).total_seconds() >= -2**31)
+        self.assertFalse(td(0, 0, 0, 365*(td.MINYEAR - 1)).total_seconds() >= -2**63 / 10**9)
 
     def test_constant03(self):
-        self.assertTrue(td(23, 59, 59, 365*td.MAXYEAR).total_seconds() <= 2**31 - 1)
+        self.assertTrue(td(23, 59, 59, 365*td.MAXYEAR).total_seconds() <= (2**63 - 1) / 10**9)
 
     def test_constant04(self):
-        self.assertFalse(td(23, 59, 59, 365*(td.MAXYEAR + 1)).total_seconds() <= 2**31 - 1)
+        self.assertFalse(td(23, 59, 59, 365*(td.MAXYEAR + 1)).total_seconds() <= (2**63 - 1)  /10**9)
 
     def test_computation01(self):
         self.assertEqual(a + b + c, td(7, 6, 10))
@@ -166,54 +184,56 @@ class TestTimeDelta(unittest.TestCase):
         self.assertEqual(a / 3600, td(0, 0, 7))
 
     def test_computation37(self):
-        self.assertEqual((3 * s) * 0.5, 2 * s)
+        self.assertEqual((3 * ns) * 0.5, 2 * ns)
 
     def test_computation38(self):
-        self.assertEqual((5 * s) * 0.5, 2 * s)
+        self.assertEqual((5 * ns) * 0.5, 2 * ns)
 
     def test_computation39(self):
-        self.assertEqual(0.5 * (3 * s), 2 * s)
+        self.assertEqual(0.5 * (3 * ns), 2 * ns)
 
     def test_computation40(self):
-        self.assertEqual(0.5 * (5 * s), 2 * s)
+        self.assertEqual(0.5 * (5 * ns), 2 * ns)
 
     def test_computation41(self):
-        self.assertEqual((-3 * s) * 0.5, -2 * s)
+        self.assertEqual((-3 * ns) * 0.5, -2 * ns)
 
     def test_computation42(self):
-        self.assertEqual((-5 * s) * 0.5, -2 * s)
+        self.assertEqual((-5 * ns) * 0.5, -2 * ns)
 
     def test_computation43(self):
-        self.assertEqual((3 * s) / 2, 2 * s)
+        self.assertEqual((3 * ns) / 2, 2 * ns)
 
     def test_computation44(self):
-        self.assertEqual((5 * s) / 2, 2 * s)
+        self.assertEqual((5 * ns) / 2, 2 * ns)
 
     def test_computation45(self):
-        self.assertEqual((-3 * s) / 2.0, -2 * s)
+        self.assertEqual((-3 * ns) / 2.0, -2 * ns)
 
     def test_computation46(self):
-        self.assertEqual((-5 * s) / 2.0, -2 * s)
+        self.assertEqual((-5 * ns) / 2.0, -2 * ns)
 
     def test_computation47(self):
-        self.assertEqual((3 * s) / -2, -2 * s)
+        self.assertEqual((3 * ns) / -2, -2 * ns)
 
     def test_computation48(self):
-        self.assertEqual((5 * s) / -2, -2 * s)
+        self.assertEqual((5 * ns) / -2, -2 * ns)
 
     def test_computation49(self):
-        self.assertEqual((3 * s) / -2.0, -2 * s)
+        self.assertEqual((3 * ns) / -2.0, -2 * ns)
 
     def test_computation50(self):
-        self.assertEqual((5 * s) / -2.0, -2 * s)
+        self.assertEqual((5 * ns) / -2.0, -2 * ns)
 
     def test_computation51(self):
         for i in range(-10, 10):
-            self.assertEqual((i * s / 3) // s, round(i / 3))
+            with self.subTest(i=i):
+                self.assertEqual((i * ns / 3) // ns, round(i / 3))
 
     def test_computation52(self):
         for i in range(-10, 10):
-            self.assertEqual((i * s / -3) // s, round(i / -3))
+            with self.subTest(i=i):
+                self.assertEqual((i * ns / -3) // ns, round(i / -3))
 
     def test_total_seconds(self):
         d = td(days=365)
@@ -303,13 +323,13 @@ class TestTimeDelta(unittest.TestCase):
         self.assertEqual(str(td(2, 3, 4)), "02:03:04")
 
     def test_repr01(self):
-        self.assertEqual(repr(td(1)), "datetime.timedelta(seconds=%d)" % (1*3600))
+        self.assertEqual(repr(td(1)), "datetime.timedelta(seconds={})".format(1*3600.0))
 
     def test_repr02(self):
-        self.assertEqual(repr(td(10, 2)), "datetime.timedelta(seconds=%d)" % (10*3600 + 2*60))
+        self.assertEqual(repr(td(10, 2)), "datetime.timedelta(seconds={})".format(10*3600 + 2*60.0))
 
     def test_repr03(self):
-        self.assertEqual(repr(td(-10, 2, 40)), "datetime.timedelta(seconds=%d)" % (-10*3600 + 2*60 + 40))
+        self.assertEqual(repr(td(-10, 2, 40)), "datetime.timedelta(seconds={})".format(-10*3600 + 2*60 + 40.0))
 
     def test_bool01(self):
         self.assertTrue(td(1))
@@ -375,7 +395,7 @@ class Cet(tz):
     def isdst(self, dt):
         if dt is None:
             return False
-        year, month, day, hour, minute, second, tz = dt.tuple()
+        year, month, day, hour, minute, second, nanosecond, tz = dt.tuple()
         if not 2000 <= year < 2100:
             raise ValueError
         if 3 < month < 10:
@@ -435,7 +455,7 @@ class TestTimeZone(unittest.TestCase):
 
 d1 = dt(2002, 1, 31)
 d2 = dt(1956, 1, 31)
-d3 = dt(2002, 3, 1, 12, 59, 59, tz2)
+d3 = dt(2002, 3, 1, 12, 59, 59, 0, tz2)
 d4 = dt(2002, 3, 2, 17, 6)
 d5 = dt(2002, 1, 31)
 
@@ -447,23 +467,25 @@ class TestTimeZone(unittest.TestCase):
 
     def test_constructor01(self):
         d = dt(2002, 3, 1, 12, 0)
-        year, month, day, hour, minute, second, tz = d.tuple()
+        year, month, day, hour, minute, second, nanosecond, tz = d.tuple()
         self.assertEqual(year, 2002)
         self.assertEqual(month, 3)
         self.assertEqual(day, 1)
         self.assertEqual(hour, 12)
         self.assertEqual(minute, 0)
         self.assertEqual(second, 0)
+        self.assertEqual(nanosecond, 0)
         self.assertEqual(tz, None)
 
     def test_constructor02(self):
-        year, month, day, hour, minute, second, tz = d3.tuple()
+        year, month, day, hour, minute, second, nanosecond, tz = d3.tuple()
         self.assertEqual(year, 2002)
         self.assertEqual(month, 3)
         self.assertEqual(day, 1)
         self.assertEqual(hour, 12)
         self.assertEqual(minute, 59)
         self.assertEqual(second, 59)
+        self.assertEqual(nanosecond, 0)
         self.assertEqual(tz, tz2)
 
     def test_constructor03(self):
@@ -664,7 +686,7 @@ class TestTimeZone(unittest.TestCase):
         self.assertFalse(d5 <= d2)
 
     def test_astimezone01(self):
-        self.assertEqual(d3.astimezone(tz.utc), dt(2002, 3, 1, 11, 59, 59, tz.utc))
+        self.assertEqual(d3.astimezone(tz.utc), dt(2002, 3, 1, 11, 59, 59, 0, tz.utc))
 
     def test_isoformat01(self):
         self.assertEqual(d3.isoformat(), "2002-03-01T12:59:59+01:00")
