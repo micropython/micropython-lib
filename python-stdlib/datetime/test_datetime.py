@@ -1,3 +1,4 @@
+# See https://github.com/python/cpython/blob/3.9/Lib/test/datetimetester.py
 import unittest
 from datetime import\
         timedelta as td,\
@@ -684,6 +685,21 @@ class TestTimeZone(unittest.TestCase):
 
     def test_compare18(self):
         self.assertFalse(d5 <= d2)
+
+    def test_resolution01(self):
+        self.assertIsInstance(td.min, td)
+
+    def test_resolution02(self):
+        self.assertIsInstance(td.max, td)
+
+    def test_resolution03(self):
+        self.assertIsInstance(td.resolution, td)
+
+    def test_resolution04(self):
+        self.assertTrue(td.max > td.min)
+
+    def test_resolution04(self):
+        self.assertEqual(td.resolution, td(nanoseconds=1))
 
     def test_astimezone01(self):
         self.assertEqual(d3.astimezone(tz.utc), dt(2002, 3, 1, 11, 59, 59, 0, tz.utc))
