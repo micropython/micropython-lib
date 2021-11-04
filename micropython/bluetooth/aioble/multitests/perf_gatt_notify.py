@@ -29,7 +29,7 @@ def register_server():
     return server_characteristic
 
 
-async def discover_server():
+async def discover_server(connection):
     client_service = await connection.service(SERVICE_UUID)
     return await client_service.characteristic(CHAR_UUID)
 
@@ -45,7 +45,7 @@ async def instance0_task():
         20_000, adv_data=b"\x02\x01\x06\x04\xffMPY", timeout_ms=TIMEOUT_MS
     )
 
-    client_characteristic = await discover_server()
+    client_characteristic = await discover_server(connection)
 
     # Give the central enough time to discover chars.
     await asyncio.sleep_ms(500)
@@ -73,7 +73,7 @@ def instance0():
     try:
         asyncio.run(instance0_task())
     finally:
-        aioble.ble.active(0)
+        aioble.stop()
 
 
 # Acting in central role.
@@ -85,7 +85,7 @@ async def instance1_task():
     device = aioble.Device(*BDADDR)
     connection = await device.connect(timeout_ms=TIMEOUT_MS)
 
-    client_characteristic = await discover_server()
+    client_characteristic = await discover_server(connection)
 
     for i in range(_NUM_NOTIFICATIONS):
         # Wait for notification and send response.
@@ -100,4 +100,4 @@ def instance1():
     try:
         asyncio.run(instance1_task())
     finally:
-        aioble.ble.active(0)
+        aioble.stop()
