@@ -73,7 +73,7 @@ def instance0():
     try:
         asyncio.run(instance0_task())
     finally:
-        aioble.ble.active(0)
+        aioble.stop()
 
 
 # Acting in central role.
@@ -100,4 +100,4 @@ def instance1():
     try:
         asyncio.run(instance1_task())
     finally:
-        aioble.ble.active(0)
+        aioble.stop()

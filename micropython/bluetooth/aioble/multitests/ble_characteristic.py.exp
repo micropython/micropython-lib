@@ -8,7 +8,7 @@ written b'central1'
 notify
 written b'central2'
 write
-indicate 0
+indicate
 disconnected
 --- instance1 ---
 connect
