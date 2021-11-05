@@ -2,6 +2,7 @@
 # MIT license; Copyright (c) 2021 Jim Mussared
 
 from micropython import const
+from collections import deque
 import bluetooth
 import uasyncio as asyncio
 
@@ -111,7 +112,7 @@ class BaseCharacteristic:
 
         # Either we started > 1 item, or the wait completed successfully, return
         # the front of the queue.
-        return self._write_queue.pop(0)
+        return self._write_queue.popleft()
 
     def on_read(self, connection):
         return 0
@@ -127,21 +128,13 @@ class BaseCharacteristic:
 
             if characteristic.flags & _FLAG_WRITE_CAPTURE:
                 # For capture, we append both the connection and the written
-                # value to the queue.
+                # value to the queue. The deque will enforce the max queue len.
                 data = characteristic.read()
-                # Enforce queue length (drop oldest writes).
-                while len(q) > _WRITE_CAPTURE_QUEUE_LIMIT:
-                    log_warn("write capture overflow")
-                    q.pop(0)
                 q.append((conn, data))
             else:
-                # Use the queue as a single slot -- either append or replace
-                # the first item. Note: `wake` here is a proxy for "is the
-                # queue empty".
-                if wake:
-                    q.append(conn)
-                else:
-                    q[0] = conn
+                # Use the queue as a single slot -- it has max length of 1,
+                # so if there's an existing item it will be replaced.
+                q.append(conn)
 
             if wake:
                 # Queue is now non-empty. If something is waiting, it will be
@@ -185,7 +178,7 @@ class Characteristic(BaseCharacteristic):
                 # track the most recent connection.
                 flags |= _FLAG_WRITE_CAPTURE
             self._write_event = asyncio.ThreadSafeFlag()
-            self._write_queue = []
+            self._write_queue = deque((), _WRITE_CAPTURE_QUEUE_LIMIT if capture else 1)
         if notify:
             flags |= _FLAG_NOTIFY
         if indicate:
