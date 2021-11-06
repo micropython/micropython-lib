@@ -230,12 +230,12 @@ class TestTimeDelta(unittest.TestCase):
 
     def test_computation51(self):
         for i in range(-10, 10):
-            with self.subTest(i=i):
+            # with self.subTest(i=i): not supported by Micropython
                 self.assertEqual((i * ns / 3) // ns, round(i / 3))
 
     def test_computation52(self):
         for i in range(-10, 10):
-            with self.subTest(i=i):
+            # with self.subTest(i=i): not supported by Micropython
                 self.assertEqual((i * ns / -3) // ns, round(i / -3))
 
     def test_total_seconds(self):
@@ -478,7 +478,7 @@ day = td(days=1)
 week = td(weeks=1)
 
 
-class TestTimeZone(unittest.TestCase):
+class TestDateTime(unittest.TestCase):
     def test_constructor01(self):
         d = dt(2002, 3, 1, 12, 0)
         year, month, day, hour, minute, second, nanosecond, tz = d.tuple()
