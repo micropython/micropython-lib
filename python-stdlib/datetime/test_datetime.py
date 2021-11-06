@@ -644,6 +644,9 @@ class TestDateTime(unittest.TestCase):
     def test_computation26(self):
         self.assertEqual(d4 - (week + day + hour), (((d4 - week) - day) - hour))
 
+    def test_computation27(self):
+        self.assertEqual(d5 + -day, dt(2002, 1, 30))
+
     def test_compare01(self):
         self.assertEqual(d1, d5)
 

@@ -353,12 +353,14 @@ class datetime:
         time = self._time + other
         sign, days, hour, minute, second, nanosec = time.tuple()
         if sign == "-":
-            days += 1
-            time += timedelta(days=days)
+            if hour or minute or second or nanosec:
+                # -10d -20:30:40 -> -11d 03:29:20
+                days += 1
+                time += timedelta(days=days)
             days = -days
         year, month, day, hour, minute, second, nanosec, tz = self._tuple(
             self._ord + days, time, self._tz
-        )[:8]
+        )
         return datetime(year, month, day, hour, minute, second, nanosec, tz)
 
     def __sub__(self, other):
@@ -396,13 +398,13 @@ class datetime:
         return self.isoformat()[11:19]
 
     def tuple(self):
-        return self._tuple(self._ord, self._time, self._tz)[:-2]
+        return self._tuple(self._ord, self._time, self._tz)
 
     def _tuple(self, ordinal, time, tz):
         # Split a datetime to its components.
         year, month, day = _ord2ymd(ordinal)
         sign, days, hour, minute, second, nanosec = time.tuple()
-        return year, month, day, hour, minute, second, nanosec, tz, days, sign
+        return year, month, day, hour, minute, second, nanosec, tz
 
 
 datetime.EPOCH = datetime(2000, 1, 1, tzinfo=timezone.utc)
