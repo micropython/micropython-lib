@@ -241,7 +241,7 @@ class datetime:
             self._ord = _ymd2ord(year, month, day)
         else:
             raise ValueError
-        self._time = timedelta(hour, minute, second, nanosecond)
+        self._time = timedelta(hour, minute, second, nanoseconds=nanosecond)
         self._tz = tzinfo
 
     @property

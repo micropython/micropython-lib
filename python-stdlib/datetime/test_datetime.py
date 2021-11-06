@@ -469,7 +469,7 @@ class TestTimeZone(unittest.TestCase):
 
 d1 = dt(2002, 1, 31)
 d2 = dt(1956, 1, 31)
-d3 = dt(2002, 3, 1, 12, 59, 59, 0, tz2)
+d3 = dt(2002, 3, 1, 12, 59, 59, 100, tz2)
 d4 = dt(2002, 3, 2, 17, 6)
 d5 = dt(2002, 1, 31)
 
@@ -499,7 +499,7 @@ class TestDateTime(unittest.TestCase):
         self.assertEqual(hour, 12)
         self.assertEqual(minute, 59)
         self.assertEqual(second, 59)
-        self.assertEqual(nanosecond, 0)
+        self.assertEqual(nanosecond, 100)
         self.assertEqual(tz, tz2)
 
     def test_constructor03(self):
@@ -717,7 +717,7 @@ class TestDateTime(unittest.TestCase):
         self.assertEqual(td.resolution, td(nanoseconds=1))
 
     def test_astimezone01(self):
-        self.assertEqual(d3.astimezone(tz.utc), dt(2002, 3, 1, 11, 59, 59, 0, tz.utc))
+        self.assertEqual(d3.astimezone(tz.utc), dt(2002, 3, 1, 11, 59, 59, 100, tz.utc))
 
     def test_isoformat01(self):
         self.assertEqual(d3.isoformat(), "2002-03-01T12:59:59+01:00")
