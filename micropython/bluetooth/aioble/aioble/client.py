@@ -2,6 +2,7 @@
 # MIT license; Copyright (c) 2021 Jim Mussared
 
 from micropython import const
+from collections import deque
 import uasyncio as asyncio
 import struct
 
@@ -26,6 +27,12 @@ _IRQ_GATTC_INDICATE = const(19)
 _CCCD_UUID = const(0x2902)
 _CCCD_NOTIFY = const(1)
 _CCCD_INDICATE = const(2)
+
+_FLAG_READ = const(0x0002)
+_FLAG_WRITE_NO_RESPONSE = const(0x0004)
+_FLAG_WRITE = const(0x0008)
+_FLAG_NOTIFY = const(0x0010)
+_FLAG_INDICATE = const(0x0020)
 
 # Forward IRQs directly to static methods on the type that handles them and
 # knows how to map handles to instances. Note: We copy all uuid and data
@@ -202,8 +209,13 @@ class BaseClientCharacteristic:
                 # value handle for the done event.
                 return None
 
+    def _check(self, flag):
+        if not (self.properties & flag):
+            raise ValueError("Unsupported")
+
     # Issue a read to the characteristic.
     async def read(self, timeout_ms=1000):
+        self._check(_FLAG_READ)
         # Make sure this conn_handle/value_handle is known.
         self._register_with_connection()
         # This will be set by the done IRQ.
@@ -235,10 +247,15 @@ class BaseClientCharacteristic:
             characteristic._read_event.set()
 
     async def write(self, data, response=False, timeout_ms=1000):
-        # TODO: default response to True if properties includes WRITE and is char.
-        # Something like:
-        # if response is None and self.properties & _FLAGS_WRITE:
-        #   response = True
+        self._check(_FLAG_WRITE | _FLAG_WRITE_NO_RESPONSE)
+
+        # If we only support write-with-response, then force sensible default.
+        if (
+            response is None
+            and (self.properties & _FLAGS_WRITE)
+            and not (self.properties & _FLAG_WRITE_NO_RESPONSE)
+        ):
+            response = True
 
         if response:
             # Same as read.
@@ -281,28 +298,32 @@ class ClientCharacteristic(BaseClientCharacteristic):
         # Allows comparison to a known uuid.
         self.uuid = uuid
 
-        # Fired for each read result and read done IRQ.
-        self._read_event = None
-        self._read_data = None
-        # Used to indicate that the read is complete.
-        self._read_status = None
+        if properties & _FLAG_READ:
+            # Fired for each read result and read done IRQ.
+            self._read_event = None
+            self._read_data = None
+            # Used to indicate that the read is complete.
+            self._read_status = None
 
-        # Fired for the write done IRQ.
-        self._write_event = None
-        # Used to indicate that the write is complete.
-        self._write_status = None
+        if (properties & _FLAG_WRITE) or (properties & _FLAG_WRITE_NO_RESPONSE):
+            # Fired for the write done IRQ.
+            self._write_event = None
+            # Used to indicate that the write is complete.
+            self._write_status = None
 
-        # Fired when a notification arrives.
-        self._notify_event = None
-        # Data for the most recent notification.
-        self._notify_data = None
-        # Same for indications.
-        self._indicate_event = None
-        self._indicate_data = None
+        if properties & _FLAG_NOTIFY:
+            # Fired when a notification arrives.
+            self._notify_event = asyncio.ThreadSafeFlag()
+            # Data for the most recent notification.
+            self._notify_queue = deque((), 1)
+        if properties & _FLAG_INDICATE:
+            # Same for indications.
+            self._indicate_event = asyncio.ThreadSafeFlag()
+            self._indicate_queue = deque((), 1)
 
     def __str__(self):
         return "Characteristic: {} {} {} {}".format(
-            self._def_handle, self._value_handle, self._properties, self.uuid
+            self._def_handle, self._value_handle, self.properties, self.uuid
         )
 
     def _connection(self):
@@ -334,45 +355,65 @@ class ClientCharacteristic(BaseClientCharacteristic):
             uuid,
         )
 
+    # Helper for notified() and indicated().
+    async def _notified_indicated(self, queue, event, timeout_ms):
+        # Ensure that events for this connection can route to this characteristic.
+        self._register_with_connection()
+
+        # If the queue is empty, then we need to wait. However, if the queue
+        # has a single item, we also need to do a no-op wait in order to
+        # clear the event flag (because the queue will become empty and
+        # therefore the event should be cleared).
+        if len(queue) <= 1:
+            with self._connection().timeout(timeout_ms):
+                await event.wait()
+
+        # Either we started > 1 item, or the wait completed successfully, return
+        # the front of the queue.
+        return queue.popleft()
+
     # Wait for the next notification.
     # Will return immediately if a notification has already been received.
     async def notified(self, timeout_ms=None):
-        self._register_with_connection()
-        data = self._notify_data
-        if data is None:
-            self._notify_event = self._notify_event or asyncio.ThreadSafeFlag()
-            with self._connection().timeout(timeout_ms):
-                await self._notify_event.wait()
-                data = self._notify_data
-        self._notify_data = None
-        return data
+        self._check(_FLAG_NOTIFY)
+        return await self._notified_indicated(self._notify_queue, self._notify_event, timeout_ms)
+
+    def _on_notify_indicate(self, queue, event, data):
+        # If we've gone from empty to one item, then wake something
+        # blocking on `await char.notified()` (or `await char.indicated()`).
+        wake = len(queue) == 0
+        # Append the data. By default this is a deque with max-length==1, so it
+        # replaces. But if capture is enabled then it will append.
+        queue.append(data)
+        if wake:
+            # Queue is now non-empty. If something is waiting, it will be
+            # worken. If something isn't waiting right now, then a future
+            # caller to `await char.written()` will see the queue is
+            # non-empty, and wait on the event if it's going to empty the
+            # queue.
+            event.set()
 
     # Map an incoming notify IRQ to a registered characteristic.
     def _on_notify(conn_handle, value_handle, notify_data):
         if characteristic := ClientCharacteristic._find(conn_handle, value_handle):
-            characteristic._notify_data = notify_data
-            if characteristic._notify_event:
-                characteristic._notify_event.set()
+            characteristic._on_notify_indicate(
+                characteristic._notify_queue, characteristic._notify_event, notify_data
+            )
 
     # Wait for the next indication.
     # Will return immediately if an indication has already been received.
     async def indicated(self, timeout_ms=None):
-        self._register_with_connection()
-        data = self._indicate_data
-        if data is None:
-            self._indicate_event = self._indicate_event or asyncio.ThreadSafeFlag()
-            with self._connection().timeout(timeout_ms):
-                await self._indicate_event.wait()
-                data = self._indicate_data
-        self._indicate_data = None
-        return data
+        self._check(_FLAG_INDICATE)
+        return await self._notified_indicated(
+            self._indicate_queue, self._indicate_event, timeout_ms
+        )
 
     # Map an incoming indicate IRQ to a registered characteristic.
     def _on_indicate(conn_handle, value_handle, indicate_data):
         if characteristic := ClientCharacteristic._find(conn_handle, value_handle):
-            characteristic._indicate_data = indicate_data
-            if characteristic._indicate_event:
-                characteristic._indicate_event.set()
+            characteristic._on_notify_indicate(
+                characteristic._indicate_queue, characteristic._indicate_event, indicate_data
+            )
 
     # Write to the Client Characteristic Configuration to subscribe to
     # notify/indications for this characteristic.
@@ -399,9 +440,12 @@ class ClientDescriptor(BaseClientCharacteristic):
         # Used for read/write.
         self._value_handle = dsc_handle
 
+        # Default flags
+        self.properties = _FLAG_READ | _FLAG_WRITE_NO_RESPONSE
+
     def __str__(self):
         return "Descriptor: {} {} {} {}".format(
-            self._def_handle, self._value_handle, self._properties, self.uuid
+            self._def_handle, self._value_handle, self.properties, self.uuid
         )
 
     def _connection(self):
