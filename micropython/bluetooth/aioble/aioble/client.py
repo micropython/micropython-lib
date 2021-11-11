@@ -71,7 +71,7 @@ def _client_irq(event, data):
         ClientCharacteristic._on_indicate(conn_handle, value_handle, bytes(indicate_data))
 
 
-register_irq_handler(_client_irq)
+register_irq_handler(_client_irq, None)
 
 
 # Async generator for discovering services, characteristics, descriptors.

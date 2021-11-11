@@ -26,7 +26,7 @@ def _device_irq(event, data):
                 device._mtu_event.set()
 
 
-register_irq_handler(_device_irq)
+register_irq_handler(_device_irq, None)
 
 
 # Context manager to allow an operation to be cancelled by timeout or device

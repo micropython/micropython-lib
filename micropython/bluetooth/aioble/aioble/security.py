@@ -149,7 +149,14 @@ def _security_irq(event, data):
         #     log_warn("unknown passkey action")
 
 
-register_irq_handler(_security_irq)
+def _security_shutdown():
+    global _secrets, _modified, _path
+    _secrets = {}
+    _modified = False
+    _path = None
+
+
+register_irq_handler(_security_irq, _security_shutdown)
 
 
 # Use device.pair() rather than calling this directly.
