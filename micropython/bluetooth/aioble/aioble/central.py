@@ -86,7 +86,13 @@ def _central_irq(event, data):
             connection._event.set()
 
 
-register_irq_handler(_central_irq)
+def _central_shutdown():
+    global _active_scanner, _connecting
+    _active_scanner = None
+    _connecting = set()
+
+
+register_irq_handler(_central_irq, _central_shutdown)
 
 
 # Cancel an in-progress scan.

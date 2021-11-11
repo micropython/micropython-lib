@@ -43,17 +43,24 @@ def config(*args, **kwargs):
     return ble.config(*args, **kwargs)
 
 
+# Because different functionality is enabled by which files are available the
+# different modules can register their IRQ handlers and shutdown handlers
+# dynamically.
+_irq_handlers = []
+_shutdown_handlers = []
+
+
+def register_irq_handler(irq, shutdown):
+    if irq:
+        _irq_handlers.append(irq)
+    if shutdown:
+        _shutdown_handlers.append(shutdown)
+
+
 def stop():
     ble.active(False)
-
-
-# Because different functionality is enabled by which files are available
-# the different modules can register their IRQ handlers dynamically.
-_irq_handlers = []
-
-
-def register_irq_handler(handler):
-    _irq_handlers.append(handler)
+    for handler in _shutdown_handlers:
+        handler()
 
 
 # Dispatch IRQs to the registered sub-modules.

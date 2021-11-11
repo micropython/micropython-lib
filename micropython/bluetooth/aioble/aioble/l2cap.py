@@ -54,7 +54,12 @@ def _l2cap_irq(event, data):
             channel._event.set()
 
 
-register_irq_handler(_l2cap_irq)
+def _l2cap_shutdown():
+    global _listening
+    _listening = False
+
+
+register_irq_handler(_l2cap_irq, _l2cap_shutdown)
 
 
 # The channel was disconnected during a send/recvinto/flush.

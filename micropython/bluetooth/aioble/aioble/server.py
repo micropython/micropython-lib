@@ -56,7 +56,12 @@ def _server_irq(event, data):
         Characteristic._indicate_done(conn_handle, value_handle, status)
 
 
-register_irq_handler(_server_irq)
+def _server_shutdown():
+    global _registered_characteristics
+    _registered_characteristics = {}
+
+
+register_irq_handler(_server_irq, _server_shutdown)
 
 
 class Service:

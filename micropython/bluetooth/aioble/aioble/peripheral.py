@@ -63,7 +63,13 @@ def _peripheral_irq(event, data):
             connection._event.set()
 
 
-register_irq_handler(_peripheral_irq)
+def _peripheral_shutdown():
+    global _incoming_connection, _connect_event
+    _incoming_connection = None
+    _connect_event = None
+
+
+register_irq_handler(_peripheral_irq, _peripheral_shutdown)
 
 
 # Advertising payloads are repeated packets of the following form:
