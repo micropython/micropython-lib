@@ -57,8 +57,6 @@ def _ord2ymd(n):
 
 
 class timedelta:
-    MINYEAR = -292  # timedelta( 0,  0,  0, -365*584).total_seconds() > -2**63 / 10**9
-    MAXYEAR = 292  # timedelta(23, 59, 59,  365*584).total_seconds() < (2**63 - 1) / 10**9
 
     def __init__(
         self,

@@ -55,22 +55,19 @@ class TestTimeDelta(unittest.TestCase):
         self.assertEqual(td(milliseconds=0.001), td(microseconds=1))
 
     def test_constant01(self):
-        self.assertTrue(td(0, 0, 0, 365 * td.MINYEAR).total_seconds() >= -(2 ** 63) / 10 ** 9)
+        self.assertIsInstance(td.min, td)
+        self.assertIsInstance(td.max, td)
+        self.assertIsInstance(td.resolution, td)
+        self.assertTrue(td.max > td.min)
 
     def test_constant02(self):
-        self.assertFalse(
-            td(0, 0, 0, 365 * (td.MINYEAR - 1)).total_seconds() >= -(2 ** 63) / 10 ** 9
-        )
+        self.assertEqual(td.min, td(days=-999_999_999))
 
     def test_constant03(self):
-        self.assertTrue(
-            td(23, 59, 59, 365 * td.MAXYEAR).total_seconds() <= (2 ** 63 - 1) / 10 ** 9
-        )
+        self.assertEqual(td.max, td(days=999_999_999, seconds=24 * 3600 - 1, microseconds=10**6 - 1))
 
     def test_constant04(self):
-        self.assertFalse(
-            td(23, 59, 59, 365 * (td.MAXYEAR + 1)).total_seconds() <= (2 ** 63 - 1) / 10 ** 9
-        )
+        self.assertEqual(td.resolution, td(microseconds=1))
 
     def test_computation01(self):
         self.assertEqual(a + b + c, td(7, 6, 10))
