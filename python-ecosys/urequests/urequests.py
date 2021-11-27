@@ -72,7 +72,7 @@ def request(
     if parse_headers is not False:
         resp_d = {}
 
-    s = usocket.socket(ai[0], ai[1], ai[2])
+    s = usocket.socket(ai[0], usocket.SOCK_STREAM, ai[2])
     try:
         s.connect(ai[-1])
         if proto == "https:":
