@@ -35,8 +35,8 @@ _path = None
 limit_peers = None
 
 SEC_TYPES_SELF = (10, )
-SEC_TYPES_PEER = (1, 2, 3, 4)
-
+SEC_TYPES_PEER = (1, 2, 4)
+SEC_TYPES_CCCD = (3, )
 
 # Must call this before stack startup.
 def load_secrets(path=None):
@@ -124,7 +124,7 @@ def _log_peers(heading=""):
     if core.log_level <= 2:
         return
     log_info("secrets:", heading)
-    for sec_type in SEC_TYPES_PEER:
+    for sec_type in SEC_TYPES_PEER + SEC_TYPES_CCCD:
         log_info("-", sec_type)
 
         if sec_type not in _secrets:
@@ -151,8 +151,10 @@ def _security_irq(event, data):
                 connection._pair_event.set()
 
     elif event == _IRQ_SET_SECRET:
-        sec_type, key, value = data
+        sec_type, key, key2, value = data
         key = bytes(key)
+        if key2:
+            key += bytes(key2)
         value = bytes(value) if value else None
 
         is_saving = value is not None
@@ -197,9 +199,12 @@ def _security_irq(event, data):
         return True
 
     elif event == _IRQ_GET_SECRET:
-        sec_type, index, key = data
-
-        log_info("get secret:", sec_type, index, bytes(key) if key else None)
+        sec_type, index, key, key2 = data
+        key = bytes(key) if key else None
+        if key2:
+            assert key, "can't have key2 without key"
+            key += bytes(key2)
+        log_info("get secret:", sec_type, index, key)
 
         secrets = _secrets.get(sec_type, [])
         if key is None:
@@ -212,10 +217,13 @@ def _security_irq(event, data):
             return None
         else:
             # Return the secret for this key (or None).
-            key = bytes(key)
-
             for k, v in secrets:
-                if k == key:
+                # For CCCD, the requested key might be just handle at start of stored key
+                match = k.startswith(key)
+                if match:
+                    if index:
+                        index -= 1
+                        continue
                     return v
             return None
 
