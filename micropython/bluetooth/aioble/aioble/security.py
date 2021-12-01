@@ -82,6 +82,14 @@ def load_secrets(path=None):
         log_warn("No secrets available")
 
 
+# Writes secrets to disk if needed
+def flush():
+    if _modified:
+        schedule(_save_secrets, None)
+    else:
+        print("security flush not needed")
+
+        
 # Call this whenever the secrets dict changes.
 def _save_secrets(arg=None):
     global _modified, _path
@@ -189,8 +197,13 @@ def _security_irq(event, data):
                 log_info("Removed:", addr)
             # Add new value to database
             secrets.append((key, value))
-
-        _log_peers("set_secret")            
+        
+        if sec_type in SEC_TYPES_CCCD:
+            # Don't write immediately for CCCD, queue up for later flush when needed
+            log_info("set_cccd")
+            _modified = True
+        else:            
+            _log_peers("set_secret")            
 
         # Queue up a save (don't synchronously write to flash).
         _modified = True
@@ -248,6 +261,7 @@ def _security_irq(event, data):
 
 def _security_shutdown():
     global _secrets, _modified, _path
+    flush()
     _secrets = {}
     _modified = False
     _path = None

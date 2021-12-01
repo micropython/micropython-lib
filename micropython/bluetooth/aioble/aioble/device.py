@@ -216,6 +216,7 @@ class DeviceConnection:
         await self.disconnected(timeout_ms, disconnect=True)
 
     async def disconnected(self, timeout_ms=60000, disconnect=False):
+        from . import security
         if not self.is_connected():
             return
 
@@ -230,6 +231,9 @@ class DeviceConnection:
 
         with DeviceTimeout(None, timeout_ms):
             await self._task
+
+        # Ensure any cached secrets are written to disk
+        security.flush()
 
     # Retrieve a single service matching this uuid.
     async def service(self, uuid, timeout_ms=2000):
