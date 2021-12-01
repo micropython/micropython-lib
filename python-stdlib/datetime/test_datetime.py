@@ -1,401 +1,555 @@
 # See https://github.com/python/cpython/blob/3.9/Lib/test/datetimetester.py
+#
+# This script can be run in 3 different modes:
+# 1. `python3 test_datetime.py --stdlib`: checks that the tests comply to
+#    CPython's standard datetime library.
+# 2. `python3 test_datetime.py`: runs the tests against datetime.py, using
+#    CPython's standard unittest (which accepts filter options, such as
+#    `-v TestTimeDelta -k tuple`, and provides more verbose output in case
+#    of failure).
+# 3. `micropython test_datetime.py`: runs the tests against datetime.py
+#    using MicroPython's unittest library (which must be available).
+#
+# This script also accepts option `--reorder` which rewrites this file
+# in-place by numbering tests in sequence.
+
+import sys
+
+STDLIB = False
+
+if __name__ == "__main__":
+    while len(sys.argv) > 1:
+        if sys.argv[1] == "--reorder":
+            import fileinput, re
+
+            with fileinput.input(files=sys.argv[0], inplace=True) as f:
+                cases = {}
+                n = 0
+                for line in f:
+                    match = re.match("(\s+def\s+test_)(\w+?)(?:\d+)(\(.+\):)", line)
+                    if match:
+                        prefix, name, suffix = match.groups()
+                        if name != last_name:
+                            if name in cases[case]:
+                                sys.exit(
+                                    f"duplicated test in {case} at line {fileinput.filelineno()}: {name}"
+                                )
+                            cases[case].append(name)
+                            last_name = name
+                            i = 0
+                        print(f"{prefix}{name}{i:02d}{suffix}")
+                        i += 1
+                        n += 1
+                        continue
+
+                    match = re.match("class\s+(Test[\w\d]+)\(", line)
+                    if match:
+                        case = match[1]
+                        if case in cases:
+                            sys.exit(
+                                f"duplicated test case at line {fileinput.filelineno()}: {case}"
+                            )
+                        cases[case] = []
+                        last_name = ""
+
+                    print(line, end="")
+            print(f"Reordered {n} tests in {len(cases)} cases")
+        elif sys.argv[1] == "--stdlib":
+            sys.path.pop(0)
+            STDLIB = True
+        else:
+            break
+        sys.argv.pop(1)
+
 import unittest
-from datetime import timedelta as td, timezone as tz, datetime as dt, fromisoformat as fif
+import time as mod_time
+import datetime as mod_datetime
+from datetime import MAXYEAR, MINYEAR, datetime, date, time, timedelta, timezone, tzinfo
+
+
+def eval_mod(s):
+    return eval(s.replace("datetime.", "mod_datetime."))
 
 
 ### timedelta ################################################################
 
-a = td(hours=7)
-b = td(minutes=6)
-c = td(seconds=10)
-us = td(microseconds=1)
-t1 = td(2, 3, 4)
-t2 = td(2, 3, 4)
-t3 = td(2, 3, 5)
+a = timedelta(hours=7)
+b = timedelta(minutes=6)
+c = timedelta(seconds=10)
+us = timedelta(microseconds=1)
+td1 = timedelta(2, 3, 4)
+td2 = timedelta(2, 3, 4)
+td3 = timedelta(2, 3, 5)
+
+td1h = timedelta(hours=1)
+td1hr = "datetime.timedelta(microseconds={})".format(1 * 3600 * 10 ** 6)
+td10h2m = timedelta(hours=10, minutes=2)
+td10h2mr = "datetime.timedelta(microseconds={})".format((10 * 3600 + 2 * 60) * 10 ** 6)
+tdn10h2m40s = timedelta(hours=-10, minutes=2, seconds=40)
+tdn10h2m40sr = "datetime.timedelta(microseconds={})".format((-10 * 3600 + 2 * 60 + 40) * 10 ** 6)
+td1h2m40s100us = timedelta(hours=1, minutes=2, seconds=40, microseconds=100)
+td1h2m40s100usr = "datetime.timedelta(microseconds={})".format(
+    (1 * 3600 + 2 * 60 + 40) * 10 ** 6 + 100
+)
 
 
 class TestTimeDelta(unittest.TestCase):
-    def test_constructor01(self):
-        self.assertEqual(td(), td(weeks=0, days=0, hours=0, minutes=0, seconds=0))
+    def test___init__00(self):
+        self.assertEqual(timedelta(), timedelta(weeks=0, days=0, hours=0, minutes=0, seconds=0))
 
-    def test_constructor02(self):
-        self.assertEqual(td(weeks=1), td(days=7))
+    def test___init__01(self):
+        self.assertEqual(timedelta(weeks=1), timedelta(days=7))
 
-    def test_constructor03(self):
-        self.assertEqual(td(days=1), td(hours=24))
+    def test___init__02(self):
+        self.assertEqual(timedelta(days=1), timedelta(hours=24))
 
-    def test_constructor04(self):
-        self.assertEqual(td(hours=1), td(minutes=60))
+    def test___init__03(self):
+        self.assertEqual(timedelta(hours=1), timedelta(minutes=60))
 
-    def test_constructor05(self):
-        self.assertEqual(td(minutes=1), td(seconds=60))
+    def test___init__04(self):
+        self.assertEqual(timedelta(minutes=1), timedelta(seconds=60))
 
-    def test_constructor06(self):
-        self.assertEqual(td(seconds=1), td(milliseconds=1000))
+    def test___init__05(self):
+        self.assertEqual(timedelta(seconds=1), timedelta(milliseconds=1000))
 
-    def test_constructor07(self):
-        self.assertEqual(td(milliseconds=1), td(microseconds=1000))
+    def test___init__06(self):
+        self.assertEqual(timedelta(milliseconds=1), timedelta(microseconds=1000))
 
-    def test_constructor08(self):
-        self.assertEqual(td(weeks=1.0 / 7), td(days=1))
+    def test___init__07(self):
+        self.assertEqual(timedelta(weeks=1.0 / 7), timedelta(days=1))
 
-    def test_constructor09(self):
-        self.assertEqual(td(days=1.0 / 24), td(hours=1))
+    def test___init__08(self):
+        self.assertEqual(timedelta(days=1.0 / 24), timedelta(hours=1))
 
-    def test_constructor10(self):
-        self.assertEqual(td(hours=1.0 / 60), td(minutes=1))
+    def test___init__09(self):
+        self.assertEqual(timedelta(hours=1.0 / 60), timedelta(minutes=1))
 
-    def test_constructor11(self):
-        self.assertEqual(td(minutes=1.0 / 60), td(seconds=1))
+    def test___init__10(self):
+        self.assertEqual(timedelta(minutes=1.0 / 60), timedelta(seconds=1))
 
-    def test_constructor12(self):
-        self.assertEqual(td(seconds=0.001), td(milliseconds=1))
+    def test___init__11(self):
+        self.assertEqual(timedelta(seconds=0.001), timedelta(milliseconds=1))
 
-    def test_constructor13(self):
-        self.assertEqual(td(milliseconds=0.001), td(microseconds=1))
+    def test___init__12(self):
+        self.assertEqual(timedelta(milliseconds=0.001), timedelta(microseconds=1))
 
-    def test_constant01(self):
-        self.assertIsInstance(td.min, td)
-        self.assertIsInstance(td.max, td)
-        self.assertIsInstance(td.resolution, td)
-        self.assertTrue(td.max > td.min)
+    def test___init__13(self):
+        self.assertEqual(td1h, eval_mod(td1hr))
 
-    def test_constant02(self):
-        self.assertEqual(td.min, td(days=-999_999_999))
+    def test___init__14(self):
+        self.assertEqual(td10h2m, eval_mod(td10h2mr))
 
-    def test_constant03(self):
-        self.assertEqual(td.max, td(days=999_999_999, seconds=24 * 3600 - 1, microseconds=10**6 - 1))
+    def test___init__15(self):
+        self.assertEqual(tdn10h2m40s, eval_mod(tdn10h2m40sr))
 
-    def test_constant04(self):
-        self.assertEqual(td.resolution, td(microseconds=1))
+    def test___init__16(self):
+        self.assertEqual(td1h2m40s100us, eval_mod(td1h2m40s100usr))
 
-    def test_computation01(self):
-        self.assertEqual(a + b + c, td(7, 6, 10))
+    @unittest.skipIf(STDLIB, "standard datetime differs")
+    def test___repr__00(self):
+        self.assertEqual(repr(td1h), td1hr)
 
-    def test_computation02(self):
-        self.assertEqual(a - b, td(6, 60 - 6))
+    @unittest.skipIf(STDLIB, "standard datetime differs")
+    def test___repr__01(self):
+        self.assertEqual(repr(td10h2m), td10h2mr)
 
-    def test_computation03(self):
-        self.assertEqual(-a, td(-7))
+    @unittest.skipIf(STDLIB, "standard datetime differs")
+    def test___repr__02(self):
+        self.assertEqual(repr(tdn10h2m40s), tdn10h2m40sr)
 
-    def test_computation04(self):
-        self.assertEqual(+a, td(7))
+    @unittest.skipIf(STDLIB, "standard datetime differs")
+    def test___repr__03(self):
+        self.assertEqual(repr(td1h2m40s100us), td1h2m40s100usr)
 
-    def test_computation05(self):
-        self.assertEqual(-b, td(-1, 54))
-
-    def test_computation06(self):
-        self.assertEqual(-c, td(-1, 59, 50))
-
-    def test_computation07(self):
-        self.assertEqual(abs(a), a)
-
-    def test_computation08(self):
-        self.assertEqual(abs(-a), a)
-
-    def test_computation09(self):
-        self.assertEqual(td(6, 60), a)
-
-    def test_computation10(self):
-        self.assertEqual(td(0, 0, 60 * 6), b)
-
-    def test_computation11(self):
-        self.assertEqual(a * 10, td(70))
-
-    def test_computation12(self):
-        self.assertEqual(a * 10, 10 * a)
-
-    def test_computation13(self):
-        self.assertEqual(a * 10, 10 * a)
-
-    def test_computation14(self):
-        self.assertEqual(b * 10, td(0, 60))
-
-    def test_computation15(self):
-        self.assertEqual(10 * b, td(0, 60))
-
-    def test_computation16(self):
-        self.assertEqual(c * 10, td(0, 0, 100))
-
-    def test_computation17(self):
-        self.assertEqual(10 * c, td(0, 0, 100))
-
-    def test_computation18(self):
-        self.assertEqual(a * -1, -a)
-
-    def test_computation19(self):
-        self.assertEqual(b * -2, -b - b)
-
-    def test_computation20(self):
-        self.assertEqual(c * -2, -c + -c)
-
-    def test_computation21(self):
-        self.assertEqual(b * (60 * 24), (b * 60) * 24)
-
-    def test_computation22(self):
-        self.assertEqual(b * (60 * 24), (60 * b) * 24)
-
-    def test_computation23(self):
-        self.assertEqual(c * 6, td(0, 1))
-
-    def test_computation24(self):
-        self.assertEqual(6 * c, td(0, 1))
-
-    def test_computation25(self):
-        self.assertEqual(a // 7, td(1))
-
-    def test_computation26(self):
-        self.assertEqual(b // 6, td(0, 1))
-
-    def test_computation27(self):
-        self.assertEqual(c // 10, td(0, 0, 1))
-
-    def test_computation28(self):
-        self.assertEqual(a // 10, td(0, 7 * 6))
-
-    def test_computation29(self):
-        self.assertEqual(a // 3600, td(0, 0, 7))
-
-    def test_computation30(self):
-        self.assertEqual(a / 0.5, td(14))
-
-    def test_computation31(self):
-        self.assertEqual(b / 0.5, td(0, 12))
-
-    def test_computation32(self):
-        self.assertEqual(a / 7, td(1))
-
-    def test_computation33(self):
-        self.assertEqual(b / 6, td(0, 1))
-
-    def test_computation34(self):
-        self.assertEqual(c / 10, td(0, 0, 1))
-
-    def test_computation35(self):
-        self.assertEqual(a / 10, td(0, 7 * 6))
-
-    def test_computation36(self):
-        self.assertEqual(a / 3600, td(0, 0, 7))
-
-    def test_computation37(self):
-        self.assertEqual((3 * us) * 0.5, 2 * us)
-
-    def test_computation38(self):
-        self.assertEqual((5 * us) * 0.5, 2 * us)
-
-    def test_computation39(self):
-        self.assertEqual(0.5 * (3 * us), 2 * us)
-
-    def test_computation40(self):
-        self.assertEqual(0.5 * (5 * us), 2 * us)
-
-    def test_computation41(self):
-        self.assertEqual((-3 * us) * 0.5, -2 * us)
-
-    def test_computation42(self):
-        self.assertEqual((-5 * us) * 0.5, -2 * us)
-
-    def test_computation43(self):
-        self.assertEqual((3 * us) / 2, 2 * us)
-
-    def test_computation44(self):
-        self.assertEqual((5 * us) / 2, 2 * us)
-
-    def test_computation45(self):
-        self.assertEqual((-3 * us) / 2.0, -2 * us)
-
-    def test_computation46(self):
-        self.assertEqual((-5 * us) / 2.0, -2 * us)
-
-    def test_computation47(self):
-        self.assertEqual((3 * us) / -2, -2 * us)
-
-    def test_computation48(self):
-        self.assertEqual((5 * us) / -2, -2 * us)
-
-    def test_computation49(self):
-        self.assertEqual((3 * us) / -2.0, -2 * us)
-
-    def test_computation50(self):
-        self.assertEqual((5 * us) / -2.0, -2 * us)
-
-    def test_computation51(self):
-        for i in range(-10, 10):
-            # with self.subTest(i=i): not supported by Micropython
-                self.assertEqual((i * us / 3) // us, round(i / 3))
-
-    def test_computation52(self):
-        for i in range(-10, 10):
-            # with self.subTest(i=i): not supported by Micropython
-                self.assertEqual((i * us / -3) // us, round(i / -3))
+    def test___repr__04(self):
+        self.assertEqual(td1, eval_mod(repr(td1)))
 
     def test_total_seconds(self):
-        d = td(days=365)
+        d = timedelta(days=365)
         self.assertEqual(d.total_seconds(), 31536000.0)
 
-    def test_carries(self):
-        t1 = td(
+    def test_days00(self):
+        self.assertEqual(td1.days, 2)
+
+    def test_seconds00(self):
+        self.assertEqual(td1.seconds, 3)
+
+    def test_microseconds00(self):
+        self.assertEqual(td1.microseconds, 4)
+
+    def test___add__00(self):
+        self.assertEqual(a + b + c, timedelta(hours=7, minutes=6, seconds=10))
+
+    def test___add__01(self):
+        dt = a + datetime(2010, 1, 1, 12, 30)
+        self.assertEqual(dt, datetime(2010, 1, 1, 12 + 7, 30))
+
+    def test___sub__00(self):
+        self.assertEqual(a - b, timedelta(hours=6, minutes=60 - 6))
+
+    def test___neg__00(self):
+        self.assertEqual(-a, timedelta(hours=-7))
+
+    def test___neg__01(self):
+        self.assertEqual(-b, timedelta(hours=-1, minutes=54))
+
+    def test___neg__02(self):
+        self.assertEqual(-c, timedelta(hours=-1, minutes=59, seconds=50))
+
+    def test___pos__00(self):
+        self.assertEqual(+a, timedelta(hours=7))
+
+    def test___abs__00(self):
+        self.assertEqual(abs(a), a)
+
+    def test___abs__01(self):
+        self.assertEqual(abs(-a), a)
+
+    def test___mul__00(self):
+        self.assertEqual(a * 10, timedelta(hours=70))
+
+    def test___mul__01(self):
+        self.assertEqual(a * 10, 10 * a)
+
+    def test___mul__02(self):
+        self.assertEqual(b * 10, timedelta(minutes=60))
+
+    def test___mul__03(self):
+        self.assertEqual(10 * b, timedelta(minutes=60))
+
+    def test___mul__04(self):
+        self.assertEqual(c * 10, timedelta(seconds=100))
+
+    def test___mul__05(self):
+        self.assertEqual(10 * c, timedelta(seconds=100))
+
+    def test___mul__06(self):
+        self.assertEqual(a * -1, -a)
+
+    def test___mul__07(self):
+        self.assertEqual(b * -2, -b - b)
+
+    def test___mul__08(self):
+        self.assertEqual(c * -2, -c + -c)
+
+    def test___mul__09(self):
+        self.assertEqual(b * (60 * 24), (b * 60) * 24)
+
+    def test___mul__10(self):
+        self.assertEqual(b * (60 * 24), (60 * b) * 24)
+
+    def test___mul__11(self):
+        self.assertEqual(c * 6, timedelta(minutes=1))
+
+    def test___mul__12(self):
+        self.assertEqual(6 * c, timedelta(minutes=1))
+
+    def test___truediv__00(self):
+        self.assertEqual(a / 0.5, timedelta(hours=14))
+
+    def test___truediv__01(self):
+        self.assertEqual(b / 0.5, timedelta(minutes=12))
+
+    def test___truediv__02(self):
+        self.assertEqual(a / 7, timedelta(hours=1))
+
+    def test___truediv__03(self):
+        self.assertEqual(b / 6, timedelta(minutes=1))
+
+    def test___truediv__04(self):
+        self.assertEqual(c / 10, timedelta(seconds=1))
+
+    def test___truediv__05(self):
+        self.assertEqual(a / 10, timedelta(minutes=7 * 6))
+
+    def test___truediv__06(self):
+        self.assertEqual(a / 3600, timedelta(seconds=7))
+
+    def test___truediv__07(self):
+        self.assertEqual(a / a, 1.0)
+
+    def test___truediv__08(self):
+        t = timedelta(hours=1, minutes=24, seconds=19)
+        second = timedelta(seconds=1)
+        self.assertEqual(t / second, 5059.0)
+
+    def test___truediv__09(self):
+        t = timedelta(minutes=2, seconds=30)
+        minute = timedelta(minutes=1)
+        self.assertEqual(t / minute, 2.5)
+
+    def test___floordiv__00(self):
+        self.assertEqual(a // 7, timedelta(hours=1))
+
+    def test___floordiv__01(self):
+        self.assertEqual(b // 6, timedelta(minutes=1))
+
+    def test___floordiv__02(self):
+        self.assertEqual(c // 10, timedelta(seconds=1))
+
+    def test___floordiv__03(self):
+        self.assertEqual(a // 10, timedelta(minutes=7 * 6))
+
+    def test___floordiv__04(self):
+        self.assertEqual(a // 3600, timedelta(seconds=7))
+
+    def test___floordiv__05(self):
+        t = timedelta(hours=1, minutes=24, seconds=19)
+        second = timedelta(seconds=1)
+        self.assertEqual(t // second, 5059)
+
+    def test___floordiv__06(self):
+        t = timedelta(minutes=2, seconds=30)
+        minute = timedelta(minutes=1)
+        self.assertEqual(t // minute, 2)
+
+    def test___mod__00(self):
+        t = timedelta(minutes=2, seconds=30)
+        r = t % timedelta(minutes=1)
+        self.assertEqual(r, timedelta(seconds=30))
+
+    def test___mod__01(self):
+        t = timedelta(minutes=-2, seconds=30)
+        r = t % timedelta(minutes=1)
+        self.assertEqual(r, timedelta(seconds=30))
+
+    def test___divmod__00(self):
+        t = timedelta(minutes=2, seconds=30)
+        q, r = divmod(t, timedelta(minutes=1))
+        self.assertEqual(q, 2)
+        self.assertEqual(r, timedelta(seconds=30))
+
+    def test___divmod__01(self):
+        t = timedelta(minutes=-2, seconds=30)
+        q, r = divmod(t, timedelta(minutes=1))
+        self.assertEqual(q, -2)
+        self.assertEqual(r, timedelta(seconds=30))
+
+    def test___eq__00(self):
+        self.assertEqual(td1, td2)
+
+    def test___eq__01(self):
+        self.assertTrue(not td1 != td2)
+
+    def test___eq__02(self):
+        self.assertEqual(timedelta(hours=6, minutes=60), a)
+
+    def test___eq__03(self):
+        self.assertEqual(timedelta(seconds=60 * 6), b)
+
+    def test___eq__04(self):
+        self.assertTrue(not td1 == td3)
+
+    def test___eq__05(self):
+        self.assertTrue(td1 != td3)
+
+    def test___eq__06(self):
+        self.assertTrue(td3 != td1)
+
+    def test___eq__07(self):
+        self.assertTrue(not td3 == td1)
+
+    def test___le__00(self):
+        self.assertTrue(td1 <= td2)
+
+    def test___le__01(self):
+        self.assertTrue(td1 <= td3)
+
+    def test___le__02(self):
+        self.assertTrue(not td3 <= td1)
+
+    def test___lt__00(self):
+        self.assertTrue(not td1 < td2)
+
+    def test___lt__01(self):
+        self.assertTrue(td1 < td3)
+
+    def test___lt__02(self):
+        self.assertTrue(not td3 < td1)
+
+    def test___ge__00(self):
+        self.assertTrue(td1 >= td2)
+
+    def test___ge__01(self):
+        self.assertTrue(td3 >= td1)
+
+    def test___ge__02(self):
+        self.assertTrue(not td1 >= td3)
+
+    def test___gt__00(self):
+        self.assertTrue(not td1 > td2)
+
+    def test___gt__01(self):
+        self.assertTrue(td3 > td1)
+
+    def test___gt__02(self):
+        self.assertTrue(not td1 > td3)
+
+    def test___bool__00(self):
+        self.assertTrue(timedelta(hours=1))
+
+    def test___bool__01(self):
+        self.assertTrue(timedelta(minutes=1))
+
+    def test___bool__02(self):
+        self.assertTrue(timedelta(seconds=1))
+
+    def test___bool__03(self):
+        self.assertTrue(not timedelta(0))
+
+    def test___str__00(self):
+        self.assertEqual(str(timedelta(days=1)), "1 day, 0:00:00")
+
+    def test___str__01(self):
+        self.assertEqual(str(timedelta(days=-1)), "-1 day, 0:00:00")
+
+    def test___str__02(self):
+        self.assertEqual(str(timedelta(days=2)), "2 days, 0:00:00")
+
+    def test___str__03(self):
+        self.assertEqual(str(timedelta(days=-2)), "-2 days, 0:00:00")
+
+    def test___str__04(self):
+        self.assertEqual(str(timedelta(hours=12, minutes=58, seconds=59)), "12:58:59")
+
+    def test___str__05(self):
+        self.assertEqual(str(timedelta(hours=2, minutes=3, seconds=4)), "2:03:04")
+
+    def test_constant00(self):
+        self.assertIsInstance(timedelta.min, timedelta)
+        self.assertIsInstance(timedelta.max, timedelta)
+        self.assertIsInstance(timedelta.resolution, timedelta)
+        self.assertTrue(timedelta.max > timedelta.min)
+
+    def test_constant01(self):
+        self.assertEqual(timedelta.min, timedelta(days=-999_999_999))
+
+    def test_constant02(self):
+        self.assertEqual(
+            timedelta.max,
+            timedelta(days=999_999_999, seconds=24 * 3600 - 1, microseconds=10 ** 6 - 1),
+        )
+
+    def test_constant03(self):
+        self.assertEqual(timedelta.resolution, timedelta(microseconds=1))
+
+    def test_computation00(self):
+        self.assertEqual((3 * us) * 0.5, 2 * us)
+
+    def test_computation01(self):
+        self.assertEqual((5 * us) * 0.5, 2 * us)
+
+    def test_computation02(self):
+        self.assertEqual(0.5 * (3 * us), 2 * us)
+
+    def test_computation03(self):
+        self.assertEqual(0.5 * (5 * us), 2 * us)
+
+    def test_computation04(self):
+        self.assertEqual((-3 * us) * 0.5, -2 * us)
+
+    def test_computation05(self):
+        self.assertEqual((-5 * us) * 0.5, -2 * us)
+
+    def test_computation06(self):
+        self.assertEqual((3 * us) / 2, 2 * us)
+
+    def test_computation07(self):
+        self.assertEqual((5 * us) / 2, 2 * us)
+
+    def test_computation08(self):
+        self.assertEqual((-3 * us) / 2.0, -2 * us)
+
+    def test_computation09(self):
+        self.assertEqual((-5 * us) / 2.0, -2 * us)
+
+    def test_computation10(self):
+        self.assertEqual((3 * us) / -2, -2 * us)
+
+    def test_computation11(self):
+        self.assertEqual((5 * us) / -2, -2 * us)
+
+    def test_computation12(self):
+        self.assertEqual((3 * us) / -2.0, -2 * us)
+
+    def test_computation13(self):
+        self.assertEqual((5 * us) / -2.0, -2 * us)
+
+    def test_computation14(self):
+        for i in range(-10, 10):
+            # with self.subTest(i=i): not supported by Micropython
+            self.assertEqual((i * us / 3) // us, round(i / 3))
+
+    def test_computation15(self):
+        for i in range(-10, 10):
+            # with self.subTest(i=i): not supported by Micropython
+            self.assertEqual((i * us / -3) // us, round(i / -3))
+
+    def test_carries00(self):
+        td1 = timedelta(
             days=100,
             weeks=-7,
             hours=-24 * (100 - 49),
             minutes=-3,
             seconds=3 * 60 + 1,
         )
-        t2 = td(seconds=1)
-        self.assertEqual(t1, t2)
+        td2 = timedelta(seconds=1)
+        self.assertEqual(td1, td2)
 
-    def test_compare01(self):
-        self.assertEqual(t1, t2)
+    def test_resolution00(self):
+        self.assertIsInstance(timedelta.min, timedelta)
 
-    def test_compare02(self):
-        self.assertTrue(t1 <= t2)
+    def test_resolution01(self):
+        self.assertIsInstance(timedelta.max, timedelta)
 
-    def test_compare03(self):
-        self.assertTrue(t1 >= t2)
+    def test_resolution02(self):
+        self.assertIsInstance(timedelta.resolution, timedelta)
 
-    def test_compare04(self):
-        self.assertTrue(not t1 != t2)
+    def test_resolution03(self):
+        self.assertTrue(timedelta.max > timedelta.min)
 
-    def test_compare05(self):
-        self.assertTrue(not t1 < t2)
+    def test_resolution04(self):
+        self.assertEqual(timedelta.resolution, timedelta(microseconds=1))
 
-    def test_compare06(self):
-        self.assertTrue(not t1 > t2)
+    @unittest.skipIf(STDLIB, "standard timedelta has no tuple()")
+    def test_tuple00(self):
+        self.assertEqual(td1.tuple(), (2, 0, 0, 3, 4))
 
-    def test_compare07(self):
-        self.assertTrue(t1 < t3)
-
-    def test_compare08(self):
-        self.assertTrue(t3 > t1)
-
-    def test_compare09(self):
-        self.assertTrue(t1 <= t3)
-
-    def test_compare10(self):
-        self.assertTrue(t3 >= t1)
-
-    def test_compare11(self):
-        self.assertTrue(t1 != t3)
-
-    def test_compare12(self):
-        self.assertTrue(t3 != t1)
-
-    def test_compare13(self):
-        self.assertTrue(not t1 == t3)
-
-    def test_compare14(self):
-        self.assertTrue(not t3 == t1)
-
-    def test_compare15(self):
-        self.assertTrue(not t1 > t3)
-
-    def test_compare16(self):
-        self.assertTrue(not t3 < t1)
-
-    def test_compare17(self):
-        self.assertTrue(not t1 >= t3)
-
-    def test_compare18(self):
-        self.assertTrue(not t3 <= t1)
-
-    def test_str01(self):
-        self.assertEqual(str(td(days=1)), "1d 00:00:00")
-
-    def test_str02(self):
-        self.assertEqual(str(td(days=-1)), "-1d 00:00:00")
-
-    def test_str03(self):
-        self.assertEqual(str(td(days=2)), "2d 00:00:00")
-
-    def test_str04(self):
-        self.assertEqual(str(td(days=-2)), "-2d 00:00:00")
-
-    def test_str05(self):
-        self.assertEqual(str(td(12, 58, 59)), "12:58:59")
-
-    def test_str06(self):
-        self.assertEqual(str(td(2, 3, 4)), "02:03:04")
-
-    def test_repr01(self):
-        self.assertEqual(repr(td(1)), "datetime.timedelta(seconds={})".format(1 * 3600.0))
-
-    def test_repr02(self):
-        self.assertEqual(
-            repr(td(10, 2)), "datetime.timedelta(seconds={})".format(10 * 3600 + 2 * 60.0)
-        )
-
-    def test_repr03(self):
-        self.assertEqual(
-            repr(td(-10, 2, 40)),
-            "datetime.timedelta(seconds={})".format(-10 * 3600 + 2 * 60 + 40.0),
-        )
-
-    def test_bool01(self):
-        self.assertTrue(td(1))
-
-    def test_bool02(self):
-        self.assertTrue(td(0, 1))
-
-    def test_bool03(self):
-        self.assertTrue(td(0, 0, 1))
-
-    def test_bool04(self):
-        self.assertTrue(not td(0))
-
-    def test_division01(self):
-        t = td(hours=1, minutes=24, seconds=19)
-        second = td(seconds=1)
-        self.assertEqual(t / second, 5059.0)
-        self.assertEqual(t // second, 5059)
-
-    def test_division02(self):
-        t = td(minutes=2, seconds=30)
-        minute = td(minutes=1)
-        self.assertEqual(t / minute, 2.5)
-        self.assertEqual(t // minute, 2)
-
-    def test_remainder01(self):
-        t = td(minutes=2, seconds=30)
-        r = t % td(minutes=1)
-        self.assertEqual(r, td(seconds=30))
-
-    def test_remainder02(self):
-        t = td(minutes=-2, seconds=30)
-        r = t % td(minutes=1)
-        self.assertEqual(r, td(seconds=30))
-
-    def test_divmod01(self):
-        t = td(minutes=2, seconds=30)
-        q, r = divmod(t, td(minutes=1))
-        self.assertEqual(q, 2)
-        self.assertEqual(r, td(seconds=30))
-
-    def test_divmod02(self):
-        t = td(minutes=-2, seconds=30)
-        q, r = divmod(t, td(minutes=1))
-        self.assertEqual(q, -2)
-        self.assertEqual(r, td(seconds=30))
+    @unittest.skipIf(STDLIB, "standard timedelta has no tuple()")
+    def test_tuple01(self):
+        self.assertEqual(td1h2m40s100us.tuple(), (0, 1, 2, 40, 100))
 
 
 ### timezone #################################################################
 
 
-class Cet(tz):
+class Cet(tzinfo):
     # Central European Time (see https://en.wikipedia.org/wiki/Summer_time_in_Europe)
 
-    def __init__(self):
-        super().__init__(td(hours=1), "CET")
+    def utcoffset(self, datetime):
+        h = 2 if self.isdst(datetime) else 1
+        return timedelta(hours=h)
 
-    def dst(self, dt):
-        return td(hours=1) if self.isdst(dt) else td(0)
+    def dst(self, datetime):
+        h = 1 if self.isdst(datetime) else 0
+        return timedelta(hours=h)
 
-    def tzname(self, dt):
-        return "CEST" if self.isdst(dt) else "CET"
+    def tzname(self, datetime):
+        return "CEST" if self.isdst(datetime) else "CET"
 
-    def isdst(self, dt):
-        if dt is None:
+    def __repr__(self):
+        return "Cet()"
+
+    def __str__(self):
+        return self.tzname(None)
+
+    def isdst(self, datetime):
+        if datetime is None:
             return False
-        year, month, day, hour, minute, second, microsecond, tz = dt.tuple()
+        # CPython compatible
+        year, month, day, hour = datetime.year, datetime.month, datetime.day, datetime.hour
+        # Less resource hungry:
+        # year, month, day, hour, minute, second, microsecond, tz = datetime.tuple()
         if not 2000 <= year < 2100:
             raise ValueError
         if 3 < month < 10:
@@ -417,331 +571,644 @@ class Cet(tz):
         return False
 
 
-tz1 = tz(td(hours=-1))
+tz_acdt = timezone(timedelta(hours=9.5), "ACDT")
+tz_est = timezone(-timedelta(hours=5), "EST")
+tz1 = timezone(timedelta(hours=-1))
 tz2 = Cet()
 
 
 class TestTimeZone(unittest.TestCase):
-    def test_constructor01(self):
-        self.assertEqual(str(tz1), "UTC-01:00")
+    def test___init__00(self):
+        self.assertEqual(str(tz_acdt), "ACDT")
+        self.assertEqual(str(tz_acdt), tz_acdt.tzname(None))
 
-    def test_constructor02(self):
+    def test___init__01(self):
+        self.assertEqual(str(tz_est), "EST")
+        self.assertEqual(str(tz_est), tz_est.tzname(None))
+
+    def test___init__02(self):
+        self.assertEqual(str(tz1), "UTC-01:00")
+        self.assertEqual(str(tz1), tz1.tzname(None))
+
+    def test___init__03(self):
         self.assertEqual(str(tz2), "CET")
+        self.assertEqual(str(tz2), tz2.tzname(None))
+
+    def test___init__04(self):
+        offset = timedelta(hours=-24, microseconds=1)
+        tz = timezone(offset)
+        self.assertIsInstance(tz, timezone)
+
+    def test___init__05(self):
+        offset = timedelta(hours=24, microseconds=-1)
+        tz = timezone(offset)
+        self.assertIsInstance(tz, timezone)
+
+    def test___init__06(self):
+        offset = timedelta(hours=-24)
+        self.assertRaises(ValueError, timezone, offset)
+
+    def test___init__07(self):
+        offset = timedelta(hours=24)
+        self.assertRaises(ValueError, timezone, offset)
+
+    def test___repr__00(self):
+        self.assertEqual(tz1, eval_mod(repr(tz1)))
+
+    def test___eq__00(self):
+        self.assertEqual(timezone(timedelta(hours=1)), timezone(timedelta(hours=1)))
+
+    def test___eq__01(self):
+        self.assertNotEqual(timezone(timedelta(hours=1)), timezone(timedelta(hours=2)))
+
+    def test___eq__02(self):
+        self.assertEqual(timezone(timedelta(hours=-5)), timezone(timedelta(hours=-5), "EST"))
+
+    def test_utcoffset00(self):
+        self.assertEqual(str(tz2.utcoffset(None)), "1:00:00")
 
     def test_utcoffset01(self):
-        self.assertEqual(str(tz2.utcoffset(None)), "01:00:00")
+        self.assertEqual(str(tz2.utcoffset(datetime(2010, 3, 27, 12))), "1:00:00")
 
     def test_utcoffset02(self):
-        self.assertEqual(str(tz2.utcoffset(dt(2010, 3, 27, 12))), "01:00:00")
+        self.assertEqual(str(tz2.utcoffset(datetime(2010, 3, 28, 12))), "2:00:00")
 
     def test_utcoffset03(self):
-        self.assertEqual(str(tz2.utcoffset(dt(2010, 3, 28, 12))), "02:00:00")
+        self.assertEqual(str(tz2.utcoffset(datetime(2010, 10, 30, 12))), "2:00:00")
 
     def test_utcoffset04(self):
-        self.assertEqual(str(tz2.utcoffset(dt(2010, 10, 30, 12))), "02:00:00")
+        self.assertEqual(str(tz2.utcoffset(datetime(2010, 10, 31, 12))), "1:00:00")
 
-    def test_utcoffset05(self):
-        self.assertEqual(str(tz2.utcoffset(dt(2010, 10, 31, 12))), "01:00:00")
-
-    def test_isoformat01(self):
-        self.assertEqual(tz2.isoformat(dt(2011, 1, 1)), "UTC+01:00")
-
-    def test_isoformat02(self):
-        self.assertEqual(tz2.isoformat(dt(2011, 8, 1)), "UTC+02:00")
+    def test_tzname00(self):
+        self.assertEqual(tz2.tzname(datetime(2011, 1, 1)), "CET")
 
     def test_tzname01(self):
-        self.assertEqual(tz2.tzname(dt(2011, 1, 1)), "CET")
+        self.assertEqual(tz2.tzname(datetime(2011, 8, 1)), "CEST")
 
-    def test_tzname02(self):
-        self.assertEqual(tz2.tzname(dt(2011, 8, 1)), "CEST")
+    def test_utc00(self):
+        self.assertEqual(timezone.utc.utcoffset(None), timedelta(0))
+
+    def test_aware_datetime00(self):
+        t = datetime(1, 1, 1)
+        self.assertEqual(tz1.tzname(t), t.replace(tzinfo=tz1).tzname())
+
+    def test_aware_datetime01(self):
+        t = datetime(1, 1, 1)
+        self.assertEqual(tz1.utcoffset(t), t.replace(tzinfo=tz1).utcoffset())
+
+    def test_aware_datetime02(self):
+        t = datetime(1, 1, 1)
+        self.assertEqual(tz1.dst(t), t.replace(tzinfo=tz1).dst())
+
+    def test_offset_boundaries00(self):
+        td = timedelta(hours=23, minutes=59, seconds=59, microseconds=999999)
+        for i in (1, -1):
+            self.assertIsInstance(timezone(i * td), timezone)
+
+    def test_offset_boundaries01(self):
+        td = timedelta(hours=24)
+        for i in (1, -1):
+            with self.assertRaises(ValueError):
+                timezone(i * td)
 
 
 ### datetime #################################################################
 
-d1 = dt(2002, 1, 31)
-d2 = dt(1956, 1, 31)
-d3 = dt(2002, 3, 1, 12, 59, 59, 100, tz2)
-d4 = dt(2002, 3, 2, 17, 6)
-d5 = dt(2002, 1, 31)
+dt1 = datetime(2002, 1, 31)
+dt2 = datetime(1956, 1, 31)
+dt3 = datetime(2002, 3, 1, 12, 59, 59, 100, tz2)
+dt4 = datetime(2002, 3, 2, 17, 6)
+dt5 = datetime(2002, 1, 31)
 
-hour = td(hours=1)
-day = td(days=1)
-week = td(weeks=1)
+dt1r = "datetime.datetime(2002, 1, 31, 0, 0, 0, 0, None)"
+dt3r = "datetime.datetime(2002, 3, 1, 12, 59, 59, 100, Cet())"
+dt4r = "datetime.datetime(2002, 3, 2, 17, 6, 0, 0, None)"
+
+hour = timedelta(hours=1)
+day = timedelta(days=1)
+week = timedelta(weeks=1)
+
+d1 = date(2002, 3, 4)
+t1 = time(18, 45, 3, 1234)
+t1z = time(18, 45, 3, 1234, tz1)
+d1t1 = datetime(2002, 3, 4, 18, 45, 3, 1234)
+d1t1z = datetime(2002, 3, 4, 18, 45, 3, 1234, tz1)
+
+dt27tz2 = datetime(2010, 3, 27, 12, tzinfo=tz2)  # last CET day
+dt28tz2 = datetime(2010, 3, 28, 12, tzinfo=tz2)  # first CEST day
+dt30tz2 = datetime(2010, 10, 30, 12, tzinfo=tz2)  # last CEST day
+dt31tz2 = datetime(2010, 10, 31, 12, tzinfo=tz2)  # first CET day
 
 
 class TestDateTime(unittest.TestCase):
-    def test_constructor01(self):
-        d = dt(2002, 3, 1, 12, 0)
-        year, month, day, hour, minute, second, microsecond, tz = d.tuple()
-        self.assertEqual(year, 2002)
-        self.assertEqual(month, 3)
-        self.assertEqual(day, 1)
-        self.assertEqual(hour, 12)
-        self.assertEqual(minute, 0)
-        self.assertEqual(second, 0)
-        self.assertEqual(microsecond, 0)
-        self.assertEqual(tz, None)
+    def test___init__00(self):
+        d = datetime(2002, 3, 1, 12, 0)
+        self.assertEqual(d.year, 2002)
+        self.assertEqual(d.month, 3)
+        self.assertEqual(d.day, 1)
+        self.assertEqual(d.hour, 12)
+        self.assertEqual(d.minute, 0)
+        self.assertEqual(d.second, 0)
+        self.assertEqual(d.microsecond, 0)
+        self.assertEqual(d.tzinfo, None)
 
-    def test_constructor02(self):
-        year, month, day, hour, minute, second, microsecond, tz = d3.tuple()
-        self.assertEqual(year, 2002)
-        self.assertEqual(month, 3)
-        self.assertEqual(day, 1)
-        self.assertEqual(hour, 12)
-        self.assertEqual(minute, 59)
-        self.assertEqual(second, 59)
-        self.assertEqual(microsecond, 100)
-        self.assertEqual(tz, tz2)
+    def test___init__01(self):
+        self.assertEqual(dt3.year, 2002)
+        self.assertEqual(dt3.month, 3)
+        self.assertEqual(dt3.day, 1)
+        self.assertEqual(dt3.hour, 12)
+        self.assertEqual(dt3.minute, 59)
+        self.assertEqual(dt3.second, 59)
+        self.assertEqual(dt3.microsecond, 100)
+        self.assertEqual(dt3.tzinfo, tz2)
 
-    def test_constructor03(self):
-        dt(dt.MINYEAR, 1, 1)
+    def test___init__02(self):
+        datetime(MINYEAR, 1, 1)
 
-    def test_constructor04(self):
-        dt(dt.MAXYEAR, 12, 31)
+    def test___init__03(self):
+        datetime(MAXYEAR, 12, 31)
 
-    def test_constructor05(self):
-        self.assertRaises(ValueError, dt, dt.MINYEAR - 1, 1, 1)
+    def test___init__04(self):
+        self.assertRaises(ValueError, datetime, MINYEAR - 1, 1, 1)
 
-    def test_constructor06(self):
-        self.assertRaises(ValueError, dt, dt.MAXYEAR + 1, 1, 1)
+    def test___init__05(self):
+        self.assertRaises(ValueError, datetime, MAXYEAR + 1, 1, 1)
 
-    def test_constructor07(self):
-        self.assertRaises(ValueError, dt, 2000, 0, 1)
+    def test___init__06(self):
+        self.assertRaises(ValueError, datetime, 2000, 0, 1)
 
-    def test_constructor08(self):
-        dt(2000, 2, 29)
+    def test___init__07(self):
+        datetime(2000, 2, 29)
 
-    def test_constructor09(self):
-        dt(2004, 2, 29)
+    def test___init__08(self):
+        datetime(2004, 2, 29)
 
-    def test_constructor10(self):
-        dt(2400, 2, 29)
+    def test___init__09(self):
+        datetime(2400, 2, 29)
 
-    def test_constructor11(self):
-        self.assertRaises(ValueError, dt, 2000, 2, 30)
+    def test___init__10(self):
+        self.assertRaises(ValueError, datetime, 2000, 2, 30)
 
-    def test_constructor12(self):
-        self.assertRaises(ValueError, dt, 2001, 2, 29)
+    def test___init__11(self):
+        self.assertRaises(ValueError, datetime, 2001, 2, 29)
 
-    def test_constructor13(self):
-        self.assertRaises(ValueError, dt, 2100, 2, 29)
+    def test___init__12(self):
+        self.assertRaises(ValueError, datetime, 2100, 2, 29)
 
-    def test_constructor14(self):
-        self.assertRaises(ValueError, dt, 1900, 2, 29)
+    def test___init__13(self):
+        self.assertRaises(ValueError, datetime, 1900, 2, 29)
 
-    def test_constructor15(self):
-        self.assertRaises(ValueError, dt, 2000, 1, 0)
+    def test___init__14(self):
+        self.assertRaises(ValueError, datetime, 2000, 1, 0)
 
-    def test_constructor16(self):
-        self.assertRaises(ValueError, dt, 2000, 1, 32)
+    def test___init__15(self):
+        self.assertRaises(ValueError, datetime, 2000, 1, 32)
 
-    def test_constructor17(self):
-        self.assertRaises(ValueError, dt, 2000, 1, 31, -1)
+    def test___init__16(self):
+        self.assertRaises(ValueError, datetime, 2000, 1, 31, -1)
 
-    def test_constructor18(self):
-        self.assertRaises(ValueError, dt, 2000, 1, 31, 24)
+    def test___init__17(self):
+        self.assertRaises(ValueError, datetime, 2000, 1, 31, 24)
 
-    def test_constructor19(self):
-        self.assertRaises(ValueError, dt, 2000, 1, 31, 23, -1)
+    def test___init__18(self):
+        self.assertRaises(ValueError, datetime, 2000, 1, 31, 23, -1)
 
-    def test_constructor20(self):
-        self.assertRaises(ValueError, dt, 2000, 1, 31, 23, 60)
+    def test___init__19(self):
+        self.assertRaises(ValueError, datetime, 2000, 1, 31, 23, 60)
 
-    def test_constructor21(self):
-        self.assertRaises(ValueError, dt, 2000, 1, 31, 23, 59, -1)
+    def test___init__20(self):
+        self.assertRaises(ValueError, datetime, 2000, 1, 31, 23, 59, -1)
 
-    def test_constructor22(self):
-        self.assertRaises(ValueError, dt, 2000, 1, 31, 23, 59, 60)
+    def test___init__21(self):
+        self.assertRaises(ValueError, datetime, 2000, 1, 31, 23, 59, 60)
 
-    def test_computation01(self):
-        d = d1 - d2
-        self.assertEqual(d.total_seconds(), (46 * 365 + len(range(1956, 2002, 4))) * 24 * 60 * 60)
+    def test___init__22(self):
+        self.assertEqual(dt1, eval_mod(dt1r))
 
-    def test_computation02(self):
-        self.assertEqual(d4 + hour, dt(2002, 3, 2, 18, 6))
+    def test___init__23(self):
+        self.assertEqual(dt3, eval_mod(dt3r))
 
-    def test_computation02(self):
-        self.assertEqual(hour + d4, dt(2002, 3, 2, 18, 6))
+    def test___init__24(self):
+        self.assertEqual(dt4, eval_mod(dt4r))
 
-    def test_computation03(self):
-        self.assertEqual(d4 + 10 * hour, dt(2002, 3, 3, 3, 6))
+    def test_today00(self):
+        tm = mod_time.localtime()[:6]
+        dt = datetime.today()
+        tt = (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
+        self.assertAlmostEqual(tm, tt, delta=timedelta(seconds=1))
 
-    def test_computation04(self):
-        self.assertEqual(d4 - hour, dt(2002, 3, 2, 16, 6))
+    def test_now00(self):
+        tm = mod_time.localtime()[:6]
+        dt = datetime.now()
+        tt = (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
+        self.assertAlmostEqual(tm, tt, delta=timedelta(seconds=1))
 
-    def test_computation05(self):
-        self.assertEqual(-hour + d4, dt(2002, 3, 2, 16, 6))
-
-    def test_computation06(self):
-        self.assertEqual(d4 - hour, d4 + -hour)
-
-    def test_computation07(self):
-        self.assertEqual(d4 - 20 * hour, dt(2002, 3, 1, 21, 6))
-
-    def test_computation08(self):
-        self.assertEqual(d4 + day, dt(2002, 3, 3, 17, 6))
-
-    def test_computation09(self):
-        self.assertEqual(d4 - day, dt(2002, 3, 1, 17, 6))
-
-    def test_computation10(self):
-        self.assertEqual(d4 + week, dt(2002, 3, 9, 17, 6))
-
-    def test_computation11(self):
-        self.assertEqual(d4 - week, dt(2002, 2, 23, 17, 6))
-
-    def test_computation12(self):
-        self.assertEqual(d4 + 52 * week, dt(2003, 3, 1, 17, 6))
-
-    def test_computation13(self):
-        self.assertEqual(d4 - 52 * week, dt(2001, 3, 3, 17, 6))
-
-    def test_computation14(self):
-        self.assertEqual((d4 + week) - d4, week)
-
-    def test_computation15(self):
-        self.assertEqual((d4 + day) - d4, day)
-
-    def test_computation16(self):
-        self.assertEqual((d4 + hour) - d4, hour)
-
-    def test_computation17(self):
-        self.assertEqual(d4 - (d4 + week), -week)
-
-    def test_computation18(self):
-        self.assertEqual(d4 - (d4 + day), -day)
-
-    def test_computation19(self):
-        self.assertEqual(d4 - (d4 + hour), -hour)
-
-    def test_computation20(self):
-        self.assertEqual(d4 - (d4 - week), week)
-
-    def test_computation21(self):
-        self.assertEqual(d4 - (d4 - day), day)
-
-    def test_computation22(self):
-        self.assertEqual(d4 - (d4 - hour), hour)
-
-    def test_computation23(self):
-        self.assertEqual(d4 + (week + day + hour), dt(2002, 3, 10, 18, 6))
-
-    def test_computation24(self):
-        self.assertEqual(d4 + (week + day + hour), (((d4 + week) + day) + hour))
-
-    def test_computation25(self):
-        self.assertEqual(d4 - (week + day + hour), dt(2002, 2, 22, 16, 6))
-
-    def test_computation26(self):
-        self.assertEqual(d4 - (week + day + hour), (((d4 - week) - day) - hour))
-
-    def test_computation27(self):
-        self.assertEqual(d5 + -day, dt(2002, 1, 30))
-
-    def test_compare01(self):
-        self.assertEqual(d1, d5)
-
-    def test_compare02(self):
-        self.assertTrue(d1 <= d5)
-
-    def test_compare03(self):
-        self.assertTrue(d1 >= d5)
-
-    def test_compare04(self):
-        self.assertFalse(d1 != d5)
-
-    def test_compare05(self):
-        self.assertFalse(d1 < d5)
-
-    def test_compare06(self):
-        self.assertFalse(d1 > d5)
-
-    def test_compare07(self):
-        self.assertTrue(d2 < d5)
-
-    def test_compare08(self):
-        self.assertTrue(d5 > d2)
-
-    def test_compare09(self):
-        self.assertTrue(d2 <= d5)
-
-    def test_compare10(self):
-        self.assertTrue(d5 >= d2)
-
-    def test_compare11(self):
-        self.assertTrue(d2 != d5)
-
-    def test_compare12(self):
-        self.assertTrue(d5 != d2)
-
-    def test_compare13(self):
-        self.assertFalse(d2 == d5)
-
-    def test_compare14(self):
-        self.assertFalse(d5 == d2)
-
-    def test_compare15(self):
-        self.assertFalse(d2 > d5)
-
-    def test_compare16(self):
-        self.assertFalse(d5 < d2)
-
-    def test_compare17(self):
-        self.assertFalse(d2 >= d5)
-
-    def test_compare18(self):
-        self.assertFalse(d5 <= d2)
-
-    def test_resolution01(self):
-        self.assertIsInstance(td.min, td)
-
-    def test_resolution02(self):
-        self.assertIsInstance(td.max, td)
-
-    def test_resolution03(self):
-        self.assertIsInstance(td.resolution, td)
-
-    def test_resolution04(self):
-        self.assertTrue(td.max > td.min)
-
-    def test_resolution04(self):
-        self.assertEqual(td.resolution, td(microseconds=1))
-
-    def test_astimezone01(self):
-        self.assertEqual(d3.astimezone(tz.utc), dt(2002, 3, 1, 11, 59, 59, 100, tz.utc))
-
-    def test_isoformat01(self):
-        self.assertEqual(d3.isoformat(), "2002-03-01T12:59:59+01:00")
-
-    def test_isoformat02(self):
-        self.assertEqual(d3.isoformat("T"), "2002-03-01T12:59:59+01:00")
-
-    def test_isoformat03(self):
-        self.assertEqual(d3.isoformat(" "), "2002-03-01 12:59:59+01:00")
-
-    def test_isoformat04(self):
-        self.assertEqual(str(d3), "2002-03-01 12:59:59+01:00")
-
-    def test_isoformat05(self):
-        self.assertEqual(d3.dateisoformat(), "2002-03-01")
-
-    def test_isoformat06(self):
-        self.assertEqual(d3.timeisoformat(), "12:59:59")
+    def test_fromisoformat00(self):
+        self.assertEqual(datetime.fromisoformat("1975-08-10"), datetime(1975, 8, 10))
 
     def test_fromisoformat01(self):
-        self.assertEqual(fif("1975-08-10"), dt(1975, 8, 10))
+        self.assertEqual(datetime.fromisoformat("1975-08-10 23"), datetime(1975, 8, 10, 23))
 
     def test_fromisoformat02(self):
-        self.assertEqual(fif("1975-08-10 23"), dt(1975, 8, 10, 23))
+        self.assertEqual(datetime.fromisoformat("1975-08-10 23:30"), datetime(1975, 8, 10, 23, 30))
 
     def test_fromisoformat03(self):
-        self.assertEqual(fif("1975-08-10 23:30"), dt(1975, 8, 10, 23, 30))
+        self.assertEqual(
+            datetime.fromisoformat("1975-08-10 23:30:12"), datetime(1975, 8, 10, 23, 30, 12)
+        )
 
     def test_fromisoformat04(self):
-        self.assertEqual(fif("1975-08-10 23:30:12"), dt(1975, 8, 10, 23, 30, 12))
+        self.assertEqual(
+            str(datetime.fromisoformat("1975-08-10 23:30:12+01:00")), "1975-08-10 23:30:12+01:00"
+        )
 
-    def test_fromisoformat05(self):
-        self.assertEqual(str(fif("1975-08-10 23:30:12+01:00")), "1975-08-10 23:30:12+01:00")
+    def test_combine00(self):
+        dt = datetime.combine(d1, t1)
+        self.assertEqual(dt, d1t1)
+
+    def test_combine01(self):
+        dt = datetime.combine(d1, t1)
+        self.assertEqual(dt.date(), d1)
+
+    def test_combine02(self):
+        dt1 = datetime.combine(d1, t1)
+        dt2 = datetime.combine(dt1, t1)
+        self.assertEqual(dt1, dt2)
+
+    def test_combine03(self):
+        dt = datetime.combine(d1, t1)
+        self.assertEqual(dt.time(), t1)
+
+    def test_combine04(self):
+        dt = datetime.combine(d1, t1, tz1)
+        self.assertEqual(dt, d1t1z)
+
+    def test_combine05(self):
+        dt = datetime.combine(d1, t1z)
+        self.assertEqual(dt, d1t1z)
+
+    def test_year00(self):
+        self.assertEqual(dt1.year, 2002)
+
+    def test_year01(self):
+        self.assertEqual(dt2.year, 1956)
+
+    def test_month00(self):
+        self.assertEqual(dt1.month, 1)
+
+    def test_month01(self):
+        self.assertEqual(dt3.month, 3)
+
+    def test_day00(self):
+        self.assertEqual(dt1.day, 31)
+
+    def test_day01(self):
+        self.assertEqual(dt4.day, 2)
+
+    def test_hour00(self):
+        self.assertEqual(dt1.hour, 0)
+
+    def test_hour01(self):
+        self.assertEqual(dt3.hour, 12)
+
+    def test_minute00(self):
+        self.assertEqual(dt1.minute, 0)
+
+    def test_minute01(self):
+        self.assertEqual(dt3.minute, 59)
+
+    def test_second00(self):
+        self.assertEqual(dt1.second, 0)
+
+    def test_second01(self):
+        self.assertEqual(dt3.second, 59)
+
+    def test_microsecond00(self):
+        self.assertEqual(dt1.microsecond, 0)
+
+    def test_microsecond01(self):
+        self.assertEqual(dt3.microsecond, 100)
+
+    def test_tzinfo00(self):
+        self.assertEqual(dt1.tzinfo, None)
+
+    def test_tzinfo01(self):
+        self.assertEqual(dt3.tzinfo, tz2)
+
+    def test___add__00(self):
+        self.assertEqual(dt4 + hour, datetime(2002, 3, 2, 18, 6))
+
+    def test___add__01(self):
+        self.assertEqual(hour + dt4, datetime(2002, 3, 2, 18, 6))
+
+    def test___add__02(self):
+        self.assertEqual(dt4 + 10 * hour, datetime(2002, 3, 3, 3, 6))
+
+    def test___add__03(self):
+        self.assertEqual(dt4 + day, datetime(2002, 3, 3, 17, 6))
+
+    def test___add__04(self):
+        self.assertEqual(dt4 + week, datetime(2002, 3, 9, 17, 6))
+
+    def test___add__05(self):
+        self.assertEqual(dt4 + 52 * week, datetime(2003, 3, 1, 17, 6))
+
+    def test___add__06(self):
+        self.assertEqual(dt4 + (week + day + hour), datetime(2002, 3, 10, 18, 6))
+
+    def test___add__07(self):
+        self.assertEqual(dt5 + -day, datetime(2002, 1, 30))
+
+    def test___add__08(self):
+        self.assertEqual(-hour + dt4, datetime(2002, 3, 2, 16, 6))
+
+    def test___sub__00(self):
+        d = dt1 - dt2
+        self.assertEqual(d.total_seconds(), (46 * 365 + len(range(1956, 2002, 4))) * 24 * 60 * 60)
+
+    def test___sub__01(self):
+        self.assertEqual(dt4 - hour, datetime(2002, 3, 2, 16, 6))
+
+    def test___sub__02(self):
+        self.assertEqual(dt4 - hour, dt4 + -hour)
+
+    def test___sub__03(self):
+        self.assertEqual(dt4 - 20 * hour, datetime(2002, 3, 1, 21, 6))
+
+    def test___sub__04(self):
+        self.assertEqual(dt4 - day, datetime(2002, 3, 1, 17, 6))
+
+    def test___sub__05(self):
+        self.assertEqual(dt4 - week, datetime(2002, 2, 23, 17, 6))
+
+    def test___sub__06(self):
+        self.assertEqual(dt4 - 52 * week, datetime(2001, 3, 3, 17, 6))
+
+    def test___sub__07(self):
+        self.assertEqual(dt4 - (week + day + hour), datetime(2002, 2, 22, 16, 6))
+
+    def test_computation00(self):
+        self.assertEqual((dt4 + week) - dt4, week)
+
+    def test_computation01(self):
+        self.assertEqual((dt4 + day) - dt4, day)
+
+    def test_computation02(self):
+        self.assertEqual((dt4 + hour) - dt4, hour)
+
+    def test_computation03(self):
+        self.assertEqual(dt4 - (dt4 + week), -week)
+
+    def test_computation04(self):
+        self.assertEqual(dt4 - (dt4 + day), -day)
+
+    def test_computation05(self):
+        self.assertEqual(dt4 - (dt4 + hour), -hour)
+
+    def test_computation06(self):
+        self.assertEqual(dt4 - (dt4 - week), week)
+
+    def test_computation07(self):
+        self.assertEqual(dt4 - (dt4 - day), day)
+
+    def test_computation08(self):
+        self.assertEqual(dt4 - (dt4 - hour), hour)
+
+    def test_computation09(self):
+        self.assertEqual(dt4 + (week + day + hour), (((dt4 + week) + day) + hour))
+
+    def test_computation10(self):
+        self.assertEqual(dt4 - (week + day + hour), (((dt4 - week) - day) - hour))
+
+    def test___eq__00(self):
+        self.assertEqual(dt1, dt5)
+
+    def test___eq__01(self):
+        self.assertFalse(dt1 != dt5)
+
+    def test___eq__02(self):
+        self.assertTrue(dt2 != dt5)
+
+    def test___eq__03(self):
+        self.assertTrue(dt5 != dt2)
+
+    def test___eq__04(self):
+        self.assertFalse(dt2 == dt5)
+
+    def test___eq__05(self):
+        self.assertFalse(dt5 == dt2)
+
+    def test___le__00(self):
+        self.assertTrue(dt1 <= dt5)
+
+    def test___le__01(self):
+        self.assertTrue(dt2 <= dt5)
+
+    def test___le__02(self):
+        self.assertFalse(dt5 <= dt2)
+
+    def test___ge__00(self):
+        self.assertTrue(dt1 >= dt5)
+
+    def test___ge__01(self):
+        self.assertTrue(dt5 >= dt2)
+
+    def test___ge__02(self):
+        self.assertFalse(dt2 >= dt5)
+
+    def test___lt__00(self):
+        self.assertFalse(dt1 < dt5)
+
+    def test___lt__01(self):
+        self.assertTrue(dt2 < dt5)
+
+    def test___lt__02(self):
+        self.assertFalse(dt5 < dt2)
+
+    def test___gt__00(self):
+        self.assertFalse(dt1 > dt5)
+
+    def test___gt__01(self):
+        self.assertTrue(dt5 > dt2)
+
+    def test___gt__02(self):
+        self.assertFalse(dt2 > dt5)
+
+    def test_date00(self):
+        self.assertEqual(d1t1.date(), d1)
+
+    def test_time00(self):
+        self.assertEqual(d1t1.time(), t1)
+
+    def test_time01(self):
+        self.assertNotEqual(d1t1z.time(), t1z)
+
+    def test_timetz00(self):
+        self.assertEqual(d1t1.timetz(), t1)
+
+    def test_timetz01(self):
+        self.assertEqual(d1t1z.timetz(), t1z)
+
+    def test_replace00(self):
+        self.assertEqual(dt3.replace(), dt3)
+
+    def test_replace01(self):
+        self.assertEqual(dt3.replace(year=2001), datetime(2001, 3, 1, 12, 59, 59, 100, tz2))
+
+    def test_replace02(self):
+        self.assertEqual(dt3.replace(month=4), datetime(2002, 4, 1, 12, 59, 59, 100, tz2))
+
+    def test_replace03(self):
+        self.assertEqual(dt3.replace(day=16), datetime(2002, 3, 16, 12, 59, 59, 100, tz2))
+
+    def test_replace04(self):
+        self.assertEqual(dt3.replace(hour=13), datetime(2002, 3, 1, 13, 59, 59, 100, tz2))
+
+    def test_replace05(self):
+        self.assertEqual(dt3.replace(minute=0), datetime(2002, 3, 1, 12, 0, 59, 100, tz2))
+
+    def test_replace06(self):
+        self.assertEqual(dt3.replace(second=1), datetime(2002, 3, 1, 12, 59, 1, 100, tz2))
+
+    def test_replace07(self):
+        self.assertEqual(dt3.replace(microsecond=99), datetime(2002, 3, 1, 12, 59, 59, 99, tz2))
+
+    def test_replace08(self):
+        self.assertEqual(dt3.replace(tzinfo=tz1), datetime(2002, 3, 1, 12, 59, 59, 100, tz1))
+
+    def test_replace09(self):
+        self.assertRaises(ValueError, datetime(2000, 2, 29).replace, year=2001)
+
+    def test_astimezone00(self):
+        self.assertEqual(
+            dt3.astimezone(timezone.utc), datetime(2002, 3, 1, 11, 59, 59, 100, timezone.utc)
+        )
+
+    def test_utcoffset00(self):
+        self.assertEqual(dt1.utcoffset(), None)
+
+    def test_utcoffset01(self):
+        self.assertEqual(dt27tz2.utcoffset(), timedelta(hours=1))
+
+    def test_utcoffset02(self):
+        self.assertEqual(dt28tz2.utcoffset(), timedelta(hours=2))
+
+    def test_utcoffset03(self):
+        self.assertEqual(dt30tz2.utcoffset(), timedelta(hours=2))
+
+    def test_utcoffset04(self):
+        self.assertEqual(dt31tz2.utcoffset(), timedelta(hours=1))
+
+    def test_dst00(self):
+        self.assertEqual(dt1.dst(), None)
+
+    def test_dst01(self):
+        self.assertEqual(dt27tz2.dst(), timedelta(hours=0))
+
+    def test_dst02(self):
+        self.assertEqual(dt28tz2.dst(), timedelta(hours=1))
+
+    def test_tzname00(self):
+        self.assertEqual(dt1.tzname(), None)
+
+    def test_tzname01(self):
+        self.assertEqual(dt27tz2.tzname(), "CET")
+
+    def test_tzname02(self):
+        self.assertEqual(dt28tz2.tzname(), "CEST")
+
+    def test_timetuple00(self):
+        self.assertEqual(dt1.timetuple()[:8], (2002, 1, 31, 0, 0, 0, 3, 31))
+
+    def test_timetuple01(self):
+        self.assertEqual(dt27tz2.timetuple()[:8], (2010, 3, 27, 12, 0, 0, 5, 86))
+
+    def test_timetuple02(self):
+        self.assertEqual(dt28tz2.timetuple()[:8], (2010, 3, 28, 12, 0, 0, 6, 87))
+
+    def test_timetuple03(self):
+        self.assertEqual(
+            dt27tz2.replace(tzinfo=None).timetuple()[:8], (2010, 3, 27, 12, 0, 0, 5, 86)
+        )
+
+    def test_timetuple04(self):
+        self.assertEqual(
+            dt28tz2.replace(tzinfo=None).timetuple()[:8], (2010, 3, 28, 12, 0, 0, 6, 87)
+        )
+
+    def test_toordinal00(self):
+        self.assertEqual(datetime(1, 1, 1).toordinal(), 1)
+
+    def test_toordinal01(self):
+        self.assertEqual(datetime(1, 12, 31).toordinal(), 365)
+
+    def test_toordinal02(self):
+        self.assertEqual(datetime(2, 1, 1).toordinal(), 366)
+
+    def test_toordinal03(self):
+        # https://www.timeanddate.com/date/dateadded.html?d1=1&m1=1&y1=1&type=add&ad=730882
+        self.assertEqual(dt1.toordinal(), 730_882 - 1)
+
+    def test_toordinal04(self):
+        # https://www.timeanddate.com/date/dateadded.html?d1=1&m1=1&y1=1&type=add&ad=730911
+        self.assertEqual(dt3.toordinal(), 730_911 - 1)
+
+    def test_weekday00(self):
+        for i in range(7):
+            # March 4, 2002 is a Monday
+            self.assertEqual(datetime(2002, 3, 4 + i).weekday(), i)
+            # January 2, 1956 is a Monday
+            self.assertEqual(datetime(1956, 1, 2 + i).weekday(), i)
+
+    def test_isoweekday00(self):
+        for i in range(7):
+            self.assertEqual(datetime(2002, 3, 4 + i).isoweekday(), i + 1)
+            self.assertEqual(datetime(1956, 1, 2 + i).isoweekday(), i + 1)
+
+    def test_isoformat00(self):
+        self.assertEqual(dt3.isoformat(), "2002-03-01T12:59:59.000100+01:00")
+
+    def test_isoformat01(self):
+        self.assertEqual(dt3.isoformat("T"), "2002-03-01T12:59:59.000100+01:00")
+
+    def test_isoformat02(self):
+        self.assertEqual(dt3.isoformat(" "), "2002-03-01 12:59:59.000100+01:00")
+
+    def test_isoformat03(self):
+        self.assertEqual(str(dt3), "2002-03-01 12:59:59.000100+01:00")
+
+    @unittest.skipIf(STDLIB, "standard datetime differs")
+    def test___repr__00(self):
+        self.assertEqual(repr(dt1), dt1r)
+
+    @unittest.skipIf(STDLIB, "standard datetime differs")
+    def test___repr__01(self):
+        self.assertEqual(repr(dt3), dt3r)
+
+    @unittest.skipIf(STDLIB, "standard datetime differs")
+    def test___repr__02(self):
+        self.assertEqual(repr(dt4), dt4r)
+
+    def test___repr__03(self):
+        self.assertEqual(dt1, eval_mod(repr(dt1)))
+
+    def test___repr__04(self):
+        self.assertEqual(dt3, eval_mod(repr(dt3)))
+
+    def test___repr__05(self):
+        self.assertEqual(dt4, eval_mod(repr(dt4)))
+
+    @unittest.skipIf(STDLIB, "standard datetime has no tuple()")
+    def test_tuple00(self):
+        self.assertEqual(dt1.tuple(), (2002, 1, 31, 0, 0, 0, 0, None))
+
+    @unittest.skipIf(STDLIB, "standard datetime has no tuple()")
+    def test_tuple01(self):
+        self.assertEqual(dt27tz2.tuple(), (2010, 3, 27, 12, 0, 0, 0, tz2))
+
+    @unittest.skipIf(STDLIB, "standard datetime has no tuple()")
+    def test_tuple02(self):
+        self.assertEqual(dt28tz2.tuple(), (2010, 3, 28, 12, 0, 0, 0, tz2))
 
 
 if __name__ == "__main__":
