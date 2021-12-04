@@ -64,7 +64,8 @@ class timedelta:
     def __init__(
         self, days=0, seconds=0, microseconds=0, milliseconds=0, minutes=0, hours=0, weeks=0
     ):
-        self._us = round((((((weeks * 7 + days) * 24 + hours) * 60 + minutes) * 60 + seconds) * 1000 + milliseconds) * 1000 + microseconds)
+        s = (((weeks * 7 + days) * 24 + hours) * 60 + minutes) * 60 + seconds
+        self._us = (s * 1000 + milliseconds) * 1000 + microseconds
 
     def __repr__(self):
         return "datetime.timedelta(microseconds={})".format(self._us)
@@ -269,34 +270,11 @@ class time:
             and 0 <= minute < 60
             and 0 <= second < 60
             and 0 <= microsecond < 1_000_000
-        ) or (hour == 0 and minute == 0 and second == 0 and 1 <= microsecond <= 86_400_000_000):
+        ) or (hour == 0 and minute == 0 and second == 0 and 0 < microsecond < 86_400_000_000):
             self._td = timedelta(0, second, microsecond, 0, minute, hour)
         else:
             raise ValueError
         self._tz = tzinfo
-
-    def __repr__(self):
-        return "datetime.time(seconds={}, tzinfo={})".format(self._td.total_seconds(), repr(self._tz))
-
-    @property
-    def hour(self):
-        return self.tuple()[0]
-
-    @property
-    def minute(self):
-        return self.tuple()[1]
-
-    @property
-    def second(self):
-        return self.tuple()[2]
-
-    @property
-    def microsecond(self):
-        return self.tuple()[3]
-
-    @property
-    def tzinfo(self):
-        return self._tz
 
     @staticmethod
     def fromisoformat(s):
@@ -311,9 +289,9 @@ class time:
         tz_usec = 0
         l = len(s)
         i = 0
-        if l - i < 3:
+        if l < 2:
             raise ValueError
-        i += 3
+        i += 2
         hour = int(s[i - 2 : i])
         if l > i and s[i] == ":":
             i += 3
@@ -365,6 +343,26 @@ class time:
             tz = None
         return time(hour, minute, sec, usec, tz)
 
+    @property
+    def hour(self):
+        return self.tuple()[0]
+
+    @property
+    def minute(self):
+        return self.tuple()[1]
+
+    @property
+    def second(self):
+        return self.tuple()[2]
+
+    @property
+    def microsecond(self):
+        return self.tuple()[3]
+
+    @property
+    def tzinfo(self):
+        return self._tz
+
     def replace(self, hour=None, minute=None, second=None, microsecond=None, tzinfo=True):
         h, m, s, us, tz = self.tuple()
         if hour is None:
@@ -380,8 +378,18 @@ class time:
         return time(hour, minute, second, microsecond, tzinfo)
 
     def isoformat(self, timespec="auto"):
-        spec = _TIME_SPEC.index(timespec)
-        return self._td._format(spec)
+        return self._format(timespec, None)
+
+    def _format(self, ts, dt):
+        s = self._td._format(_TIME_SPEC.index(ts))
+        if self._tz is not None:
+            s += self._tz.isoformat(dt)
+        return s
+
+    def __repr__(self):
+        return "datetime.time(microsecond={}, tzinfo={})".format(self._td._us, repr(self._tz))
+
+    __str__ = isoformat
 
     def __bool__(self):
         return True
@@ -389,13 +397,13 @@ class time:
     def __eq__(self, other):
         return self._td == other._td and self._tz == other._tz
 
-    def utcoffset(self, dt):
+    def utcoffset(self):
         return None if self._tz is None else self._tz.utcoffset(None)
 
-    def dst(self, dt):
+    def dst(self):
         return None if self._tz is None else self._tz.dst(None)
 
-    def tzname(self, dt):
+    def tzname(self):
         return None if self._tz is None else self._tz.tzname(None)
 
     def tuple(self):
@@ -463,13 +471,14 @@ class date:
             day = day_
         return date(year, month, day)
 
-    def isoformat(self):
-        return "%04d-%02d-%02d" % self.tuple()
+    def __add__(self, other):
+        return date.fromordinal(self._ord + other.days)
 
-    def __repr__(self):
-        return "datetime.date(day={})".format(self._ord)
-
-    __str__ = isoformat
+    def __sub__(self, other):
+        if isinstance(other, date):
+            return timedelta(days=self._ord - other._ord)
+        else:
+            return date.fromordinal(self._ord - other.days)
 
     def __eq__(self, other):
         return self._ord == other._ord
@@ -478,22 +487,13 @@ class date:
         return self._ord <= other._ord
 
     def __lt__(self, other):
-        return self._ord > other._ord
+        return self._ord < other._ord
 
     def __ge__(self, other):
         return self._ord >= other._ord
 
     def __gt__(self, other):
         return self._ord > other._ord
-
-    def __add__(self, other):
-        return date.fromordinal(self._ord + other.days)
-
-    def __sub__(self, other):
-        if isinstance(other, date):
-            return date.fromordinal(self._ord - other._ord)
-        else:
-            return date.fromordinal(self._ord - other.days)
 
     def weekday(self):
         return (self._ord + 6) % 7
@@ -503,6 +503,14 @@ class date:
 
     def tuple(self):
         return _ord2ymd(self._ord)
+
+    def isoformat(self):
+        return "%04d-%02d-%02d" % self.tuple()
+
+    def __repr__(self):
+        return "datetime.date(0, 0, {})".format(self._ord)
+
+    __str__ = isoformat
 
 
 date.min = date(MINYEAR, 1, 1)
@@ -526,7 +534,7 @@ class datetime:
     @staticmethod
     def fromisoformat(s):
         d = date.fromisoformat(s)
-        t = time.fromisoformat(s[10:]) if len(s) > 10 else time()
+        t = time.fromisoformat(s[11:]) if len(s) > 12 else time()
         return datetime.combine(d, t)
 
     @staticmethod
@@ -699,10 +707,7 @@ class datetime:
         return self._date.isoweekday()
 
     def isoformat(self, sep="T", timespec="auto"):
-        s = self._date.isoformat() + sep + self._time.isoformat(timespec)
-        if self._time._tz is not None:
-            s += self._time._tz.isoformat(self)
-        return s
+        return self._date.isoformat() + sep + self._time._format(timespec, self)
 
     def __repr__(self):
         Y, M, D, h, m, s, us, tz = self.tuple()
