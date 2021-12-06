@@ -6,7 +6,7 @@ from micropython import const
 import asyncio
 
 from .core import ble, log_error, register_irq_handler
-from .device import DeviceConnection
+from .device import DeviceConnection, DeviceDisconnectedError
 
 
 _IRQ_L2CAP_ACCEPT = const(22)
@@ -63,7 +63,7 @@ register_irq_handler(_l2cap_irq, _l2cap_shutdown)
 
 
 # The channel was disconnected during a send/recvinto/flush.
-class L2CAPDisconnectedError(Exception):
+class L2CAPDisconnectedError(DeviceDisconnectedError):
     pass
 
 
@@ -75,7 +75,7 @@ class L2CAPConnectionError(Exception):
 class L2CAPChannel:
     def __init__(self, connection):
         if not connection.is_connected():
-            raise ValueError("Not connected")
+            raise L2CAPDisconnectedError
 
         if connection._l2cap_channel:
             raise ValueError("Already has channel")
