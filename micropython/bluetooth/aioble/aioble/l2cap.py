@@ -6,7 +6,7 @@ from micropython import const
 import asyncio
 
 from .core import ble, log_error, register_irq_handler
-from .device import DeviceConnection
+from .device import DeviceConnection, DeviceDisconnectedError
 
 
 _IRQ_L2CAP_ACCEPT = const(22)
@@ -180,18 +180,23 @@ class L2CAPChannel:
 # Use connection.l2cap_accept() instead of calling this directly.
 async def accept(connection, psm, mtu, timeout_ms):
     global _listening
+    try:
 
-    channel = L2CAPChannel(connection)
+        channel = L2CAPChannel(connection)
 
-    # Start the stack listening if necessary.
-    if not _listening:
-        ble.l2cap_listen(psm, mtu)
-        _listening = True
+        # Start the stack listening if necessary.
+        if not _listening:
+            ble.l2cap_listen(psm, mtu)
+            _listening = True
 
-    # Wait for the connect irq from the remote connection.
-    with connection.timeout(timeout_ms):
-        await channel._event.wait()
-        return channel
+        # Wait for the connect irq from the remote connection.
+        with connection.timeout(timeout_ms):
+            await channel._event.wait()
+            return channel
+    except ValueError as ex:
+        if ex.value == 'Not connected':
+            raise DeviceDisconnectedError()
+        raise
 
 
 # Use connection.l2cap_connect() instead of calling this directly.
@@ -199,16 +204,22 @@ async def connect(connection, psm, mtu, timeout_ms):
     if _listening:
         raise ValueError("Can't connect while listening")
 
-    channel = L2CAPChannel(connection)
+    try:
+        channel = L2CAPChannel(connection)
 
-    with connection.timeout(timeout_ms):
-        ble.l2cap_connect(connection._conn_handle, psm, mtu)
+        with connection.timeout(timeout_ms):
+            ble.l2cap_connect(connection._conn_handle, psm, mtu)
 
-        # Wait for the connect irq from the remote connection.
-        # If the connection fails, we get a disconnect event (with status) instead.
-        await channel._event.wait()
+            # Wait for the connect irq from the remote connection.
+            # If the connection fails, we get a disconnect event (with status) instead.
+            await channel._event.wait()
 
-        if channel._cid is not None:
-            return channel
-        else:
-            raise L2CAPConnectionError(channel._status)
+            if channel._cid is not None:
+                return channel
+            else:
+                raise L2CAPConnectionError(channel._status)
+
+    except ValueError as ex:
+        if ex.value == 'Not connected':
+            raise DeviceDisconnectedError()
+        raise
