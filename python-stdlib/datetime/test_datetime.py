@@ -1113,14 +1113,32 @@ class TestDate(unittest.TestCase):
     def test___repr__01(self):
         self.assertEqual(d1, eval_mod(repr(d1)))
 
+    def test___hash__00(self):
+        self.assertEqual(d1, d5)
+        self.assertEqual(hash(d1), hash(d5))
+
+    def test___hash__01(self):
+        dd1 = d1 + timedelta(weeks=7)
+        dd5 = d5 + timedelta(days=7 * 7)
+        self.assertEqual(hash(dd1), hash(dd5))
+
+    def test___hash__02(self):
+        d = {d1: 1}
+        d[d5] = 2
+        self.assertEqual(len(d), 1)
+        self.assertEqual(d[d1], 2)
+
 
 ### datetime #################################################################
 
 dt1 = datetime(2002, 1, 31)
+dt1z1 = datetime(2002, 1, 31, tzinfo=tz1)
+dt1z2 = datetime(2002, 1, 31, tzinfo=tz2)
 dt2 = datetime(1956, 1, 31)
 dt3 = datetime(2002, 3, 1, 12, 59, 59, 100, tz2)
 dt4 = datetime(2002, 3, 2, 17, 6)
 dt5 = datetime(2002, 1, 31)
+dt5z2 = datetime(2002, 1, 31, tzinfo=tz2)
 
 dt1r = "datetime.datetime(2002, 1, 31, 0, 0, 0, 0, None)"
 dt3r = "datetime.datetime(2002, 3, 1, 12, 59, 59, 100, Cet())"
@@ -1433,6 +1451,15 @@ class TestDateTime(unittest.TestCase):
     def test___eq__05(self):
         self.assertFalse(dt5 == dt2)
 
+    def test___eq__06(self):
+        self.assertFalse(dt1 == dt1z1)
+
+    def test___eq__07(self):
+        self.assertFalse(dt1z1 == dt1z2)
+
+    def test___eq__08(self):
+        self.assertTrue(dt1z2 == dt5z2)
+
     def test___le__00(self):
         self.assertTrue(dt1 <= dt5)
 
@@ -1441,6 +1468,15 @@ class TestDateTime(unittest.TestCase):
 
     def test___le__02(self):
         self.assertFalse(dt5 <= dt2)
+
+    def test___le__03(self):
+        self.assertFalse(dt1z1 <= dt1z2)
+
+    def test___le__04(self):
+        self.assertTrue(dt1z2 <= dt5z2)
+
+    def test___le__05(self):
+        self.assertRaises(TypeError, dt1.__le__, dt1z1)
 
     def test___ge__00(self):
         self.assertTrue(dt1 >= dt5)
@@ -1451,6 +1487,15 @@ class TestDateTime(unittest.TestCase):
     def test___ge__02(self):
         self.assertFalse(dt2 >= dt5)
 
+    def test___ge__03(self):
+        self.assertTrue(dt1z1 >= dt1z2)
+
+    def test___ge__04(self):
+        self.assertTrue(dt1z2 >= dt5z2)
+
+    def test___ge__05(self):
+        self.assertRaises(TypeError, dt1.__ge__, dt1z1)
+
     def test___lt__00(self):
         self.assertFalse(dt1 < dt5)
 
@@ -1460,6 +1505,15 @@ class TestDateTime(unittest.TestCase):
     def test___lt__02(self):
         self.assertFalse(dt5 < dt2)
 
+    def test___lt__03(self):
+        self.assertFalse(dt1z1 < dt1z2)
+
+    def test___lt__04(self):
+        self.assertFalse(dt1z2 < dt5z2)
+
+    def test___lt__05(self):
+        self.assertRaises(TypeError, dt1.__lt__, dt1z1)
+
     def test___gt__00(self):
         self.assertFalse(dt1 > dt5)
 
@@ -1468,6 +1522,15 @@ class TestDateTime(unittest.TestCase):
 
     def test___gt__02(self):
         self.assertFalse(dt2 > dt5)
+
+    def test___gt__03(self):
+        self.assertTrue(dt1z1 > dt1z2)
+
+    def test___gt__04(self):
+        self.assertFalse(dt1z2 > dt5z2)
+
+    def test___gt__05(self):
+        self.assertRaises(TypeError, dt1.__gt__, dt1z1)
 
     def test_date00(self):
         self.assertEqual(d1t1.date(), d1)

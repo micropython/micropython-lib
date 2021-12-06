@@ -604,6 +604,8 @@ class datetime:
         return D + d, us
 
     def __eq__(self, other):
+        if (self._time._tz == None) ^ (other._time._tz == None):
+            return False
         return self._cmp(other) == 0
 
     def __le__(self, other):
