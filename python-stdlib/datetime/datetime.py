@@ -149,6 +149,11 @@ class timedelta:
     def __str__(self):
         return self._format(0x40)
 
+    def __hash__(self):
+        if not hasattr(self, "_hash"):
+            self._hash = hash(self._us)
+        return self._hash
+
     def isoformat(self):
         return self._format(0)
 
@@ -245,6 +250,11 @@ class timezone(tzinfo):
 
     def __str__(self):
         return self.tzname(None)
+
+    def __hash__(self):
+        if not hasattr(self, "_hash"):
+            self._hash = hash((self._offset, self._name))
+        return self._hash
 
     def utcoffset(self, dt):
         return self._offset
@@ -397,6 +407,11 @@ class time:
     def __eq__(self, other):
         return self._td == other._td and self._tz == other._tz
 
+    def __hash__(self):
+        if not hasattr(self, "_hash"):
+            self._hash = hash((self._td, self._tz))
+        return self._hash
+
     def utcoffset(self):
         return None if self._tz is None else self._tz.utcoffset(None)
 
@@ -511,6 +526,11 @@ class date:
         return "datetime.date(0, 0, {})".format(self._ord)
 
     __str__ = isoformat
+
+    def __hash__(self):
+        if not hasattr(self, "_hash"):
+            self._hash = hash(self._ord)
+        return self._hash
 
 
 date.min = date(MINYEAR, 1, 1)
@@ -718,6 +738,11 @@ class datetime:
 
     def __str__(self):
         return self.isoformat(" ")
+
+    def __hash__(self):
+        if not hasattr(self, "_hash"):
+            self._hash = hash((self._date, self._time))
+        return self._hash
 
     def tuple(self):
         return self._date.tuple() + self._time.tuple()

@@ -77,9 +77,18 @@ a = timedelta(hours=7)
 b = timedelta(minutes=6)
 c = timedelta(seconds=10)
 us = timedelta(microseconds=1)
+td0 = timedelta(0)
 td1 = timedelta(2, 3, 4)
 td2 = timedelta(2, 3, 4)
 td3 = timedelta(2, 3, 5)
+td4 = timedelta(
+    days=100,
+    weeks=-7,
+    hours=-24 * (100 - 49),
+    minutes=-3,
+    seconds=12,
+    microseconds=(3 * 60 - 12) * 1000000,
+)  # == timedelta(0)
 
 td1h = timedelta(hours=1)
 td1hr = "datetime.timedelta(microseconds={})".format(1 * 3600 * 10 ** 6)
@@ -395,7 +404,7 @@ class TestTimeDelta(unittest.TestCase):
         self.assertTrue(timedelta(seconds=1))
 
     def test___bool__03(self):
-        self.assertTrue(not timedelta(0))
+        self.assertTrue(not td0)
 
     def test___str__00(self):
         self.assertEqual(str(timedelta(days=1)), "1 day, 0:00:00")
@@ -414,6 +423,21 @@ class TestTimeDelta(unittest.TestCase):
 
     def test___str__05(self):
         self.assertEqual(str(timedelta(hours=2, minutes=3, seconds=4)), "2:03:04")
+
+    def test___hash__00(self):
+        self.assertEqual(td0, td4)
+        self.assertEqual(hash(td0), hash(td4))
+
+    def test___hash__01(self):
+        tt0 = td0 + timedelta(weeks=7)
+        tt4 = td4 + timedelta(days=7 * 7)
+        self.assertEqual(hash(tt0), hash(tt4))
+
+    def test___hash__02(self):
+        d = {td0: 1}
+        d[td4] = 2
+        self.assertEqual(len(d), 1)
+        self.assertEqual(d[td0], 2)
 
     def test_constant00(self):
         self.assertIsInstance(timedelta.min, timedelta)
@@ -646,7 +670,7 @@ class TestTimeZone(unittest.TestCase):
         self.assertEqual(tz2.tzname(datetime(2011, 8, 1)), "CEST")
 
     def test_utc00(self):
-        self.assertEqual(timezone.utc.utcoffset(None), timedelta(0))
+        self.assertEqual(timezone.utc.utcoffset(None), td0)
 
     def test_aware_datetime00(self):
         t = datetime(1, 1, 1)
@@ -679,6 +703,8 @@ t1r = "datetime.time(microsecond=67503001234, tzinfo=None)"
 t1z = time(18, 45, 3, 1234, tz1)
 t1zr = f"datetime.time(microsecond=67503001234, tzinfo={repr(tz1)})"
 t2z = time(12, 59, 59, 100, tz2)
+t3 = time(18, 45, 3, 1234)
+t3z = time(18, 45, 3, 1234, tz2)
 
 
 class TestTime(unittest.TestCase):
@@ -831,6 +857,24 @@ class TestTime(unittest.TestCase):
     def test___eq__03(self):
         self.assertNotEqual(t1z, t2z)
 
+    def test___hash__00(self):
+        self.assertEqual(t1, t3)
+        self.assertEqual(hash(t1), hash(t3))
+
+    def test___hash__01(self):
+        d = {t1: 1}
+        d[t3] = 3
+        self.assertEqual(len(d), 1)
+        self.assertEqual(d[t1], 3)
+
+    def test___hash__02(self):
+        self.assertNotEqual(t1, t1z)
+        self.assertNotEqual(hash(t1), hash(t1z))
+
+    def test___hash__03(self):
+        self.assertNotEqual(t1z, t3z)
+        self.assertNotEqual(hash(t1z), hash(t3z))
+
     def test_utcoffset00(self):
         self.assertEqual(t1.utcoffset(), None)
 
@@ -847,7 +891,7 @@ class TestTime(unittest.TestCase):
         self.assertEqual(t1z.dst(), None)
 
     def test_dst02(self):
-        self.assertEqual(t2z.dst(), timedelta(0))
+        self.assertEqual(t2z.dst(), td0)
 
     def test_tzname00(self):
         self.assertEqual(t1.tzname(), None)
@@ -1689,6 +1733,29 @@ class TestDateTime(unittest.TestCase):
 
     def test___repr__05(self):
         self.assertEqual(dt4, eval_mod(repr(dt4)))
+
+    def test___hash__00(self):
+        self.assertEqual(dt1, dt5)
+        self.assertEqual(hash(dt1), hash(dt5))
+
+    def test___hash__01(self):
+        dd1 = dt1 + timedelta(weeks=7)
+        dd5 = dt5 + timedelta(days=7 * 7)
+        self.assertEqual(hash(dd1), hash(dd5))
+
+    def test___hash__02(self):
+        d = {dt1: 1}
+        d[dt5] = 2
+        self.assertEqual(len(d), 1)
+        self.assertEqual(d[dt1], 2)
+
+    def test___hash__03(self):
+        self.assertNotEqual(dt1, dt1z1)
+        self.assertNotEqual(hash(dt1), hash(dt1z1))
+
+    def test___hash__04(self):
+        self.assertNotEqual(dt1z1, dt5z2)
+        self.assertNotEqual(hash(dt1z1), hash(dt5z2))
 
     @unittest.skipIf(STDLIB, "standard datetime has no tuple()")
     def test_tuple00(self):
