@@ -229,6 +229,19 @@ class tzinfo:
     def dst(self, dt):
         raise NotImplementedError
 
+    def fromutc(self, dt):
+        if dt._time._tz is not self:
+            raise ValueError
+
+        # See original datetime.py for an explanation of this algorithm.
+        dtoff = dt.utcoffset()
+        dtdst = dt.dst()
+        delta = dtoff - dtdst
+        if delta:
+            dt += delta
+            dtdst = dt.dst()
+        return dt + dtdst
+
     def isoformat(self, dt):
         return self.utcoffset(dt)._format(0x12)
 
@@ -268,6 +281,9 @@ class timezone(tzinfo):
         if dt:
             return self.isoformat(dt)
         return self._offset._format(0x22)
+
+    def fromutc(self, dt):
+        return dt + self._offset
 
 
 timezone.utc = timezone(timedelta(0))
@@ -697,8 +713,9 @@ class datetime:
     def astimezone(self, tz):
         if self._time._tz is None:
             raise NotImplementedError
-        ret = self - self.utcoffset() + tz.utcoffset(self)
-        return ret.replace(tzinfo=tz)
+        utc = self - self._time._tz.utcoffset(self)
+        utc = utc.replace(tzinfo=tz)
+        return tz.fromutc(utc)
 
     def utcoffset(self):
         return None if self._time._tz is None else self._time._tz.utcoffset(self)

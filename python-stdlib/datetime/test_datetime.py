@@ -67,6 +67,12 @@ import datetime as mod_datetime
 from datetime import MAXYEAR, MINYEAR, datetime, date, time, timedelta, timezone, tzinfo
 
 
+if hasattr(datetime, "EPOCH"):
+    EPOCH = datetime.EPOCH
+else:
+    EPOCH = datetime(*mod_time.gmtime(0)[:6], tzinfo=timezone.utc)
+
+
 def eval_mod(s):
     return eval(s.replace("datetime.", "mod_datetime."))
 
@@ -671,6 +677,30 @@ class TestTimeZone(unittest.TestCase):
 
     def test_utc00(self):
         self.assertEqual(timezone.utc.utcoffset(None), td0)
+
+    def test_fromutc00(self):
+        utc = EPOCH.replace(tzinfo=tz_acdt)
+        self.assertEqual(tz_acdt.fromutc(utc), utc + 9.5 * td1h)
+
+    def test_fromutc01(self):
+        utc = EPOCH.replace(tzinfo=tz_est)
+        self.assertEqual(tz_est.fromutc(utc), utc + 5 * -td1h)
+
+    def test_fromutc02(self):
+        utc = datetime(2010, 3, 28, 1, 59, tzinfo=tz2)
+        self.assertEqual(tz2.fromutc(utc), utc + td1h)
+
+    def test_fromutc03(self):
+        utc = datetime(2010, 3, 28, 2, 0, tzinfo=tz2)
+        self.assertEqual(tz2.fromutc(utc), utc + 2 * td1h)
+
+    def test_fromutc04(self):
+        utc = datetime(2010, 10, 31, 1, 59, tzinfo=tz2)
+        self.assertEqual(tz2.fromutc(utc), utc + 2 * td1h)
+
+    def test_fromutc05(self):
+        utc = datetime(2010, 10, 31, 2, 0, tzinfo=tz2)
+        self.assertEqual(tz2.fromutc(utc), utc + td1h)
 
     def test_aware_datetime00(self):
         t = datetime(1, 1, 1)
