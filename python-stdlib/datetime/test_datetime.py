@@ -1652,9 +1652,19 @@ class TestDateTime(unittest.TestCase):
         self.assertRaises(ValueError, datetime(2000, 2, 29).replace, year=2001)
 
     def test_astimezone00(self):
-        self.assertEqual(
-            dt3.astimezone(timezone.utc), datetime(2002, 3, 1, 11, 59, 59, 100, timezone.utc)
-        )
+        dt = datetime(2002, 3, 1, 11, 59, 59, 100, timezone.utc)
+        self.assertEqual(dt3.astimezone(timezone.utc), dt)
+
+    def test_astimezone01(self):
+        self.assertIs(dt1z1.astimezone(tz1), dt1z1)
+
+    def test_astimezone02(self):
+        dt = datetime(2002, 1, 31, 2, 0, tzinfo=tz2)
+        self.assertEqual(dt1z1.astimezone(tz2), dt)
+
+    def test_astimezone03(self):
+        dt = datetime(2002, 1, 31, 10, 30, tzinfo=tz_acdt)
+        self.assertEqual(dt1z1.astimezone(tz_acdt), dt)
 
     def test_utcoffset00(self):
         self.assertEqual(dt1.utcoffset(), None)

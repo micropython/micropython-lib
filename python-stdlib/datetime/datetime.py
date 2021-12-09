@@ -713,6 +713,8 @@ class datetime:
     def astimezone(self, tz):
         if self._time._tz is None:
             raise NotImplementedError
+        if self._time._tz is tz:
+            return self
         utc = self - self._time._tz.utcoffset(self)
         utc = utc.replace(tzinfo=tz)
         return tz.fromutc(utc)
