@@ -626,14 +626,17 @@ class datetime:
 
     def _sub(self, other):
         # Subtract two datetime instances.
-        if (self._time._tz == None) ^ (other._time._tz == None):
+        tz1 = self._time._tz
+        if (tz1 is None) ^ (other._time._tz is None):
             raise TypeError
-        if self._time._tz == None or self.utcoffset() == other.utcoffset():
-            dt1 = self
-            dt2 = other
-        else:
-            dt1 = self.astimezone(timezone.utc)
-            dt2 = other.astimezone(timezone.utc)
+        dt1 = self
+        dt2 = other
+        if tz1 is not None:
+            os1 = dt1.utcoffset()
+            os2 = dt2.utcoffset()
+            if os1 != os2:
+                dt1 -= os1
+                dt2 -= os2
         D = dt1._date._ord - dt2._date._ord
         us = dt1._time._td._us - dt2._time._td._us
         d, us = divmod(us, 86_400_000_000)
