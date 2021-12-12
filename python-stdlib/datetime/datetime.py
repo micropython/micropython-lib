@@ -742,7 +742,13 @@ class datetime:
         return self._date._ord
 
     def timestamp(self):
-        return (self - datetime.EPOCH).total_seconds()
+        if self._time._tz is None:
+            epoch = datetime.EPOCH.replace(tzinfo=None)
+            s, us = divmod((self - epoch)._us, 1_000_000)
+            a = (datetime(*_time.localtime(s)[:6]) - epoch)._us // 1_000_000 - s
+            return s - a + us / 1_000_000
+        else:
+            return (self - datetime.EPOCH).total_seconds()
 
     def weekday(self):
         return self._date.weekday()

@@ -1738,6 +1738,12 @@ class TestDateTime(unittest.TestCase):
     def test_weekday00(self):
         self.assertEqual(dt1.weekday(), d1.weekday())
 
+    def test_timestamp00(self):
+        self.assertEqual(d1t1.timestamp(), 1012499103.001234)
+
+    def test_timestamp01(self):
+        self.assertEqual(d1t1z.timestamp(), 1012506303.001234)
+
     def test_isoweekday00(self):
         self.assertEqual(dt1.isoweekday(), d1.isoweekday())
 
