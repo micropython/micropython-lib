@@ -65,7 +65,7 @@ class timedelta:
         self, days=0, seconds=0, microseconds=0, milliseconds=0, minutes=0, hours=0, weeks=0
     ):
         s = (((weeks * 7 + days) * 24 + hours) * 60 + minutes) * 60 + seconds
-        self._us = (s * 1000 + milliseconds) * 1000 + microseconds
+        self._us = round((s * 1000 + milliseconds) * 1000 + microseconds)
 
     def __repr__(self):
         return "datetime.timedelta(microseconds={})".format(self._us)
