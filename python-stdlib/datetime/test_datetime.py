@@ -556,16 +556,21 @@ class TestTimeDelta(unittest.TestCase):
 class Cet(tzinfo):
     # Central European Time (see https://en.wikipedia.org/wiki/Summer_time_in_Europe)
 
-    def utcoffset(self, datetime):
-        h = 2 if self.isdst(datetime) else 1
+    def utcoffset(self, dt):
+        h = 2 if self.isdst(dt) else 1
         return timedelta(hours=h)
 
-    def dst(self, datetime):
-        h = 1 if self.isdst(datetime) else 0
+    def dst(self, dt):
+        h = 1 if self.isdst(dt) else 0
         return timedelta(hours=h)
 
-    def tzname(self, datetime):
-        return "CEST" if self.isdst(datetime) else "CET"
+    def tzname(self, dt):
+        return "CEST" if self.isdst(dt) else "CET"
+
+    def fromutc(self, dt):
+        assert dt.tzinfo is self
+        h = 2 if self.isdst(dt, utc=True) else 1
+        return dt + timedelta(hours=h)
 
     def __repr__(self):
         return "Cet()"
@@ -573,32 +578,22 @@ class Cet(tzinfo):
     def __str__(self):
         return self.tzname(None)
 
-    def isdst(self, datetime):
-        if datetime is None:
+    def isdst(self, dt, utc=False):
+        if dt is None:
             return False
-        # CPython compatible
-        year, month, day, hour = datetime.year, datetime.month, datetime.day, datetime.hour
-        # Less resource hungry:
-        # year, month, day, hour, minute, second, microsecond, tz = datetime.tuple()
+
+        year = dt.year
         if not 2000 <= year < 2100:
+            # Formulas below are valid in the range [2000; 2100)
             raise ValueError
-        if 3 < month < 10:
-            return True
-        if month == 3:
-            beg = 31 - (5 * year // 4 + 4) % 7  # last Sunday of March
-            if day < beg:
-                return False
-            if day > beg:
-                return True
-            return hour >= 3
-        if month == 10:
-            end = 31 - (5 * year // 4 + 1) % 7  # last Sunday of October
-            if day < end:
-                return True
-            if day > end:
-                return False
-            return hour < 3
-        return False
+
+        hour = 1 if utc else 3
+        day = 31 - (5 * year // 4 + 4) % 7  # last Sunday of March
+        beg = datetime(year, 3, day, hour)
+        day = 31 - (5 * year // 4 + 1) % 7  # last Sunday of October
+        end = datetime(year, 10, day, hour)
+
+        return beg <= dt.replace(tzinfo=None) < end
 
 
 tz_acdt = timezone(timedelta(hours=9.5), "ACDT")
@@ -687,19 +682,19 @@ class TestTimeZone(unittest.TestCase):
         self.assertEqual(tz_est.fromutc(utc), utc + 5 * -td1h)
 
     def test_fromutc02(self):
-        utc = datetime(2010, 3, 28, 1, 59, tzinfo=tz2)
+        utc = datetime(2010, 3, 28, 0, 59, 59, 999_999, tz2)
         self.assertEqual(tz2.fromutc(utc), utc + td1h)
 
     def test_fromutc03(self):
-        utc = datetime(2010, 3, 28, 2, 0, tzinfo=tz2)
+        utc = datetime(2010, 3, 28, 1, 0, 0, 0, tz2)
         self.assertEqual(tz2.fromutc(utc), utc + 2 * td1h)
 
     def test_fromutc04(self):
-        utc = datetime(2010, 10, 31, 1, 59, tzinfo=tz2)
+        utc = datetime(2010, 10, 31, 0, 59, 59, 999_999, tz2)
         self.assertEqual(tz2.fromutc(utc), utc + 2 * td1h)
 
     def test_fromutc05(self):
-        utc = datetime(2010, 10, 31, 2, 0, tzinfo=tz2)
+        utc = datetime(2010, 10, 31, 1, 0, 0, 0, tz2)
         self.assertEqual(tz2.fromutc(utc), utc + td1h)
 
     def test_aware_datetime00(self):
