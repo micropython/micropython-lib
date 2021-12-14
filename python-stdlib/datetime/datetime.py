@@ -462,7 +462,7 @@ class date:
 
     @staticmethod
     def today():
-        return datetime.today().date()
+        return datetime.now().date()
 
     @staticmethod
     def fromordinal(n):
@@ -560,22 +560,29 @@ class datetime:
         self._time = time(hour, minute, second, microsecond, tzinfo)
 
     @staticmethod
-    def today():
-        return datetime.now()
+    def fromtimestamp(ts, tz=None):
+        if isinstance(ts, float):
+            ts, us = divmod(round(ts * 1_000_000), 1_000_000)
+        else:
+            us = 0
+        conv = _time.localtime if tz is None else _time.gmtime
+        dt = datetime(*conv(ts)[:6], microsecond=us, tzinfo=tz)
+        if tz:
+            dt = tz.fromutc(dt)
+        return dt
 
     @staticmethod
     def now(tz=None):
-        return datetime(*_time.localtime()[:6], tzinfo=tz)
+
+    @staticmethod
+    def combine(date, time, tzinfo_=None):
+        return datetime(0, 0, date.toordinal(), 0, 0, 0, time._td._us, tzinfo_ or time._tz)
 
     @staticmethod
     def fromisoformat(s):
         d = date.fromisoformat(s)
         t = time.fromisoformat(s[11:]) if len(s) > 12 else time()
         return datetime.combine(d, t)
-
-    @staticmethod
-    def combine(date, time, tzinfo_=None):
-        return datetime(0, 0, date.toordinal(), 0, 0, 0, time._td._us, tzinfo_ or time._tz)
 
     @property
     def year(self):

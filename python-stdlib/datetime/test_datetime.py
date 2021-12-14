@@ -1313,17 +1313,32 @@ class TestDateTime(unittest.TestCase):
     def test___init__24(self):
         self.assertEqual(dt4, eval_mod(dt4r))
 
-    def test_today00(self):
-        tm = mod_time.localtime()[:6]
-        dt = datetime.today()
-        tt = (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
-        self.assertAlmostEqual(tm, tt, delta=timedelta(seconds=1))
+    def test_fromtimestamp00(self):
+        ts = 1012499103.001234
+        self.assertEqual(datetime.fromtimestamp(ts), d1t1)
+
+    def test_fromtimestamp01(self):
+        ts = 1012506303.001234
+        self.assertEqual(datetime.fromtimestamp(ts, tz1), d1t1z)
+
+    def test_fromtimestamp02(self):
+        ts = 1269687600
+        self.assertEqual(datetime.fromtimestamp(ts, tz2), dt27tz2)
+
+    def test_fromtimestamp03(self):
+        ts = 1269770400
+        self.assertEqual(datetime.fromtimestamp(ts, tz2), dt28tz2)
 
     def test_now00(self):
-        tm = mod_time.localtime()[:6]
+        tm = datetime(*mod_time.localtime()[:6])
         dt = datetime.now()
-        tt = (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
-        self.assertAlmostEqual(tm, tt, delta=timedelta(seconds=1))
+        self.assertAlmostEqual(tm, dt, delta=timedelta(seconds=1))
+
+    def test_now01(self):
+        tm = datetime(*mod_time.gmtime()[:6], tzinfo=tz2)
+        tm += tz2.utcoffset(tm)
+        dt = datetime.now(tz2)
+        self.assertAlmostEqual(tm, dt, delta=timedelta(seconds=1))
 
     def test_fromisoformat00(self):
         self.assertEqual(datetime.fromisoformat("1975-08-10"), datetime(1975, 8, 10))
