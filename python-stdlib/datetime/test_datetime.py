@@ -61,10 +61,11 @@ if __name__ == "__main__":
             break
         sys.argv.pop(1)
 
-import unittest
+import os
 import time as mod_time
 import datetime as mod_datetime
 from datetime import MAXYEAR, MINYEAR, datetime, date, time, timedelta, timezone, tzinfo
+import unittest
 
 
 if hasattr(datetime, "EPOCH"):
@@ -557,30 +558,27 @@ class Cet(tzinfo):
     # Central European Time (see https://en.wikipedia.org/wiki/Summer_time_in_Europe)
 
     def utcoffset(self, dt):
-        h = 2 if self.isdst(dt) else 1
+        h = 2 if self.isdst(dt)[0] else 1
         return timedelta(hours=h)
 
     def dst(self, dt):
-        h = 1 if self.isdst(dt) else 0
+        h = 1 if self.isdst(dt)[0] else 0
         return timedelta(hours=h)
 
     def tzname(self, dt):
-        return "CEST" if self.isdst(dt) else "CET"
+        return "CEST" if self.isdst(dt)[0] else "CET"
 
     def fromutc(self, dt):
         assert dt.tzinfo is self
-        h = 2 if self.isdst(dt, utc=True) else 1
-        return dt + timedelta(hours=h)
-
-    def __repr__(self):
-        return "Cet()"
-
-    def __str__(self):
-        return self.tzname(None)
+        isdst, fold = self.isdst(dt, utc=True)
+        h = 2 if isdst else 1
+        dt += timedelta(hours=h)
+        dt = dt.replace(fold=fold)
+        return dt
 
     def isdst(self, dt, utc=False):
         if dt is None:
-            return False
+            return False, None
 
         year = dt.year
         if not 2000 <= year < 2100:
@@ -593,13 +591,132 @@ class Cet(tzinfo):
         day = 31 - (5 * year // 4 + 1) % 7  # last Sunday of October
         end = datetime(year, 10, day, hour)
 
-        return beg <= dt.replace(tzinfo=None) < end
+        dt = dt.replace(tzinfo=None)
+        if utc:
+            fold = 1 if end <= dt < end + timedelta(hours=1) else 0
+        else:
+            fold = dt.fold
+        isdst = beg <= dt < end
+        return isdst, fold
+
+    def __repr__(self):
+        return "Cet()"
+
+    def __str__(self):
+        return self.tzname(None)
+
+    def __eq__(self, other):
+        return repr(self) == repr(other)
+
+    def __hash__(self):
+        return hash(repr(self))
+
+
+class USTimeZone(tzinfo):
+    DSTSTART = datetime(1, 3, 8, 2)
+    DSTEND = datetime(1, 11, 1, 2)
+    ZERO = timedelta(0)
+    HOUR = timedelta(hours=1)
+
+    def __init__(self, hours, reprname, stdname, dstname):
+        self.stdoffset = timedelta(hours=hours)
+        self.reprname = reprname
+        self.stdname = stdname
+        self.dstname = dstname
+
+    def __repr__(self):
+        return self.reprname
+
+    def tzname(self, dt):
+        if self.dst(dt):
+            return self.dstname
+        else:
+            return self.stdname
+
+    def utcoffset(self, dt):
+        return self.stdoffset + self.dst(dt)
+
+    def dst(self, dt):
+        if dt is None or dt.tzinfo is None:
+            return self.ZERO
+        assert dt.tzinfo is self
+        start, end = USTimeZone.us_dst_range(dt.year)
+        dt = dt.replace(tzinfo=None)
+        if start + self.HOUR <= dt < end - self.HOUR:
+            return self.HOUR
+        if end - self.HOUR <= dt < end:
+            return self.ZERO if dt.fold else self.HOUR
+        if start <= dt < start + self.HOUR:
+            return self.HOUR if dt.fold else self.ZERO
+        return self.ZERO
+
+    def fromutc(self, dt):
+        assert dt.tzinfo is self
+        start, end = USTimeZone.us_dst_range(dt.year)
+        start = start.replace(tzinfo=self)
+        end = end.replace(tzinfo=self)
+        std_time = dt + self.stdoffset
+        dst_time = std_time + self.HOUR
+        if end <= dst_time < end + self.HOUR:
+            return std_time.replace(fold=1)
+        if std_time < start or dst_time >= end:
+            return std_time
+        if start <= std_time < end - self.HOUR:
+            return dst_time
+
+    @staticmethod
+    def us_dst_range(year):
+        start = first_sunday_on_or_after(USTimeZone.DSTSTART.replace(year=year))
+        end = first_sunday_on_or_after(USTimeZone.DSTEND.replace(year=year))
+        return start, end
+
+    @staticmethod
+    def first_sunday_on_or_after(dt):
+        days_to_go = 6 - dt.weekday()
+        if days_to_go:
+            dt += timedelta(days_to_go)
+        return dt
+
+
+class LocalTz:
+    def __init__(self, tz):
+        self.tz = tz
+        self._old = None
+
+    @staticmethod
+    def _set(tz):
+        if hasattr(mod_time, "tzset"):  # Python
+            if tz:
+                os.environ["TZ"] = tz
+            else:
+                del os.environ["TZ"]
+            mod_time.tzset()
+        else:
+            if tz:
+                os.putenv("TZ", tz)
+            else:
+                os.unsetenv("TZ")
+
+    def set(self):
+        self._old = os.getenv("TZ")
+        LocalTz._set(self.tz)
+
+    def unset(self):
+        LocalTz._set(self._old)
+        self._old = None
+
+    def __enter__(self):
+        self.set()
+
+    def __exit__(self, typ, value, trace):
+        self.unset()
 
 
 tz_acdt = timezone(timedelta(hours=9.5), "ACDT")
 tz_est = timezone(-timedelta(hours=5), "EST")
 tz1 = timezone(timedelta(hours=-1))
 tz2 = Cet()
+tz3 = USTimeZone(-5, "Eastern", "EST", "EDT")
 
 
 class TestTimeZone(unittest.TestCase):
@@ -683,19 +800,33 @@ class TestTimeZone(unittest.TestCase):
 
     def test_fromutc02(self):
         utc = datetime(2010, 3, 28, 0, 59, 59, 999_999, tz2)
-        self.assertEqual(tz2.fromutc(utc), utc + td1h)
+        dt = tz2.fromutc(utc)
+        self.assertEqual(dt, utc + td1h)
+        self.assertFalse(dt.fold)
 
     def test_fromutc03(self):
         utc = datetime(2010, 3, 28, 1, 0, 0, 0, tz2)
-        self.assertEqual(tz2.fromutc(utc), utc + 2 * td1h)
+        dt = tz2.fromutc(utc)
+        self.assertEqual(dt, utc + 2 * td1h)
+        self.assertFalse(dt.fold)
 
     def test_fromutc04(self):
         utc = datetime(2010, 10, 31, 0, 59, 59, 999_999, tz2)
-        self.assertEqual(tz2.fromutc(utc), utc + 2 * td1h)
+        dt = tz2.fromutc(utc)
+        self.assertEqual(dt, utc + 2 * td1h)
+        self.assertFalse(dt.fold)
 
     def test_fromutc05(self):
         utc = datetime(2010, 10, 31, 1, 0, 0, 0, tz2)
-        self.assertEqual(tz2.fromutc(utc), utc + td1h)
+        dt = tz2.fromutc(utc)
+        self.assertEqual(dt, utc + td1h)
+        self.assertTrue(dt.fold)
+
+    def test_fromutc06(self):
+        dt1 = tz2.fromutc(datetime(2010, 10, 31, 0, 0, 0, 0, tz2))
+        dt2 = tz2.fromutc(datetime(2010, 10, 31, 1, 0, 0, 0, tz2))
+        self.assertEqual(dt1, dt2)
+        self.assertNotEqual(dt1.fold, dt2.fold)
 
     def test_aware_datetime00(self):
         t = datetime(1, 1, 1)
@@ -724,12 +855,16 @@ class TestTimeZone(unittest.TestCase):
 ### time #####################################################################
 
 t1 = time(18, 45, 3, 1234)
-t1r = "datetime.time(microsecond=67503001234, tzinfo=None)"
+t1r = "datetime.time(microsecond=67503001234, tzinfo=None, fold=0)"
+t1f = time(18, 45, 3, 1234, fold=1)
+t1fr = f"datetime.time(microsecond=67503001234, tzinfo=None, fold=1)"
 t1z = time(18, 45, 3, 1234, tz1)
-t1zr = f"datetime.time(microsecond=67503001234, tzinfo={repr(tz1)})"
+t1zr = f"datetime.time(microsecond=67503001234, tzinfo={repr(tz1)}, fold=0)"
 t2z = time(12, 59, 59, 100, tz2)
 t3 = time(18, 45, 3, 1234)
 t3z = time(18, 45, 3, 1234, tz2)
+t4 = time(18, 45, 3, 1234, fold=1)
+t4z = time(18, 45, 3, 1234, tz2, fold=1)
 
 
 class TestTime(unittest.TestCase):
@@ -740,6 +875,7 @@ class TestTime(unittest.TestCase):
         self.assertEqual(t.second, 0)
         self.assertEqual(t.microsecond, 0)
         self.assertEqual(t.tzinfo, None)
+        self.assertEqual(t.fold, 0)
 
     def test___init__01(self):
         t = time(12)
@@ -748,6 +884,7 @@ class TestTime(unittest.TestCase):
         self.assertEqual(t.second, 0)
         self.assertEqual(t.microsecond, 0)
         self.assertEqual(t.tzinfo, None)
+        self.assertEqual(t.fold, 0)
 
     def test___init__02(self):
         self.assertEqual(t1z.hour, 18)
@@ -755,9 +892,11 @@ class TestTime(unittest.TestCase):
         self.assertEqual(t1z.second, 3)
         self.assertEqual(t1z.microsecond, 1234)
         self.assertEqual(t1z.tzinfo, tz1)
+        self.assertEqual(t1z.fold, 0)
 
     def test___init__03(self):
-        time(microsecond=1)
+        t = time(microsecond=1, fold=1)
+        self.assertEqual(t.fold, 1)
 
     @unittest.skipIf(STDLIB, "not supported by standard datetime")
     def test___init__04(self):
@@ -768,11 +907,13 @@ class TestTime(unittest.TestCase):
         self.assertRaises(ValueError, time, 0, -1, 0, 0)
         self.assertRaises(ValueError, time, 0, 0, -1, 0)
         self.assertRaises(ValueError, time, 0, 0, 0, -1)
+        self.assertRaises(ValueError, time, 0, 0, 0, 0, fold=-1)
 
     def test___init__06(self):
         self.assertRaises(ValueError, time, 24, 0, 0, 0)
         self.assertRaises(ValueError, time, 0, 60, 0, 0)
         self.assertRaises(ValueError, time, 0, 0, 60, 0)
+        self.assertRaises(ValueError, time, 0, 0, 0, 0, fold=2)
 
     @unittest.skipIf(STDLIB, "not supported by standard datetime")
     def test___init__07(self):
@@ -820,6 +961,9 @@ class TestTime(unittest.TestCase):
     def test_tzinfo01(self):
         self.assertEqual(t2z.tzinfo, tz2)
 
+    def test_fold00(self):
+        self.assertEqual(t1.fold, 0)
+
     def test_replace00(self):
         self.assertEqual(t2z.replace(), t2z)
 
@@ -853,13 +997,24 @@ class TestTime(unittest.TestCase):
 
     @unittest.skipIf(STDLIB, "standard datetime differs")
     def test___repr__01(self):
+        self.assertEqual(repr(t1f), t1fr)
+
+    @unittest.skipIf(STDLIB, "standard datetime differs")
+    def test___repr__02(self):
         self.assertEqual(repr(t1z), t1zr)
 
-    def test___repr__02(self):
+    def test___repr__03(self):
         self.assertEqual(t1, eval_mod(repr(t1)))
 
-    def test___repr__03(self):
+    def test___repr__04(self):
         self.assertEqual(t1z, eval_mod(repr(t1z)))
+
+    def test___repr__05(self):
+        self.assertEqual(t4, eval_mod(repr(t4)))
+
+    def test___repr__06(self):
+        dt = eval_mod(repr(t4z))
+        self.assertEqual(t4z, eval_mod(repr(t4z)))
 
     def test___bool__00(self):
         self.assertTrue(t1)
@@ -899,6 +1054,11 @@ class TestTime(unittest.TestCase):
     def test___hash__03(self):
         self.assertNotEqual(t1z, t3z)
         self.assertNotEqual(hash(t1z), hash(t3z))
+
+    def test___hash__04(self):
+        tf = t1.replace(fold=1)
+        self.assertEqual(t1, tf)
+        self.assertEqual(hash(t1), hash(tf))
 
     def test_utcoffset00(self):
         self.assertEqual(t1.utcoffset(), None)
@@ -1209,11 +1369,12 @@ dt4 = datetime(2002, 3, 2, 17, 6)
 dt5 = datetime(2002, 1, 31)
 dt5z2 = datetime(2002, 1, 31, tzinfo=tz2)
 
-dt1r = "datetime.datetime(2002, 1, 31, 0, 0, 0, 0, None)"
-dt3r = "datetime.datetime(2002, 3, 1, 12, 59, 59, 100, Cet())"
-dt4r = "datetime.datetime(2002, 3, 2, 17, 6, 0, 0, None)"
+dt1r = "datetime.datetime(2002, 1, 31, 0, 0, 0, 0, None, fold=0)"
+dt3r = "datetime.datetime(2002, 3, 1, 12, 59, 59, 100, Cet(), fold=0)"
+dt4r = "datetime.datetime(2002, 3, 2, 17, 6, 0, 0, None, fold=0)"
 
 d1t1 = datetime(2002, 1, 31, 18, 45, 3, 1234)
+d1t1f = datetime(2002, 1, 31, 18, 45, 3, 1234, fold=1)
 d1t1z = datetime(2002, 1, 31, 18, 45, 3, 1234, tz1)
 
 dt27tz2 = datetime(2010, 3, 27, 12, tzinfo=tz2)  # last CET day
@@ -1224,7 +1385,7 @@ dt31tz2 = datetime(2010, 10, 31, 12, tzinfo=tz2)  # first CET day
 
 class TestDateTime(unittest.TestCase):
     def test___init__00(self):
-        d = datetime(2002, 3, 1, 12, 0)
+        d = datetime(2002, 3, 1, 12, 0, fold=1)
         self.assertEqual(d.year, 2002)
         self.assertEqual(d.month, 3)
         self.assertEqual(d.day, 1)
@@ -1233,6 +1394,7 @@ class TestDateTime(unittest.TestCase):
         self.assertEqual(d.second, 0)
         self.assertEqual(d.microsecond, 0)
         self.assertEqual(d.tzinfo, None)
+        self.assertEqual(d.fold, 1)
 
     def test___init__01(self):
         self.assertEqual(dt3.year, 2002)
@@ -1243,6 +1405,7 @@ class TestDateTime(unittest.TestCase):
         self.assertEqual(dt3.second, 59)
         self.assertEqual(dt3.microsecond, 100)
         self.assertEqual(dt3.tzinfo, tz2)
+        self.assertEqual(dt3.fold, 0)
 
     def test___init__02(self):
         datetime(MINYEAR, 1, 1)
@@ -1314,8 +1477,9 @@ class TestDateTime(unittest.TestCase):
         self.assertEqual(dt4, eval_mod(dt4r))
 
     def test_fromtimestamp00(self):
-        ts = 1012499103.001234
-        self.assertEqual(datetime.fromtimestamp(ts), d1t1)
+        with LocalTz("Europe/Rome"):
+            ts = 1012499103.001234
+            self.assertEqual(datetime.fromtimestamp(ts), d1t1)
 
     def test_fromtimestamp01(self):
         ts = 1012506303.001234
@@ -1328,6 +1492,40 @@ class TestDateTime(unittest.TestCase):
     def test_fromtimestamp03(self):
         ts = 1269770400
         self.assertEqual(datetime.fromtimestamp(ts, tz2), dt28tz2)
+
+    def test_fromtimestamp04(self):
+        with LocalTz("Europe/Rome"):
+            dt = datetime(2010, 10, 31, 0, 30, tzinfo=timezone.utc)
+            ts = (dt - EPOCH).total_seconds()
+            ds = datetime.fromtimestamp(ts)
+            dt = dt.replace(tzinfo=None) + 2 * td1h
+            self.assertEqual(ds, dt)
+            self.assertFalse(ds.fold)
+
+    def test_fromtimestamp05(self):
+        with LocalTz("Europe/Rome"):
+            dt = datetime(2010, 10, 31, 1, 30, tzinfo=timezone.utc)
+            ts = (dt - EPOCH).total_seconds()
+            ds = datetime.fromtimestamp(ts)
+            dt = dt.replace(tzinfo=None) + 1 * td1h
+            self.assertEqual(ds, dt)
+            self.assertTrue(ds.fold)
+
+    def test_fromtimestamp06(self):
+        with LocalTz("US/Eastern"):
+            dt = datetime(2020, 11, 1, 5, 30, tzinfo=timezone.utc)
+            ts = (dt - EPOCH).total_seconds()
+            ds = datetime.fromtimestamp(ts)
+            dt = dt.replace(tzinfo=None) - 4 * td1h
+            self.assertEqual(ds, dt)
+
+    def test_fromtimestamp07(self):
+        with LocalTz("US/Eastern"):
+            dt = datetime(2020, 11, 1, 7, 30, tzinfo=timezone.utc)
+            ts = (dt - EPOCH).total_seconds()
+            ds = datetime.fromtimestamp(ts)
+            dt = dt.replace(tzinfo=None) - 5 * td1h
+            self.assertEqual(ds, dt)
 
     def test_now00(self):
         tm = datetime(*mod_time.localtime()[:6])
@@ -1384,6 +1582,10 @@ class TestDateTime(unittest.TestCase):
         dt = datetime.combine(d1, t1z)
         self.assertEqual(dt, d1t1z)
 
+    def test_combine06(self):
+        dt = datetime.combine(d1, t1f)
+        self.assertEqual(dt, d1t1f)
+
     def test_year00(self):
         self.assertEqual(dt1.year, 2002)
 
@@ -1431,6 +1633,9 @@ class TestDateTime(unittest.TestCase):
 
     def test_tzinfo01(self):
         self.assertEqual(dt3.tzinfo, tz2)
+
+    def test_fold00(self):
+        self.assertEqual(dt1.fold, 0)
 
     def test___add__00(self):
         self.assertEqual(dt4 + hour, datetime(2002, 3, 2, 18, 6))
@@ -1754,6 +1959,46 @@ class TestDateTime(unittest.TestCase):
     def test_timestamp01(self):
         self.assertEqual(d1t1z.timestamp(), 1012506303.001234)
 
+    def test_timestamp02(self):
+        with LocalTz("Europe/Rome"):
+            dt = datetime(2010, 3, 28, 2, 30)  # doens't exist
+            self.assertEqual(dt.timestamp(), 1269739800.0)
+
+    def test_timestamp03(self):
+        with LocalTz("Europe/Rome"):
+            dt = datetime(2010, 8, 10, 2, 30)
+            self.assertEqual(dt.timestamp(), 1281400200.0)
+
+    def test_timestamp04(self):
+        with LocalTz("Europe/Rome"):
+            dt = datetime(2010, 10, 31, 2, 30, fold=0)
+            self.assertEqual(dt.timestamp(), 1288485000.0)
+
+    def test_timestamp05(self):
+        with LocalTz("Europe/Rome"):
+            dt = datetime(2010, 10, 31, 2, 30, fold=1)
+            self.assertEqual(dt.timestamp(), 1288488600.0)
+
+    def test_timestamp06(self):
+        with LocalTz("US/Eastern"):
+            dt = datetime(2020, 3, 8, 2, 30)  # doens't exist
+            self.assertEqual(dt.timestamp(), 1583652600.0)
+
+    def test_timestamp07(self):
+        with LocalTz("US/Eastern"):
+            dt = datetime(2020, 8, 10, 2, 30)
+            self.assertEqual(dt.timestamp(), 1597041000.0)
+
+    def test_timestamp08(self):
+        with LocalTz("US/Eastern"):
+            dt = datetime(2020, 11, 1, 2, 30, fold=0)
+            self.assertEqual(dt.timestamp(), 1604215800.0)
+
+    def test_timestamp09(self):
+        with LocalTz("US/Eastern"):
+            dt = datetime(2020, 11, 1, 2, 30, fold=1)
+            self.assertEqual(dt.timestamp(), 1604215800.0)
+
     def test_isoweekday00(self):
         self.assertEqual(dt1.isoweekday(), d1.isoweekday())
 
@@ -1815,15 +2060,15 @@ class TestDateTime(unittest.TestCase):
 
     @unittest.skipIf(STDLIB, "standard datetime has no tuple()")
     def test_tuple00(self):
-        self.assertEqual(dt1.tuple(), (2002, 1, 31, 0, 0, 0, 0, None))
+        self.assertEqual(dt1.tuple(), (2002, 1, 31, 0, 0, 0, 0, None, 0))
 
     @unittest.skipIf(STDLIB, "standard datetime has no tuple()")
     def test_tuple01(self):
-        self.assertEqual(dt27tz2.tuple(), (2010, 3, 27, 12, 0, 0, 0, tz2))
+        self.assertEqual(dt27tz2.tuple(), (2010, 3, 27, 12, 0, 0, 0, tz2, 0))
 
     @unittest.skipIf(STDLIB, "standard datetime has no tuple()")
     def test_tuple02(self):
-        self.assertEqual(dt28tz2.tuple(), (2010, 3, 28, 12, 0, 0, 0, tz2))
+        self.assertEqual(dt28tz2.tuple(), (2010, 3, 28, 12, 0, 0, 0, tz2, 0))
 
 
 if __name__ == "__main__":

@@ -290,17 +290,19 @@ timezone.utc = timezone(timedelta(0))
 
 
 class time:
-    def __init__(self, hour=0, minute=0, second=0, microsecond=0, tzinfo=None):
+    def __init__(self, hour=0, minute=0, second=0, microsecond=0, tzinfo=None, *, fold=0):
         if (
             0 <= hour < 24
             and 0 <= minute < 60
             and 0 <= second < 60
             and 0 <= microsecond < 1_000_000
+            and (fold == 0 or fold == 1)
         ) or (hour == 0 and minute == 0 and second == 0 and 0 < microsecond < 86_400_000_000):
             self._td = timedelta(0, second, microsecond, 0, minute, hour)
         else:
             raise ValueError
         self._tz = tzinfo
+        self._fd = fold
 
     @classmethod
     def fromisoformat(cls, s):
@@ -389,8 +391,14 @@ class time:
     def tzinfo(self):
         return self._tz
 
-    def replace(self, hour=None, minute=None, second=None, microsecond=None, tzinfo=True):
-        h, m, s, us, tz = self.tuple()
+    @property
+    def fold(self):
+        return self._fd
+
+    def replace(
+        self, hour=None, minute=None, second=None, microsecond=None, tzinfo=True, *, fold=None
+    ):
+        h, m, s, us, tz, fl = self.tuple()
         if hour is None:
             hour = h
         if minute is None:
@@ -401,7 +409,9 @@ class time:
             microsecond = us
         if tzinfo is True:
             tzinfo = tz
-        return time(hour, minute, second, microsecond, tzinfo)
+        if fold is None:
+            fold = fl
+        return time(hour, minute, second, microsecond, tzinfo, fold=fold)
 
     def isoformat(self, timespec="auto"):
         return self._format(timespec, None)
@@ -413,7 +423,9 @@ class time:
         return s
 
     def __repr__(self):
-        return "datetime.time(microsecond={}, tzinfo={})".format(self._td._us, repr(self._tz))
+        return "datetime.time(microsecond={}, tzinfo={}, fold={})".format(
+            self._td._us, repr(self._tz), self._fd
+        )
 
     __str__ = isoformat
 
@@ -425,6 +437,7 @@ class time:
 
     def __hash__(self):
         if not hasattr(self, "_hash"):
+            # fold doesn't make any difference
             self._hash = hash((self._td, self._tz))
         return self._hash
 
@@ -439,7 +452,7 @@ class time:
 
     def tuple(self):
         d, h, m, s, us = self._td.tuple()
-        return h, m, s, us, self._tz
+        return h, m, s, us, self._tz, self._fd
 
 
 time.min = time(0)
@@ -555,9 +568,11 @@ date.resolution = timedelta(days=1)
 
 
 class datetime:
-    def __init__(self, year, month, day, hour=0, minute=0, second=0, microsecond=0, tzinfo=None):
+    def __init__(
+        self, year, month, day, hour=0, minute=0, second=0, microsecond=0, tzinfo=None, *, fold=0
+    ):
         self._date = date(year, month, day)
-        self._time = time(hour, minute, second, microsecond, tzinfo)
+        self._time = time(hour, minute, second, microsecond, tzinfo, fold=fold)
 
     @classmethod
     def fromtimestamp(cls, ts, tz=None):
@@ -569,6 +584,10 @@ class datetime:
         dt = cls(*conv(ts)[:6], microsecond=us, tzinfo=tz)
         if tz:
             dt = tz.fromutc(dt)
+        else:
+            s = (dt - datetime(*conv(ts - 86400)[:6]))._us // 1_000_000 - 86400
+            if s < 0 and dt == datetime(*conv(ts + s)[:6]):
+                dt._time._fd = 1
         return dt
 
     @classmethod
@@ -577,7 +596,9 @@ class datetime:
 
     @classmethod
     def combine(cls, date, time, tzinfo_=None):
-        return cls(0, 0, date.toordinal(), 0, 0, 0, time._td._us, tzinfo_ or time._tz)
+        return cls(
+            0, 0, date.toordinal(), 0, 0, 0, time._td._us, tzinfo_ or time._tz, fold=time._fd
+        )
 
     @classmethod
     def fromisoformat(cls, s):
@@ -616,6 +637,10 @@ class datetime:
     @property
     def tzinfo(self):
         return self._time._tz
+
+    @property
+    def fold(self):
+        return self._time._fd
 
     def __add__(self, other):
         us = self._time._td._us + other._us
@@ -686,7 +711,8 @@ class datetime:
         return date.fromordinal(self._date._ord)
 
     def time(self):
-        return time(microsecond=self._time._td._us)
+        t = self._time
+        return time(microsecond=t._td._us, fold=t._fd)
 
     def timetz(self):
         return time(microsecond=self._time._td._us, tzinfo=self._time._tz)
@@ -701,8 +727,10 @@ class datetime:
         second=None,
         microsecond=None,
         tzinfo=True,
+        *,
+        fold=None,
     ):
-        Y, M, D, h, m, s, us, tz = self.tuple()
+        Y, M, D, h, m, s, us, tz, fl = self.tuple()
         if year is None:
             year = Y
         if month is None:
@@ -719,7 +747,9 @@ class datetime:
             microsecond = us
         if tzinfo is True:
             tzinfo = tz
-        return datetime(year, month, day, hour, minute, second, microsecond, tzinfo)
+        if fold is None:
+            fold = fl
+        return datetime(year, month, day, hour, minute, second, microsecond, tzinfo, fold=fold)
 
     def astimezone(self, tz):
         if self._time._tz is None:
@@ -751,10 +781,36 @@ class datetime:
 
     def timestamp(self):
         if self._time._tz is None:
+
+            def local(u):
+                return (datetime(*_time.localtime(u)[:6]) - epoch)._us // 1_000_000
+
             epoch = datetime.EPOCH.replace(tzinfo=None)
-            s, us = divmod((self - epoch)._us, 1_000_000)
-            a = (datetime(*_time.localtime(s)[:6]) - epoch)._us // 1_000_000 - s
-            return s - a + us / 1_000_000
+            t, us = divmod((self - epoch)._us, 1_000_000)
+            ts = None
+
+            a = local(t) - t
+            u1 = t - a
+            t1 = local(u1)
+            if t1 == t:
+                u2 = u1 + (86400 if self.fold else -86400)
+                b = local(u2) - u2
+                if a == b:
+                    ts = u1
+            else:
+                b = t1 - u1
+            if ts is None:
+                u2 = t - b
+                t2 = local(u2)
+                if t2 == t:
+                    ts = u2
+                elif t1 == t:
+                    ts = u1
+                elif self.fold:
+                    ts = min(u1, u2)
+                else:
+                    ts = max(u1, u2)
+            return ts + us / 1_000_000
         else:
             return (self - datetime.EPOCH).total_seconds()
 
@@ -768,9 +824,11 @@ class datetime:
         return self._date.isoformat() + sep + self._time._format(timespec, self)
 
     def __repr__(self):
-        Y, M, D, h, m, s, us, tz = self.tuple()
+        Y, M, D, h, m, s, us, tz, fold = self.tuple()
         tz = repr(tz)
-        return "datetime.datetime({}, {}, {}, {}, {}, {}, {}, {})".format(Y, M, D, h, m, s, us, tz)
+        return "datetime.datetime({}, {}, {}, {}, {}, {}, {}, {}, fold={})".format(
+            Y, M, D, h, m, s, us, tz, fold
+        )
 
     def __str__(self):
         return self.isoformat(" ")
