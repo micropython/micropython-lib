@@ -302,8 +302,8 @@ class time:
             raise ValueError
         self._tz = tzinfo
 
-    @staticmethod
-    def fromisoformat(s):
+    @classmethod
+    def fromisoformat(cls, s):
         hour = 0
         minute = 0
         sec = 0
@@ -367,7 +367,7 @@ class time:
             tz = timezone(td)
         else:
             tz = None
-        return time(hour, minute, sec, usec, tz)
+        return cls(hour, minute, sec, usec, tz)
 
     @property
     def hour(self):
@@ -464,18 +464,18 @@ class date:
     def today():
         return datetime.now().date()
 
-    @staticmethod
-    def fromordinal(n):
-        return date(0, 0, n)
+    @classmethod
+    def fromordinal(cls, n):
+        return cls(0, 0, n)
 
-    @staticmethod
-    def fromisoformat(s):
+    @classmethod
+    def fromisoformat(cls, s):
         if len(s) < 10 or s[4] != "-" or s[7] != "-":
             raise ValueError
         y = int(s[0:4])
         m = int(s[5:7])
         d = int(s[8:10])
-        return date(y, m, d)
+        return cls(y, m, d)
 
     @property
     def year(self):
@@ -559,30 +559,31 @@ class datetime:
         self._date = date(year, month, day)
         self._time = time(hour, minute, second, microsecond, tzinfo)
 
-    @staticmethod
-    def fromtimestamp(ts, tz=None):
+    @classmethod
+    def fromtimestamp(cls, ts, tz=None):
         if isinstance(ts, float):
             ts, us = divmod(round(ts * 1_000_000), 1_000_000)
         else:
             us = 0
         conv = _time.localtime if tz is None else _time.gmtime
-        dt = datetime(*conv(ts)[:6], microsecond=us, tzinfo=tz)
+        dt = cls(*conv(ts)[:6], microsecond=us, tzinfo=tz)
         if tz:
             dt = tz.fromutc(dt)
         return dt
 
-    @staticmethod
-    def now(tz=None):
+    @classmethod
+    def now(cls, tz=None):
+        return cls.fromtimestamp(_time.time(), tz)
 
-    @staticmethod
-    def combine(date, time, tzinfo_=None):
-        return datetime(0, 0, date.toordinal(), 0, 0, 0, time._td._us, tzinfo_ or time._tz)
+    @classmethod
+    def combine(cls, date, time, tzinfo_=None):
+        return cls(0, 0, date.toordinal(), 0, 0, 0, time._td._us, tzinfo_ or time._tz)
 
-    @staticmethod
-    def fromisoformat(s):
+    @classmethod
+    def fromisoformat(cls, s):
         d = date.fromisoformat(s)
         t = time.fromisoformat(s[11:]) if len(s) > 12 else time()
-        return datetime.combine(d, t)
+        return cls.combine(d, t)
 
     @property
     def year(self):
