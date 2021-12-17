@@ -278,8 +278,6 @@ class timezone(tzinfo):
     def tzname(self, dt):
         if self._name:
             return self._name
-        if dt:
-            return self.isoformat(dt)
         return self._offset._format(0x22)
 
     def fromutc(self, dt):
@@ -593,6 +591,10 @@ class datetime:
     @classmethod
     def now(cls, tz=None):
         return cls.fromtimestamp(_time.time(), tz)
+
+    @classmethod
+    def fromordinal(cls, n):
+        return cls(0, 0, n)
 
     @classmethod
     def combine(cls, date, time, tzinfo_=None):

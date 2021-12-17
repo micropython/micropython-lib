@@ -1538,6 +1538,12 @@ class TestDateTime(unittest.TestCase):
         dt = datetime.now(tz2)
         self.assertAlmostEqual(tm, dt, delta=timedelta(seconds=1))
 
+    def test_fromordinal00(self):
+        self.assertEqual(datetime.fromordinal(1), datetime(1, 1, 1))
+
+    def test_fromordinal01(self):
+        self.assertEqual(datetime.fromordinal(max_days), datetime(MAXYEAR, 12, 31))
+
     def test_fromisoformat00(self):
         self.assertEqual(datetime.fromisoformat("1975-08-10"), datetime(1975, 8, 10))
 
