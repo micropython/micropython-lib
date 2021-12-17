@@ -1842,6 +1842,9 @@ class TestDateTime(unittest.TestCase):
     def test_timetz01(self):
         self.assertEqual(d1t1z.timetz(), t1z)
 
+    def test_timetz02(self):
+        self.assertEqual(d1t1f.timetz(), t1f)
+
     def test_replace00(self):
         self.assertEqual(dt3.replace(), dt3)
 

@@ -597,16 +597,16 @@ class datetime:
         return cls(0, 0, n)
 
     @classmethod
-    def combine(cls, date, time, tzinfo_=None):
-        return cls(
-            0, 0, date.toordinal(), 0, 0, 0, time._td._us, tzinfo_ or time._tz, fold=time._fd
-        )
-
-    @classmethod
     def fromisoformat(cls, s):
         d = date.fromisoformat(s)
         t = time.fromisoformat(s[11:]) if len(s) > 12 else time()
         return cls.combine(d, t)
+
+    @classmethod
+    def combine(cls, date, time, tzinfo_=None):
+        return cls(
+            0, 0, date.toordinal(), 0, 0, 0, time._td._us, tzinfo_ or time._tz, fold=time._fd
+        )
 
     @property
     def year(self):
@@ -717,7 +717,8 @@ class datetime:
         return time(microsecond=t._td._us, fold=t._fd)
 
     def timetz(self):
-        return time(microsecond=self._time._td._us, tzinfo=self._time._tz)
+        t = self._time
+        return time(microsecond=t._td._us, tzinfo=t._tz, fold=t._fd)
 
     def replace(
         self,
