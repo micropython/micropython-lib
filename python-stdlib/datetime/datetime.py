@@ -431,7 +431,35 @@ class time:
         return True
 
     def __eq__(self, other):
-        return self._td == other._td and self._tz == other._tz
+        if (self._tz == None) ^ (other._tz == None):
+            return False
+        return self._sub(other) == 0
+
+    def __le__(self, other):
+        return self._sub(other) <= 0
+
+    def __lt__(self, other):
+        return self._sub(other) < 0
+
+    def __ge__(self, other):
+        return self._sub(other) >= 0
+
+    def __gt__(self, other):
+        return self._sub(other) > 0
+
+    def _sub(self, other):
+        tz1 = self._tz
+        if (tz1 is None) ^ (other._tz is None):
+            raise TypeError
+        us1 = self._td._us
+        us2 = other._td._us
+        if tz1 is not None:
+            os1 = self.utcoffset()._us
+            os2 = other.utcoffset()._us
+            if os1 != os2:
+                us1 -= os1
+                us2 -= os2
+        return us1 - us2
 
     def __hash__(self):
         if not hasattr(self, "_hash"):

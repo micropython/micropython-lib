@@ -860,11 +860,13 @@ t1f = time(18, 45, 3, 1234, fold=1)
 t1fr = f"datetime.time(microsecond=67503001234, tzinfo=None, fold=1)"
 t1z = time(18, 45, 3, 1234, tz1)
 t1zr = f"datetime.time(microsecond=67503001234, tzinfo={repr(tz1)}, fold=0)"
+t2 = time(12, 59, 59, 100)
 t2z = time(12, 59, 59, 100, tz2)
 t3 = time(18, 45, 3, 1234)
 t3z = time(18, 45, 3, 1234, tz2)
 t4 = time(18, 45, 3, 1234, fold=1)
 t4z = time(18, 45, 3, 1234, tz2, fold=1)
+t5z = time(20, 45, 3, 1234, tz2)
 
 
 class TestTime(unittest.TestCase):
@@ -1036,6 +1038,48 @@ class TestTime(unittest.TestCase):
 
     def test___eq__03(self):
         self.assertNotEqual(t1z, t2z)
+
+    def test___eq__04(self):
+        self.assertEqual(t1z, t5z)
+
+    def test___eq__05(self):
+        self.assertEqual(t1, t1f)
+
+    def test___lt__00(self):
+        self.assertTrue(t2 < t1)
+
+    def test___lt__01(self):
+        self.assertTrue(t2z < t1z)
+
+    def test___lt__02(self):
+        self.assertRaises(TypeError, t1.__lt__, t1z)
+
+    def test___le__00(self):
+        self.assertTrue(t3 <= t1)
+
+    def test___le__01(self):
+        self.assertTrue(t1z <= t5z)
+
+    def test___le__02(self):
+        self.assertRaises(TypeError, t1.__le__, t1z)
+
+    def test___ge__00(self):
+        self.assertTrue(t1 >= t3)
+
+    def test___ge__01(self):
+        self.assertTrue(t5z >= t1z)
+
+    def test___ge__02(self):
+        self.assertRaises(TypeError, t1.__ge__, t1z)
+
+    def test___gt__00(self):
+        self.assertTrue(t1 > t2)
+
+    def test___gt__01(self):
+        self.assertTrue(t1z > t2z)
+
+    def test___gt__02(self):
+        self.assertRaises(TypeError, t1.__gt__, t1z)
 
     def test___hash__00(self):
         self.assertEqual(t1, t3)
