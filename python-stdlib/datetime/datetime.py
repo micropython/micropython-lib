@@ -560,7 +560,10 @@ class date:
             return date.fromordinal(self._ord - other.days)
 
     def __eq__(self, other):
-        return self._ord == other._ord
+        if isinstance(other, date):
+            return self._ord == other._ord
+        else:
+            return False
 
     def __le__(self, other):
         return self._ord <= other._ord

@@ -1354,6 +1354,12 @@ class TestDate(unittest.TestCase):
     def test___eq__05(self):
         self.assertFalse(d5 == d2)
 
+    def test___eq__06(self):
+        self.assertFalse(d1 == None)
+
+    def test___eq__07(self):
+        self.assertTrue(d1 != None)
+
     def test___le__00(self):
         self.assertTrue(d1 <= d5)
 
