@@ -535,6 +535,11 @@ class date:
     def toordinal(self):
         return self._ord
 
+    def timetuple(self):
+        y, m, d = self.tuple()
+        yday = _days_before_month(y, m) + d
+        return (y, m, d, 0, 0, 0, self.weekday(), yday, -1)
+
     def replace(self, year=None, month=None, day=None):
         year_, month_, day_ = self.tuple()
         if year is None:
@@ -575,9 +580,6 @@ class date:
     def isoweekday(self):
         return self._ord % 7 or 7
 
-    def tuple(self):
-        return _ord2ymd(self._ord)
-
     def isoformat(self):
         return "%04d-%02d-%02d" % self.tuple()
 
@@ -590,6 +592,9 @@ class date:
         if not hasattr(self, "_hash"):
             self._hash = hash(self._ord)
         return self._hash
+
+    def tuple(self):
+        return _ord2ymd(self._ord)
 
 
 date.min = date(MINYEAR, 1, 1)

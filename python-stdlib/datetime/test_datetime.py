@@ -1272,6 +1272,12 @@ class TestDate(unittest.TestCase):
     def test_toordinal01(self):
         self.assertEqual(date(MAXYEAR, 12, 31).toordinal(), max_days)
 
+    def test_timetuple00(self):
+        self.assertEqual(d1.timetuple()[:8], (2002, 1, 31, 0, 0, 0, 3, 31))
+
+    def test_timetuple01(self):
+        self.assertEqual(d3.timetuple()[:8], (2002, 3, 1, 0, 0, 0, 4, 60))
+
     def test_replace00(self):
         self.assertEqual(d1.replace(), d1)
 
