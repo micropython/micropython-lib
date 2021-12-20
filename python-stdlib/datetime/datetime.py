@@ -499,9 +499,13 @@ class date:
         else:
             raise ValueError
 
-    @staticmethod
-    def today():
-        return datetime.now().date()
+    @classmethod
+    def fromtimestamp(cls, ts):
+        return cls(*_time.localtime(ts)[:3])
+
+    @classmethod
+    def today(cls):
+        return cls(*_time.localtime()[:3])
 
     @classmethod
     def fromordinal(cls, n):

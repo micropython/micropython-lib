@@ -1213,6 +1213,26 @@ class TestDate(unittest.TestCase):
         self.assertRaises(ValueError, date, 1, 9, 31)
         self.assertRaises(ValueError, date, 1, 11, 31)
 
+    def test_fromtimestamp00(self):
+        with LocalTz("UTC"):
+            d = date.fromtimestamp(1012435200)
+            self.assertEqual(d, d1)
+
+    def test_fromtimestamp01(self):
+        with LocalTz("UTC"):
+            d = date.fromtimestamp(1012435200 + 1)
+            self.assertEqual(d, d1)
+
+    def test_fromtimestamp02(self):
+        with LocalTz("UTC"):
+            d = date.fromtimestamp(1012435200 - 1)
+            self.assertEqual(d, d1 - timedelta(days=1))
+
+    def test_fromtimestamp03(self):
+        with LocalTz("Europe/Rome"):
+            d = date.fromtimestamp(1012435200 - 3601)
+            self.assertEqual(d, d1 - timedelta(days=1))
+
     def test_today00(self):
         tm = mod_time.localtime()[:3]
         dt = date.today()
