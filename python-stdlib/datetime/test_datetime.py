@@ -1966,6 +1966,36 @@ class TestDateTime(unittest.TestCase):
         dt = datetime(2002, 1, 31, 10, 30, tzinfo=tz_acdt)
         self.assertEqual(dt1z1.astimezone(tz_acdt), dt)
 
+    def test_astimezone04(self):
+        with LocalTz("Europe/Rome"):
+            dt1 = dt27tz2
+            dt2 = dt1.replace(tzinfo=None)
+            self.assertEqual(dt1, dt2.astimezone(tz2))
+
+    def test_astimezone05(self):
+        with LocalTz("Europe/Rome"):
+            dt1 = dt28tz2
+            dt2 = dt1.replace(tzinfo=None)
+            self.assertEqual(dt1, dt2.astimezone(tz2))
+
+    def test_astimezone06(self):
+        with LocalTz("Europe/Rome"):
+            dt1 = dt30tz2
+            dt2 = dt1.replace(tzinfo=None)
+            self.assertEqual(dt1, dt2.astimezone(tz2))
+
+    def test_astimezone07(self):
+        with LocalTz("Europe/Rome"):
+            dt1 = dt31tz2
+            dt2 = dt1.replace(tzinfo=None)
+            self.assertEqual(dt1, dt2.astimezone(tz2))
+
+    def test_astimezone08(self):
+        with LocalTz("Europe/Rome"):
+            dt1 = dt3
+            dt2 = dt1.replace(tzinfo=None)
+            self.assertEqual(dt1, dt2.astimezone(tz2))
+
     def test_utcoffset00(self):
         self.assertEqual(dt1.utcoffset(), None)
 
@@ -2000,7 +2030,8 @@ class TestDateTime(unittest.TestCase):
         self.assertEqual(dt28tz2.tzname(), "CEST")
 
     def test_timetuple00(self):
-        self.assertEqual(dt1.timetuple()[:8], (2002, 1, 31, 0, 0, 0, 3, 31))
+        with LocalTz("Europe/Rome"):
+            self.assertEqual(dt1.timetuple()[:8], (2002, 1, 31, 0, 0, 0, 3, 31))
 
     def test_timetuple01(self):
         self.assertEqual(dt27tz2.timetuple()[:8], (2010, 3, 27, 12, 0, 0, 5, 86))
@@ -2009,9 +2040,10 @@ class TestDateTime(unittest.TestCase):
         self.assertEqual(dt28tz2.timetuple()[:8], (2010, 3, 28, 12, 0, 0, 6, 87))
 
     def test_timetuple03(self):
-        self.assertEqual(
-            dt27tz2.replace(tzinfo=None).timetuple()[:8], (2010, 3, 27, 12, 0, 0, 5, 86)
-        )
+        with LocalTz("Europe/Rome"):
+            self.assertEqual(
+                dt27tz2.replace(tzinfo=None).timetuple()[:8], (2010, 3, 27, 12, 0, 0, 5, 86)
+            )
 
     def test_timetuple04(self):
         self.assertEqual(
@@ -2039,7 +2071,8 @@ class TestDateTime(unittest.TestCase):
         self.assertEqual(dt1.weekday(), d1.weekday())
 
     def test_timestamp00(self):
-        self.assertEqual(d1t1.timestamp(), 1012499103.001234)
+        with LocalTz("Europe/Rome"):
+            self.assertEqual(d1t1.timestamp(), 1012499103.001234)
 
     def test_timestamp01(self):
         self.assertEqual(d1t1z.timestamp(), 1012506303.001234)

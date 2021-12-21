@@ -618,14 +618,14 @@ class datetime:
             ts, us = divmod(round(ts * 1_000_000), 1_000_000)
         else:
             us = 0
-        conv = _time.localtime if tz is None else _time.gmtime
-        dt = cls(*conv(ts)[:6], microsecond=us, tzinfo=tz)
-        if tz:
-            dt = tz.fromutc(dt)
+        if tz is None:
+            dt = cls(*_tmod.localtime(ts)[:6], microsecond=us, tzinfo=tz)
+            s = (dt - datetime(*_tmod.localtime(ts - 86400)[:6]))._us // 1_000_000 - 86400
+            if s < 0 and dt == datetime(*_tmod.localtime(ts + s)[:6]):
+                dt._fd = 1
         else:
-            s = (dt - datetime(*conv(ts - 86400)[:6]))._us // 1_000_000 - 86400
-            if s < 0 and dt == datetime(*conv(ts + s)[:6]):
-                dt._time._fd = 1
+            dt = cls(*_tmod.gmtime(ts)[:6], microsecond=us, tzinfo=tz)
+            dt = tz.fromutc(dt)
         return dt
 
     @classmethod
@@ -794,14 +794,49 @@ class datetime:
             fold = fl
         return datetime(year, month, day, hour, minute, second, microsecond, tzinfo, fold=fold)
 
-    def astimezone(self, tz):
-        if self._time._tz is None:
-            raise NotImplementedError
+    def astimezone(self, tz=None):
         if self._time._tz is tz:
             return self
-        utc = self - self._time._tz.utcoffset(self)
+        _tz = self._time._tz
+        if _tz is None:
+            ts = int(self._mktime())
+            os = datetime(*_time.localtime(ts)[:6]) - datetime(*_time.gmtime(ts)[:6])
+        else:
+            os = _tz.utcoffset(self)
+        utc = self - os
         utc = utc.replace(tzinfo=tz)
         return tz.fromutc(utc)
+
+    def _mktime(self):
+        def local(u):
+            return (datetime(*_time.localtime(u)[:6]) - epoch)._us // 1_000_000
+
+        epoch = datetime.EPOCH.replace(tzinfo=None)
+        t, us = divmod((self - epoch)._us, 1_000_000)
+        ts = None
+
+        a = local(t) - t
+        u1 = t - a
+        t1 = local(u1)
+        if t1 == t:
+            u2 = u1 + (86400 if self.fold else -86400)
+            b = local(u2) - u2
+            if a == b:
+                ts = u1
+        else:
+            b = t1 - u1
+        if ts is None:
+            u2 = t - b
+            t2 = local(u2)
+            if t2 == t:
+                ts = u2
+            elif t1 == t:
+                ts = u1
+            elif self.fold:
+                ts = min(u1, u2)
+            else:
+                ts = max(u1, u2)
+        return ts + us / 1_000_000
 
     def utcoffset(self):
         return None if self._time._tz is None else self._time._tz.utcoffset(self)
@@ -814,46 +849,19 @@ class datetime:
 
     def timetuple(self):
         if self._time._tz is None:
+            conv = _time.gmtime
             epoch = datetime.EPOCH.replace(tzinfo=None)
-            return _time.gmtime(round((self - epoch).total_seconds()))
         else:
-            return _time.localtime(round((self - datetime.EPOCH).total_seconds()))
+            conv = _time.localtime
+            epoch = datetime.EPOCH
+        return conv(round((self - epoch).total_seconds()))
 
     def toordinal(self):
         return self._date._ord
 
     def timestamp(self):
         if self._time._tz is None:
-
-            def local(u):
-                return (datetime(*_time.localtime(u)[:6]) - epoch)._us // 1_000_000
-
-            epoch = datetime.EPOCH.replace(tzinfo=None)
-            t, us = divmod((self - epoch)._us, 1_000_000)
-            ts = None
-
-            a = local(t) - t
-            u1 = t - a
-            t1 = local(u1)
-            if t1 == t:
-                u2 = u1 + (86400 if self.fold else -86400)
-                b = local(u2) - u2
-                if a == b:
-                    ts = u1
-            else:
-                b = t1 - u1
-            if ts is None:
-                u2 = t - b
-                t2 = local(u2)
-                if t2 == t:
-                    ts = u2
-                elif t1 == t:
-                    ts = u1
-                elif self.fold:
-                    ts = min(u1, u2)
-                else:
-                    ts = max(u1, u2)
-            return ts + us / 1_000_000
+            return self._mktime()
         else:
             return (self - datetime.EPOCH).total_seconds()
 
