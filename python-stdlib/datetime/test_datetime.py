@@ -852,6 +852,295 @@ class TestTimeZone(unittest.TestCase):
                 timezone(i * td)
 
 
+### date #####################################################################
+
+d1 = date(2002, 1, 31)
+d1r = "datetime.date(0, 0, 730881)"
+d2 = date(1956, 1, 31)
+d2d1s = (46 * 365 + len(range(1956, 2002, 4))) * 24 * 60 * 60
+d3 = date(2002, 3, 1)
+d4 = date(2002, 3, 2)
+d5 = date(2002, 1, 31)
+
+hour = timedelta(hours=1)
+day = timedelta(days=1)
+week = timedelta(weeks=1)
+max_days = MAXYEAR * 365 + MAXYEAR // 4 - MAXYEAR // 100 + MAXYEAR // 400
+
+
+class TestDate(unittest.TestCase):
+    def test___init__00(self):
+        self.assertEqual(d1.year, 2002)
+        self.assertEqual(d1.month, 1)
+        self.assertEqual(d1.day, 31)
+
+    @unittest.skipIf(STDLIB, "not supported by standard datetime")
+    def test___init__01(self):
+        date(0, 0, 1)
+
+    @unittest.skipIf(STDLIB, "not supported by standard datetime")
+    def test___init__02(self):
+        date(0, 0, max_days)
+
+    def test___init__03(self):
+        datetime(2000, 2, 29)
+
+    def test___init__04(self):
+        datetime(2004, 2, 29)
+
+    def test___init__05(self):
+        datetime(2400, 2, 29)
+
+    def test___init__06(self):
+        self.assertRaises(ValueError, datetime, 2000, 2, 30)
+
+    def test___init__07(self):
+        self.assertRaises(ValueError, datetime, 2001, 2, 29)
+
+    def test___init__08(self):
+        self.assertRaises(ValueError, datetime, 2100, 2, 29)
+
+    def test___init__09(self):
+        self.assertRaises(ValueError, datetime, 1900, 2, 29)
+
+    def test___init__10(self):
+        self.assertRaises(ValueError, date, MINYEAR - 1, 1, 1)
+        self.assertRaises(ValueError, date, MINYEAR, 0, 1)
+        self.assertRaises(ValueError, date, MINYEAR, 1, 0)
+
+    def test___init__11(self):
+        self.assertRaises(ValueError, date, MAXYEAR + 1, 12, 31)
+        self.assertRaises(ValueError, date, MAXYEAR, 13, 31)
+        self.assertRaises(ValueError, date, MAXYEAR, 12, 32)
+
+    def test___init__12(self):
+        self.assertRaises(ValueError, date, 1, 2, 29)
+        self.assertRaises(ValueError, date, 1, 4, 31)
+        self.assertRaises(ValueError, date, 1, 6, 31)
+        self.assertRaises(ValueError, date, 1, 9, 31)
+        self.assertRaises(ValueError, date, 1, 11, 31)
+
+    def test_fromtimestamp00(self):
+        with LocalTz("UTC"):
+            d = date.fromtimestamp(1012435200)
+            self.assertEqual(d, d1)
+
+    def test_fromtimestamp01(self):
+        with LocalTz("UTC"):
+            d = date.fromtimestamp(1012435200 + 1)
+            self.assertEqual(d, d1)
+
+    def test_fromtimestamp02(self):
+        with LocalTz("UTC"):
+            d = date.fromtimestamp(1012435200 - 1)
+            self.assertEqual(d, d1 - timedelta(days=1))
+
+    def test_fromtimestamp03(self):
+        with LocalTz("Europe/Rome"):
+            d = date.fromtimestamp(1012435200 - 3601)
+            self.assertEqual(d, d1 - timedelta(days=1))
+
+    def test_today00(self):
+        tm = mod_time.localtime()[:3]
+        dt = date.today()
+        dd = (dt.year, dt.month, dt.day)
+        self.assertEqual(tm, dd)
+
+    def test_fromordinal00(self):
+        self.assertEqual(date.fromordinal(1), date(1, 1, 1))
+
+    def test_fromordinal01(self):
+        self.assertEqual(date.fromordinal(max_days), date(MAXYEAR, 12, 31))
+
+    def test_fromisoformat00(self):
+        self.assertEqual(datetime.fromisoformat("1975-08-10"), datetime(1975, 8, 10))
+
+    def test_year00(self):
+        self.assertEqual(d1.year, 2002)
+
+    def test_year01(self):
+        self.assertEqual(d2.year, 1956)
+
+    def test_month00(self):
+        self.assertEqual(d1.month, 1)
+
+    def test_month01(self):
+        self.assertEqual(d4.month, 3)
+
+    def test_day00(self):
+        self.assertEqual(d1.day, 31)
+
+    def test_day01(self):
+        self.assertEqual(d4.day, 2)
+
+    def test_toordinal00(self):
+        self.assertEqual(date(1, 1, 1).toordinal(), 1)
+
+    def test_toordinal01(self):
+        self.assertEqual(date(MAXYEAR, 12, 31).toordinal(), max_days)
+
+    def test_timetuple00(self):
+        self.assertEqual(d1.timetuple()[:8], (2002, 1, 31, 0, 0, 0, 3, 31))
+
+    def test_timetuple01(self):
+        self.assertEqual(d3.timetuple()[:8], (2002, 3, 1, 0, 0, 0, 4, 60))
+
+    def test_replace00(self):
+        self.assertEqual(d1.replace(), d1)
+
+    def test_replace01(self):
+        self.assertEqual(d1.replace(year=2001), date(2001, 1, 31))
+
+    def test_replace02(self):
+        self.assertEqual(d1.replace(month=5), date(2002, 5, 31))
+
+    def test_replace03(self):
+        self.assertEqual(d1.replace(day=16), date(2002, 1, 16))
+
+    def test___add__00(self):
+        self.assertEqual(d4 + hour, d4)
+
+    def test___add__01(self):
+        self.assertEqual(d4 + day, date(2002, 3, 3))
+
+    def test___add__02(self):
+        self.assertEqual(d4 + week, date(2002, 3, 9))
+
+    def test___add__03(self):
+        self.assertEqual(d4 + 52 * week, date(2003, 3, 1))
+
+    def test___add__04(self):
+        self.assertEqual(d4 + -hour, date(2002, 3, 1))
+
+    def test___add__05(self):
+        self.assertEqual(d5 + -day, date(2002, 1, 30))
+
+    def test___add__06(self):
+        self.assertEqual(d4 + -week, date(2002, 2, 23))
+
+    def test___sub__00(self):
+        d = d1 - d2
+        self.assertEqual(d.total_seconds(), d2d1s)
+
+    def test___sub__01(self):
+        self.assertEqual(d4 - hour, d4)
+
+    def test___sub__02(self):
+        self.assertEqual(d4 - day, date(2002, 3, 1))
+
+    def test___sub__03(self):
+        self.assertEqual(d4 - week, date(2002, 2, 23))
+
+    def test___sub__04(self):
+        self.assertEqual(d4 - 52 * week, date(2001, 3, 3))
+
+    def test___sub__05(self):
+        self.assertEqual(d4 - -hour, date(2002, 3, 3))
+
+    def test___sub__06(self):
+        self.assertEqual(d4 - -day, date(2002, 3, 3))
+
+    def test___sub__07(self):
+        self.assertEqual(d4 - -week, date(2002, 3, 9))
+
+    def test___eq__00(self):
+        self.assertEqual(d1, d5)
+
+    def test___eq__01(self):
+        self.assertFalse(d1 != d5)
+
+    def test___eq__02(self):
+        self.assertTrue(d2 != d5)
+
+    def test___eq__03(self):
+        self.assertTrue(d5 != d2)
+
+    def test___eq__04(self):
+        self.assertFalse(d2 == d5)
+
+    def test___eq__05(self):
+        self.assertFalse(d5 == d2)
+
+    def test___eq__06(self):
+        self.assertFalse(d1 == None)
+
+    def test___eq__07(self):
+        self.assertTrue(d1 != None)
+
+    def test___le__00(self):
+        self.assertTrue(d1 <= d5)
+
+    def test___le__01(self):
+        self.assertTrue(d2 <= d5)
+
+    def test___le__02(self):
+        self.assertFalse(d5 <= d2)
+
+    def test___ge__00(self):
+        self.assertTrue(d1 >= d5)
+
+    def test___ge__01(self):
+        self.assertTrue(d5 >= d2)
+
+    def test___ge__02(self):
+        self.assertFalse(d2 >= d5)
+
+    def test___lt__00(self):
+        self.assertFalse(d1 < d5)
+
+    def test___lt__01(self):
+        self.assertTrue(d2 < d5)
+
+    def test___lt__02(self):
+        self.assertFalse(d5 < d2)
+
+    def test___gt__00(self):
+        self.assertFalse(d1 > d5)
+
+    def test___gt__01(self):
+        self.assertTrue(d5 > d2)
+
+    def test___gt__02(self):
+        self.assertFalse(d2 > d5)
+
+    def test_weekday00(self):
+        for i in range(7):
+            # March 4, 2002 is a Monday
+            self.assertEqual(datetime(2002, 3, 4 + i).weekday(), i)
+            # January 2, 1956 is a Monday
+            self.assertEqual(datetime(1956, 1, 2 + i).weekday(), i)
+
+    def test_isoweekday00(self):
+        for i in range(7):
+            self.assertEqual(datetime(2002, 3, 4 + i).isoweekday(), i + 1)
+            self.assertEqual(datetime(1956, 1, 2 + i).isoweekday(), i + 1)
+
+    def test_isoformat00(self):
+        self.assertEqual(d1.isoformat(), "2002-01-31")
+
+    @unittest.skipIf(STDLIB, "standard datetime differs")
+    def test___repr__00(self):
+        self.assertEqual(repr(d1), d1r)
+
+    def test___repr__01(self):
+        self.assertEqual(d1, eval_mod(repr(d1)))
+
+    def test___hash__00(self):
+        self.assertEqual(d1, d5)
+        self.assertEqual(hash(d1), hash(d5))
+
+    def test___hash__01(self):
+        dd1 = d1 + timedelta(weeks=7)
+        dd5 = d5 + timedelta(days=7 * 7)
+        self.assertEqual(hash(dd1), hash(dd5))
+
+    def test___hash__02(self):
+        d = {d1: 1}
+        d[d5] = 2
+        self.assertEqual(len(d), 1)
+        self.assertEqual(d[d1], 2)
+
+
 ### time #####################################################################
 
 t1 = time(18, 45, 3, 1234)
@@ -1143,295 +1432,6 @@ class TestTime(unittest.TestCase):
 
     def test_constant03(self):
         self.assertEqual(time.resolution, timedelta(microseconds=1))
-
-
-### date #####################################################################
-
-d1 = date(2002, 1, 31)
-d1r = "datetime.date(0, 0, 730881)"
-d2 = date(1956, 1, 31)
-d2d1s = (46 * 365 + len(range(1956, 2002, 4))) * 24 * 60 * 60
-d3 = date(2002, 3, 1)
-d4 = date(2002, 3, 2)
-d5 = date(2002, 1, 31)
-
-hour = timedelta(hours=1)
-day = timedelta(days=1)
-week = timedelta(weeks=1)
-max_days = MAXYEAR * 365 + MAXYEAR // 4 - MAXYEAR // 100 + MAXYEAR // 400
-
-
-class TestDate(unittest.TestCase):
-    def test___init__00(self):
-        self.assertEqual(d1.year, 2002)
-        self.assertEqual(d1.month, 1)
-        self.assertEqual(d1.day, 31)
-
-    @unittest.skipIf(STDLIB, "not supported by standard datetime")
-    def test___init__01(self):
-        date(0, 0, 1)
-
-    @unittest.skipIf(STDLIB, "not supported by standard datetime")
-    def test___init__02(self):
-        date(0, 0, max_days)
-
-    def test___init__03(self):
-        datetime(2000, 2, 29)
-
-    def test___init__04(self):
-        datetime(2004, 2, 29)
-
-    def test___init__05(self):
-        datetime(2400, 2, 29)
-
-    def test___init__06(self):
-        self.assertRaises(ValueError, datetime, 2000, 2, 30)
-
-    def test___init__07(self):
-        self.assertRaises(ValueError, datetime, 2001, 2, 29)
-
-    def test___init__08(self):
-        self.assertRaises(ValueError, datetime, 2100, 2, 29)
-
-    def test___init__09(self):
-        self.assertRaises(ValueError, datetime, 1900, 2, 29)
-
-    def test___init__10(self):
-        self.assertRaises(ValueError, date, MINYEAR - 1, 1, 1)
-        self.assertRaises(ValueError, date, MINYEAR, 0, 1)
-        self.assertRaises(ValueError, date, MINYEAR, 1, 0)
-
-    def test___init__11(self):
-        self.assertRaises(ValueError, date, MAXYEAR + 1, 12, 31)
-        self.assertRaises(ValueError, date, MAXYEAR, 13, 31)
-        self.assertRaises(ValueError, date, MAXYEAR, 12, 32)
-
-    def test___init__12(self):
-        self.assertRaises(ValueError, date, 1, 2, 29)
-        self.assertRaises(ValueError, date, 1, 4, 31)
-        self.assertRaises(ValueError, date, 1, 6, 31)
-        self.assertRaises(ValueError, date, 1, 9, 31)
-        self.assertRaises(ValueError, date, 1, 11, 31)
-
-    def test_fromtimestamp00(self):
-        with LocalTz("UTC"):
-            d = date.fromtimestamp(1012435200)
-            self.assertEqual(d, d1)
-
-    def test_fromtimestamp01(self):
-        with LocalTz("UTC"):
-            d = date.fromtimestamp(1012435200 + 1)
-            self.assertEqual(d, d1)
-
-    def test_fromtimestamp02(self):
-        with LocalTz("UTC"):
-            d = date.fromtimestamp(1012435200 - 1)
-            self.assertEqual(d, d1 - timedelta(days=1))
-
-    def test_fromtimestamp03(self):
-        with LocalTz("Europe/Rome"):
-            d = date.fromtimestamp(1012435200 - 3601)
-            self.assertEqual(d, d1 - timedelta(days=1))
-
-    def test_today00(self):
-        tm = mod_time.localtime()[:3]
-        dt = date.today()
-        dd = (dt.year, dt.month, dt.day)
-        self.assertEqual(tm, dd)
-
-    def test_fromordinal00(self):
-        self.assertEqual(date.fromordinal(1), date(1, 1, 1))
-
-    def test_fromordinal01(self):
-        self.assertEqual(date.fromordinal(max_days), date(MAXYEAR, 12, 31))
-
-    def test_fromisoformat00(self):
-        self.assertEqual(datetime.fromisoformat("1975-08-10"), datetime(1975, 8, 10))
-
-    def test_year00(self):
-        self.assertEqual(d1.year, 2002)
-
-    def test_year01(self):
-        self.assertEqual(d2.year, 1956)
-
-    def test_month00(self):
-        self.assertEqual(d1.month, 1)
-
-    def test_month01(self):
-        self.assertEqual(d4.month, 3)
-
-    def test_day00(self):
-        self.assertEqual(d1.day, 31)
-
-    def test_day01(self):
-        self.assertEqual(d4.day, 2)
-
-    def test_toordinal00(self):
-        self.assertEqual(date(1, 1, 1).toordinal(), 1)
-
-    def test_toordinal01(self):
-        self.assertEqual(date(MAXYEAR, 12, 31).toordinal(), max_days)
-
-    def test_timetuple00(self):
-        self.assertEqual(d1.timetuple()[:8], (2002, 1, 31, 0, 0, 0, 3, 31))
-
-    def test_timetuple01(self):
-        self.assertEqual(d3.timetuple()[:8], (2002, 3, 1, 0, 0, 0, 4, 60))
-
-    def test_replace00(self):
-        self.assertEqual(d1.replace(), d1)
-
-    def test_replace01(self):
-        self.assertEqual(d1.replace(year=2001), date(2001, 1, 31))
-
-    def test_replace02(self):
-        self.assertEqual(d1.replace(month=5), date(2002, 5, 31))
-
-    def test_replace03(self):
-        self.assertEqual(d1.replace(day=16), date(2002, 1, 16))
-
-    def test___add__00(self):
-        self.assertEqual(d4 + hour, d4)
-
-    def test___add__01(self):
-        self.assertEqual(d4 + day, date(2002, 3, 3))
-
-    def test___add__02(self):
-        self.assertEqual(d4 + week, date(2002, 3, 9))
-
-    def test___add__03(self):
-        self.assertEqual(d4 + 52 * week, date(2003, 3, 1))
-
-    def test___add__04(self):
-        self.assertEqual(d4 + -hour, date(2002, 3, 1))
-
-    def test___add__05(self):
-        self.assertEqual(d5 + -day, date(2002, 1, 30))
-
-    def test___add__06(self):
-        self.assertEqual(d4 + -week, date(2002, 2, 23))
-
-    def test___sub__00(self):
-        d = d1 - d2
-        self.assertEqual(d.total_seconds(), d2d1s)
-
-    def test___sub__01(self):
-        self.assertEqual(d4 - hour, d4)
-
-    def test___sub__02(self):
-        self.assertEqual(d4 - day, date(2002, 3, 1))
-
-    def test___sub__03(self):
-        self.assertEqual(d4 - week, date(2002, 2, 23))
-
-    def test___sub__04(self):
-        self.assertEqual(d4 - 52 * week, date(2001, 3, 3))
-
-    def test___sub__05(self):
-        self.assertEqual(d4 - -hour, date(2002, 3, 3))
-
-    def test___sub__06(self):
-        self.assertEqual(d4 - -day, date(2002, 3, 3))
-
-    def test___sub__07(self):
-        self.assertEqual(d4 - -week, date(2002, 3, 9))
-
-    def test___eq__00(self):
-        self.assertEqual(d1, d5)
-
-    def test___eq__01(self):
-        self.assertFalse(d1 != d5)
-
-    def test___eq__02(self):
-        self.assertTrue(d2 != d5)
-
-    def test___eq__03(self):
-        self.assertTrue(d5 != d2)
-
-    def test___eq__04(self):
-        self.assertFalse(d2 == d5)
-
-    def test___eq__05(self):
-        self.assertFalse(d5 == d2)
-
-    def test___eq__06(self):
-        self.assertFalse(d1 == None)
-
-    def test___eq__07(self):
-        self.assertTrue(d1 != None)
-
-    def test___le__00(self):
-        self.assertTrue(d1 <= d5)
-
-    def test___le__01(self):
-        self.assertTrue(d2 <= d5)
-
-    def test___le__02(self):
-        self.assertFalse(d5 <= d2)
-
-    def test___ge__00(self):
-        self.assertTrue(d1 >= d5)
-
-    def test___ge__01(self):
-        self.assertTrue(d5 >= d2)
-
-    def test___ge__02(self):
-        self.assertFalse(d2 >= d5)
-
-    def test___lt__00(self):
-        self.assertFalse(d1 < d5)
-
-    def test___lt__01(self):
-        self.assertTrue(d2 < d5)
-
-    def test___lt__02(self):
-        self.assertFalse(d5 < d2)
-
-    def test___gt__00(self):
-        self.assertFalse(d1 > d5)
-
-    def test___gt__01(self):
-        self.assertTrue(d5 > d2)
-
-    def test___gt__02(self):
-        self.assertFalse(d2 > d5)
-
-    def test_weekday00(self):
-        for i in range(7):
-            # March 4, 2002 is a Monday
-            self.assertEqual(datetime(2002, 3, 4 + i).weekday(), i)
-            # January 2, 1956 is a Monday
-            self.assertEqual(datetime(1956, 1, 2 + i).weekday(), i)
-
-    def test_isoweekday00(self):
-        for i in range(7):
-            self.assertEqual(datetime(2002, 3, 4 + i).isoweekday(), i + 1)
-            self.assertEqual(datetime(1956, 1, 2 + i).isoweekday(), i + 1)
-
-    def test_isoformat00(self):
-        self.assertEqual(d1.isoformat(), "2002-01-31")
-
-    @unittest.skipIf(STDLIB, "standard datetime differs")
-    def test___repr__00(self):
-        self.assertEqual(repr(d1), d1r)
-
-    def test___repr__01(self):
-        self.assertEqual(d1, eval_mod(repr(d1)))
-
-    def test___hash__00(self):
-        self.assertEqual(d1, d5)
-        self.assertEqual(hash(d1), hash(d5))
-
-    def test___hash__01(self):
-        dd1 = d1 + timedelta(weeks=7)
-        dd5 = d5 + timedelta(days=7 * 7)
-        self.assertEqual(hash(dd1), hash(dd5))
-
-    def test___hash__02(self):
-        d = {d1: 1}
-        d[d5] = 2
-        self.assertEqual(len(d), 1)
-        self.assertEqual(d[d1], 2)
 
 
 ### datetime #################################################################

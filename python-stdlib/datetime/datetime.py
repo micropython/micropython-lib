@@ -287,6 +287,125 @@ class timezone(tzinfo):
 timezone.utc = timezone(timedelta(0))
 
 
+class date:
+    def __init__(self, year, month, day):
+        if (
+            MINYEAR <= year <= MAXYEAR
+            and 1 <= month <= 12
+            and 1 <= day <= _days_in_month(year, month)
+        ):
+            self._ord = _ymd2ord(year, month, day)
+        elif year == 0 and month == 0 and 1 <= day <= 3_652_059:
+            self._ord = day
+        else:
+            raise ValueError
+
+    @classmethod
+    def fromtimestamp(cls, ts):
+        return cls(*_time.localtime(ts)[:3])
+
+    @classmethod
+    def today(cls):
+        return cls(*_time.localtime()[:3])
+
+    @classmethod
+    def fromordinal(cls, n):
+        return cls(0, 0, n)
+
+    @classmethod
+    def fromisoformat(cls, s):
+        if len(s) < 10 or s[4] != "-" or s[7] != "-":
+            raise ValueError
+        y = int(s[0:4])
+        m = int(s[5:7])
+        d = int(s[8:10])
+        return cls(y, m, d)
+
+    @property
+    def year(self):
+        return self.tuple()[0]
+
+    @property
+    def month(self):
+        return self.tuple()[1]
+
+    @property
+    def day(self):
+        return self.tuple()[2]
+
+    def toordinal(self):
+        return self._ord
+
+    def timetuple(self):
+        y, m, d = self.tuple()
+        yday = _days_before_month(y, m) + d
+        return (y, m, d, 0, 0, 0, self.weekday(), yday, -1)
+
+    def replace(self, year=None, month=None, day=None):
+        year_, month_, day_ = self.tuple()
+        if year is None:
+            year = year_
+        if month is None:
+            month = month_
+        if day is None:
+            day = day_
+        return date(year, month, day)
+
+    def __add__(self, other):
+        return date.fromordinal(self._ord + other.days)
+
+    def __sub__(self, other):
+        if isinstance(other, date):
+            return timedelta(days=self._ord - other._ord)
+        else:
+            return date.fromordinal(self._ord - other.days)
+
+    def __eq__(self, other):
+        if isinstance(other, date):
+            return self._ord == other._ord
+        else:
+            return False
+
+    def __le__(self, other):
+        return self._ord <= other._ord
+
+    def __lt__(self, other):
+        return self._ord < other._ord
+
+    def __ge__(self, other):
+        return self._ord >= other._ord
+
+    def __gt__(self, other):
+        return self._ord > other._ord
+
+    def weekday(self):
+        return (self._ord + 6) % 7
+
+    def isoweekday(self):
+        return self._ord % 7 or 7
+
+    def isoformat(self):
+        return "%04d-%02d-%02d" % self.tuple()
+
+    def __repr__(self):
+        return "datetime.date(0, 0, {})".format(self._ord)
+
+    __str__ = isoformat
+
+    def __hash__(self):
+        if not hasattr(self, "_hash"):
+            self._hash = hash(self._ord)
+        return self._hash
+
+    def tuple(self):
+        return _ord2ymd(self._ord)
+
+
+date.min = date(MINYEAR, 1, 1)
+date.max = date(MAXYEAR, 12, 31)
+date.resolution = timedelta(days=1)
+
+
 class time:
     def __init__(self, hour=0, minute=0, second=0, microsecond=0, tzinfo=None, *, fold=0):
         if (
@@ -484,125 +603,6 @@ class time:
 time.min = time(0)
 time.max = time(23, 59, 59, 999_999)
 time.resolution = timedelta.resolution
-
-
-class date:
-    def __init__(self, year, month, day):
-        if (
-            MINYEAR <= year <= MAXYEAR
-            and 1 <= month <= 12
-            and 1 <= day <= _days_in_month(year, month)
-        ):
-            self._ord = _ymd2ord(year, month, day)
-        elif year == 0 and month == 0 and 1 <= day <= 3_652_059:
-            self._ord = day
-        else:
-            raise ValueError
-
-    @classmethod
-    def fromtimestamp(cls, ts):
-        return cls(*_time.localtime(ts)[:3])
-
-    @classmethod
-    def today(cls):
-        return cls(*_time.localtime()[:3])
-
-    @classmethod
-    def fromordinal(cls, n):
-        return cls(0, 0, n)
-
-    @classmethod
-    def fromisoformat(cls, s):
-        if len(s) < 10 or s[4] != "-" or s[7] != "-":
-            raise ValueError
-        y = int(s[0:4])
-        m = int(s[5:7])
-        d = int(s[8:10])
-        return cls(y, m, d)
-
-    @property
-    def year(self):
-        return self.tuple()[0]
-
-    @property
-    def month(self):
-        return self.tuple()[1]
-
-    @property
-    def day(self):
-        return self.tuple()[2]
-
-    def toordinal(self):
-        return self._ord
-
-    def timetuple(self):
-        y, m, d = self.tuple()
-        yday = _days_before_month(y, m) + d
-        return (y, m, d, 0, 0, 0, self.weekday(), yday, -1)
-
-    def replace(self, year=None, month=None, day=None):
-        year_, month_, day_ = self.tuple()
-        if year is None:
-            year = year_
-        if month is None:
-            month = month_
-        if day is None:
-            day = day_
-        return date(year, month, day)
-
-    def __add__(self, other):
-        return date.fromordinal(self._ord + other.days)
-
-    def __sub__(self, other):
-        if isinstance(other, date):
-            return timedelta(days=self._ord - other._ord)
-        else:
-            return date.fromordinal(self._ord - other.days)
-
-    def __eq__(self, other):
-        if isinstance(other, date):
-            return self._ord == other._ord
-        else:
-            return False
-
-    def __le__(self, other):
-        return self._ord <= other._ord
-
-    def __lt__(self, other):
-        return self._ord < other._ord
-
-    def __ge__(self, other):
-        return self._ord >= other._ord
-
-    def __gt__(self, other):
-        return self._ord > other._ord
-
-    def weekday(self):
-        return (self._ord + 6) % 7
-
-    def isoweekday(self):
-        return self._ord % 7 or 7
-
-    def isoformat(self):
-        return "%04d-%02d-%02d" % self.tuple()
-
-    def __repr__(self):
-        return "datetime.date(0, 0, {})".format(self._ord)
-
-    __str__ = isoformat
-
-    def __hash__(self):
-        if not hasattr(self, "_hash"):
-            self._hash = hash(self._ord)
-        return self._hash
-
-    def tuple(self):
-        return _ord2ymd(self._ord)
-
-
-date.min = date(MINYEAR, 1, 1)
-date.max = date(MAXYEAR, 12, 31)
-date.resolution = timedelta(days=1)
 
 
 class datetime:
