@@ -9,51 +9,51 @@ _DIM = (0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 _TIME_SPEC = ("auto", "hours", "minutes", "seconds", "milliseconds", "microseconds")
 
 
-def _is_leap(year):
-    return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
+def _leap(y):
+    return y % 4 == 0 and (y % 100 != 0 or y % 400 == 0)
 
 
-def _days_before_year(year):
+def _dby(y):
     # year -> number of days before January 1st of year.
-    y = year - 1
-    return y * 365 + y // 4 - y // 100 + y // 400
+    Y = y - 1
+    return Y * 365 + Y // 4 - Y // 100 + Y // 400
 
 
-def _days_in_month(year, month):
+def _dim(y, m):
     # year, month -> number of days in that month in that year.
-    if month == 2 and _is_leap(year):
+    if m == 2 and _leap(y):
         return 29
-    return _DIM[month]
+    return _DIM[m]
 
 
-def _days_before_month(year, month):
+def _dbm(y, m):
     # year, month -> number of days in year preceding first day of month.
-    return _DBM[month] + (month > 2 and _is_leap(year))
+    return _DBM[m] + (m > 2 and _leap(y))
 
 
-def _ymd2ord(year, month, day):
-    # year, month, day -> ordinal, considering 01-Jan-0001 as day 1.
-    return _days_before_year(year) + _days_before_month(year, month) + day
+def _ymd2o(y, m, d):
+    # y, month, day -> ordinal, considering 01-Jan-0001 as day 1.
+    return _dby(y) + _dbm(y, m) + d
 
 
-def _ord2ymd(n):
+def _o2ymd(n):
     # ordinal -> (year, month, day), considering 01-Jan-0001 as day 1.
     n -= 1
     n400, n = divmod(n, 146_097)
-    year = n400 * 400 + 1
+    y = n400 * 400 + 1
     n100, n = divmod(n, 36_524)
     n4, n = divmod(n, 1_461)
     n1, n = divmod(n, 365)
-    year += n100 * 100 + n4 * 4 + n1
+    y += n100 * 100 + n4 * 4 + n1
     if n1 == 4 or n100 == 4:
-        return year - 1, 12, 31
-    month = (n + 50) >> 5
-    preceding = _days_before_month(year, month)
-    if preceding > n:
-        month -= 1
-        preceding -= _days_in_month(year, month)
-    n -= preceding
-    return year, month, n + 1
+        return y - 1, 12, 31
+    m = (n + 50) >> 5
+    prec = _dbm(y, m)
+    if prec > n:
+        m -= 1
+        prec -= _dim(y, m)
+    n -= prec
+    return y, m, n + 1
 
 
 MINYEAR = 1
@@ -287,14 +287,26 @@ class timezone(tzinfo):
 timezone.utc = timezone(timedelta(0))
 
 
+def _dinit(y, m, d):
+    if (
+        MINYEAR <= year <= MAXYEAR
+        and 1 <= m <= 12
+        and 1 <= d <= _dim(year, month)
+    ):
+        self._ord = _ymd2o(year, month, day)
+    elif year == 0 and month == 0 and 1 <= day <= 3_652_059:
+        self._ord = day
+    else:
+        raise ValueError
+
 class date:
     def __init__(self, year, month, day):
         if (
             MINYEAR <= year <= MAXYEAR
             and 1 <= month <= 12
-            and 1 <= day <= _days_in_month(year, month)
+            and 1 <= day <= _dim(year, month)
         ):
-            self._ord = _ymd2ord(year, month, day)
+            self._ord = _ymd2o(year, month, day)
         elif year == 0 and month == 0 and 1 <= day <= 3_652_059:
             self._ord = day
         else:
@@ -338,7 +350,7 @@ class date:
 
     def timetuple(self):
         y, m, d = self.tuple()
-        yday = _days_before_month(y, m) + d
+        yday = _dbm(y, m) + d
         return (y, m, d, 0, 0, 0, self.weekday(), yday, -1)
 
     def replace(self, year=None, month=None, day=None):
@@ -398,7 +410,7 @@ class date:
         return self._hash
 
     def tuple(self):
-        return _ord2ymd(self._ord)
+        return _o2ymd(self._ord)
 
 
 date.min = date(MINYEAR, 1, 1)
