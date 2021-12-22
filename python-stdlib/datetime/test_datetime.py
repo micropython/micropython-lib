@@ -109,7 +109,7 @@ td1h2m40s100usr = "datetime.timedelta(microseconds={})".format(
 )
 
 
-class TestTimeDelta(unittest.TestCase):
+class Test0TimeDelta(unittest.TestCase):
     def test___init__00(self):
         self.assertEqual(timedelta(), timedelta(weeks=0, days=0, hours=0, minutes=0, seconds=0))
 
@@ -180,7 +180,7 @@ class TestTimeDelta(unittest.TestCase):
     def test___repr__04(self):
         self.assertEqual(td1, eval_mod(repr(td1)))
 
-    def test_total_seconds(self):
+    def test_total_seconds00(self):
         d = timedelta(days=365)
         self.assertEqual(d.total_seconds(), 31536000.0)
 
@@ -719,7 +719,7 @@ tz2 = Cet()
 tz3 = USTimeZone(-5, "Eastern", "EST", "EDT")
 
 
-class TestTimeZone(unittest.TestCase):
+class Test1TimeZone(unittest.TestCase):
     def test___init__00(self):
         self.assertEqual(str(tz_acdt), "ACDT")
         self.assertEqual(str(tz_acdt), tz_acdt.tzname(None))
@@ -868,7 +868,7 @@ week = timedelta(weeks=1)
 max_days = MAXYEAR * 365 + MAXYEAR // 4 - MAXYEAR // 100 + MAXYEAR // 400
 
 
-class TestDate(unittest.TestCase):
+class Test2Date(unittest.TestCase):
     def test___init__00(self):
         self.assertEqual(d1.year, 2002)
         self.assertEqual(d1.month, 1)
@@ -1158,7 +1158,7 @@ t4z = time(18, 45, 3, 1234, tz2, fold=1)
 t5z = time(20, 45, 3, 1234, tz2)
 
 
-class TestTime(unittest.TestCase):
+class Test3Time(unittest.TestCase):
     def test___init__00(self):
         t = time()
         self.assertEqual(t.hour, 0)
@@ -1459,7 +1459,63 @@ dt30tz2 = datetime(2010, 10, 30, 12, tzinfo=tz2)  # last CEST day
 dt31tz2 = datetime(2010, 10, 31, 12, tzinfo=tz2)  # first CET day
 
 
-class TestDateTime(unittest.TestCase):
+# Tests where datetime depens on date and time
+class Test4DateTime(unittest.TestCase):
+    def test_combine00(self):
+        dt = datetime.combine(d1, t1)
+        self.assertEqual(dt, d1t1)
+
+    def test_combine01(self):
+        dt = datetime.combine(d1, t1)
+        self.assertEqual(dt.date(), d1)
+
+    def test_combine02(self):
+        dt1 = datetime.combine(d1, t1)
+        dt2 = datetime.combine(dt1, t1)
+        self.assertEqual(dt1, dt2)
+
+    def test_combine03(self):
+        dt = datetime.combine(d1, t1)
+        self.assertEqual(dt.time(), t1)
+
+    def test_combine04(self):
+        dt = datetime.combine(d1, t1, tz1)
+        self.assertEqual(dt, d1t1z)
+
+    def test_combine05(self):
+        dt = datetime.combine(d1, t1z)
+        self.assertEqual(dt, d1t1z)
+
+    def test_combine06(self):
+        dt = datetime.combine(d1, t1f)
+        self.assertEqual(dt, d1t1f)
+
+    def test_date00(self):
+        self.assertEqual(d1t1.date(), d1)
+
+    def test_time00(self):
+        self.assertEqual(d1t1.time(), t1)
+
+    def test_time01(self):
+        self.assertNotEqual(d1t1z.time(), t1z)
+
+    def test_timetz00(self):
+        self.assertEqual(d1t1.timetz(), t1)
+
+    def test_timetz01(self):
+        self.assertEqual(d1t1z.timetz(), t1z)
+
+    def test_timetz02(self):
+        self.assertEqual(d1t1f.timetz(), t1f)
+
+
+# Tests where datetime is independent from date and time
+class Test5DateTime(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        for k in ("date", "time"):
+            del mod_datetime.__dict__[k]
+
     def test___init__00(self):
         d = datetime(2002, 3, 1, 12, 0, fold=1)
         self.assertEqual(d.year, 2002)
@@ -1638,35 +1694,6 @@ class TestDateTime(unittest.TestCase):
         self.assertEqual(
             str(datetime.fromisoformat("1975-08-10 23:30:12+01:00")), "1975-08-10 23:30:12+01:00"
         )
-
-    def test_combine00(self):
-        dt = datetime.combine(d1, t1)
-        self.assertEqual(dt, d1t1)
-
-    def test_combine01(self):
-        dt = datetime.combine(d1, t1)
-        self.assertEqual(dt.date(), d1)
-
-    def test_combine02(self):
-        dt1 = datetime.combine(d1, t1)
-        dt2 = datetime.combine(dt1, t1)
-        self.assertEqual(dt1, dt2)
-
-    def test_combine03(self):
-        dt = datetime.combine(d1, t1)
-        self.assertEqual(dt.time(), t1)
-
-    def test_combine04(self):
-        dt = datetime.combine(d1, t1, tz1)
-        self.assertEqual(dt, d1t1z)
-
-    def test_combine05(self):
-        dt = datetime.combine(d1, t1z)
-        self.assertEqual(dt, d1t1z)
-
-    def test_combine06(self):
-        dt = datetime.combine(d1, t1f)
-        self.assertEqual(dt, d1t1f)
 
     def test_year00(self):
         self.assertEqual(dt1.year, 2002)
@@ -1902,24 +1929,6 @@ class TestDateTime(unittest.TestCase):
 
     def test___gt__05(self):
         self.assertRaises(TypeError, dt1.__gt__, dt1z1)
-
-    def test_date00(self):
-        self.assertEqual(d1t1.date(), d1)
-
-    def test_time00(self):
-        self.assertEqual(d1t1.time(), t1)
-
-    def test_time01(self):
-        self.assertNotEqual(d1t1z.time(), t1z)
-
-    def test_timetz00(self):
-        self.assertEqual(d1t1.timetz(), t1)
-
-    def test_timetz01(self):
-        self.assertEqual(d1t1z.timetz(), t1z)
-
-    def test_timetz02(self):
-        self.assertEqual(d1t1f.timetz(), t1f)
 
     def test_replace00(self):
         self.assertEqual(dt3.replace(), dt3)
