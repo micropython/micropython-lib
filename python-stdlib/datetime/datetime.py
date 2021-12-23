@@ -635,10 +635,7 @@ class datetime:
         else:
             us = 0
         if tz is None:
-            dt = cls(*_tmod.localtime(ts)[:6], microsecond=us, tzinfo=tz)
-            s = (dt - datetime(*_tmod.localtime(ts - 86400)[:6]))._us // 1_000_000 - 86400
-            if s < 0 and dt == datetime(*_tmod.localtime(ts + s)[:6]):
-                dt._fd = 1
+            raise NotImplementedError
         else:
             dt = cls(*_tmod.gmtime(ts)[:6], microsecond=us, tzinfo=tz)
             dt = tz.fromutc(dt)
@@ -815,44 +812,12 @@ class datetime:
             return self
         _tz = self._tz
         if _tz is None:
-            ts = int(self._mktime())
-            os = datetime(*_tmod.localtime(ts)[:6]) - datetime(*_tmod.gmtime(ts)[:6])
+            raise NotImplementedError
         else:
             os = _tz.utcoffset(self)
         utc = self - os
         utc = utc.replace(tzinfo=tz)
         return tz.fromutc(utc)
-
-    def _mktime(self):
-        def local(u):
-            return (datetime(*_tmod.localtime(u)[:6]) - epoch)._us // 1_000_000
-
-        epoch = datetime.EPOCH.replace(tzinfo=None)
-        t, us = divmod((self - epoch)._us, 1_000_000)
-        ts = None
-
-        a = local(t) - t
-        u1 = t - a
-        t1 = local(u1)
-        if t1 == t:
-            u2 = u1 + (86400 if self.fold else -86400)
-            b = local(u2) - u2
-            if a == b:
-                ts = u1
-        else:
-            b = t1 - u1
-        if ts is None:
-            u2 = t - b
-            t2 = local(u2)
-            if t2 == t:
-                ts = u2
-            elif t1 == t:
-                ts = u1
-            elif self.fold:
-                ts = min(u1, u2)
-            else:
-                ts = max(u1, u2)
-        return ts + us / 1_000_000
 
     def utcoffset(self):
         return None if self._tz is None else self._tz.utcoffset(self)
@@ -877,7 +842,7 @@ class datetime:
 
     def timestamp(self):
         if self._tz is None:
-            return self._mktime()
+            raise NotImplementedError
         else:
             return (self - datetime.EPOCH).total_seconds()
 
