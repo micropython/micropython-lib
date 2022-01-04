@@ -126,9 +126,8 @@ async def advertise(
             struct.pack("B", (0x01 if limited_disc else 0x02) + (0x18 if br_edr else 0x04)),
         )
 
-        if name:
-            resp_data = _append(adv_data, resp_data, _ADV_TYPE_NAME, name)
-
+        # Services are prioritised to go in the advertising data because iOS supports
+        # filtering scan results by service only, so services must come first.
         if services:
             for uuid in services:
                 b = bytes(uuid)
@@ -138,6 +137,9 @@ async def advertise(
                     resp_data = _append(adv_data, resp_data, _ADV_TYPE_UUID32_COMPLETE, b)
                 elif len(b) == 16:
                     resp_data = _append(adv_data, resp_data, _ADV_TYPE_UUID128_COMPLETE, b)
+
+        if name:
+            resp_data = _append(adv_data, resp_data, _ADV_TYPE_NAME, name)
 
         if appearance:
             # See org.bluetooth.characteristic.gap.appearance.xml
