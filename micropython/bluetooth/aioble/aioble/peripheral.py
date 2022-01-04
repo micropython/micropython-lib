@@ -126,9 +126,6 @@ async def advertise(
             struct.pack("B", (0x01 if limited_disc else 0x02) + (0x18 if br_edr else 0x04)),
         )
 
-        if name:
-            resp_data = _append(adv_data, resp_data, _ADV_TYPE_NAME, name)
-
         if services:
             for uuid in services:
                 b = bytes(uuid)
@@ -152,6 +149,9 @@ async def advertise(
                 _ADV_TYPE_MANUFACTURER,
                 struct.pack("<H", manufacturer[0]) + manufacturer[1],
             )
+
+        if name:
+            resp_data = _append(adv_data, resp_data, _ADV_TYPE_NAME, name)
 
     _connect_event = _connect_event or asyncio.ThreadSafeFlag()
     ble.gap_advertise(interval_us, adv_data=adv_data, resp_data=resp_data, connectable=connectable)
