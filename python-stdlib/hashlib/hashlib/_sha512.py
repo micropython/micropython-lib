@@ -233,7 +233,7 @@ def sha_transform(sha_info):
         ss[0], ss[1], ss[2], ss[3], ss[4], ss[5], ss[6], ss[7], 56, 0x748F82EE5DEFB2FC
     )
     ss[2], ss[6] = RND(
-        ss[7], ss[0], ss[1], ss[2], ss[3], ss[4], ss[5], ss[6], 57, 0x78A5636F43172F60
+        ss[7], *ss[0:7:1], 57, 0x78A5636F43172F60
     )
     ss[1], ss[5] = RND(
         ss[6], ss[7], ss[0], ss[1], ss[2], ss[3], ss[4], ss[5], 58, 0x84C87814A1F0AB72
