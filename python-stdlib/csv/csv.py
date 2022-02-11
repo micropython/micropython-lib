@@ -44,9 +44,7 @@ class reader:
             matches = next_match.groups()
             if matches[0] is None:
                 latest_match = matches[1].strip("\r\n").strip("\n")
-                csv_value_list.append(
-                    latest_match.replace(self.quotechar * 2, self.quotechar)
-                )
+                csv_value_list.append(latest_match.replace(self.quotechar * 2, self.quotechar))
             else:
                 latest_match = matches[0].strip("\r\n").strip("\n")
                 csv_value_list.append(
@@ -91,9 +89,7 @@ class writer:
         """
 
         str_seq = [str(entry) for entry in seq]
-        doub_quote_seq = [
-            entry.replace(self.quotechar, self.quotechar * 2) for entry in str_seq
-        ]
+        doub_quote_seq = [entry.replace(self.quotechar, self.quotechar * 2) for entry in str_seq]
         quoted_seq = [self._apply_quotes(entry) for entry in doub_quote_seq]
         parsed_str = (self.delimiter).join(quoted_seq)
         self.file_iterator.write(parsed_str + self.newlinechar)
@@ -113,11 +109,7 @@ class writer:
         :param str entry: The entry to add the quote charcter to, if needed
         """
 
-        return (
-            (self.quotechar + entry + self.quotechar)
-            if self.delimiter in entry
-            else entry
-        )
+        return (self.quotechar + entry + self.quotechar) if self.delimiter in entry else entry
 
 
 # Ported from CPython's csv.py:
@@ -186,9 +178,7 @@ class DictWriter:
         self.fieldnames = fieldnames  # list of keys for the dict
         self.restval = restval  # for writing short dicts
         if extrasaction.lower() not in ("raise", "ignore"):
-            raise ValueError(
-                "extrasaction " "(%s)" " must be 'raise' or 'ignore'" % extrasaction
-            )
+            raise ValueError("extrasaction " "(%s)" " must be 'raise' or 'ignore'" % extrasaction)
         self.extrasaction = extrasaction
         self.writer = writer(f, **kwargs)
 
