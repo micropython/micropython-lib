@@ -20,9 +20,7 @@ class reader:
         including the delimiter, default is double quotation mark (")
     """
 
-    def __init__(
-        self, csvfile, delimiter = ",", quotechar = '"'
-    ) -> None:
+    def __init__(self, csvfile, delimiter=",", quotechar='"') -> None:
 
         self.file_interator = csvfile
         self.delimiter = delimiter
@@ -60,10 +58,7 @@ class reader:
                 if row_string == self.delimiter:
                     csv_value_list.append("")
                     row_string = row_string[1:]
-                elif (
-                    row_string == "\r\n"
-                    or row_string == "n"
-                ):
+                elif row_string == "\r\n" or row_string == "n":
                     row_string = ""
                 row_string = row_string[1:]
 
@@ -80,9 +75,7 @@ class writer:
         including the delimiter, default is double quotation mark (")
     """
 
-    def __init__(
-        self, csvfile, delimiter = ",", quoterchar = '"'
-    ):
+    def __init__(self, csvfile, delimiter=",", quoterchar='"'):
 
         self.file_iterator = csvfile
         self.delimiter = delimiter
@@ -144,14 +137,7 @@ class DictReader:
     :type restval: Any
     """
 
-    def __init__(
-        self,
-        f,
-        fieldnames = None,
-        restkey = None,
-        restval = None,
-        **kwargs
-    ):
+    def __init__(self, f, fieldnames=None, restkey=None, restval=None, **kwargs):
 
         self.fieldnames = fieldnames
         self.restkey = restkey
@@ -196,14 +182,7 @@ class DictWriter:
         is "raise"
     """
 
-    def __init__(
-        self,
-        f,
-        fieldnames,
-        restval = "",
-        extrasaction = "raise",
-        **kwargs
-    ):
+    def __init__(self, f, fieldnames, restval="", extrasaction="raise", **kwargs):
         self.fieldnames = fieldnames  # list of keys for the dict
         self.restval = restval  # for writing short dicts
         if extrasaction.lower() not in ("raise", "ignore"):
