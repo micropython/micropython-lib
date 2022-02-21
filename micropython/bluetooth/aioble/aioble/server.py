@@ -199,6 +199,9 @@ class Characteristic(BaseCharacteristic):
         self._value_handle = None
         self._initial = initial
 
+    def _tuple(self):
+        return (self.uuid, self.flags, tuple(d._tuple() for d in self.descriptors))
+
     def notify(self, connection, data=None):
         if not (self.flags & _FLAG_NOTIFY):
             raise ValueError("Not supported")
