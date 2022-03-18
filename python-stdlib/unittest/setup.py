@@ -21,4 +21,5 @@ setup(
     license="MIT",
     cmdclass={"sdist": sdist_upip.sdist},
     py_modules=["unittest"],
+    install_requires=["micropython-argparse", "micropython-fnmatch"],
 )

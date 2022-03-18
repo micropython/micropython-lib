@@ -1,4 +1,5 @@
 import sys
+import uos
 
 try:
     import io
@@ -280,6 +281,15 @@ class TestResult:
             self.failuresNum,
         )
 
+    def __add__(self, other):
+        self.errorsNum += other.errorsNum
+        self.failuresNum += other.failuresNum
+        self.skippedNum += other.skippedNum
+        self.testsRun += other.testsRun
+        self.errors.extend(other.errors)
+        self.failures.extend(other.failures)
+        return self
+
 
 def capture_exc(e):
     buf = io.StringIO()
@@ -290,7 +300,6 @@ def capture_exc(e):
     return buf.getvalue()
 
 
-# TODO: Uncompliant
 def run_suite(c, test_result, suite_name=""):
     if isinstance(c, TestSuite):
         c.run(test_result)
@@ -343,7 +352,7 @@ def run_suite(c, test_result, suite_name=""):
         return
 
     for name in dir(o):
-        if name.startswith("test_"):
+        if name.startswith("test"):
             m = getattr(o, name)
             if not callable(m):
                 continue
@@ -356,20 +365,65 @@ def run_suite(c, test_result, suite_name=""):
     return exceptions
 
 
-def main(module="__main__"):
-    def test_cases(m):
-        for tn in dir(m):
-            c = getattr(m, tn)
-            if isinstance(c, object) and isinstance(c, type) and issubclass(c, TestCase):
-                yield c
-            elif tn.startswith("test_") and callable(c):
-                yield c
+def _test_cases(mod):
+    for tn in dir(mod):
+        c = getattr(mod, tn)
+        if isinstance(c, object) and isinstance(c, type) and issubclass(c, TestCase):
+            yield c
+        elif tn.startswith("test_") and callable(c):
+            yield c
 
-    m = __import__(module) if isinstance(module, str) else module
-    suite = TestSuite(m.__name__)
-    for c in test_cases(m):
-        suite.addTest(c)
+
+def run_module(runner, module, path, top):
+    sys_path_initial = sys.path[:]
+    # Add script dir and top dir to import path
+    sys.path.insert(0, str(path))
+    if top:
+        sys.path.insert(1, top)
+    try:
+        suite = TestSuite(module)
+        m = __import__(module) if isinstance(module, str) else module
+        for c in _test_cases(m):
+            suite.addTest(c)
+        result = runner.run(suite)
+        return result
+
+    finally:
+        sys.path[:] = sys_path_initial
+
+
+def discover(runner: TestRunner):
+    from unittest_discover import discover
+
+    return discover(runner=runner)
+
+
+def main(module="__main__"):
     runner = TestRunner()
-    result = runner.run(suite)
+
+    if len(sys.argv) <= 1:
+        result = discover(runner)
+    elif sys.argv[0].split(".")[0] == "unittest" and sys.argv[1] == "discover":
+        result = discover(runner)
+    else:
+        for test_spec in sys.argv[1:]:
+            try:
+                uos.stat(test_spec)
+                # test_spec is a local file, run it directly
+                if "/" in test_spec:
+                    path, fname = test_spec.rsplit("/", 1)
+                else:
+                    path, fname = ".", test_spec
+                modname = fname.rsplit(".", 1)[0]
+                result = run_module(runner, modname, path, None)
+
+            except OSError:
+                # Not a file, treat as import name
+                result = run_module(runner, test_spec, ".", None)
+
     # Terminate with non zero return code in case of failures
     sys.exit(result.failuresNum or result.errorsNum)
+
+
+if __name__ == "__main__":
+    main()
