@@ -332,7 +332,10 @@ def run_suite(c, test_result, suite_name=""):
             # raise
         finally:
             tear_down()
-            o.doCleanups()
+            try:
+                o.doCleanups()
+            except AttributeError:
+                pass
 
     if hasattr(o, "runTest"):
         name = str(o)
@@ -340,11 +343,16 @@ def run_suite(c, test_result, suite_name=""):
         return
 
     for name in dir(o):
-        if name.startswith("test"):
+        if name.startswith("test_"):
             m = getattr(o, name)
             if not callable(m):
                 continue
             run_one(m)
+
+    if callable(o):
+        name = o.__name__
+        run_one(o)
+
     return exceptions
 
 
@@ -353,6 +361,8 @@ def main(module="__main__"):
         for tn in dir(m):
             c = getattr(m, tn)
             if isinstance(c, object) and isinstance(c, type) and issubclass(c, TestCase):
+                yield c
+            elif tn.startswith("test_") and callable(c):
                 yield c
 
     m = __import__(module) if isinstance(module, str) else module
