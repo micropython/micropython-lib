@@ -1,4 +1,4 @@
-import os
+import uos as os
 
 
 sep = "/"
@@ -47,7 +47,11 @@ def basename(path):
 
 
 def exists(path):
-    return os.access(path, os.F_OK)
+    try:
+        os.stat(path)
+        return True
+    except OSError:
+        return False
 
 
 # TODO
