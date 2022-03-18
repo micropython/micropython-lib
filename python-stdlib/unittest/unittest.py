@@ -212,15 +212,16 @@ def expectedFailure(test):
 
 
 class TestSuite:
-    def __init__(self):
+    def __init__(self, name=""):
         self._tests = []
+        self.name = name
 
     def addTest(self, cls):
         self._tests.append(cls)
 
     def run(self, result):
         for c in self._tests:
-            run_suite(c, result)
+            run_suite(c, result, self.name)
         return result
 
 
@@ -290,7 +291,7 @@ def capture_exc(e):
 
 
 # TODO: Uncompliant
-def run_suite(c, test_result):
+def run_suite(c, test_result, suite_name=""):
     if isinstance(c, TestSuite):
         c.run(test_result)
         return
@@ -302,9 +303,13 @@ def run_suite(c, test_result):
     set_up = getattr(o, "setUp", lambda: None)
     tear_down = getattr(o, "tearDown", lambda: None)
     exceptions = []
+    try:
+        suite_name += "." + c.__qualname__
+    except AttributeError:
+        pass
 
     def run_one(m):
-        print("%s (%s) ..." % (name, c.__qualname__), end="")
+        print("%s (%s) ..." % (name, suite_name), end="")
         set_up()
         try:
             test_result.testsRun += 1
@@ -351,7 +356,7 @@ def main(module="__main__"):
                 yield c
 
     m = __import__(module) if isinstance(module, str) else module
-    suite = TestSuite()
+    suite = TestSuite(m.__name__)
     for c in test_cases(m):
         suite.addTest(c)
     runner = TestRunner()
