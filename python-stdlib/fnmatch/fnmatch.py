@@ -17,6 +17,8 @@ import re
 
 __all__ = ["filter", "fnmatch", "fnmatchcase", "translate"]
 
+COMPAT = re.__name__ == "ure"
+
 
 def fnmatch(name, pat):
     """Test whether FILENAME matches PATTERN.
@@ -46,6 +48,11 @@ def _compile_pattern(pat):
         res = bytes(res_str, "ISO-8859-1")
     else:
         res = translate(pat)
+    if COMPAT:
+        if res.startswith("(?ms)"):
+            res = res[5:]
+        if res.endswith("\\Z"):
+            res = res[:-2] + "$"
     return re.compile(res).match
 
 
@@ -104,6 +111,15 @@ def translate(pat):
                     stuff = "\\" + stuff
                 res = "%s[%s]" % (res, stuff)
         else:
-            res = res + re.escape(c)
+            try:
+                res = res + re.escape(c)
+            except AttributeError:
+                # Using ure rather than re-pcre
+                res = res + re_escape(c)
     # Original patterns is undefined, see http://bugs.python.org/issue21464
     return "(?ms)" + res + "\Z"
+
+
+def re_escape(pattern):
+    # Replacement minimal re.escape for ure compatibility
+    return re.sub(r"([\^\$\.\|\?\*\+\(\)\[\\])", r"\\\1", pattern)

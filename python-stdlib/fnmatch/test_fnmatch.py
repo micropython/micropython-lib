@@ -10,7 +10,8 @@ class FnmatchTestCase(unittest.TestCase):
     def check_match(self, filename, pattern, should_match=1, fn=fnmatch):
         if should_match:
             self.assertTrue(
-                fn(filename, pattern), "expected %r to match pattern %r" % (filename, pattern)
+                fn(filename, pattern),
+                "expected %r to match pattern %r" % (filename, pattern),
             )
         else:
             self.assertTrue(
@@ -80,9 +81,9 @@ class FilterTestCase(unittest.TestCase):
         self.assertEqual(filter(["a", "b"], "a"), ["a"])
 
 
-def test_main():
+def main():
     support.run_unittest(FnmatchTestCase, TranslateTestCase, FilterTestCase)
 
 
 if __name__ == "__main__":
-    test_main()
+    main()
