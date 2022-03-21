@@ -54,6 +54,10 @@ C_EXTS = (
 PY_EXTS = (".py",)
 
 
+MAIN_BRANCH = "master"
+BASE_BRANCH = os.environ.get("GITHUB_BASE_REF", MAIN_BRANCH)
+
+
 def list_files(paths, exclusions=None, prefix=""):
     files = set()
     for pattern in paths:
@@ -105,12 +109,58 @@ def fixup_c(filename):
         assert not dedent_stack, filename
 
 
+def query_git_files(verbose):
+    def cmd_result_set(cmd):
+        ret = subprocess.run(cmd, capture_output=True).stdout.strip().decode()
+        if not ret:
+            return set()
+        return {f.strip() for f in ret.split("\n")}
+
+    try:
+        ret = set()
+
+        # Check locally modified files
+        dirty = cmd_result_set(["git", "status", "--porcelain"])
+        ret = {line.split(" ", 1)[-1] for line in dirty}
+
+        # Current commit and branch
+        current_commit = (
+            subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True)
+            .stdout.strip()
+            .decode()
+        )
+        current_branches = cmd_result_set(["git", "branch", "--contains", current_commit])
+        if MAIN_BRANCH in current_branches:
+            if ret:
+                if verbose:
+                    print("Local changes detected, only scanning them.")
+                return ret
+
+            # We're on clean master, run on entire repo
+            if verbose:
+                print("Scanning whole repository")
+            return None
+
+        # List the files modified on current branch
+        if verbose:
+            print("Scanning changes from current branch and any local changes")
+        ret |= cmd_result_set(["git", "diff", "--relative", "--name-only", BASE_BRANCH])
+        return ret
+    except:
+        # Git not available, run on entire repo
+        return None
+
+
 def main():
     cmd_parser = argparse.ArgumentParser(description="Auto-format C and Python files.")
     cmd_parser.add_argument("-c", action="store_true", help="Format C code only")
     cmd_parser.add_argument("-p", action="store_true", help="Format Python code only")
     cmd_parser.add_argument("-v", action="store_true", help="Enable verbose output")
-    cmd_parser.add_argument("files", nargs="*", help="Run on specific globs")
+    cmd_parser.add_argument(
+        "files",
+        nargs="*",
+        help="Run on specific globs. If not specied current branch changes will be used",
+    )
     args = cmd_parser.parse_args()
 
     # Setting only one of -c or -p disables the other. If both or neither are set, then do both.
@@ -122,7 +172,9 @@ def main():
     if args.files:
         files = list_files(args.files)
     else:
-        files = list_files(PATHS, EXCLUSIONS, TOP)
+        files = query_git_files(verbose=args.v)
+        if not files:
+            files = list_files(PATHS, EXCLUSIONS, TOP)
 
     # Extract files matching a specific language.
     def lang_files(exts):
