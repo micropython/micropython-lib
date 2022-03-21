@@ -83,7 +83,10 @@ def _append(adv_data, resp_data, adv_type, value):
         adv_data += data
         return resp_data
 
-    if len(data) + (len(resp_data) if resp_data else 0) < _ADV_PAYLOAD_MAX_LEN:
+    if (
+        resp_data is not False
+        and len(data) + (len(resp_data) if resp_data else 0) < _ADV_PAYLOAD_MAX_LEN
+    ):
         if not resp_data:
             # Overflow into resp_data for the first time.
             resp_data = bytearray()
@@ -91,6 +94,78 @@ def _append(adv_data, resp_data, adv_type, value):
         return resp_data
 
     raise ValueError("Advertising payload too long")
+
+
+def _append_all(adv_data, resp_data, flags, name, services, appearance, manufacturer):
+    # TODO: Try and do better bin-packing than just concatenating in order?
+
+    if flags:
+        resp_data = _append(adv_data, resp_data, _ADV_TYPE_FLAGS, struct.pack("B", flags))
+
+    if name:
+        resp_data = _append(adv_data, resp_data, _ADV_TYPE_NAME, name)
+
+    if services:
+        for uuid in services:
+            b = bytes(uuid)
+            if len(b) == 2:
+                resp_data = _append(adv_data, resp_data, _ADV_TYPE_UUID16_COMPLETE, b)
+            elif len(b) == 4:
+                resp_data = _append(adv_data, resp_data, _ADV_TYPE_UUID32_COMPLETE, b)
+            elif len(b) == 16:
+                resp_data = _append(adv_data, resp_data, _ADV_TYPE_UUID128_COMPLETE, b)
+
+    if appearance:
+        # See org.bluetooth.characteristic.gap.appearance.xml
+        resp_data = _append(
+            adv_data, resp_data, _ADV_TYPE_APPEARANCE, struct.pack("<H", appearance)
+        )
+
+    if manufacturer:
+        resp_data = _append(
+            adv_data,
+            resp_data,
+            _ADV_TYPE_MANUFACTURER,
+            struct.pack("<H", manufacturer[0]) + manufacturer[1],
+        )
+
+    return resp_data
+
+
+# Construct advertising data from the given args.
+# Raises a ValueError if the data overflows the allowed advertising length.
+# Returns the new adv_data bytearray.
+def build_adv_data(
+    limited_disc=False, br_edr=False, name=None, services=None, appearance=0, manufacturer=None
+):
+    adv_data = bytearray()
+    flags = (0x01 if limited_disc else 0x02) + (0x18 if br_edr else 0x04)
+    _append_all(adv_data, False, flags, name, services, appearance, manufacturer)
+    return adv_data
+
+
+# Construct response data from the given args.
+# Raises a ValueError if the data overflows the allowed response length.
+# Returns the new resp_data bytearray.
+def build_resp_data(name=None, services=None, appearance=0, manufacturer=None):
+    return _append_all(bytearray(), False, None, name, services, appearance, manufacturer)
+
+
+# Construct advertising data, and optionally response data, from the given args.
+# adv_data should be an empty bytearray, to be filled with advertising data.
+# Raises a ValueError if the data overflows the allowed advertising plus response length.
+# Returns the new resp_data bytearray.
+def build_adv_resp_data(
+    adv_data,
+    limited_disc=False,
+    br_edr=False,
+    name=None,
+    services=None,
+    appearance=0,
+    manufacturer=None,
+):
+    flags = (0x01 if limited_disc else 0x02) + (0x18 if br_edr else 0x04)
+    return _append_all(adv_data, None, flags, name, services, appearance, manufacturer)
 
 
 async def advertise(
@@ -114,44 +189,10 @@ async def advertise(
         # If the user didn't manually specify adv_data / resp_data then
         # construct them from the kwargs. Keep adding fields to adv_data,
         # overflowing to resp_data if necessary.
-        # TODO: Try and do better bin-packing than just concatenating in
-        # order?
-
         adv_data = bytearray()
-
-        resp_data = _append(
-            adv_data,
-            resp_data,
-            _ADV_TYPE_FLAGS,
-            struct.pack("B", (0x01 if limited_disc else 0x02) + (0x18 if br_edr else 0x04)),
+        resp_data = build_adv_resp_data(
+            adv_data, limited_disc, br_edr, name, services, appearance, manufacturer
         )
-
-        if name:
-            resp_data = _append(adv_data, resp_data, _ADV_TYPE_NAME, name)
-
-        if services:
-            for uuid in services:
-                b = bytes(uuid)
-                if len(b) == 2:
-                    resp_data = _append(adv_data, resp_data, _ADV_TYPE_UUID16_COMPLETE, b)
-                elif len(b) == 4:
-                    resp_data = _append(adv_data, resp_data, _ADV_TYPE_UUID32_COMPLETE, b)
-                elif len(b) == 16:
-                    resp_data = _append(adv_data, resp_data, _ADV_TYPE_UUID128_COMPLETE, b)
-
-        if appearance:
-            # See org.bluetooth.characteristic.gap.appearance.xml
-            resp_data = _append(
-                adv_data, resp_data, _ADV_TYPE_APPEARANCE, struct.pack("<H", appearance)
-            )
-
-        if manufacturer:
-            resp_data = _append(
-                adv_data,
-                resp_data,
-                _ADV_TYPE_MANUFACTURER,
-                struct.pack("<H", manufacturer[0]) + manufacturer[1],
-            )
 
     _connect_event = _connect_event or asyncio.ThreadSafeFlag()
     ble.gap_advertise(interval_us, adv_data=adv_data, resp_data=resp_data, connectable=connectable)
