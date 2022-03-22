@@ -4,8 +4,8 @@ except:
     import sys
 import os
 
-class LS:
 
+class LS:
     def __repr__(self):
         self.__call__()
         return ""
@@ -15,26 +15,27 @@ class LS:
         l.sort()
         for f in l:
             if f[1] == 0x4000:  # stat.S_IFDIR
-                print("   <dir> %s" % f[0])
+                print("    <dir> %s" % f[0])
         for f in l:
             if f[1] != 0x4000:
                 if len(f) > 3:
-                    print("% 8d %s" % (f[3], f[0]))
+                    print("% 9d %s" % (f[3], f[0]))
                 else:
-                    print("         %s" % f[0])
+                    print("          %s" % f[0])
         try:
             st = os.statvfs(path)
             print("\n{:,d}k free".format(st[1] * st[3] // 1024))
         except:
             pass
 
-class PWD:
 
+class PWD:
     def __repr__(self):
         return os.getcwd()
 
     def __call__(self):
         return self.__repr__()
+
 
 class CLEAR:
     def __repr__(self):
@@ -52,23 +53,26 @@ def head(f, n=10):
                 break
             sys.stdout.write(l)
 
+
 def cat(f):
     head(f, 1 << 30)
 
+
 def cp(s, t):
-    try: 
+    try:
         if os.stat(t)[0] & 0x4000:  # is directory
             t = t.rstrip("/") + "/" + s
     except OSError:
         pass
     buf = bytearray(512)
     buf_mv = memoryview(buf)
-    with open(s, "rb") as s:
-        with open(t, "wb") as t:
-            while True:
-                n = s.readinto(buf)
-                if n <= 0: break
-                t.write(buf_mv[:n])
+    with open(s, "rb") as s, open(t, "wb") as t:
+        while True:
+            n = s.readinto(buf)
+            if n <= 0:
+                break
+            t.write(buf_mv[:n])
+
 
 def newfile(path):
     print("Type file contents line by line, finish with EOF (Ctrl+D).")
@@ -82,12 +86,11 @@ def newfile(path):
             f.write("\n")
 
 
-def rm(d):  # Remove file or tree
-
+def rm(d, recursive=False):  # Remove file or tree
     try:
-        if os.stat(d)[0] & 0x4000:  # Dir
+        if (os.stat(d)[0] & 0x4000) and recursive:  # Dir
             for f in os.ilistdir(d):
-                if f[0] != '.' and f[0] != '..':
+                if f[0] != "." and f[0] != "..":
                     rm("/".join((d, f[0])))  # File or Dir
             os.rmdir(d)
         else:  # File
@@ -95,10 +98,10 @@ def rm(d):  # Remove file or tree
     except:
         print("rm of '%s' failed" % d)
 
-class Man():
 
+class Man:
     def __repr__(self):
-        return("""
+        return """
 upysh is intended to be imported using:
 from upysh import *
 
@@ -108,7 +111,8 @@ upysh commands:
 clear, ls, ls(...), head(...), cat(...), newfile(...)
 cp('src', 'dest'), mv('old', 'new'), rm(...)
 pwd, cd(...), mkdir(...), rmdir(...)
-""")
+"""
+
 
 man = Man()
 pwd = PWD()
