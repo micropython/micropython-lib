@@ -611,7 +611,7 @@ class TestTimeDelta(HarmlessMixedComparison, unittest.TestCase):
         self.assertRaises(OverflowError, lambda: -timedelta.max)
 
         day = timedelta(1)
-        self.assertRaises(OverflowError, day.__mul__, 10 ** 9)
+        self.assertRaises(OverflowError, day.__mul__, 10**9)
         self.assertRaises(OverflowError, day.__mul__, 1e9)
         self.assertRaises(OverflowError, day.__truediv__, 1e-20)
         self.assertRaises(OverflowError, day.__truediv__, 1e-10)
@@ -1692,7 +1692,7 @@ class TestDateTime(TestDate):
         self.assertRaises(TypeError, lambda: a + a)
 
     def test_pickling(self):
-        args = 6, 7, 23, 20, 59, 1, 64 ** 2
+        args = 6, 7, 23, 20, 59, 1, 64**2
         orig = self.theclass(*args)
         for pickler, unpickler, proto in pickle_choices:
             green = pickler.dumps(orig, proto)
@@ -1709,7 +1709,7 @@ class TestDateTime(TestDate):
 
     @unittest.skip("Skip pickling for MicroPython")
     def test_pickling_subclass_datetime(self):
-        args = 6, 7, 23, 20, 59, 1, 64 ** 2
+        args = 6, 7, 23, 20, 59, 1, 64**2
         orig = SubclassDatetime(*args)
         for pickler, unpickler, proto in pickle_choices:
             green = pickler.dumps(orig, proto)
@@ -2298,7 +2298,7 @@ class TestTime(HarmlessMixedComparison, unittest.TestCase):
         self.assertTrue(self.theclass.max > self.theclass.min)
 
     def test_pickling(self):
-        args = 20, 59, 16, 64 ** 2
+        args = 20, 59, 16, 64**2
         orig = self.theclass(*args)
         for pickler, unpickler, proto in pickle_choices:
             green = pickler.dumps(orig, proto)
@@ -2307,7 +2307,7 @@ class TestTime(HarmlessMixedComparison, unittest.TestCase):
 
     @unittest.skip("Skip pickling for MicroPython")
     def test_pickling_subclass_time(self):
-        args = 20, 59, 16, 64 ** 2
+        args = 20, 59, 16, 64**2
         orig = SubclassTime(*args)
         for pickler, unpickler, proto in pickle_choices:
             green = pickler.dumps(orig, proto)
@@ -2686,7 +2686,7 @@ class TestTimeTZ(TestTime, TZInfoBase, unittest.TestCase):
 
     def test_pickling(self):
         # Try one without a tzinfo.
-        args = 20, 59, 16, 64 ** 2
+        args = 20, 59, 16, 64**2
         orig = self.theclass(*args)
         for pickler, unpickler, proto in pickle_choices:
             green = pickler.dumps(orig, proto)
@@ -2916,7 +2916,7 @@ class TestDateTimeTZ(TestDateTime, TZInfoBase, unittest.TestCase):
 
     def test_pickling(self):
         # Try one without a tzinfo.
-        args = 6, 7, 23, 20, 59, 1, 64 ** 2
+        args = 6, 7, 23, 20, 59, 1, 64**2
         orig = self.theclass(*args)
         for pickler, unpickler, proto in pickle_choices:
             green = pickler.dumps(orig, proto)

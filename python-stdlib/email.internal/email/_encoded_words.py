@@ -63,7 +63,7 @@ __all__ = [
 
 # regex based decoder.
 _q_byte_subber = functools.partial(
-    re.compile(br"=([a-fA-F0-9]{2})").sub, lambda m: bytes([int(m.group(1), 16)])
+    re.compile(rb"=([a-fA-F0-9]{2})").sub, lambda m: bytes([int(m.group(1), 16)])
 )
 
 

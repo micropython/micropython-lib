@@ -316,7 +316,7 @@ def main(args=None, *, _wrap_timer=None):
     if number == 0:
         # determine number so that 0.2 <= total time < 2.0
         for i in range(1, 10):
-            number = 10 ** i
+            number = 10**i
             try:
                 x = t.timeit(number)
             except:
