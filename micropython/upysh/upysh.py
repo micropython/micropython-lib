@@ -1,7 +1,4 @@
-try:
-    import usys as sys
-except:
-    import sys
+import sys
 import os
 
 
