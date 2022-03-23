@@ -116,12 +116,23 @@ def query_git_files(verbose):
             return set()
         return {f.strip() for f in ret.split("\n")}
 
+    def rel_paths(files, root):
+        return {os.path.relpath(os.path.join(root, f.strip()), ".") for f in files}
+
     try:
         ret = set()
 
+        # get path to root of repository
+        root_dir = (
+            subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True)
+            .stdout.strip()
+            .decode()
+        )
+
         # Check locally modified files
-        dirty = cmd_result_set(["git", "status", "--porcelain"])
-        ret = {line.split(" ", 1)[-1] for line in dirty}
+        status = cmd_result_set(["git", "status", "--porcelain"])
+        dirty_files = rel_paths({line.split(" ", 1)[-1] for line in status}, root_dir)
+        ret |= dirty_files
 
         # Current commit and branch
         current_commit = (
@@ -144,7 +155,10 @@ def query_git_files(verbose):
         # List the files modified on current branch
         if verbose:
             print("Scanning changes from current branch and any local changes")
-        ret |= cmd_result_set(["git", "diff", "--relative", "--name-only", BASE_BRANCH])
+        files_on_branch = rel_paths(
+            cmd_result_set(["git", "diff", "--name-only", BASE_BRANCH]), root_dir
+        )
+        ret |= files_on_branch
         return ret
     except:
         # Git not available, run on entire repo
