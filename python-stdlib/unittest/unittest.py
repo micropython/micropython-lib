@@ -185,6 +185,18 @@ class TestResult:
         return self.errorsNum == 0 and self.failuresNum == 0
 
 
+def print_exception(e):
+    print("-" * 80)
+
+    try:
+        sys.print_exception(e, sys.stdout)
+    except Exception:
+        # just print exception
+        print("EXCEPTION:", e)
+
+    print("-" * 80)
+
+
 # TODO: Uncompliant
 def run_class(c, test_result):
     o = c()
@@ -202,11 +214,10 @@ def run_class(c, test_result):
             except SkipTest as e:
                 print(" skipped:", e.args[0])
                 test_result.skippedNum += 1
-            except:
+            except Exception as e:
                 print(" FAIL")
                 test_result.failuresNum += 1
-                # Uncomment to investigate failure in detail
-                # raise
+                print_exception(e)
                 continue
             finally:
                 tear_down()
