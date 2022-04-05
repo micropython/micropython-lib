@@ -188,8 +188,13 @@ class TestResult:
 # TODO: Uncompliant
 def run_class(c, test_result):
     o = c()
+    set_up_class = getattr(o, "setUpClass", lambda: None)
+    tear_down_class = getattr(o, "tearDownClass", lambda: None)
     set_up = getattr(o, "setUp", lambda: None)
     tear_down = getattr(o, "tearDown", lambda: None)
+
+    set_up_class()
+
     for name in dir(o):
         if name.startswith("test"):
             print("%s (%s) ..." % (name, c.__qualname__), end="")
@@ -210,6 +215,8 @@ def run_class(c, test_result):
                 continue
             finally:
                 tear_down()
+    
+    tear_down_class()
 
 
 def main(module="__main__"):
