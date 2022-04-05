@@ -366,6 +366,8 @@ def run_suite(c, test_result, suite_name=""):
         o = c()
     else:
         o = c
+    set_up_class = getattr(o, "setUpClass", lambda: None)
+    tear_down_class = getattr(o, "tearDownClass", lambda: None)
     set_up = getattr(o, "setUp", lambda: None)
     tear_down = getattr(o, "tearDown", lambda: None)
     exceptions = []
@@ -410,6 +412,8 @@ def run_suite(c, test_result, suite_name=""):
             except AttributeError:
                 pass
 
+    set_up_class()
+
     if hasattr(o, "runTest"):
         name = str(o)
         run_one(o.runTest)
@@ -425,6 +429,8 @@ def run_suite(c, test_result, suite_name=""):
     if callable(o):
         name = o.__name__
         run_one(o)
+
+    tear_down_class()
 
     return exceptions
 
