@@ -24,6 +24,29 @@ directory on your device.
 
 Other libraries are packages, in which case you'll need to copy the directory instead. For example, to add `collections.defaultdict`, copy `collections/collections/__init__.py` and `collections.defaultdict/collections/defaultdict.py` to a directory named `lib/collections` on your device.
 
+Developer Guidance
+------------------
+
+To everyone interested in contributing here, thank you! While we might take a while to get back to you (resources / man-hours are tight) we do value your efforts.
+
+To make reviews quicker & easier, please try to follow these guidelines as much as possible:
+
+* Submit packages to the corect folder; in particular packages in `python-stdlib` should only have functions that match the api (or a subset thereof) of the cpython standard library equivalent. If you want to add extra functionality, please put that in a separate / companion package that can be submitted to a different folder.
+
+* If you're adding changes / new packages that match existing cpython ones, please include a link to the matching cpython docs in the MR.
+
+* For a new package, try to fill out the `setup.py` and `metadata.txt` as best you can, looking at other ones here as example.
+  - In particular with `python-stdlib` packages, note whether it's a copy of the cpython module patched for compatibility vs a re-implementation to match the api.
+
+* When pushing commits / opening MR's please try to match the format `package/name: Description of change.`  
+  Take a look at the git history [here](https://github.com/micropython/micropython-lib/commits/master) for examples.
+
+* Unit tests are highly encouraged! Passing tests make for quicker reviews!
+
+* Please run `pip3 install -U black; python3 tools/codeformat.py ./path/to/my/module` before committing changes to ensure the formatting matches the standard here.
+
+* If you want / need to use your package faster than we can get back to you here, remember you're also more than welcome to keep your packages in personal repo's and [publish on PyPI](https://docs.micropython.org/en/latest/reference/packages.html) for use with upip! If you run into issues with this process you can still raise an issue here and we'll try to assist.
+
 Future plans (and new contributor ideas)
 ----------------------------------------
 
