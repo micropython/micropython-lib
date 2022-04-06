@@ -212,7 +212,7 @@ class DeviceConnection:
     async def disconnect(self, timeout_ms=2000):
         await self.disconnected(timeout_ms, disconnect=True)
 
-    async def disconnected(self, timeout_ms=60000, disconnect=False):
+    async def disconnected(self, timeout_ms=None, disconnect=False):
         if not self.is_connected():
             return
 
