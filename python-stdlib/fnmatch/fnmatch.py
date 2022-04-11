@@ -9,11 +9,21 @@ expression.  They cache the compiled regular expressions for speed.
 The function translate(PATTERN) returns a regular expression
 corresponding to PATTERN.  (It does not compile it.)
 """
-import os
-import os.path
 import re
 
-# import functools
+try:
+    from os.path import normcase
+except ImportError:
+
+    def normcase(s):
+        """
+        From os.path.normcase
+        Normalize the case of a pathname. On Windows, convert all characters
+        in the pathname to lowercase, and also convert forward slashes to
+        backward slashes. On other operating systems, return the path unchanged.
+        """
+        return s
+
 
 __all__ = ["filter", "fnmatch", "fnmatchcase", "translate"]
 
@@ -35,8 +45,8 @@ def fnmatch(name, pat):
     if the operating system requires it.
     If you don't want this, use fnmatchcase(FILENAME, PATTERN).
     """
-    name = os.path.normcase(name)
-    pat = os.path.normcase(pat)
+    name = normcase(name)
+    pat = normcase(pat)
     return fnmatchcase(name, pat)
 
 
@@ -59,10 +69,10 @@ def _compile_pattern(pat):
 def filter(names, pat):
     """Return the subset of the list NAMES that match PAT."""
     result = []
-    pat = os.path.normcase(pat)
+    pat = normcase(pat)
     match = _compile_pattern(pat)
     for name in names:
-        if match(os.path.normcase(name)):
+        if match(normcase(name)):
             result.append(name)
     return result
 

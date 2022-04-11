@@ -21,5 +21,4 @@ setup(
     license="Python",
     cmdclass={"sdist": sdist_upip.sdist},
     py_modules=["fnmatch"],
-    install_requires=["micropython-os", "micropython-os.path"],
 )
