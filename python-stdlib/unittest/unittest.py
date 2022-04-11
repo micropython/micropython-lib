@@ -10,6 +10,13 @@ except ImportError:
     traceback = None
 
 
+def _snapshot_modules():
+    return {k: v for k, v in sys.modules.items()}
+
+
+__modules__ = _snapshot_modules()
+
+
 class SkipTest(Exception):
     pass
 
@@ -375,6 +382,13 @@ def _test_cases(mod):
 
 
 def run_module(runner, module, path, top):
+    if not module:
+        raise ValueError("Empty module name")
+
+    # Reset the python environment before running test
+    sys.modules.clear()
+    sys.modules.update(__modules__)
+
     sys_path_initial = sys.path[:]
     # Add script dir and top dir to import path
     sys.path.insert(0, str(path))
@@ -395,6 +409,8 @@ def run_module(runner, module, path, top):
 def discover(runner: TestRunner):
     from unittest_discover import discover
 
+    global __modules__
+    __modules__ = _snapshot_modules()
     return discover(runner=runner)
 
 
