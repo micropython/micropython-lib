@@ -1,4 +1,5 @@
 import unittest
+from test_unittest_isolated import global_context
 
 
 class TestUnittestAssertions(unittest.TestCase):
@@ -141,6 +142,11 @@ class TestUnittestAssertions(unittest.TestCase):
             pass
         else:
             self.fail("Unexpected success was not detected")
+
+    def test_NotChangedByOtherTest(self):
+        global global_context
+        assert global_context is None
+        global_context = True
 
 
 if __name__ == "__main__":
