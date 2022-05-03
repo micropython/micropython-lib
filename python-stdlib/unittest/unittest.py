@@ -43,6 +43,10 @@ __test_result__ = None
 
 
 class SubtestContext:
+    def __init__(self, msg=None, params=None):
+        self.msg = msg
+        self.params = params
+
     def __enter__(self):
         pass
 
@@ -50,15 +54,16 @@ class SubtestContext:
         if exc_info[0] is not None:
             # Exception raised
             global __test_result__, __current_test__
-            handle_test_exception(
-                __current_test__,
-                __test_result__,
-                exc_info
-            )
+            test_details = __current_test__
+            if self.msg:
+                test_details += (f" [{self.msg}]",)
+            if self.params:
+                detail = ", ".join(f"{k}={v}" for k, v in self.params.items())
+                test_details += (f" ({detail})",)
+
+            handle_test_exception(test_details, __test_result__, exc_info, False)
         # Suppress the exception as we've captured it above
         return True
-
-
 
 
 class NullContext:
@@ -287,6 +292,7 @@ class TestResult:
         self.testsRun = 0
         self.errors = []
         self.failures = []
+        self.newFailures = 0
 
     def wasSuccessful(self):
         return self.errorsNum == 0 and self.failuresNum == 0
@@ -299,8 +305,9 @@ class TestResult:
     def printErrorList(self, lst):
         sep = "----------------------------------------------------------------------"
         for c, e in lst:
+            detail = " ".join((str(i) for i in c))
             print("======================================================================")
-            print(c)
+            print(f"FAIL: {detail}")
             print(sep)
             print(e)
 
@@ -331,18 +338,23 @@ def capture_exc(exc, traceback):
     return buf.getvalue()
 
 
-def handle_test_exception(current_test: tuple, test_result: TestResult, exc_info: tuple):
+def handle_test_exception(
+    current_test: tuple, test_result: TestResult, exc_info: tuple, verbose=True
+):
     exc = exc_info[1]
-    traceback =  exc_info[2]
+    traceback = exc_info[2]
     ex_str = capture_exc(exc, traceback)
     if isinstance(exc, AssertionError):
         test_result.failuresNum += 1
         test_result.failures.append((current_test, ex_str))
-        print(" FAIL")
+        if verbose:
+            print(" FAIL")
     else:
         test_result.errorsNum += 1
         test_result.errors.append((current_test, ex_str))
-        print(" ERROR")
+        if verbose:
+            print(" ERROR")
+    test_result.newFailures += 1
 
 
 def run_suite(c, test_result, suite_name=""):
@@ -370,20 +382,22 @@ def run_suite(c, test_result, suite_name=""):
         test_container = f"({suite_name})"
         __current_test__ = (name, test_container)
         try:
+            test_result.newFailures = 0
             test_result.testsRun += 1
             test_globals = dict(**globals())
             test_globals["test_function"] = test_function
             exec("test_function()", test_globals, test_globals)
             # No exception occurred, test passed
-            print(" ok")
+            if test_result.newFailures:
+                print(" FAIL")
+            else:
+                print(" ok")
         except SkipTest as e:
             print(" skipped:", e.args[0])
             test_result.skippedNum += 1
         except Exception as ex:
             handle_test_exception(
-                current_test=(name, c),
-                test_result=test_result,
-                exc_info=sys.exc_info()
+                current_test=(name, c), test_result=test_result, exc_info=sys.exc_info()
             )
             # Uncomment to investigate failure in detail
             # raise
