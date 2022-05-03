@@ -148,6 +148,14 @@ class TestUnittestAssertions(unittest.TestCase):
         assert global_context is None
         global_context = True
 
+    def test_subtest_even(self):
+        """
+        Test that numbers between 0 and 5 are all even.
+        """
+        for i in range(0, 10, 2):
+            with self.subTest("Should only pass for even numbers", i=i):
+                self.assertEqual(i % 2, 0)
+
 
 if __name__ == "__main__":
     unittest.main()
