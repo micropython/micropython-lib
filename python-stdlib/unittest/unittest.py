@@ -263,7 +263,7 @@ class TestSuite:
 
 
 class TestRunner:
-    def run(self, suite):
+    def run(self, suite: TestSuite):
         res = TestResult()
         suite.run(res)
 
@@ -292,7 +292,8 @@ class TestResult:
         self.testsRun = 0
         self.errors = []
         self.failures = []
-        self.newFailures = 0
+        self.skipped = []
+        self._newFailures = 0
 
     def wasSuccessful(self):
         return self.errorsNum == 0 and self.failuresNum == 0
@@ -326,6 +327,7 @@ class TestResult:
         self.testsRun += other.testsRun
         self.errors.extend(other.errors)
         self.failures.extend(other.failures)
+        self.skipped.extend(other.skipped)
         return self
 
 
@@ -354,10 +356,10 @@ def handle_test_exception(
         test_result.errors.append((current_test, ex_str))
         if verbose:
             print(" ERROR")
-    test_result.newFailures += 1
+    test_result._newFailures += 1
 
 
-def run_suite(c, test_result, suite_name=""):
+def run_suite(c, test_result: TestResult, suite_name=""):
     if isinstance(c, TestSuite):
         c.run(test_result)
         return
@@ -384,19 +386,21 @@ def run_suite(c, test_result, suite_name=""):
         test_container = f"({suite_name})"
         __current_test__ = (name, test_container)
         try:
-            test_result.newFailures = 0
+            test_result._newFailures = 0
             test_result.testsRun += 1
             test_globals = dict(**globals())
             test_globals["test_function"] = test_function
             exec("test_function()", test_globals, test_globals)
             # No exception occurred, test passed
-            if test_result.newFailures:
+            if test_result._newFailures:
                 print(" FAIL")
             else:
                 print(" ok")
         except SkipTest as e:
-            print(" skipped:", e.args[0])
+            reason = e.args[0]
+            print(" skipped:", reason)
             test_result.skippedNum += 1
+            test_result.skipped.append((name, c, reason))
         except Exception as ex:
             handle_test_exception(
                 current_test=(name, c), test_result=test_result, exc_info=sys.exc_info()
@@ -477,8 +481,14 @@ def discover(runner: TestRunner):
     return discover(runner=runner)
 
 
-def main(module="__main__"):
-    runner = TestRunner()
+def main(module="__main__", testRunner=None):
+    if testRunner:
+        if isinstance(testRunner, type):
+            runner = testRunner()
+        else:
+            runner = testRunner
+    else:
+        runner = TestRunner()
 
     if len(sys.argv) <= 1:
         result = discover(runner)
