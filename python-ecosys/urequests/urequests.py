@@ -36,6 +36,8 @@ class Response:
 def request(
     method, url, data=None, json=None, headers={}, stream=None, parse_headers=True, auth=None
 ):
+    chunked_data = data and getattr(data, "__iter__", None) and not getattr(data, "__len__", None)
+
     if auth is not None:
         import ubinascii
 
@@ -90,10 +92,20 @@ def request(
             data = ujson.dumps(json)
             s.write(b"Content-Type: application/json\r\n")
         if data:
-            s.write(b"Content-Length: %d\r\n" % len(data))
+            if chunked_data:
+                s.write(b"Transfer-Encoding: chunked\r\n")
+            else:
+                s.write(b"Content-Length: %d\r\n" % len(data))
         s.write(b"Connection: close\r\n\r\n")
         if data:
-            s.write(data)
+            if chunked_data:
+                for chunk in data:
+                    s.write(b"%x\r\n" % len(chunk))
+                    s.write(chunk)
+                    s.write(b"\r\n")
+                s.write("0\r\n\r\n")
+            else:
+                s.write(data)
 
         l = s.readline()
         # print(l)
@@ -154,4 +166,3 @@ def patch(url, **kw):
 
 def delete(url, **kw):
     return request("DELETE", url, **kw)
-
