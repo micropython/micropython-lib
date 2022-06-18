@@ -36,6 +36,7 @@ class Response:
 def request(
     method, url, data=None, json=None, headers={}, stream=None, parse_headers=True, auth=None
 ):
+    redirect = None  # redirection url, None means no redirection
     chunked_data = data and getattr(data, "__iter__", None) and not getattr(data, "__len__", None)
 
     if auth is not None:
@@ -123,7 +124,10 @@ def request(
                 if b"chunked" in l:
                     raise ValueError("Unsupported " + str(l, "utf-8"))
             elif l.startswith(b"Location:") and not 200 <= status <= 299:
-                raise NotImplementedError("Redirects not yet supported")
+                if status in [301, 302, 303, 307, 308]:
+                    redirect = str(l[10:-2], "utf-8")
+                else:
+                    raise NotImplementedError("Redirect %d not yet supported" % status)
             if parse_headers is False:
                 pass
             elif parse_headers is True:
@@ -136,12 +140,19 @@ def request(
         s.close()
         raise
 
-    resp = Response(s)
-    resp.status_code = status
-    resp.reason = reason
-    if resp_d is not None:
-        resp.headers = resp_d
-    return resp
+    if redirect:
+        s.close()
+        if status in [301, 302, 303]:
+            return request("GET", redirect, None, None, headers, stream)
+        else:
+            return request(method, redirect, data, json, headers, stream)
+    else:
+        resp = Response(s)
+        resp.status_code = status
+        resp.reason = reason
+        if resp_d is not None:
+            resp.headers = resp_d
+        return resp
 
 
 def head(url, **kw):
