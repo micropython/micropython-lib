@@ -1,4 +1,3 @@
 srctype = micropython-lib
 type = module
-version = 0.6
-author = Paul Sokolovsky
+version = 0.7.0
