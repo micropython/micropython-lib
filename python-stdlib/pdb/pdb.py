@@ -66,25 +66,28 @@ Debugger commands
 """
 # NOTE: the actual command documentation is collected from docstrings of the
 # commands and is appended to __doc__ after the class has been defined.
-
+import builtins as __builtins__
 import os
 import io
 import re
 import sys
 import cmd
 import bdb
-import dis
+# import dis  # MPY: dis not currently available
 import code
 import glob
 import pprint
-import signal
-import inspect
+# import signal  # MPY: signal not currently available
+# import inspect  # MPY: inspect not currently available
 import tokenize
-import functools
+# import functools
 import traceback
 import linecache
 
-from typing import Union
+try:
+    from typing import Union
+except ImportError:
+    pass
 
 
 class Restart(Exception):
@@ -104,7 +107,9 @@ def find_function(funcname, filename):
     with fp:
         for lineno, line in enumerate(fp, start=1):
             if cre.match(line):
-                return funcname, filename, lineno
+                ## MPY: increment line number by 1 as we want to break on the
+                # first line of the function, not the function def line itself
+                return funcname, filename, lineno + 1
     return None
 
 def getsourcelines(obj):
@@ -117,11 +122,12 @@ def getsourcelines(obj):
     return inspect.getblock(lines[lineno:]), lineno+1
 
 def lasti2lineno(code, lasti):
-    linestarts = list(dis.findlinestarts(code))
-    linestarts.reverse()
-    for i, lineno in linestarts:
-        if lasti >= i:
-            return lineno
+    ## MPY: dis not currently available
+    # linestarts = list(dis.findlinestarts(code))
+    # linestarts.reverse()
+    # for i, lineno in linestarts:
+    #     if lasti >= i:
+    #         return lineno
     return 0
 
 
@@ -131,40 +137,39 @@ class _rstr(str):
         return self
 
 
-class ScriptTarget(str):
-    def __new__(cls, val):
+class ScriptTarget:
+    def __init__(self, val):
         # Mutate self to be the "real path".
-        res = super().__new__(cls, os.path.realpath(val))
+        self.path = os.path.realpath(val)
 
         # Store the original path for error reporting.
-        res.orig = val
-
-        return res
+        self.orig = val
 
     def check(self):
-        if not os.path.exists(self):
+        if not os.path.exists(self.path):
             print('Error:', self.orig, 'does not exist')
             sys.exit(1)
 
         # Replace pdb's dir with script's dir in front of module search path.
-        sys.path[0] = os.path.dirname(self)
+        sys.path[0] = os.path.dirname(self.path)
 
     @property
     def filename(self):
-        return self
+        return self.path
 
     @property
     def namespace(self):
         return dict(
             __name__='__main__',
-            __file__=self,
+            __file__=self.path,
             __builtins__=__builtins__,
         )
 
     @property
     def code(self):
-        with io.open(self) as fp:
-            return f"exec(compile({fp.read()!r}, {self!r}, 'exec'))"
+        with io.open(self.path) as fp:
+            ## MPY: f-string !r syntax not supported
+            return f"exec(compile({repr(fp.read())}, {repr(self.path)}, 'exec'))"
 
 
 class ModuleTarget(str):
@@ -175,7 +180,7 @@ class ModuleTarget(str):
             traceback.print_exc()
             sys.exit(1)
 
-    @functools.cached_property
+    # @functools.cached_property
     def _details(self):
         import runpy
         return runpy._get_module_details(self)
@@ -219,9 +224,9 @@ class Pdb(bdb.Bdb, cmd.Cmd):
 
     def __init__(self, completekey='tab', stdin=None, stdout=None, skip=None,
                  nosigint=False, readrc=True):
-        bdb.Bdb.__init__(self, skip=skip)
+        bdb.Bdb.__init__(self, skip)
         cmd.Cmd.__init__(self, completekey, stdin, stdout)
-        sys.audit("pdb.Pdb")
+        # sys.audit("pdb.Pdb")
         if stdout:
             self.use_rawinput = 0
         self.prompt = '(Pdb) '
@@ -422,7 +427,7 @@ class Pdb(bdb.Bdb, cmd.Cmd):
         if Pdb._previous_sigint_handler:
             try:
                 signal.signal(signal.SIGINT, Pdb._previous_sigint_handler)
-            except ValueError:  # ValueError: signal only works in main thread
+            except (ValueError, NameError):  # ValueError: signal only works in main thread
                 pass
             else:
                 Pdb._previous_sigint_handler = None
@@ -573,7 +578,9 @@ class Pdb(bdb.Bdb, cmd.Cmd):
         # Collect globals and locals.  It is usually not really sensible to also
         # complete builtins, and they clutter the namespace quite heavily, so we
         # leave them out.
-        ns = {**self.curframe.f_globals, **self.curframe_locals}
+        ns = {}
+        ns.update(self.curframe.f_globals)
+        ns.update(self.curframe_locals)
         if '.' in text:
             # Walk an attribute chain up to the last part, similar to what
             # rlcompleter does.  This will bail if any of the parts are not
@@ -1137,7 +1144,7 @@ class Pdb(bdb.Bdb, cmd.Cmd):
             try:
                 Pdb._previous_sigint_handler = \
                     signal.signal(signal.SIGINT, self.sigint_handler)
-            except ValueError:
+            except (ValueError, NameError):
                 # ValueError happens when do_continue() is invoked from
                 # a non-main thread in which case we just continue without
                 # SIGINT set. Would printing a message here (once) make
@@ -1475,7 +1482,9 @@ class Pdb(bdb.Bdb, cmd.Cmd):
         Start an interactive interpreter whose global namespace
         contains all the (global and local) names found in the current scope.
         """
-        ns = {**self.curframe.f_globals, **self.curframe_locals}
+        ns = {}
+        ns.update(self.curframe.f_globals)
+        ns.update(self.curframe_locals)
         code.interact("*interactive*", local=ns)
 
     def do_alias(self, arg):
@@ -1640,29 +1649,34 @@ class Pdb(bdb.Bdb, cmd.Cmd):
         # __main__ will break). Clear __main__ and replace with
         # the target namespace.
         import __main__
+        try:
+            __main__.__dict__
+        except AttributeError: 
+            __main__.__dict__ = dict()
         __main__.__dict__.clear()
         __main__.__dict__.update(target.namespace)
+        
 
         self.run(target.code)
 
 
 # Collect all command help into docstring, if not run with -OO
+## MPY: NameError: name '__doc__' isn't defined
+# if __doc__ is not None:
+#     # unfortunately we can't guess this order from the class definition
+#     _help_order = [
+#         'help', 'where', 'down', 'up', 'break', 'tbreak', 'clear', 'disable',
+#         'enable', 'ignore', 'condition', 'commands', 'step', 'next', 'until',
+#         'jump', 'return', 'retval', 'run', 'continue', 'list', 'longlist',
+#         'args', 'p', 'pp', 'whatis', 'source', 'display', 'undisplay',
+#         'interact', 'alias', 'unalias', 'debug', 'quit',
+#     ]
 
-if __doc__ is not None:
-    # unfortunately we can't guess this order from the class definition
-    _help_order = [
-        'help', 'where', 'down', 'up', 'break', 'tbreak', 'clear', 'disable',
-        'enable', 'ignore', 'condition', 'commands', 'step', 'next', 'until',
-        'jump', 'return', 'retval', 'run', 'continue', 'list', 'longlist',
-        'args', 'p', 'pp', 'whatis', 'source', 'display', 'undisplay',
-        'interact', 'alias', 'unalias', 'debug', 'quit',
-    ]
+#     for _command in _help_order:
+#         __doc__ += getattr(Pdb, 'do_' + _command).__doc__.strip() + '\n\n'
+#     __doc__ += Pdb.help_exec.__doc__
 
-    for _command in _help_order:
-        __doc__ += getattr(Pdb, 'do_' + _command).__doc__.strip() + '\n\n'
-    __doc__ += Pdb.help_exec.__doc__
-
-    del _help_order, _command
+#     del _help_order, _command
 
 
 # Simplified interface
@@ -1781,9 +1795,11 @@ def main():
             sys.exit(1)
         except:
             traceback.print_exc()
+            t = sys.exc_info()[2]
+            if t is None:
+                break
             print("Uncaught exception. Entering post mortem debugging")
             print("Running 'cont' or 'step' will restart the program")
-            t = sys.exc_info()[2]
             pdb.interaction(None, t)
             print("Post mortem debugger finished. The " + target +
                   " will be restarted")
