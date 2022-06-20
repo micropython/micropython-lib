@@ -32,11 +32,12 @@ Compile():
     but with 'memory' in the sense described above.
 """
 
-import __future__
+# import __future__
 import warnings
 
-_features = [getattr(__future__, fname)
-             for fname in __future__.all_feature_names]
+## MPY: Future flags aren’t set on compiled code so just remove the checks
+# _features = [getattr(__future__, fname)
+#              for fname in __future__.all_feature_names]
 
 __all__ = ["compile_command", "Compile", "CommandCompiler"]
 
@@ -116,9 +117,10 @@ class Compile:
 
     def __call__(self, source, filename, symbol):
         codeob = compile(source, filename, symbol, self.flags, True)
-        for feature in _features:
-            if codeob.co_flags & feature.compiler_flag:
-                self.flags |= feature.compiler_flag
+        ## MPY: Future flags aren’t set on compiled code so just remove the checks
+        # for feature in _features:
+        #     if codeob.co_flags & feature.compiler_flag:
+        #         self.flags |= feature.compiler_flag
         return codeob
 
 class CommandCompiler:
