@@ -111,6 +111,9 @@ def request(
         l = s.readline()
         # print(l)
         l = l.split(None, 2)
+        if len(l) < 2:
+            # Invalid response
+            raise ValueError("HTTP error: BadStatusLine:\n%s" % l)
         status = int(l[1])
         reason = ""
         if len(l) > 2:
