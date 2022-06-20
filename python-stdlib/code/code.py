@@ -201,14 +201,14 @@ class InteractiveConsole(InteractiveInterpreter):
         a default message is printed.
 
         """
+        ## MPY: Older versions of mpy don't support setting ps1 & ps2.
+        ps1 = ">>> "
+        ps2 = "... "
         try:
-            sys.ps1
-        except AttributeError:
-            sys.ps1 = ">>> "
-        try:
-            sys.ps2
-        except AttributeError:
-            sys.ps2 = "... "
+            ps1 = sys.ps1
+            ps2 = sys.ps2
+        except:
+            pass
         cprt = 'Type "help", "copyright", "credits" or "license" for more information.'
         if banner is None:
             self.write("Python %s on %s\n%s\n(%s)\n" %
@@ -220,9 +220,9 @@ class InteractiveConsole(InteractiveInterpreter):
         while 1:
             try:
                 if more:
-                    prompt = sys.ps2
+                    prompt = ps2
                 else:
-                    prompt = sys.ps1
+                    prompt = ps1
                 try:
                     line = self.raw_input(prompt)
                 except EOFError:
