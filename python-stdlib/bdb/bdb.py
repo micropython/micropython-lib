@@ -1,13 +1,19 @@
 """Debugger basics"""
 
+# This is originally from cpython 3.10: https://raw.githubusercontent.com/python/cpython/3.10/Lib/bdb.py
+# Patches for micropython have been commented as such.
+
 import fnmatch
 import sys
 import os
-from inspect import CO_GENERATOR, CO_COROUTINE, CO_ASYNC_GENERATOR
+
+## MPY: no inspect module avaialble
+# from inspect import CO_GENERATOR, CO_COROUTINE, CO_ASYNC_GENERATOR
 
 __all__ = ["BdbQuit", "Bdb", "Breakpoint"]
 
-GENERATOR_AND_COROUTINE_FLAGS = CO_GENERATOR | CO_COROUTINE | CO_ASYNC_GENERATOR
+## MPY: These flags currently don't exist
+# GENERATOR_AND_COROUTINE_FLAGS = CO_GENERATOR | CO_COROUTINE | CO_ASYNC_GENERATOR
 
 
 class BdbQuit(Exception):
@@ -115,6 +121,12 @@ class Bdb:
             if self.quitting: raise BdbQuit
         return self.trace_dispatch
 
+    def is_coroutine(self, frame):
+        ## MPY: co_flags attrib not available, compatible method of detecting coroutine TBD
+        # return frame.f_code.co_flags & GENERATOR_AND_COROUTINE_FLAGS
+        return False
+
+
     def dispatch_call(self, frame, arg):
         """Invoke user function and return trace function for call event.
 
@@ -131,7 +143,7 @@ class Bdb:
             # No need to trace this function
             return # None
         # Ignore call events in generator except when stepping.
-        if self.stopframe and frame.f_code.co_flags & GENERATOR_AND_COROUTINE_FLAGS:
+        if self.stopframe and self.is_coroutine(frame):
             return self.trace_dispatch
         self.user_call(frame, arg)
         if self.quitting: raise BdbQuit
@@ -146,7 +158,7 @@ class Bdb:
         """
         if self.stop_here(frame) or frame == self.returnframe:
             # Ignore return events in generator except when stepping.
-            if self.stopframe and frame.f_code.co_flags & GENERATOR_AND_COROUTINE_FLAGS:
+            if self.stopframe and self.is_coroutine(frame):
                 return self.trace_dispatch
             try:
                 self.frame_returning = frame
@@ -170,7 +182,7 @@ class Bdb:
             # When stepping with next/until/return in a generator frame, skip
             # the internal StopIteration exception (with no traceback)
             # triggered by a subiterator run with the 'yield from' statement.
-            if not (frame.f_code.co_flags & GENERATOR_AND_COROUTINE_FLAGS
+            if not (self.is_coroutine(frame)
                     and arg[0] is StopIteration and arg[2] is None):
                 self.user_exception(frame, arg)
                 if self.quitting: raise BdbQuit
@@ -179,7 +191,7 @@ class Bdb:
         # next/until command at the last statement in the generator before the
         # exception.
         elif (self.stopframe and frame is not self.stopframe
-                and self.stopframe.f_code.co_flags & GENERATOR_AND_COROUTINE_FLAGS
+                and self.is_coroutine(self.stopframe)
                 and arg[0] in (StopIteration, GeneratorExit)):
             self.user_exception(frame, arg)
             if self.quitting: raise BdbQuit
@@ -315,7 +327,7 @@ class Bdb:
 
     def set_return(self, frame):
         """Stop when returning from the given frame."""
-        if frame.f_code.co_flags & GENERATOR_AND_COROUTINE_FLAGS:
+        if self.is_coroutine(frame):
             self._set_stopinfo(frame, None, -1)
         else:
             self._set_stopinfo(frame.f_back, frame)
@@ -557,7 +569,8 @@ class Bdb:
         line of code (if it exists).
 
         """
-        import linecache, reprlib
+        ## MPY: reprlib not yet available
+        import linecache   #, reprlib
         frame, lineno = frame_lineno
         filename = self.canonic(frame.f_code.co_filename)
         s = '%s(%r)' % (filename, lineno)
@@ -569,7 +582,7 @@ class Bdb:
         if '__return__' in frame.f_locals:
             rv = frame.f_locals['__return__']
             s += '->'
-            s += reprlib.repr(rv)
+            s += repr(rv)
         line = linecache.getline(filename, lineno, frame.f_globals)
         if line:
             s += lprefix + line.strip()
@@ -628,7 +641,7 @@ class Bdb:
 
     # This method is more useful to debug a single function call.
 
-    def runcall(self, func, /, *args, **kwds):
+    def runcall(self, func, *args, **kwds):
         """Debug a single function call.
 
         Return the result of the function call.
