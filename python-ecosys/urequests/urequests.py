@@ -33,7 +33,17 @@ class Response:
         return ujson.loads(self.content)
 
 
-def request(method, url, data=None, json=None, headers={}, stream=None, parse_headers=True):
+def request(
+    method, url, data=None, json=None, headers={}, stream=None, parse_headers=True, auth=None
+):
+    if auth is not None:
+        import ubinascii
+
+        username, password = auth
+        formated = b"{}:{}".format(username, password)
+        formated = str(ubinascii.b2a_base64(formated)[:-1], "ascii")
+        headers["Authorization"] = "Basic {}".format(formated)
+
     try:
         proto, dummy, host, path = url.split("/", 3)
     except ValueError:
@@ -144,3 +154,4 @@ def patch(url, **kw):
 
 def delete(url, **kw):
     return request("DELETE", url, **kw)
+
