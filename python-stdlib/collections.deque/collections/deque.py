@@ -32,6 +32,9 @@ class deque:
             raise IndexError
         self.q.extend(a)
 
+    def clear(self):
+        self.q.clear()
+
     @property
     def maxlen(self):
         return self.__maxlen
@@ -47,3 +50,6 @@ class deque:
 
     def __str__(self):
         return "deque({})".format(self.q)
+
+    def __getitem__(self, idx):
+        return self.q[idx]
