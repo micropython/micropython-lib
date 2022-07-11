@@ -15,12 +15,34 @@ class Thread:
         self.args = args
         self.daemon = None
         self.kwargs = {} if kwargs is None else kwargs
+        self.ident = None
+
+        self._started = False
+        self._lock = Lock()
+        self._ret = None
+        self._ex = None
 
     def start(self):
+        self._lock.acquire()
         _thread.start_new_thread(self.run, ())
+        self._started = True
 
     def run(self):
-        self.target(*self.args, **self.kwargs)
+        self.ident = _thread.get_ident()
+        try:
+            self._ret = self.target(*self.args, **self.kwargs)
+        except Exception as ex:
+            self._ex = ex
+        self._lock.release()
+
+    def join(self, timeout=None):
+        if not self._started:
+            raise RuntimeError("cannot join thread before it is started")
+        self._lock.acquire(True, timeout)
+        if self._ex:
+            raise self._ex
+        return self._ret
+
 
 Lock = _thread.allocate_lock
 
