@@ -17,6 +17,9 @@ class deque:
     def pop(self):
         return self.q.pop()
 
+    def remove(self, a):
+        return self.q.remove(a)
+
     def append(self, a):
         self.q.append(a)
         if self.__maxlen is not None and len(self.q) > self.__maxlen:
