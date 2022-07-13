@@ -1,4 +1,0 @@
-srctype = micropython-lib
-type = module
-version = 0.9.0
-depends = argparse, fnmatch
