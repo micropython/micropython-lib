@@ -36,9 +36,11 @@ class MQTTClient(simple.MQTTClient):
             self.reconnect()
 
     def wait_msg(self):
+        timeout_ms = float(str(self.sock).split(' ')[2].split('=')[1])
         while 1:
             try:
                 return super().wait_msg()
             except OSError as e:
                 self.log(False, e)
             self.reconnect()
+            self.sock.settimeout(timeout_ms / 1000 if timeout >= 0 else None)
