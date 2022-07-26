@@ -6,10 +6,11 @@ except ImportError:
 
 def init():
     for i in ("sha1", "sha224", "sha256", "sha384", "sha512"):
-        c = getattr(uhashlib, i, None)
-        if not c:
+        try:
             c = __import__("_" + i, None, None, (), 1)
-            c = getattr(c, i)
+        except ImportError:
+            c = uhashlib
+        c = getattr(c, i, None)
         globals()[i] = c
 
 
