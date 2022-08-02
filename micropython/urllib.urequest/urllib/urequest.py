@@ -28,8 +28,6 @@ def urlopen(url, data=None, method="GET"):
     s = usocket.socket(ai[0], ai[1], ai[2])
     try:
         s.connect(ai[-1])
-        if proto == "https:":
-            s = ussl.wrap_socket(s, server_hostname=host)
 
         s.write(method)
         s.write(b" /")
