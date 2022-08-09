@@ -48,9 +48,9 @@ def _client_irq(event, data):
         conn_handle, status = data
         ClientDiscover._discover_done(conn_handle, status)
     elif event == _IRQ_GATTC_CHARACTERISTIC_RESULT:
-        conn_handle, def_handle, value_handle, properties, uuid = data
+        conn_handle, end_handle, value_handle, properties, uuid = data
         ClientDiscover._discover_result(
-            conn_handle, def_handle, value_handle, properties, bluetooth.UUID(uuid)
+            conn_handle, end_handle, value_handle, properties, bluetooth.UUID(uuid)
         )
     elif event == _IRQ_GATTC_CHARACTERISTIC_DONE:
         conn_handle, status = data
@@ -284,12 +284,15 @@ class BaseClientCharacteristic:
 # this class directly, instead use `async for characteristic in
 # service.characteristics([uuid])` or `await service.characteristic(uuid)`.
 class ClientCharacteristic(BaseClientCharacteristic):
-    def __init__(self, service, def_handle, value_handle, properties, uuid):
+    def __init__(self, service, end_handle, value_handle, properties, uuid):
         self.service = service
         self.connection = service.connection
 
+        # Used for descriptor discovery. If available, otherwise assume just
+        # past the value handle (enough for two descriptors without risking
+        # going into the next characteristic).
+        self._end_handle = end_handle if end_handle > value_handle else value_handle + 2
         # Used for read/write/notify ops.
-        self._def_handle = def_handle
         self._value_handle = value_handle
 
         # Which operations are supported.
@@ -323,7 +326,7 @@ class ClientCharacteristic(BaseClientCharacteristic):
 
     def __str__(self):
         return "Characteristic: {} {} {} {}".format(
-            self._def_handle, self._value_handle, self.properties, self.uuid
+            self._end_handle, self._value_handle, self.properties, self.uuid
         )
 
     def _connection(self):
@@ -444,9 +447,7 @@ class ClientDescriptor(BaseClientCharacteristic):
         self.properties = _FLAG_READ | _FLAG_WRITE_NO_RESPONSE
 
     def __str__(self):
-        return "Descriptor: {} {} {} {}".format(
-            self._def_handle, self._value_handle, self.properties, self.uuid
-        )
+        return "Descriptor: {} {} {}".format(self._value_handle, self.properties, self.uuid)
 
     def _connection(self):
         return self.characteristic.service.connection
@@ -456,5 +457,5 @@ class ClientDescriptor(BaseClientCharacteristic):
         ble.gattc_discover_descriptors(
             characteristic._connection()._conn_handle,
             characteristic._value_handle,
-            characteristic._value_handle + 5,
+            characteristic._end_handle,
         )
