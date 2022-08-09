@@ -4,6 +4,7 @@ import hmac
 import json
 from time import time
 
+
 def _to_b64url(data):
     return (
         binascii.b2a_base64(data)
