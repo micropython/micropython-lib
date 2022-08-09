@@ -82,10 +82,6 @@ class BaseCharacteristic:
             self.write(self._initial)
             self._initial = None
 
-    # Generate tuple for gatts_register_services.
-    def _tuple(self):
-        return (self.uuid, self.flags)
-
     # Read value from local db.
     def read(self):
         if self._value_handle is None:
@@ -104,8 +100,9 @@ class BaseCharacteristic:
     # the write, or a tuple of (connection, value) if capture is enabled for
     # this characteristics.
     async def written(self, timeout_ms=None):
-        if not self._write_event:
-            raise ValueError()
+        if not hasattr(self, "_write_event"):
+            # Not a writable characteristic.
+            return
 
         # If the queue is empty, then we need to wait. However, if the queue
         # has a single item, we also need to do a no-op wait in order to
@@ -199,6 +196,14 @@ class Characteristic(BaseCharacteristic):
         self._value_handle = None
         self._initial = initial
 
+    # Generate tuple for gatts_register_services.
+    def _tuple(self):
+        if self.descriptors:
+            return (self.uuid, self.flags, tuple(d._tuple() for d in self.descriptors))
+        else:
+            # Workaround: v1.19 and below can't handle an empty descriptor tuple.
+            return (self.uuid, self.flags)
+
     def notify(self, connection, data=None):
         if not (self.flags & _FLAG_NOTIFY):
             raise ValueError("Not supported")
@@ -256,14 +261,18 @@ class Descriptor(BaseCharacteristic):
         if read:
             flags |= _FLAG_DESC_READ
         if write:
-            self._write_connection = None
             self._write_event = asyncio.ThreadSafeFlag()
+            self._write_queue = deque((), 1)
             flags |= _FLAG_DESC_WRITE
 
         self.uuid = uuid
         self.flags = flags
         self._value_handle = None
         self._initial = initial
+
+    # Generate tuple for gatts_register_services.
+    def _tuple(self):
+        return (self.uuid, self.flags)
 
 
 # Turn the Service/Characteristic/Descriptor classes into a registration tuple
