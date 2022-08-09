@@ -193,6 +193,29 @@ class ClientService:
 
 
 class BaseClientCharacteristic:
+    def __init__(self, value_handle, properties, uuid):
+        # Used for read/write/notify ops.
+        self._value_handle = value_handle
+
+        # Which operations are supported.
+        self.properties = properties
+
+        # Allows comparison to a known uuid.
+        self.uuid = uuid
+
+        if properties & _FLAG_READ:
+            # Fired for each read result and read done IRQ.
+            self._read_event = None
+            self._read_data = None
+            # Used to indicate that the read is complete.
+            self._read_status = None
+
+        if (properties & _FLAG_WRITE) or (properties & _FLAG_WRITE_NO_RESPONSE):
+            # Fired for the write done IRQ.
+            self._write_event = None
+            # Used to indicate that the write is complete.
+            self._write_status = None
+
     # Register this value handle so events can find us.
     def _register_with_connection(self):
         self._connection()._characteristics[self._value_handle] = self
@@ -292,27 +315,8 @@ class ClientCharacteristic(BaseClientCharacteristic):
         # past the value handle (enough for two descriptors without risking
         # going into the next characteristic).
         self._end_handle = end_handle if end_handle > value_handle else value_handle + 2
-        # Used for read/write/notify ops.
-        self._value_handle = value_handle
 
-        # Which operations are supported.
-        self.properties = properties
-
-        # Allows comparison to a known uuid.
-        self.uuid = uuid
-
-        if properties & _FLAG_READ:
-            # Fired for each read result and read done IRQ.
-            self._read_event = None
-            self._read_data = None
-            # Used to indicate that the read is complete.
-            self._read_status = None
-
-        if (properties & _FLAG_WRITE) or (properties & _FLAG_WRITE_NO_RESPONSE):
-            # Fired for the write done IRQ.
-            self._write_event = None
-            # Used to indicate that the write is complete.
-            self._write_status = None
+        super().__init__(value_handle, properties, uuid)
 
         if properties & _FLAG_NOTIFY:
             # Fired when a notification arrives.
@@ -437,14 +441,7 @@ class ClientDescriptor(BaseClientCharacteristic):
     def __init__(self, characteristic, dsc_handle, uuid):
         self.characteristic = characteristic
 
-        # Allows comparison to a known uuid.
-        self.uuid = uuid
-
-        # Used for read/write.
-        self._value_handle = dsc_handle
-
-        # Default flags
-        self.properties = _FLAG_READ | _FLAG_WRITE_NO_RESPONSE
+        super().__init__(dsc_handle, _FLAG_READ | _FLAG_WRITE_NO_RESPONSE, uuid)
 
     def __str__(self):
         return "Descriptor: {} {} {}".format(self._value_handle, self.properties, self.uuid)
