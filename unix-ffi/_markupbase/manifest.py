@@ -1,5 +1,5 @@
 metadata(version="3.3.3-1")
 
-require("re-pcre")
+require("re", unix_ffi=True)
 
 module("_markupbase.py")

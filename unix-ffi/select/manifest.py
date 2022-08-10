@@ -2,7 +2,7 @@ metadata(version="0.3")
 
 # Originally written by Paul Sokolovsky.
 
-require("os")
-require("ffilib")
+require("os", unix_ffi=True)
+require("ffilib", unix_ffi=True)
 
 module("select.py")
