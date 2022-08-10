@@ -1,6 +1,6 @@
 metadata(version="0.5.2")
 
-require("re-pcre")
+require("re", unix_ffi=True)
 require("collections")
 require("collections.defaultdict")
 

@@ -1,5 +1,5 @@
 metadata(version="0.5")
 
-require("ffilib")
+require("ffilib", unix_ffi=True)
 
 module("time.py")

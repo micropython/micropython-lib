@@ -1,13 +1,13 @@
 metadata(version="3.3.3-2")
 
-require("os")
-require("re-pcre")
+require("os", unix_ffi=True)
+require("re", unix_ffi=True)
 require("base64")
 require("random")
 require("datetime")
-require("urllib.parse")
+require("urllib.parse", unix_ffi=True)
 require("warnings")
 require("quopri")
-require("email.charset")
+require("email.charset", unix_ffi=True)
 
 package("email")

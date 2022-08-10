@@ -215,7 +215,10 @@ def make_msgid(idstring=None, domain=None):
     """
     timeval = time.time()
     utcdate = time.strftime("%Y%m%d%H%M%S", time.gmtime(timeval))
-    pid = os.getpid()
+    if hasattr(os, "getpid"):
+        pid = os.getpid()
+    else:
+        pid = 0
     randint = random.randrange(100000)
     if idstring is None:
         idstring = ""
