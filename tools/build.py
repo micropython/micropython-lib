@@ -191,16 +191,16 @@ def _write_hashed_file(package_name, src, target_path, out_file_dir, hash_prefix
         # that it's actually the same file.
         if not _identical_files(src.name, output_file_path):
             print(
-                error_color("Hash collision processing:"),
+                _error_color("Hash collision processing:"),
                 package_name,
                 file=sys.stderr,
             )
-            print(f"  File:        {target_path}", file=sys.stderr)
-            print(f"  Short hash:  {short_file_hash}", file=sys.stderr)
-            print(f"  Full hash:   {file_hash}", file=sys.stderr)
+            print("  File:        ", target_path, file=sys.stderr)
+            print("  Short hash:  ", short_file_hash, file=sys.stderr)
+            print("  Full hash:   ", file_hash, file=sys.stderr)
             with open(output_file_path, "rb") as f:
-                print(f"  Target hash: {file_hash(f)}", file=sys.stderr)
-            print(f"Try increasing --hash-prefix (currently {hash_prefix_len})")
+                print("  Target hash: ", _get_file_hash(f), file=sys.stderr)
+            print("Try increasing --hash-prefix (currently {})".format(hash_prefix_len))
             sys.exit(1)
     else:
         # Create new file.
@@ -315,7 +315,7 @@ def build(output_path, hash_prefix_len, mpy_cross_path):
 
     mpy_version, _mpy_sub_version = mpy_cross.mpy_version(mpy_cross=mpy_cross_path)
     mpy_version = str(mpy_version)
-    print(f"Generating bytecode version {mpy_version}")
+    print("Generating bytecode version", mpy_version)
 
     for lib_dir in lib_dirs:
         for manifest_path in glob.glob(os.path.join(lib_dir, "**", "manifest.py"), recursive=True):
