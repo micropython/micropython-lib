@@ -27,7 +27,6 @@ Other libraries are packages, in which case you'll need to copy the directory in
 Future plans (and new contributor ideas)
 ----------------------------------------
 
-* Provide compiled .mpy distributions.
 * Develop a set of example programs using these libraries.
 * Develop more MicroPython libraries for common tasks.
 * Provide a replacement for the previous `upip` tool.
