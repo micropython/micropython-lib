@@ -29,4 +29,3 @@ Future plans (and new contributor ideas)
 
 * Develop a set of example programs using these libraries.
 * Develop more MicroPython libraries for common tasks.
-* Provide a replacement for the previous `upip` tool.
