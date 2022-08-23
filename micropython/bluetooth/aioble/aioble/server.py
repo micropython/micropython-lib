@@ -13,6 +13,7 @@ from .core import (
     log_error,
     log_warn,
     register_irq_handler,
+    GattError,
 )
 from .device import DeviceConnection, DeviceTimeout
 
