@@ -132,10 +132,10 @@ class L2CAPChannel:
 
     # Waits until the channel is free and then sends buf.
     # If the buffer is larger than the MTU it will be sent in chunks.
-    async def send(self, buf, timeout_ms=None):
+    async def send(self, buf, timeout_ms=None, chunk_size=None):
         self._assert_connected()
         offset = 0
-        chunk_size = min(self.our_mtu * 2, self.peer_mtu)
+        chunk_size = min(self.our_mtu * 2, self.peer_mtu, chunk_size or self.peer_mtu)
         mv = memoryview(buf)
         while offset < len(buf):
             if self._stalled:
