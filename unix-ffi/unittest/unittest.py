@@ -480,6 +480,14 @@ def discover(runner: TestRunner):
     return discover(runner=runner)
 
 
+def split_path(path):
+    path = path.replace("\\", "/")
+    if "/" in path:
+        return path.rsplit("/", 1)
+    else:
+        return ".", path
+
+
 def main(module="__main__", testRunner=None):
     if testRunner:
         if isinstance(testRunner, type):
@@ -506,10 +514,7 @@ def main(module="__main__", testRunner=None):
                 try:
                     uos.stat(test_spec)
                     # test_spec is a local file, run it directly
-                    if "/" in test_spec:
-                        path, fname = test_spec.rsplit("/", 1)
-                    else:
-                        path, fname = ".", test_spec
+                    path, fname = split_path(test_spec)
                     modname = fname.rsplit(".", 1)[0]
                     result = run_module(runner, modname, path)
 
