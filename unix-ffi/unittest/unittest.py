@@ -444,7 +444,7 @@ def _test_cases(mod):
         c = getattr(mod, tn)
         if isinstance(c, object) and isinstance(c, type) and issubclass(c, TestCase):
             yield c
-        elif tn.startswith("test_") and callable(c):
+        elif tn.startswith("test") and callable(c):
             yield c
 
 
