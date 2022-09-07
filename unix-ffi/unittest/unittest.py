@@ -418,23 +418,23 @@ def run_suite(c, test_result: TestResult, suite_name=""):
 
     set_up_class()
 
-    if hasattr(o, "runTest"):
-        name = str(o)
-        run_one(o.runTest)
-        return
+    try:
+        if hasattr(o, "runTest"):
+            name = str(o)
+            run_one(o.runTest)
+        else:
+            for name in dir(o):
+                if name.startswith("test"):
+                    m = getattr(o, name)
+                    if not callable(m):
+                        continue
+                    run_one(m)
 
-    for name in dir(o):
-        if name.startswith("test"):
-            m = getattr(o, name)
-            if not callable(m):
-                continue
-            run_one(m)
-
-    if callable(o):
-        name = o.__name__
-        run_one(o)
-
-    tear_down_class()
+            if callable(o):
+                name = o.__name__
+                run_one(o)
+    finally:
+        tear_down_class()
 
     return exceptions
 
