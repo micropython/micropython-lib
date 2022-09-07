@@ -448,7 +448,7 @@ def _test_cases(mod):
             yield c
 
 
-def run_module(runner, module, path, top):
+def run_module(runner, module, *extra_paths):
     if not module:
         raise ValueError("Empty module name")
 
@@ -457,13 +457,12 @@ def run_module(runner, module, path, top):
     sys.modules.update(__modules__)
 
     sys_path_initial = sys.path[:]
-    # Add script dir and top dir to import path
-    sys.path.insert(0, str(path))
-    if top:
-        sys.path.insert(1, top)
+    for path in (path for path in reversed(extra_paths) if path):
+        sys.path.insert(0, str(path))
+
     try:
-        suite = TestSuite(module)
         m = __import__(module) if isinstance(module, str) else module
+        suite = TestSuite(m.__name__)
         for c in _test_cases(m):
             suite.addTest(c)
         result = runner.run(suite)
@@ -490,29 +489,37 @@ def main(module="__main__", testRunner=None):
     else:
         runner = TestRunner()
 
-    if len(sys.argv) <= 1:
-        result = discover(runner)
-    elif sys.argv[0].split(".")[0] == "unittest" and sys.argv[1] == "discover":
-        result = discover(runner)
+    if module is not None:
+        result = run_module(runner, module)
     else:
-        for test_spec in sys.argv[1:]:
-            try:
-                uos.stat(test_spec)
-                # test_spec is a local file, run it directly
-                if "/" in test_spec:
-                    path, fname = test_spec.rsplit("/", 1)
-                else:
-                    path, fname = ".", test_spec
-                modname = fname.rsplit(".", 1)[0]
-                result = run_module(runner, modname, path, None)
+        argn = len(sys.argv)
+        # See https://docs.python.org/3/library/unittest.html#test-discovery:
+        # python -m unittest is the equivalent of python -m unittest discover.
+        if not argn or (
+            sys.argv[0].split(".")[0] == "unittest"
+            and (argn == 1 or (argn >= 1 and sys.argv[1] == "discover"))
+        ):
+            result = discover(runner)
+        # Remaining arguments should be test specifiers.
+        else:
+            for test_spec in sys.argv[1:]:
+                try:
+                    uos.stat(test_spec)
+                    # test_spec is a local file, run it directly
+                    if "/" in test_spec:
+                        path, fname = test_spec.rsplit("/", 1)
+                    else:
+                        path, fname = ".", test_spec
+                    modname = fname.rsplit(".", 1)[0]
+                    result = run_module(runner, modname, path)
 
-            except OSError:
-                # Not a file, treat as import name
-                result = run_module(runner, test_spec, ".", None)
+                except OSError:
+                    # Not a file, treat as import name
+                    result = run_module(runner, test_spec, ".")
 
     # Terminate with non zero return code in case of failures
     sys.exit(result.failuresNum or result.errorsNum)
 
 
 if __name__ == "__main__":
-    main()
+    main(None)
