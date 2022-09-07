@@ -488,7 +488,8 @@ def split_path(path):
         return ".", path
 
 
-def main(module="__main__", testRunner=None):
+def main(module="__main__", **kwargs):
+    testRunner = kwargs.get("testRunner", None)
     if testRunner:
         if isinstance(testRunner, type):
             runner = testRunner()
