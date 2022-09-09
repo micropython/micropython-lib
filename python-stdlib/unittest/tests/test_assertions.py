@@ -1,5 +1,4 @@
 import unittest
-from test_unittest_isolated import global_context
 
 
 class TestUnittestAssertions(unittest.TestCase):
@@ -143,11 +142,6 @@ class TestUnittestAssertions(unittest.TestCase):
         else:
             self.fail("Unexpected success was not detected")
 
-    def test_NotChangedByOtherTest(self):
-        global global_context
-        assert global_context is None
-        global_context = True
-
     def test_subtest_even(self):
         """
         Test that numbers between 0 and 5 are all even.
@@ -155,25 +149,6 @@ class TestUnittestAssertions(unittest.TestCase):
         for i in range(0, 10, 2):
             with self.subTest("Should only pass for even numbers", i=i):
                 self.assertEqual(i % 2, 0)
-
-
-class TestUnittestSetup(unittest.TestCase):
-    class_setup_var = 0
-
-    def setUpClass(self):
-        TestUnittestSetup.class_setup_var += 1
-
-    def tearDownClass(self):
-        # Not sure how to actually test this, but we can check (in the test case below)
-        # that it hasn't been run already at least.
-        TestUnittestSetup.class_setup_var = -1
-
-    def testSetUpTearDownClass_1(self):
-        assert TestUnittestSetup.class_setup_var == 1, TestUnittestSetup.class_setup_var
-
-    def testSetUpTearDownClass_2(self):
-        # Test this twice, as if setUpClass() gets run like setUp() it would be run twice
-        assert TestUnittestSetup.class_setup_var == 1, TestUnittestSetup.class_setup_var
 
 
 if __name__ == "__main__":
