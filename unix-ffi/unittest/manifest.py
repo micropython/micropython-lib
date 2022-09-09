@@ -1,6 +1,6 @@
 metadata(version="0.9.0")
 
-require("argparse", unix_ffi=True)
+require("argparse")
 require("fnmatch")
 
 module("unittest.py")
