@@ -1,20 +1,11 @@
+import io
+import os
 import sys
-import uos
 
 try:
-    import io
     import traceback
 except ImportError:
-    import uio as io
-
     traceback = None
-
-
-def _snapshot_modules():
-    return {k: v for k, v in sys.modules.items()}
-
-
-__modules__ = _snapshot_modules()
 
 
 class SkipTest(Exception):
@@ -61,7 +52,7 @@ class SubtestContext:
                 detail = ", ".join(f"{k}={v}" for k, v in self.params.items())
                 test_details += (f" ({detail})",)
 
-            handle_test_exception(test_details, __test_result__, exc_info, False)
+            _handle_test_exception(test_details, __test_result__, exc_info, False)
         # Suppress the exception as we've captured it above
         return True
 
@@ -258,8 +249,16 @@ class TestSuite:
 
     def run(self, result):
         for c in self._tests:
-            run_suite(c, result, self.name)
+            _run_suite(c, result, self.name)
         return result
+
+    def _load_module(self, mod):
+        for tn in dir(mod):
+            c = getattr(mod, tn)
+            if isinstance(c, object) and isinstance(c, type) and issubclass(c, TestCase):
+                self.addTest(c)
+            elif tn.startswith("test") and callable(c):
+                self.addTest(c)
 
 
 class TestRunner:
@@ -331,7 +330,7 @@ class TestResult:
         return self
 
 
-def capture_exc(exc, traceback):
+def _capture_exc(exc, traceback):
     buf = io.StringIO()
     if hasattr(sys, "print_exception"):
         sys.print_exception(exc, buf)
@@ -340,12 +339,12 @@ def capture_exc(exc, traceback):
     return buf.getvalue()
 
 
-def handle_test_exception(
+def _handle_test_exception(
     current_test: tuple, test_result: TestResult, exc_info: tuple, verbose=True
 ):
     exc = exc_info[1]
     traceback = exc_info[2]
-    ex_str = capture_exc(exc, traceback)
+    ex_str = _capture_exc(exc, traceback)
     if isinstance(exc, AssertionError):
         test_result.failuresNum += 1
         test_result.failures.append((current_test, ex_str))
@@ -359,7 +358,7 @@ def handle_test_exception(
     test_result._newFailures += 1
 
 
-def run_suite(c, test_result: TestResult, suite_name=""):
+def _run_suite(c, test_result: TestResult, suite_name=""):
     if isinstance(c, TestSuite):
         c.run(test_result)
         return
@@ -388,9 +387,7 @@ def run_suite(c, test_result: TestResult, suite_name=""):
         try:
             test_result._newFailures = 0
             test_result.testsRun += 1
-            test_globals = dict(**globals())
-            test_globals["test_function"] = test_function
-            exec("test_function()", test_globals, test_globals)
+            test_function()
             # No exception occurred, test passed
             if test_result._newFailures:
                 print(" FAIL")
@@ -402,7 +399,7 @@ def run_suite(c, test_result: TestResult, suite_name=""):
             test_result.skippedNum += 1
             test_result.skipped.append((name, c, reason))
         except Exception as ex:
-            handle_test_exception(
+            _handle_test_exception(
                 current_test=(name, c), test_result=test_result, exc_info=sys.exc_info()
             )
             # Uncomment to investigate failure in detail
@@ -417,102 +414,59 @@ def run_suite(c, test_result: TestResult, suite_name=""):
                 pass
 
     set_up_class()
+    try:
+        if hasattr(o, "runTest"):
+            name = str(o)
+            run_one(o.runTest)
+            return
 
-    if hasattr(o, "runTest"):
-        name = str(o)
-        run_one(o.runTest)
-        return
+        for name in dir(o):
+            if name.startswith("test"):
+                m = getattr(o, name)
+                if not callable(m):
+                    continue
+                run_one(m)
 
-    for name in dir(o):
-        if name.startswith("test"):
-            m = getattr(o, name)
-            if not callable(m):
-                continue
-            run_one(m)
-
-    if callable(o):
-        name = o.__name__
-        run_one(o)
-
-    tear_down_class()
+        if callable(o):
+            name = o.__name__
+            run_one(o)
+    finally:
+        tear_down_class()
 
     return exceptions
 
 
-def _test_cases(mod):
-    for tn in dir(mod):
-        c = getattr(mod, tn)
-        if isinstance(c, object) and isinstance(c, type) and issubclass(c, TestCase):
-            yield c
-        elif tn.startswith("test_") and callable(c):
-            yield c
-
-
-def run_module(runner, module, path, top):
-    if not module:
-        raise ValueError("Empty module name")
-
-    # Reset the python environment before running test
-    sys.modules.clear()
-    sys.modules.update(__modules__)
-
-    sys_path_initial = sys.path[:]
-    # Add script dir and top dir to import path
-    sys.path.insert(0, str(path))
-    if top:
-        sys.path.insert(1, top)
-    try:
-        suite = TestSuite(module)
-        m = __import__(module) if isinstance(module, str) else module
-        for c in _test_cases(m):
-            suite.addTest(c)
-        result = runner.run(suite)
-        return result
-
-    finally:
-        sys.path[:] = sys_path_initial
-
-
-def discover(runner: TestRunner):
-    from unittest_discover import discover
-
-    global __modules__
-    __modules__ = _snapshot_modules()
-    return discover(runner=runner)
-
-
+# This supports either:
+#
+# >>> import mytest
+# >>> unitttest.main(mytest)
+#
+# >>> unittest.main("mytest")
+#
+# Or, a script that ends with:
+# if __name__ == "__main__":
+#     unittest.main()
+# e.g. run via `mpremote run mytest.py`
 def main(module="__main__", testRunner=None):
-    if testRunner:
-        if isinstance(testRunner, type):
-            runner = testRunner()
-        else:
-            runner = testRunner
-    else:
-        runner = TestRunner()
+    if testRunner is None:
+        testRunner = TestRunner()
+    elif isinstance(testRunner, type):
+        testRunner = testRunner()
 
-    if len(sys.argv) <= 1:
-        result = discover(runner)
-    elif sys.argv[0].split(".")[0] == "unittest" and sys.argv[1] == "discover":
-        result = discover(runner)
-    else:
-        for test_spec in sys.argv[1:]:
-            try:
-                uos.stat(test_spec)
-                # test_spec is a local file, run it directly
-                if "/" in test_spec:
-                    path, fname = test_spec.rsplit("/", 1)
-                else:
-                    path, fname = ".", test_spec
-                modname = fname.rsplit(".", 1)[0]
-                result = run_module(runner, modname, path, None)
-
-            except OSError:
-                # Not a file, treat as import name
-                result = run_module(runner, test_spec, ".", None)
-
-    # Terminate with non zero return code in case of failures
-    sys.exit(result.failuresNum or result.errorsNum)
+    if isinstance(module, str):
+        module = __import__(module)
+    suite = TestSuite(module.__name__)
+    suite._load_module(module)
+    return testRunner.run(suite)
 
 
+# Support `micropython -m unittest` (only useful if unitest-discover is
+# installed).
 if __name__ == "__main__":
-    main()
+    try:
+        # If unitest-discover is installed, use the main() provided there.
+        from unittest_discover import discover_main
+
+        discover_main()
+    except ImportError:
+        pass
