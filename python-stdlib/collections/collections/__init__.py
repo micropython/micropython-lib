@@ -1,9 +1,7 @@
-# Should be reimplemented for MicroPython
-# Reason:
-# CPython implementation brings in metaclasses and other bloat.
-# This is going to be just import-all for other modules in a namespace package
+# Replace built-in collections module.
 from ucollections import *
 
+# Provide optional dependencies (which may be installed separately).
 try:
     from .defaultdict import defaultdict
 except ImportError:
