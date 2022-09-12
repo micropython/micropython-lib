@@ -1,7 +1,8 @@
 aioble
 ======
 
-This library provides an object-oriented, asyncio-based wrapper for MicroPython's [ubluetooth](https://docs.micropython.org/en/latest/library/ubluetooth.html) API.
+This library provides an object-oriented, asyncio-based wrapper for MicroPython's
+[bluetooth](https://docs.micropython.org/en/latest/library/bluetooth.html) API.
 
 **Note**: aioble requires MicroPython v1.17 or higher.
 
@@ -48,6 +49,24 @@ Security:
 * Query encryption/authentication state.
 
 All remote operations (connect, disconnect, client read/write, server indicate, l2cap recv/send, pair) are awaitable and support timeouts.
+
+Installation
+------------
+
+You can install any combination of the following packages.
+- `aioble-central` -- Central (and Observer) role functionality including
+  scanning and connecting.
+- `aioble-client` -- GATT client, typically used by central role devices but
+  can also be used on peripherals.
+- `aioble-l2cap` -- L2CAP Connection-oriented-channels support.
+- `aioble-peripheral` -- Peripheral (and Broadcaster) role functionality
+  including advertising.
+- `aioble-security` -- Pairing and bonding support.
+- `aioble-server` -- GATT server, typically used by peripheral role devices
+  but can also be used on centrals.
+
+For the typical case of implementing a peripheral and GATT server, use the `aioble` package, which
+depends on `aioble-peripheral` and `aioble-server`.
 
 Usage
 -----

@@ -1,27 +1,11 @@
-_files = (
-    "__init__.py",
-    "core.py",
-    "device.py",
-)
+# This directory contains all aioble code, but the manifest itself just
+# forwards to the component manifests, which themselves reference the actual
+# code.
+# This allows (for development purposes) all the files to live in the one
+# directory.
 
-options.defaults(peripheral=True, server=True)
+metadata(version="0.1.0")
 
-if options.central:
-    _files += ("central.py",)
-
-if options.client:
-    _files += ("client.py",)
-
-if options.peripheral:
-    _files += ("peripheral.py",)
-
-if options.server:
-    _files += ("server.py",)
-
-if options.l2cap:
-    _files += ("l2cap.py",)
-
-if options.security:
-    _files += ("security.py",)
-
-package("aioble", files=_files)
+# Default installation gives you core, peripheral, and server.
+require("aioble-peripheral")
+require("aioble-server")
