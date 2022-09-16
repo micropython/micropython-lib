@@ -178,14 +178,14 @@ class L2CAPChannel:
 
 
 # Use connection.l2cap_accept() instead of calling this directly.
-async def accept(connection, psn, mtu, timeout_ms):
+async def accept(connection, psm, mtu, timeout_ms):
     global _listening
 
     channel = L2CAPChannel(connection)
 
     # Start the stack listening if necessary.
     if not _listening:
-        ble.l2cap_listen(psn, mtu)
+        ble.l2cap_listen(psm, mtu)
         _listening = True
 
     # Wait for the connect irq from the remote connection.
@@ -195,14 +195,14 @@ async def accept(connection, psn, mtu, timeout_ms):
 
 
 # Use connection.l2cap_connect() instead of calling this directly.
-async def connect(connection, psn, mtu, timeout_ms):
+async def connect(connection, psm, mtu, timeout_ms):
     if _listening:
         raise ValueError("Can't connect while listening")
 
     channel = L2CAPChannel(connection)
 
     with connection.timeout(timeout_ms):
-        ble.l2cap_connect(connection._conn_handle, psn, mtu)
+        ble.l2cap_connect(connection._conn_handle, psm, mtu)
 
         # Wait for the connect irq from the remote connection.
         # If the connection fails, we get a disconnect event (with status) instead.
