@@ -164,7 +164,7 @@ class DeviceConnection:
 
         # This event is fired by the IRQ both for connection and disconnection
         # and controls the device_task.
-        self._event = None
+        self._event = asyncio.ThreadSafeFlag()
 
         # If we're waiting for a pending MTU exchange.
         self._mtu_event = None
@@ -207,9 +207,6 @@ class DeviceConnection:
             t._task.cancel()
 
     def _run_task(self):
-        # Event will be already created this if we initiated connection.
-        self._event = self._event or asyncio.ThreadSafeFlag()
-
         self._task = asyncio.create_task(self.device_task())
 
     async def disconnect(self, timeout_ms=2000):
