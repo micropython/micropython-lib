@@ -97,6 +97,33 @@ class BaseCharacteristic:
         else:
             ble.gatts_write(self._value_handle, data, send_update)
 
+    async def _init_shared_write_task(self):
+        # Should be run on first call of an async task waiting on .written()
+        # Will create the needed events and start the background queue monitor task
+        if not hasattr(BaseCharacteristic, "_shared_write_event"):
+            BaseCharacteristic._shared_write_event = asyncio.ThreadSafeFlag()
+            BaseCharacteristic._shared_written_event = asyncio.ThreadSafeFlag()
+
+        asyncio.create_task(self._shared_write_task())
+
+    async def _shared_write_task(self):
+        # Monitor the shared queue for incoming characteristic writes and forward
+        # them sequentially to the individual characteristic events.
+        ie = BaseCharacteristic._shared_write_event
+        oe = BaseCharacteristic._shared_written_event
+        q = BaseCharacteristic._shared_write_queue
+
+        while True:
+            if len(q):
+                conn, data, characteristic = q.popleft()
+                characteristic._write_detail = (conn, data)
+                characteristic._write_event.set()
+                # Wait for the characteristic event to be handled before continuing
+                await oe.wait()
+
+            if not len(q):
+                await ie.wait()
+
     # Wait for a write on this characteristic. Returns the connection that did
     # the write, or a tuple of (connection, value) if capture is enabled for
     # this characteristics.
@@ -105,17 +132,26 @@ class BaseCharacteristic:
             # Not a writable characteristic.
             return
 
-        # If the queue is empty, then we need to wait. However, if the queue
-        # has a single item, we also need to do a no-op wait in order to
-        # clear the event flag (because the queue will become empty and
-        # therefore the event should be cleared).
-        if len(self._write_queue) <= 1:
-            with DeviceTimeout(None, timeout_ms):
-                await self._write_event.wait()
+        # If capture mode ensure monitoring task started
+        if self.flags & _FLAG_WRITE_CAPTURE:
+            if not hasattr(BaseCharacteristic, "_shared_written_event"):
+                await self._init_shared_write_task()
 
-        # Either we started > 1 item, or the wait completed successfully, return
-        # the front of the queue.
-        return self._write_queue.popleft()
+        # If no write has been seen then we need to wait. If the event has
+        # already been set this will clear the event and continue immediately.
+        with DeviceTimeout(None, timeout_ms):
+            await self._write_event.wait()
+
+        if self.flags & _FLAG_WRITE_CAPTURE:
+            # Notify the shared queue monitor that the event has been handled.
+            BaseCharacteristic._shared_written_event.set()
+
+        # Return the write details and clear the stored copy.
+        # In default usage this will be the connection handle.
+        # In capture mode this will be a tuple of (connection_handle, received_data)
+        data = self._write_detail
+        self._write_detail = None
+        return data
 
     def on_read(self, connection):
         return 0
@@ -124,27 +160,23 @@ class BaseCharacteristic:
         if characteristic := _registered_characteristics.get(value_handle, None):
             # If we've gone from empty to one item, then wake something
             # blocking on `await char.written()`.
-            wake = len(characteristic._write_queue) == 0
 
             conn = DeviceConnection._connected.get(conn_handle, None)
-            q = characteristic._write_queue
 
             if characteristic.flags & _FLAG_WRITE_CAPTURE:
-                # For capture, we append both the connection and the written
-                # value to the queue. The deque will enforce the max queue len.
+                # For capture, we append the connection and the written value
+                # value to the shared queue along with the matching characteristic object.
+                # The deque will enforce the max queue len.
                 data = characteristic.read()
-                q.append((conn, data))
+                BaseCharacteristic._shared_write_queue.append((conn, data, characteristic))
+                if hasattr(BaseCharacteristic, "_shared_write_event"):
+                    # If the monitoring task has been started, flag that a new event is ready,
+                    # else the queue will be serviced when the event is created.
+                    BaseCharacteristic._shared_write_event.set()
             else:
-                # Use the queue as a single slot -- it has max length of 1,
-                # so if there's an existing item it will be replaced.
-                q.append(conn)
-
-            if wake:
-                # Queue is now non-empty. If something is waiting, it will be
-                # worken. If something isn't waiting right now, then a future
-                # caller to `await char.written()` will see the queue is
-                # non-empty, and wait on the event if it's going to empty the
-                # queue.
+                # Store the write connection handle to be later used to retrieve the data
+                # then set event to handle in written() task.
+                characteristic._write_detail = conn
                 characteristic._write_event.set()
 
     def _remote_read(conn_handle, value_handle):
@@ -180,8 +212,11 @@ class Characteristic(BaseCharacteristic):
                 # their values (and connection) in a queue. Otherwise we just
                 # track the most recent connection.
                 flags |= _FLAG_WRITE_CAPTURE
+                if not hasattr(BaseCharacteristic, "_shared_write_queue"):
+                    BaseCharacteristic._shared_write_queue = deque((), _WRITE_CAPTURE_QUEUE_LIMIT)
+
             self._write_event = asyncio.ThreadSafeFlag()
-            self._write_queue = deque((), _WRITE_CAPTURE_QUEUE_LIMIT if capture else 1)
+            self._write_detail = None
         if notify:
             flags |= _FLAG_NOTIFY
         if indicate:
@@ -263,7 +298,7 @@ class Descriptor(BaseCharacteristic):
             flags |= _FLAG_DESC_READ
         if write:
             self._write_event = asyncio.ThreadSafeFlag()
-            self._write_queue = deque((), 1)
+            self._write_detail = None
             flags |= _FLAG_DESC_WRITE
 
         self.uuid = uuid
