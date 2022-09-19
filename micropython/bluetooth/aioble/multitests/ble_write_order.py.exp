@@ -1,0 +1,37 @@
+--- instance0 ---
+advertise
+connected
+written: first c0
+written: second c0
+written: first c1
+written: second c1
+written: first c2
+written: second c2
+written: first c3
+written: second c3
+written: first c4
+written: second c4
+written: second r0
+written: first r0
+written: second r1
+written: first r1
+written: second r2
+written: first r2
+written: second r3
+written: first r3
+written: second r4
+written: first r4
+--- instance1 ---
+connect
+service UUID('a5a5a5a5-ffff-9999-1111-5a5a5a5a5a5a')
+characteristic UUID('00000000-1111-2222-3333-444444444444') UUID('00000000-1111-2222-3333-555555555555')
+write c0
+write c1
+write c2
+write c3
+write c4
+write r0
+write r1
+write r2
+write r3
+write r4

@@ -60,6 +60,12 @@ def _server_irq(event, data):
 def _server_shutdown():
     global _registered_characteristics
     _registered_characteristics = {}
+    if hasattr(BaseCharacteristic, "_capture_task"):
+        BaseCharacteristic._capture_task.cancel()
+        del BaseCharacteristic._capture_queue
+        del BaseCharacteristic._capture_write_event
+        del BaseCharacteristic._capture_consumed_event
+        del BaseCharacteristic._capture_task
 
 
 register_irq_handler(_server_irq, _server_shutdown)
@@ -97,6 +103,42 @@ class BaseCharacteristic:
         else:
             ble.gatts_write(self._value_handle, data, send_update)
 
+    # When the a capture-enabled characteristic is created, create the
+    # necessary events (if not already created).
+    @staticmethod
+    def _init_capture():
+        if hasattr(BaseCharacteristic, "_capture_queue"):
+            return
+
+        BaseCharacteristic._capture_queue = deque((), _WRITE_CAPTURE_QUEUE_LIMIT)
+        BaseCharacteristic._capture_write_event = asyncio.ThreadSafeFlag()
+        BaseCharacteristic._capture_consumed_event = asyncio.ThreadSafeFlag()
+        BaseCharacteristic._capture_task = asyncio.create_task(
+            BaseCharacteristic._run_capture_task()
+        )
+
+    # Monitor the shared queue for incoming characteristic writes and forward
+    # them sequentially to the individual characteristic events.
+    @staticmethod
+    async def _run_capture_task():
+        write = BaseCharacteristic._capture_write_event
+        consumed = BaseCharacteristic._capture_consumed_event
+        q = BaseCharacteristic._capture_queue
+
+        while True:
+            if len(q):
+                conn, data, characteristic = q.popleft()
+                # Let the characteristic waiting in `written()` know that it
+                # can proceed.
+                characteristic._write_data = (conn, data)
+                characteristic._write_event.set()
+                # Wait for the characteristic to complete `written()` before
+                # continuing.
+                await consumed.wait()
+
+            if not len(q):
+                await write.wait()
+
     # Wait for a write on this characteristic. Returns the connection that did
     # the write, or a tuple of (connection, value) if capture is enabled for
     # this characteristics.
@@ -105,17 +147,27 @@ class BaseCharacteristic:
             # Not a writable characteristic.
             return
 
-        # If the queue is empty, then we need to wait. However, if the queue
-        # has a single item, we also need to do a no-op wait in order to
-        # clear the event flag (because the queue will become empty and
-        # therefore the event should be cleared).
-        if len(self._write_queue) <= 1:
-            with DeviceTimeout(None, timeout_ms):
-                await self._write_event.wait()
+        # If no write has been seen then we need to wait. If the event has
+        # already been set this will clear the event and continue
+        # immediately. In regular mode, this is set by the write IRQ
+        # directly (in _remote_write). In capture mode, this is set when it's
+        # our turn by _capture_task.
+        with DeviceTimeout(None, timeout_ms):
+            await self._write_event.wait()
 
-        # Either we started > 1 item, or the wait completed successfully, return
-        # the front of the queue.
-        return self._write_queue.popleft()
+        # Return the write data and clear the stored copy.
+        # In default usage this will be just the connection handle.
+        # In capture mode this will be a tuple of (connection_handle, received_data)
+        data = self._write_data
+        self._write_data = None
+
+        if self.flags & _FLAG_WRITE_CAPTURE:
+            # Notify the shared queue monitor that the event has been consumed
+            # by the caller to `written()` and another characteristic can now
+            # proceed.
+            BaseCharacteristic._capture_consumed_event.set()
+
+        return data
 
     def on_read(self, connection):
         return 0
@@ -124,27 +176,20 @@ class BaseCharacteristic:
         if characteristic := _registered_characteristics.get(value_handle, None):
             # If we've gone from empty to one item, then wake something
             # blocking on `await char.written()`.
-            wake = len(characteristic._write_queue) == 0
 
             conn = DeviceConnection._connected.get(conn_handle, None)
-            q = characteristic._write_queue
 
             if characteristic.flags & _FLAG_WRITE_CAPTURE:
-                # For capture, we append both the connection and the written
-                # value to the queue. The deque will enforce the max queue len.
+                # For capture, we append the connection and the written value
+                # value to the shared queue along with the matching characteristic object.
+                # The deque will enforce the max queue len.
                 data = characteristic.read()
-                q.append((conn, data))
+                BaseCharacteristic._capture_queue.append((conn, data, characteristic))
+                BaseCharacteristic._capture_write_event.set()
             else:
-                # Use the queue as a single slot -- it has max length of 1,
-                # so if there's an existing item it will be replaced.
-                q.append(conn)
-
-            if wake:
-                # Queue is now non-empty. If something is waiting, it will be
-                # worken. If something isn't waiting right now, then a future
-                # caller to `await char.written()` will see the queue is
-                # non-empty, and wait on the event if it's going to empty the
-                # queue.
+                # Store the write connection handle to be later used to retrieve the data
+                # then set event to handle in written() task.
+                characteristic._write_data = conn
                 characteristic._write_event.set()
 
     def _remote_read(conn_handle, value_handle):
@@ -178,10 +223,15 @@ class Characteristic(BaseCharacteristic):
             if capture:
                 # Capture means that we keep track of all writes, and capture
                 # their values (and connection) in a queue. Otherwise we just
-                # track the most recent connection.
+                # track the connection of the most recent write.
                 flags |= _FLAG_WRITE_CAPTURE
+                BaseCharacteristic._init_capture()
+
+            # Set when this characteristic has a value waiting in self._write_data.
             self._write_event = asyncio.ThreadSafeFlag()
-            self._write_queue = deque((), _WRITE_CAPTURE_QUEUE_LIMIT if capture else 1)
+            # The connection of the most recent write, or a tuple of
+            # (connection, data) if capture is enabled.
+            self._write_data = None
         if notify:
             flags |= _FLAG_NOTIFY
         if indicate:
@@ -263,7 +313,7 @@ class Descriptor(BaseCharacteristic):
             flags |= _FLAG_DESC_READ
         if write:
             self._write_event = asyncio.ThreadSafeFlag()
-            self._write_queue = deque((), 1)
+            self._write_data = None
             flags |= _FLAG_DESC_WRITE
 
         self.uuid = uuid
