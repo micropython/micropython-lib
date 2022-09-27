@@ -1,7 +1,4 @@
-try:
-    import urequests as requests
-except ImportError:
-    import requests
+import requests
 
 r = requests.get("http://api.xively.com/")
 print(r)
