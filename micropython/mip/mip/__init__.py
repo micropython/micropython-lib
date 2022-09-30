@@ -153,7 +153,7 @@ def _install_package(package, index, target, version, mpy):
     return _install_json(package, index, target, version, mpy)
 
 
-def install(package, index=_PACKAGE_INDEX, target=None, version=None, mpy=True):
+def install(package, index=None, target=None, version=None, mpy=True):
     if not target:
         for p in sys.path:
             if p.endswith("/lib"):
@@ -162,6 +162,9 @@ def install(package, index=_PACKAGE_INDEX, target=None, version=None, mpy=True):
         else:
             print("Unable to find lib dir in sys.path")
             return
+
+    if not index:
+        index = _PACKAGE_INDEX
 
     if _install_package(package, index.rstrip("/"), target, version, mpy):
         print("Done")
