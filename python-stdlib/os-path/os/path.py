@@ -47,7 +47,11 @@ def basename(path):
 
 
 def exists(path):
-    return os.access(path, os.F_OK)
+    try:
+        os.stat(path)
+        return True
+    except OSError:
+        return False
 
 
 # TODO
@@ -55,11 +59,9 @@ lexists = exists
 
 
 def isdir(path):
-    import stat
-
     try:
         mode = os.stat(path)[0]
-        return stat.S_ISDIR(mode)
+        return mode & 0o040000
     except OSError:
         return False
 
