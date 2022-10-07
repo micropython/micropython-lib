@@ -206,6 +206,7 @@ class MQTTClient:
             self.sock.write(pkt)
         elif op & 6 == 4:
             assert 0
+        return op
 
     # Checks whether a pending message from server is available.
     # If not, returns immediately with None. Otherwise, does
