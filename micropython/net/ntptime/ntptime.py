@@ -45,8 +45,7 @@ def settime(tz: str = None):
     function to get time from NTP server and set it to RTC
     :param tz : optional string parameter specifying the timezone 
     """
-    t = time()
-    tm = utime.gmtime(t)
+    seconds_to_alter = 0
 
     if tz:
         # list of all canonical timezones takes from wikipedia
@@ -445,7 +444,9 @@ def settime(tz: str = None):
             hour = int(all_timezones[1:3])
             minute = int(all_timezones[4:6])
             seconds_to_alter = (hour * 60 * 60) + (minute * 60) * (-1 if all_timezones[0] == '-' else 1)
-            tm = utime.gmtime(t + seconds_to_alter)
+
+    t = time()
+    tm = utime.gmtime(t + seconds_to_alter)
 
     import machine
     machine.RTC().datetime((tm[0], tm[1], tm[2], tm[6] + 1, tm[3], tm[4], tm[5], 0))
