@@ -110,7 +110,6 @@ def _dirname_filename_no_ext(path):
     return dirname, filename.rsplit(".", 1)[0]
 
 
-# This is called from unittest when __name__ == "__main__".
 def discover_main():
     failures = 0
     runner = TestRunner()
@@ -138,3 +137,6 @@ def discover_main():
 
     # Terminate with non zero return code in case of failures.
     sys.exit(failures)
+
+
+discover_main()

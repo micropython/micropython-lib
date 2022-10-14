@@ -460,15 +460,3 @@ def main(module="__main__", testRunner=None):
     suite = TestSuite(module.__name__)
     suite._load_module(module)
     return testRunner.run(suite)
-
-
-# Support `micropython -m unittest` (only useful if unitest-discover is
-# installed).
-if __name__ == "__main__":
-    try:
-        # If unitest-discover is installed, use the main() provided there.
-        from unittest_discover import discover_main
-
-        discover_main()
-    except ImportError:
-        pass

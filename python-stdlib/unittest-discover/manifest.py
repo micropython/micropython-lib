@@ -1,7 +1,7 @@
-metadata(version="0.1.0")
+metadata(version="0.1.1")
 
 require("argparse")
 require("fnmatch")
 require("unittest")
 
-module("unittest_discover.py")
+package("unittest")
