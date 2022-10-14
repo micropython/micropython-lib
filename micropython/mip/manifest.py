@@ -2,4 +2,4 @@ metadata(version="0.2.0", description="On-device package installer for network-c
 
 require("urequests")
 
-package("mip")
+package("mip", opt=3)
