@@ -11,6 +11,8 @@ except:
 
 # The NTP host can be configured at runtime by doing: ntptime.host = 'myhost.org'
 host = "pool.ntp.org"
+# The NTP socket timeout can be configured at runtime by doing: ntptime.timeout = 1.0
+timeout = 1.0
 
 
 def time():
@@ -19,7 +21,7 @@ def time():
     addr = socket.getaddrinfo(host, 123)[0][-1]
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        s.settimeout(1)
+        s.settimeout(timeout)
         res = s.sendto(NTP_QUERY, addr)
         msg = s.recv(48)
     finally:
