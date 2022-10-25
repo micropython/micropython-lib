@@ -2,17 +2,16 @@
 # MIT license; Copyright (c) 2016 Damien P. George
 
 import sys
+import machine
 
-if sys.platform.startswith("esp"):
-    from esp import dht_readinto
-elif sys.platform == "mimxrt":
-    from mimxrt import dht_readinto
-elif sys.platform == "rp2":
-    from rp2 import dht_readinto
-elif sys.platform == "pyboard":
-    from pyb import dht_readinto
-else:
+if hasattr(machine, "dht_readinto"):
     from machine import dht_readinto
+elif sys.platform.startswith("esp"):
+    from esp import dht_readinto
+else:
+    dht_readinto = __import__(sys.platform).dht_readinto
+
+del machine
 
 
 class DHTBase:
