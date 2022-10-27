@@ -91,7 +91,7 @@ async def task(g=None, prompt="--> "):
         g = __import__("__main__").__dict__
     try:
         micropython.kbd_intr(-1)
-        s = asyncio.StreamReader(sys.stdin)
+        s = asyncio.StreamReader(sys.stdin.buffer)
         # clear = True
         hist = [None] * _HISTORY_LIMIT
         hist_i = 0  # Index of most recent entry.
@@ -102,15 +102,35 @@ async def task(g=None, prompt="--> "):
             hist_b = 0  # How far back in the history are we currently.
             sys.stdout.write(prompt)
             cmd = ""
+
+            # Instantiate this outside the loop so it can be used on the next iteration
+            pc = None
+
             while True:
-                b = await s.read(1)
+                # Catch CR + LF line endings
+                mac_newline = False
+                if pc == 0x0D:  # CR
+                    try:
+                        # Wait for up to 30ms to receive the LF.
+                        b = (await asyncio.wait_for_ms(s.read(1), 30)).decode()
+
+                    except asyncio.TimeoutError:
+                        # No extra character received, so we've got Mac newline
+                        b = "\r"
+                        mac_newline = True
+                else:
+                    b = (await s.read(1)).decode()
+
                 c = ord(b)
                 pc = c  # save previous character
                 pt = t  # save previous time
                 t = time.ticks_ms()
                 if c < 0x20 or c > 0x7E:
-                    if c == 0x0A:
-                        # CR
+                    if c == 0x0A or c == 0x0D:
+                        if c == 0x0D and not mac_newline:
+                            # CR: could be Mac or windows newline: wait for another character
+                            continue
+
                         sys.stdout.write("\n")
                         if cmd:
                             # Push current command.
