@@ -110,7 +110,10 @@ async def task(g=None, prompt="--> "):
                 t = time.ticks_ms()
                 if c < 0x20 or c > 0x7E:
                     if c == 0x0A:
-                        # CR
+                        # LF
+                        # If the previous character was also linefeed, and was less than 20 ms ago, ignore this linefeed
+                        if pc == 0x0A and time.ticks_diff(t, pt) < 20:
+                            continue
                         sys.stdout.write("\n")
                         if cmd:
                             # Push current command.
