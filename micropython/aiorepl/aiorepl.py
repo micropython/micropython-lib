@@ -91,7 +91,7 @@ async def task(g=None, prompt="--> "):
         g = __import__("__main__").__dict__
     try:
         micropython.kbd_intr(-1)
-        s = asyncio.StreamReader(sys.stdin)
+        s = asyncio.StreamReader(sys.stdin.buffer)
         # clear = True
         hist = [None] * _HISTORY_LIMIT
         hist_i = 0  # Index of most recent entry.
@@ -101,16 +101,20 @@ async def task(g=None, prompt="--> "):
         while True:
             hist_b = 0  # How far back in the history are we currently.
             sys.stdout.write(prompt)
-            cmd = ""
+            cmd = b''
             while True:
                 b = await s.read(1)
-                c = ord(b)
                 pc = c  # save previous character
+                c = ord(b)
                 pt = t  # save previous time
                 t = time.ticks_ms()
                 if c < 0x20 or c > 0x7E:
-                    if c == 0x0A:
-                        # CR
+                    if c == 0x0A or c == 0x0D:
+                        # LF or CR
+                        # If the previous character was a linefeed or carriage return, and was less than 20 ms ago,
+                        # ignore this character because it's probably the second character of a Windows line ending
+                        if (pc == 0x0A or pc == 0x0D) and time.ticks_diff(t, pt) < 20:
+                            continue
                         sys.stdout.write("\n")
                         if cmd:
                             # Push current command.
