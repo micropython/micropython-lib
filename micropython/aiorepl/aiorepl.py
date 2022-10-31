@@ -104,8 +104,8 @@ async def task(g=None, prompt="--> "):
             cmd = ""
             while True:
                 b = await s.read(1)
-                c = ord(b)
                 pc = c  # save previous character
+                c = ord(b)
                 pt = t  # save previous time
                 t = time.ticks_ms()
                 if c < 0x20 or c > 0x7E:
