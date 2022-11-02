@@ -1,4 +1,4 @@
-metadata(version="4.0.0")
+metadata(version="4.0.1")
 
 # Originally written by Lorenzo Cappelletti.
 

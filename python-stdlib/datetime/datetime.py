@@ -8,6 +8,37 @@ _DBM = (0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334)
 _DIM = (0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 _TIME_SPEC = ("auto", "hours", "minutes", "seconds", "milliseconds", "microseconds")
 
+_SHORT_WEEKDAY = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+_LONG_WEEKDAY = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+_FULL_MONTH_NAME = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+]
+_ABBREVIATED_MONTH = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+]
+
 
 def _leap(y):
     return y % 4 == 0 and (y % 100 != 0 or y % 400 == 0)
@@ -54,6 +85,89 @@ def _o2ymd(n):
         prec -= _dim(y, m)
     n -= prec
     return y, m, n + 1
+
+
+def _strftime(newformat, timetuple):
+    # No strftime function in built-ins. Implement basic formatting on an as-needed
+    # basis here.
+    if newformat == "%a":
+        return _SHORT_WEEKDAY[timetuple[6]]
+    if newformat == "%A":
+        return _LONG_WEEKDAY[timetuple[6]]
+    if newformat == "%b":
+        return _ABBREVIATED_MONTH[timetuple[1] - 1]
+    if newformat == "%B":
+        return _FULL_MONTH_NAME[timetuple[1] - 1]
+
+    # Format not implemented.
+    raise NotImplementedError(
+        f"Unknown format for strftime, format={newformat}, timetuple={timetuple}"
+    )
+
+
+# Correctly substitute for %z and %Z escapes in strftime formats.
+def _wrap_strftime(object, format, timetuple):
+    # Don't call utcoffset() or tzname() unless actually needed.
+    freplace = None  # the string to use for %f
+    zreplace = None  # the string to use for %z
+    Zreplace = None  # the string to use for %Z
+
+    # Scan format for %z and %Z escapes, replacing as needed.
+    newformat = []
+    push = newformat.append
+    i, n = 0, len(format)
+    while i < n:
+        ch = format[i]
+        i += 1
+        if ch == "%":
+            if i < n:
+                ch = format[i]
+                i += 1
+                if ch == "f":
+                    if freplace is None:
+                        freplace = "%06d" % getattr(object, "microsecond", 0)
+                    newformat.append(freplace)
+                elif ch == "z":
+                    if zreplace is None:
+                        zreplace = ""
+                        if hasattr(object, "utcoffset"):
+                            offset = object.utcoffset()
+                            if offset is not None:
+                                sign = "+"
+                                if offset.days < 0:
+                                    offset = -offset
+                                    sign = "-"
+                                h, rest = divmod(offset, timedelta(hours=1))
+                                m, rest = divmod(rest, timedelta(minutes=1))
+                                s = rest.seconds
+                                u = offset.microseconds
+                                if u:
+                                    zreplace = "%c%02d%02d%02d.%06d" % (sign, h, m, s, u)
+                                elif s:
+                                    zreplace = "%c%02d%02d%02d" % (sign, h, m, s)
+                                else:
+                                    zreplace = "%c%02d%02d" % (sign, h, m)
+                    assert "%" not in zreplace
+                    newformat.append(zreplace)
+                elif ch == "Z":
+                    if Zreplace is None:
+                        Zreplace = ""
+                        if hasattr(object, "tzname"):
+                            s = object.tzname()
+                            if s is not None:
+                                # strftime is going to have at this: escape %
+                                Zreplace = s.replace("%", "%%")
+                    newformat.append(Zreplace)
+                else:
+                    push("%")
+                    push(ch)
+            else:
+                push("%")
+        else:
+            push(ch)
+    newformat = "".join(newformat)
+
+    return _strftime(newformat, timetuple)
 
 
 MINYEAR = 1
@@ -394,6 +508,10 @@ class date:
 
     def __repr__(self):
         return "datetime.date(0, 0, {})".format(self._ord)
+
+    def strftime(self, fmt):
+        "Format using strftime()."
+        return _wrap_strftime(self, fmt, self.timetuple())
 
     __str__ = isoformat
 
