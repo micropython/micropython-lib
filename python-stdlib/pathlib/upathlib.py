@@ -13,7 +13,17 @@ def _try(ok, f, *args, **kwargs):
 
 class Path:
     def __init__(self, *segments):
-        self._path = "/".join(segments)
+        segments_stripped = []
+        for segment in segments:
+            if not segments_stripped and segment[0] == "/":
+                segments_stripped.append("")
+            while segment[-1] == "/":
+                segment = segment[:-1]
+            while segment[0] == "/":
+                segment = segment[1:]
+            segments_stripped.append(segment)
+
+        self._path = "/".join(segments_stripped)
         # self._path will never end in "/"
         while self._path[-1] == "/":
             self._path = self._path[:-1]
