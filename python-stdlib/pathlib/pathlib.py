@@ -50,11 +50,39 @@ class Path:
         else:
             _try(exist_ok, os.mkdir, self._path)
 
-    def glob(self):
-        raise NotImplementedError
+    def _glob(self, path, pattern, recursive):
+        # Currently only supports a single "*" pattern.
+        n_wildcards = pattern.count("*")
+        n_single_wildcards = pattern.count("?")
 
-    def rglob(self):
-        raise NotImplementedError
+        if n_single_wildcards:
+            raise NotImplementedError("? single wildcards not implemented.")
+
+        if n_wildcards == 0:
+            raise ValueError
+        elif n_wildcards > 1:
+            raise NotImplementedError("Multiple * wildcards not implemented.")
+
+        prefix, suffix = pattern.split("*")
+
+        for elem in os.ilistdir(path):
+            name = elem[0]
+            full_path = path + "/" + name
+            if name.startswith(prefix) and name.endswith(suffix):
+                yield full_path
+            if elem[1] & 0x4000 and recursive:  # is_dir
+                yield self._glob(full_path, pattern, recursive=recursive)
+
+    def glob(self, pattern):
+        """Iterate over this subtree and yield all existing files (of any
+        kind, including directories) matching the given relative pattern.
+
+        Currently only supports a single "*" pattern.
+        """
+        return self._glob(self._path, pattern, recursive=False)
+
+    def rglob(self, pattern):
+        return self._glob(self._path, pattern, recursive=True)
 
     def stat(self):
         return os.stat(self._path)
