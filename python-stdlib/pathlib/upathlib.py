@@ -38,8 +38,6 @@ class Path:
         return self._abs_path
 
     def __eq__(self, other):
-        # TODO: this doesn't handle the case of comparing
-        # relative vs absolute path.
         return self._abs_path == str(other)
 
 
