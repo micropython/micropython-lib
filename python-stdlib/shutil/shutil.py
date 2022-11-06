@@ -30,7 +30,7 @@ def copyfileobj(src, dest, length=512):
             
 def disk_usage(path):
     bit_tuple = os.statvfs(path)
-    blksize = bit_tuple[0] # system block size
+    blksize = bit_tuple[0]  # system block size
     total = bit_tuple[2] * blksize
     free = bit_tuple[3] * blksize
     used = total - free
