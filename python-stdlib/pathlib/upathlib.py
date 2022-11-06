@@ -8,18 +8,16 @@ def _absolute(path):
         return cwd
     if path[0] == "/":
         return path
-    path = path.rstrip("/")
     return "/" + path if cwd == "/" else cwd + "/" + path
 
 
 def _mode_if_exists(path):
     try:
-        mode = os.stat(path)[0]
+        return os.stat(path)[0]
     except OSError as e:
         if e.errno == errno.ENOENT:
             return 0
         raise e
-    return mode
 
 
 def _clean_segment(segment):
