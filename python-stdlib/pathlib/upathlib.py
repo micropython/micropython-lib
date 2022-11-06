@@ -2,15 +2,6 @@ import errno
 import os
 
 
-def _absolute(path):
-    cwd = os.getcwd()
-    if not path or path == ".":
-        return cwd
-    if path[0] == "/":
-        return path
-    return "/" + path if cwd == "/" else cwd + "/" + path
-
-
 def _mode_if_exists(path):
     try:
         return os.stat(path)[0]
@@ -21,70 +12,83 @@ def _mode_if_exists(path):
 
 
 def _clean_segment(segment):
-    cleaned = segment.rstrip("/")
+    segment = str(segment)
+    if not segment:
+        return "."
+    segment = segment.rstrip("/")
+    if not segment:
+        return "/"
     while True:
-        no_double = cleaned.replace("//", "/")
-        if no_double == cleaned:
+        no_double = segment.replace("//", "/")
+        if no_double == segment:
             break
-        cleaned = no_double
-    if segment == "." or not segment:
-        return ""
-    return cleaned
+        segment = no_double
+    return segment
 
 
 class Path:
     def __init__(self, *segments):
-        segments_stripped = []
+        segments_cleaned = []
         for segment in segments:
             segment = _clean_segment(segment)
-            if not segment:
+            if segment[0] == "/":
+                segments_cleaned = [segment]
+            elif segment == ".":
                 continue
-            elif segment[0] == "/":
-                segments_stripped = [segment]
             else:
-                segments_stripped.append(segment)
+                segments_cleaned.append(segment)
 
-        self._abs_path = _absolute("/".join(segments_stripped))
+        self._path = _clean_segment("/".join(segments_cleaned))
 
     def __truediv__(self, other):
-        return self._abs_path + "/" + other
+        return Path(self._path, str(other))
 
     def __repr__(self):
-        return f'{type(self).__name__}("{self._abs_path}")'
+        return f'{type(self).__name__}("{self._path}")'
 
     def __str__(self):
-        return self._abs_path
+        return self._path
 
     def __eq__(self, other):
-        return self._abs_path == str(other)
+        return self.absolute() == Path(other).absolute()
+
+    def absolute(self):
+        path = self._path
+        cwd = os.getcwd()
+        if not path or path == ".":
+            return cwd
+        if path[0] == "/":
+            return path
+        return "/" + path if cwd == "/" else cwd + "/" + path
+
+    def resolve(self):
+        return self.absolute()
 
     def open(self, mode="r", encoding=None):
-        return open(self._abs_path, mode, encoding=encoding)
+        return open(self._path, mode, encoding=encoding)
 
     def exists(self):
-        return bool(_mode_if_exists(self._abs_path))
+        return bool(_mode_if_exists(self._path))
 
     def mkdir(self, parents=False, exist_ok=False):
         try:
-            os.mkdir(self._abs_path)
+            os.mkdir(self._path)
+            return
         except OSError as e:
             if e.errno == errno.EEXIST and exist_ok:
                 return
             elif e.errno == errno.ENOENT and parents:
-                # handled below
-                pass
+                pass  # handled below
             else:
                 raise e
 
-        segments = self._abs_path.split("/")
+        segments = self._path.split("/")
+        progressive_path = ""
         if segments[0] == "":
             segments = segments[1:]
             progressive_path = "/"
-        else:
-            progressive_path = ""
         for segment in segments:
             progressive_path += "/" + segment
-
             try:
                 os.mkdir(progressive_path)
             except OSError as e:
@@ -92,10 +96,10 @@ class Path:
                     raise e
 
     def is_dir(self):
-        return bool(_mode_if_exists(self._abs_path) & 0x4000)
+        return bool(_mode_if_exists(self._path) & 0x4000)
 
     def is_file(self):
-        return bool(_mode_if_exists(self._abs_path) & 0x8000)
+        return bool(_mode_if_exists(self._path) & 0x8000)
 
     def _glob(self, path, pattern, recursive):
         # Currently only supports a single "*" pattern.
@@ -125,52 +129,52 @@ class Path:
 
         Currently only supports a single "*" pattern.
         """
-        return self._glob(self._abs_path, pattern, recursive=False)
+        return self._glob(self._path, pattern, recursive=False)
 
     def rglob(self, pattern):
-        return self._glob(self._abs_path, pattern, recursive=True)
+        return self._glob(self._path, pattern, recursive=True)
 
     def stat(self):
-        return os.stat(self._abs_path)
+        return os.stat(self._path)
 
     def read_bytes(self):
-        with open(self._abs_path, "rb") as f:
+        with open(self._path, "rb") as f:
             return f.read()
 
     def read_text(self, encoding=None):
-        with open(self._abs_path, "r") as f:
+        with open(self._path, "r") as f:
             return f.read()
 
     def rename(self, target):
-        os.rename(self._abs_path, target)
+        os.rename(self._path, target)
 
     def rmdir(self):
-        os.rmdir(self._abs_path)
+        os.rmdir(self._path)
 
     def touch(self, exist_ok=True):
         if self.exists():
             return
-        with open(self._abs_path, "w"):
+        with open(self._path, "w"):
             pass
 
     def unlink(self, missing_ok=False):
         try:
-            os.unlink(self._abs_path)
+            os.unlink(self._path)
         except OSError as e:
             if not (missing_ok and e.errno == errno.ENOENT):
                 raise e
 
     def write_bytes(self, data):
-        with open(self._abs_path, "wb") as f:
+        with open(self._path, "wb") as f:
             f.write(data)
 
     def write_text(self, data, encoding=None):
-        with open(self._abs_path, "w") as f:
+        with open(self._path, "w") as f:
             f.write(data)
 
     def with_suffix(self, suffix):
         index = -len(self.suffix) or None
-        return Path(self._abs_path[:index] + suffix)
+        return Path(self._path[:index] + suffix)
 
     @property
     def stem(self):
@@ -178,13 +182,18 @@ class Path:
 
     @property
     def parent(self):
-        return Path(self._abs_path.rsplit("/", 1)[0])
+        tokens = self._path.rsplit("/", 1)
+        if len(tokens) == 2:
+            if not tokens[0]:
+                tokens[0] = "/"
+            return Path(tokens[0])
+        return Path(".")
 
     @property
     def name(self):
-        return self._abs_path.rsplit("/", 1)[-1]
+        return self._path.rsplit("/", 1)[-1]
 
     @property
     def suffix(self):
-        elems = self._abs_path.rsplit(".", 1)
+        elems = self._path.rsplit(".", 1)
         return "" if len(elems) == 1 else "." + elems[1]

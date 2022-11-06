@@ -17,45 +17,67 @@ os.ilistdir = ilistdir
 
 @pytest.fixture
 def mock_os_getcwd(mocker):
-    return mocker.patch("upathlib.os.getcwd", return_value="/")
+    return mocker.patch("upathlib.os.getcwd", return_value="/testing/cwd")
 
 
-def test_init_single_segment(mock_os_getcwd):
+def test_init_single_segment():
     path = Path("foo")
-    assert path._abs_path == "/foo"
+    assert path._path == "foo"
 
     path = Path("foo/")
-    assert path._abs_path == "/foo"
+    assert path._path == "foo"
 
     path = Path("/foo")
-    assert path._abs_path == "/foo"
+    assert path._path == "/foo"
 
     path = Path("/////foo")
-    assert path._abs_path == "/foo"
+    assert path._path == "/foo"
+
+    path = Path("")
+    assert path._path == "."
 
 
-def test_init_multiple_segment(mock_os_getcwd):
+def test_init_multiple_segment():
     path = Path("foo", "bar")
-    assert path._abs_path == "/foo/bar"
+    assert path._path == "foo/bar"
 
     path = Path("foo/", "bar")
-    assert path._abs_path == "/foo/bar"
+    assert path._path == "foo/bar"
 
     path = Path("/foo", "bar")
-    assert path._abs_path == "/foo/bar"
+    assert path._path == "/foo/bar"
 
     path = Path("/foo", "", "bar")
-    assert path._abs_path == "/foo/bar"
+    assert path._path == "/foo/bar"
 
     path = Path("/foo/", "", "/bar/")
-    assert path._abs_path == "/bar"
+    assert path._path == "/bar"
 
     path = Path("", "")
-    assert path._abs_path == "/"
+    assert path._path == "."
 
 
-def test_truediv_join():
-    pass
+def test_truediv_join_str():
+    actual = Path("foo") / "bar"
+    assert actual == Path("foo/bar")
+
+
+def test_truediv_join_path():
+    actual = Path("foo") / Path("bar")
+    assert actual == Path("foo/bar")
+
+    actual = Path("foo") / Path("/bar")
+    assert actual == "/bar"
+
+
+def test_eq_and_absolute(mock_os_getcwd):
+    assert Path("") == Path(".")
+    assert Path("foo") == Path("/testing/cwd", "foo")
+    assert Path("foo") == "foo"
+    assert Path("foo") == "/testing/cwd/foo"
+
+    assert Path("foo") != Path("bar")
+    assert Path(".") != Path("/")
 
 
 def test_open(tmp_path):
@@ -282,6 +304,8 @@ def test_parent():
     assert Path("foo/test").parent == Path("foo")
     assert Path("foo/bar.bin").parent == Path("foo")
     assert Path("bar.bin").parent == Path(".")
+    assert Path(".").parent == Path(".")
+    assert Path("/").parent == Path("/")
 
 
 def test_suffix():
