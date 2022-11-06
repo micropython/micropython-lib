@@ -32,7 +32,7 @@ class Path:
         return self._abs_path + "/" + other
 
     def __repr__(self):
-        return f"{type(self).__name__}(\"{self._abs_path}\")"
+        return f'{type(self).__name__}("{self._abs_path}")'
 
     def __str__(self):
         return self._abs_path
@@ -40,8 +40,7 @@ class Path:
     def __eq__(self, other):
         return self._abs_path == str(other)
 
-
-    def open(self, mode='r', encoding=None):
+    def open(self, mode="r", encoding=None):
         return open(self._abs_path, mode, encoding=encoding)
 
     def exists(self):
@@ -179,7 +178,7 @@ class Path:
     def with_suffix(self, suffix):
         old_suffix = self.suffix
         if old_suffix:
-            return Path(self._abs_path[:-len(old_suffix)] + suffix)
+            return Path(self._abs_path[: -len(old_suffix)] + suffix)
         else:
             return Path(self._abs_path + suffix)
 

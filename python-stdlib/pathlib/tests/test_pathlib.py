@@ -15,6 +15,7 @@ def ilistdir(x):
 
 os.ilistdir = ilistdir
 
+
 @pytest.fixture
 def mock_os_getcwd(mocker):
     return mocker.patch("upathlib.os.getcwd", return_value="/")
@@ -120,11 +121,11 @@ def test_is_file(tmp_path):
 
 
 def test_glob(tmp_path):
-    foo_txt = (tmp_path / "foo.txt")
+    foo_txt = tmp_path / "foo.txt"
     foo_txt.touch()
-    bar_txt = (tmp_path / "bar.txt")
+    bar_txt = tmp_path / "bar.txt"
     bar_txt.touch()
-    baz_bin = (tmp_path / "baz.bin")
+    baz_bin = tmp_path / "baz.bin"
     baz_bin.touch()
 
     path = Path(str(tmp_path))
@@ -138,15 +139,15 @@ def test_glob(tmp_path):
 
 
 def test_rglob(tmp_path):
-    foo_txt = (tmp_path / "foo.txt")
+    foo_txt = tmp_path / "foo.txt"
     foo_txt.touch()
-    bar_txt = (tmp_path / "bar.txt")
+    bar_txt = tmp_path / "bar.txt"
     bar_txt.touch()
-    baz_bin = (tmp_path / "baz.bin")
+    baz_bin = tmp_path / "baz.bin"
     baz_bin.touch()
-    boop_folder = (tmp_path / "boop")
+    boop_folder = tmp_path / "boop"
     boop_folder.mkdir()
-    bap_txt = (tmp_path / "boop" / "bap.txt")
+    bap_txt = tmp_path / "boop" / "bap.txt"
     bap_txt.touch()
 
     path = Path(str(tmp_path))
@@ -282,4 +283,3 @@ def test_with_suffix():
     assert Path("foo/test").with_suffix(".tar") == Path("foo/test.tar")
     assert Path("foo/bar.bin").with_suffix(".txt") == Path("foo/bar.txt")
     assert Path("bar.txt").with_suffix("") == Path("bar")
-
