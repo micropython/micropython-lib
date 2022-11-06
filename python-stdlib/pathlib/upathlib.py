@@ -46,8 +46,10 @@ class Path:
     def exists(self):
         try:
             os.stat(self._abs_path)
-        except OSError:
-            return False
+        except OSError as e:
+            if e.errno == errno.ENOENT:
+                return False
+            raise e
         return True
 
     def mkdir(self, parents=False, exist_ok=False):
@@ -87,16 +89,20 @@ class Path:
         try:
             if self.stat()[0] & 0x4000:
                 return True
-        except OSError:
-            pass
+        except OSError as e:
+            if e.errno == errno.ENOENT:
+                return False
+            raise e
         return False
 
     def is_file(self):
         try:
             if self.stat()[0] & 0x8000:
                 return True
-        except OSError:
-            pass
+        except OSError as e:
+            if e.errno == errno.ENOENT:
+                return False
+            raise e
         return False
 
     def _glob(self, path, pattern, recursive):
