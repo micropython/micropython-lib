@@ -178,6 +178,13 @@ class Path:
         with open(self._abs_path, "w") as f:
             f.write(data)
 
+    def with_suffix(self, suffix):
+        old_suffix = self.suffix
+        if old_suffix:
+            return Path(self._abs_path[:-len(old_suffix)] + suffix)
+        else:
+            return Path(self._abs_path + suffix)
+
     @property
     def stem(self):
         return self.name.rsplit(".", 1)[0]

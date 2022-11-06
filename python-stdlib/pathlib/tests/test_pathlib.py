@@ -276,3 +276,10 @@ def test_suffix():
     assert Path("foo/test").suffix == ""
     assert Path("foo/bar.bin").suffix == ".bin"
     assert Path("bar.txt").suffix == ".txt"
+
+
+def test_with_suffix():
+    assert Path("foo/test").with_suffix(".tar") == Path("foo/test.tar")
+    assert Path("foo/bar.bin").with_suffix(".txt") == Path("foo/bar.txt")
+    assert Path("bar.txt").with_suffix("") == Path("bar")
+
