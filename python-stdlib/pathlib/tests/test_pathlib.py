@@ -1,6 +1,5 @@
 import inspect
 import os
-from importlib.machinery import SourceFileLoader
 
 import pytest
 
