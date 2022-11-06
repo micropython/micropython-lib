@@ -12,6 +12,16 @@ def _absolute(path):
     return "/" + path if cwd == "/" else cwd + "/" + path
 
 
+def _mode_if_exists(path):
+    try:
+        mode = os.stat(path)[0]
+    except OSError as e:
+        if e.errno == errno.ENOENT:
+            return 0
+        raise e
+    return mode
+
+
 class Path:
     def __init__(self, *segments):
         segments_stripped = []
@@ -44,29 +54,17 @@ class Path:
         return open(self._abs_path, mode, encoding=encoding)
 
     def exists(self):
-        try:
-            os.stat(self._abs_path)
-        except OSError as e:
-            if e.errno == errno.ENOENT:
-                return False
-            raise e
-        return True
+        return bool(_mode_if_exists(self._abs_path))
 
     def mkdir(self, parents=False, exist_ok=False):
         try:
             os.mkdir(self._abs_path)
         except OSError as e:
-            if e.errno == errno.EEXIST:
-                if exist_ok:
-                    return
-                else:
-                    raise e
-            elif e.errno == errno.ENOENT:
-                if parents:
-                    # handled below
-                    pass
-                else:
-                    raise e
+            if e.errno == errno.EEXIST and exist_ok:
+                return
+            elif e.errno == errno.ENOENT and parents:
+                # handled below
+                pass
             else:
                 raise e
 
@@ -86,24 +84,10 @@ class Path:
                     raise e
 
     def is_dir(self):
-        try:
-            if self.stat()[0] & 0x4000:
-                return True
-        except OSError as e:
-            if e.errno == errno.ENOENT:
-                return False
-            raise e
-        return False
+        return bool(_mode_if_exists(self._abs_path) & 0x4000)
 
     def is_file(self):
-        try:
-            if self.stat()[0] & 0x8000:
-                return True
-        except OSError as e:
-            if e.errno == errno.ENOENT:
-                return False
-            raise e
-        return False
+        return bool(_mode_if_exists(self._abs_path) & 0x8000)
 
     def _glob(self, path, pattern, recursive):
         # Currently only supports a single "*" pattern.
@@ -120,12 +104,11 @@ class Path:
 
         prefix, suffix = pattern.split("*")
 
-        for elem in os.ilistdir(path):
-            name = elem[0]
+        for name, mode, *_ in os.ilistdir(path):
             full_path = path + "/" + name
             if name.startswith(prefix) and name.endswith(suffix):
                 yield full_path
-            if elem[1] & 0x4000 and recursive:  # is_dir
+            if recursive and mode & 0x4000:  # is_dir
                 yield from self._glob(full_path, pattern, recursive=recursive)
 
     def glob(self, pattern):
@@ -157,20 +140,16 @@ class Path:
         os.rmdir(self._abs_path)
 
     def touch(self, exist_ok=True):
-        try:
-            os.stat(self._abs_path)
-        except OSError as e:
-            if e.errno == errno.ENOENT:
-                with open(self._abs_path, "w"):
-                    pass
-            else:
-                raise e
+        if self.exists():
+            return
+        with open(self._abs_path, "w"):
+            pass
 
     def unlink(self, missing_ok=False):
         try:
             os.unlink(self._abs_path)
         except OSError as e:
-            if not missing_ok:
+            if not (missing_ok and e.errno == errno.ENOENT):
                 raise e
 
     def write_bytes(self, data):
@@ -182,11 +161,8 @@ class Path:
             f.write(data)
 
     def with_suffix(self, suffix):
-        old_suffix = self.suffix
-        if old_suffix:
-            return Path(self._abs_path[: -len(old_suffix)] + suffix)
-        else:
-            return Path(self._abs_path + suffix)
+        index = -len(self.suffix) or None
+        return Path(self._abs_path[:index] + suffix)
 
     @property
     def stem(self):
@@ -203,7 +179,4 @@ class Path:
     @property
     def suffix(self):
         elems = self._abs_path.rsplit(".", 1)
-        if len(elems) == 1:
-            return ""
-        else:
-            return "." + elems[-1]
+        return "" if len(elems) == 1 else "." + elems[1]
