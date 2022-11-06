@@ -30,6 +30,9 @@ def test_init_single_segment(mock_os_getcwd):
     path = Path("/foo")
     assert path._abs_path == "/foo"
 
+    path = Path("/////foo")
+    assert path._abs_path == "/foo"
+
 
 def test_init_multiple_segment(mock_os_getcwd):
     path = Path("foo", "bar")
@@ -40,6 +43,15 @@ def test_init_multiple_segment(mock_os_getcwd):
 
     path = Path("/foo", "bar")
     assert path._abs_path == "/foo/bar"
+
+    path = Path("/foo", "", "bar")
+    assert path._abs_path == "/foo/bar"
+
+    path = Path("/foo/", "", "/bar/")
+    assert path._abs_path == "/bar"
+
+    path = Path("", "")
+    assert path._abs_path == "/"
 
 
 def test_truediv_join():

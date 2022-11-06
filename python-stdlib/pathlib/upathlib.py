@@ -22,19 +22,29 @@ def _mode_if_exists(path):
     return mode
 
 
+def _clean_segment(segment):
+    cleaned = segment.rstrip("/")
+    while True:
+        no_double = cleaned.replace("//", "/")
+        if no_double == cleaned:
+            break
+        cleaned = no_double
+    if segment == "." or not segment:
+        return ""
+    return cleaned
+
+
 class Path:
     def __init__(self, *segments):
         segments_stripped = []
         for segment in segments:
+            segment = _clean_segment(segment)
             if not segment:
-                segment = "."
-            if not segments_stripped and segment[0] == "/":
-                segments_stripped.append("")
-            while segment[-1] == "/":
-                segment = segment[:-1]
-            while segment[0] == "/":
-                segment = segment[1:]
-            segments_stripped.append(segment)
+                continue
+            elif segment[0] == "/":
+                segments_stripped = [segment]
+            else:
+                segments_stripped.append(segment)
 
         self._abs_path = _absolute("/".join(segments_stripped))
 
