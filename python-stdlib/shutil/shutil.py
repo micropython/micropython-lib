@@ -27,3 +27,12 @@ def copyfileobj(src, dest, length=512):
             if not buf:
                 break
             dest.write(buf)
+            
+def disk_usage(path):
+    bit_tuple = os.statvfs(path)
+    blksize = bit_tuple[0] # system block size
+    total = bit_tuple[2] * blksize
+    free = bit_tuple[3] * blksize
+    used = total - free
+
+    return total, used, free
