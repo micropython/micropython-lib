@@ -1,5 +1,6 @@
 # Reimplement, because CPython3.3 impl is rather bloated
 import os
+from collections import namedtuple
 
 
 def rmtree(top):
@@ -29,10 +30,12 @@ def copyfileobj(src, dest, length=512):
             dest.write(buf)
             
 def disk_usage(path):
+    _ntuple_diskusage = namedtuple('usage', 'total used free')
+    
     bit_tuple = os.statvfs(path)
     blksize = bit_tuple[0]  # system block size
     total = bit_tuple[2] * blksize
     free = bit_tuple[3] * blksize
     used = total - free
 
-    return total, used, free
+    return _ntuple_diskusage(total, used, free)
