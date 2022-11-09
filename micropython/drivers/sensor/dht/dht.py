@@ -8,6 +8,8 @@ if hasattr(machine, "dht_readinto"):
     from machine import dht_readinto
 elif sys.platform.startswith("esp"):
     from esp import dht_readinto
+elif sys.platform == "pyboard":
+    from pyb import dht_readinto
 else:
     dht_readinto = __import__(sys.platform).dht_readinto
 
