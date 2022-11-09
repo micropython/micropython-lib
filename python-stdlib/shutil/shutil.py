@@ -1,6 +1,7 @@
 # Reimplement, because CPython3.3 impl is rather bloated
 import os
 from collections import namedtuple
+
 _ntuple_diskusage = namedtuple('usage', ('total', 'used', 'free'))
 
 
