@@ -2,6 +2,7 @@
 import os
 from collections import namedtuple
 
+
 _ntuple_diskusage = namedtuple('usage', ('total', 'used', 'free'))
 
 
