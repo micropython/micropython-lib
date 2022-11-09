@@ -1,3 +1,3 @@
-metadata(version="0.0.3")
+metadata(version="0.0.4")
 
 module("shutil.py")
