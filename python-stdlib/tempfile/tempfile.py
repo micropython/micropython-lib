@@ -37,7 +37,7 @@ def mkdtemp(suffix=None, prefix=None, dir=None):
 
     while True:
         name = _get_candidate_name()
-        file = os.path.join(dir, prefix + name + suffix)
+        file = dir + "/" + prefix + name + suffix
         if _try(os.mkdir, file):
             return file
 
