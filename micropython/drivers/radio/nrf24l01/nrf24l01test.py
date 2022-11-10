@@ -3,7 +3,7 @@
 import usys
 import ustruct as struct
 import utime
-from machine import Pin, SPI
+from machine import Pin, SPI, SoftSPI
 from nrf24l01 import NRF24L01
 from micropython import const
 
@@ -15,13 +15,17 @@ _RX_POLL_DELAY = const(15)
 _RESPONDER_SEND_DELAY = const(10)
 
 if usys.platform == "pyboard":
-    cfg = {"spi": 2, "miso": "Y7", "mosi": "Y8", "sck": "Y6", "csn": "Y5", "ce": "Y4"}
+    spi = SPI(2)  # miso : Y7, mosi : Y8, sck : Y6
+    cfg = {"spi": spi, "csn": "Y5", "ce": "Y4"}
 elif usys.platform == "esp8266":  # Hardware SPI
-    cfg = {"spi": 1, "miso": 12, "mosi": 13, "sck": 14, "csn": 4, "ce": 5}
+    spi = SPI(1)  # miso : 12, mosi : 13, sck : 14
+    cfg = {"spi": spi, "csn": 4, "ce": 5}
 elif usys.platform == "esp32":  # Software SPI
-    cfg = {"spi": -1, "miso": 32, "mosi": 33, "sck": 25, "csn": 26, "ce": 27}
+    spi = SoftSPI(sck=Pin(25), mosi=Pin(33), miso=Pin(32))
+    cfg = {"spi": spi, "csn": 26, "ce": 27}
 elif usys.platform == "rp2":  # Hardware SPI with explicit pin definitions
-    cfg = {"spi": -2, "miso": 4, "mosi": 3, "sck": 2, "csn": 5, "ce": 6}
+    spi = SPI(0, sck=Pin(2), mosi=Pin(3), miso=Pin(4))
+    cfg = {"spi": spi, "csn": 5, "ce": 6}
 else:
     raise ValueError("Unsupported platform {}".format(usys.platform))
 
@@ -33,14 +37,8 @@ pipes = (b"\xe1\xf0\xf0\xf0\xf0", b"\xd2\xf0\xf0\xf0\xf0")
 def initiator():
     csn = Pin(cfg["csn"], mode=Pin.OUT, value=1)
     ce = Pin(cfg["ce"], mode=Pin.OUT, value=0)
-    if cfg["spi"] == -1:
-        spi = SoftSPI(sck=Pin(cfg["sck"]), mosi=Pin(cfg["mosi"]), miso=Pin(cfg["miso"]))
-        nrf = NRF24L01(spi, csn, ce, payload_size=8)
-    elif cfg["spi"] == -2:
-        spi = SPI(0, sck=Pin(cfg["sck"]), mosi=Pin(cfg["mosi"]), miso=Pin(cfg["miso"]))
-        nrf = NRF24L01(spi, csn, ce, payload_size=8)
-    else:
-        nrf = NRF24L01(SPI(cfg["spi"]), csn, ce, payload_size=8)
+    spi = cfg["spi"]
+    nrf = NRF24L01(spi, csn, ce, payload_size=8)
 
     nrf.open_tx_pipe(pipes[0])
     nrf.open_rx_pipe(1, pipes[1])
@@ -95,20 +93,17 @@ def initiator():
         # delay then loop
         utime.sleep_ms(250)
 
-    print("initiator finished sending; successes=%d, failures=%d" % (num_successes, num_failures))
+    print(
+        "initiator finished sending; successes=%d, failures=%d"
+        % (num_successes, num_failures)
+    )
 
 
 def responder():
     csn = Pin(cfg["csn"], mode=Pin.OUT, value=1)
     ce = Pin(cfg["ce"], mode=Pin.OUT, value=0)
-    if cfg["spi"] == -1:
-        spi = SPI(-1, sck=Pin(cfg["sck"]), mosi=Pin(cfg["mosi"]), miso=Pin(cfg["miso"]))
-        nrf = NRF24L01(spi, csn, ce, payload_size=8)
-    elif cfg["spi"] == -2:
-        spi = SPI(0, sck=Pin(cfg["sck"]), mosi=Pin(cfg["mosi"]), miso=Pin(cfg["miso"]))
-        nrf = NRF24L01(spi, csn, ce, payload_size=8)
-    else:
-        nrf = NRF24L01(SPI(cfg["spi"]), csn, ce, payload_size=8)
+    spi = cfg["spi"]
+    nrf = NRF24L01(spi, csn, ce, payload_size=8)
 
     nrf.open_tx_pipe(pipes[1])
     nrf.open_rx_pipe(1, pipes[0])
@@ -152,7 +147,7 @@ print("NRF24L01 test module loaded")
 print("NRF24L01 pinout for test:")
 print("    CE on", cfg["ce"])
 print("    CSN on", cfg["csn"])
-print("    SCK on", cfg["sck"])
-print("    MISO on", cfg["miso"])
-print("    MOSI on", cfg["mosi"])
-print("run nrf24l01test.responder() on responder, then nrf24l01test.initiator() on initiator")
+print("    SPI on", cfg["spi"])
+print(
+    "run nrf24l01test.responder() on responder, then nrf24l01test.initiator() on initiator"
+)
