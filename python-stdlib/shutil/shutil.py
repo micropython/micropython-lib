@@ -5,11 +5,14 @@ from collections import namedtuple
 _ntuple_diskusage = namedtuple("usage", ("total", "used", "free"))
 
 
-def rmtree(top):
-    for path, dirs, files in os.walk(top, False):
-        for f in files:
-            os.unlink(path + "/" + f)
-        os.rmdir(path)
+def rmtree(d):
+    for name, type, *_ in os.ilistdir(d):
+        path = d + "/" + name
+        if type & 0x4000:  # dir
+            rmtree(path)
+        else:  # file
+            os.unlink(path)
+    os.rmdir(d)
 
 
 def copyfileobj(src, dest, length=512):
