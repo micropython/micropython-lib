@@ -6,6 +6,9 @@ _ntuple_diskusage = namedtuple("usage", ("total", "used", "free"))
 
 
 def rmtree(d):
+    if not d:
+        raise ValueError
+
     for name, type, *_ in os.ilistdir(d):
         path = d + "/" + name
         if type & 0x4000:  # dir
