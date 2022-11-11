@@ -230,6 +230,14 @@ class TestPathlib(unittest.TestCase):
         path.touch()
         self.assertExists(target)
 
+        path.touch()  # touching existing file is fine
+        self.assertExists(target)
+
+        # Technically should be FileExistsError,
+        # but thats not builtin to micropython
+        with self.assertRaises(OSError):
+            path.touch(exist_ok=False)
+
         path = Path(self.tmp_path + "/bar/baz.txt")
         with self.assertRaises(OSError):
             # Parent directory does not exist

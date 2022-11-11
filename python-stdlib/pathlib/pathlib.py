@@ -142,7 +142,7 @@ class Path:
             return f.read()
 
     def read_text(self, encoding=None):
-        with open(self._path, "r") as f:
+        with open(self._path, "r", encoding=encoding) as f:
             return f.read()
 
     def rename(self, target):
@@ -153,7 +153,11 @@ class Path:
 
     def touch(self, exist_ok=True):
         if self.exists():
-            return
+            if exist_ok:
+                return  # TODO: should update timestamp
+            else:
+                # In lieue of FileExistsError
+                raise OSError(errno.EEXIST)
         with open(self._path, "w"):
             pass
 
@@ -169,7 +173,7 @@ class Path:
             f.write(data)
 
     def write_text(self, data, encoding=None):
-        with open(self._path, "w") as f:
+        with open(self._path, "w", encoding=encoding) as f:
             f.write(data)
 
     def with_suffix(self, suffix):
