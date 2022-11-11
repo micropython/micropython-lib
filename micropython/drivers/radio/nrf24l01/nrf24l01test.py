@@ -93,10 +93,7 @@ def initiator():
         # delay then loop
         utime.sleep_ms(250)
 
-    print(
-        "initiator finished sending; successes=%d, failures=%d"
-        % (num_successes, num_failures)
-    )
+    print("initiator finished sending; successes=%d, failures=%d" % (num_successes, num_failures))
 
 
 def responder():
@@ -148,6 +145,4 @@ print("NRF24L01 pinout for test:")
 print("    CE on", cfg["ce"])
 print("    CSN on", cfg["csn"])
 print("    SPI on", cfg["spi"])
-print(
-    "run nrf24l01test.responder() on responder, then nrf24l01test.initiator() on initiator"
-)
+print("run nrf24l01test.responder() on responder, then nrf24l01test.initiator() on initiator")
