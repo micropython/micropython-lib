@@ -1,320 +1,316 @@
-import inspect
 import os
-
-import pytest
-
-from upathlib import Path
-
-
-def ilistdir(x):
-    for name in os.listdir(x):
-        stat = os.stat(x + "/" + name)  # noqa: PL116
-        yield (name, stat.st_mode, stat.st_ino)
+import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 
-os.ilistdir = ilistdir
+def _isgenerator(x):
+    return isinstance(x, type((lambda: (yield))()))
 
 
-@pytest.fixture
-def mock_os_getcwd(mocker):
-    return mocker.patch("upathlib.os.getcwd", return_value="/testing/cwd")
+class TestPathlib(unittest.TestCase):
+    def assertExists(self, fn):
+        os.stat(fn)
 
+    def assertNotExists(self, fn):
+        with self.assertRaises(OSError):
+            os.stat(fn)
 
-def test_init_single_segment():
-    path = Path("foo")
-    assert path._path == "foo"
+    def setUp(self):
+        self._tmp_path_obj = TemporaryDirectory()
+        self.tmp_path = self._tmp_path_obj.name
 
-    path = Path("foo/")
-    assert path._path == "foo"
+    def tearDown(self):
+        self._tmp_path_obj.cleanup()
 
-    path = Path("/foo")
-    assert path._path == "/foo"
+    def test_init_single_segment(self):
+        path = Path("foo")
+        self.assertTrue(path._path == "foo")
 
-    path = Path("/////foo")
-    assert path._path == "/foo"
+        path = Path("foo/")
+        self.assertTrue(path._path == "foo")
 
-    path = Path("")
-    assert path._path == "."
+        path = Path("/foo")
+        self.assertTrue(path._path == "/foo")
 
+        path = Path("/////foo")
+        self.assertTrue(path._path == "/foo")
 
-def test_init_multiple_segment():
-    path = Path("foo", "bar")
-    assert path._path == "foo/bar"
+        path = Path("")
+        self.assertTrue(path._path == ".")
 
-    path = Path("foo/", "bar")
-    assert path._path == "foo/bar"
+    def test_init_multiple_segment(self):
+        path = Path("foo", "bar")
+        self.assertTrue(path._path == "foo/bar")
 
-    path = Path("/foo", "bar")
-    assert path._path == "/foo/bar"
+        path = Path("foo/", "bar")
+        self.assertTrue(path._path == "foo/bar")
 
-    path = Path("/foo", "", "bar")
-    assert path._path == "/foo/bar"
+        path = Path("/foo", "bar")
+        self.assertTrue(path._path == "/foo/bar")
 
-    path = Path("/foo/", "", "/bar/")
-    assert path._path == "/bar"
+        path = Path("/foo", "", "bar")
+        self.assertTrue(path._path == "/foo/bar")
 
-    path = Path("", "")
-    assert path._path == "."
+        path = Path("/foo/", "", "/bar/")
+        self.assertTrue(path._path == "/bar")
 
+        path = Path("", "")
+        self.assertTrue(path._path == ".")
 
-def test_truediv_join_str():
-    actual = Path("foo") / "bar"
-    assert actual == Path("foo/bar")
+    def test_truediv_join_str(self):
+        actual = Path("foo") / "bar"
+        self.assertTrue(actual == Path("foo/bar"))
 
+    def test_truediv_join_path(self):
+        actual = Path("foo") / Path("bar")
+        self.assertTrue(actual == Path("foo/bar"))
 
-def test_truediv_join_path():
-    actual = Path("foo") / Path("bar")
-    assert actual == Path("foo/bar")
+        actual = Path("foo") / Path("/bar")
+        self.assertTrue(actual == "/bar")
 
-    actual = Path("foo") / Path("/bar")
-    assert actual == "/bar"
+    def test_eq_and_absolute(self):
+        self.assertTrue(Path("") == Path("."))
+        self.assertTrue(Path("foo") == Path(os.getcwd(), "foo"))
+        self.assertTrue(Path("foo") == "foo")
+        self.assertTrue(Path("foo") == os.getcwd() + "/foo")
 
+        self.assertTrue(Path("foo") != Path("bar"))
+        self.assertTrue(Path(".") != Path("/"))
 
-def test_eq_and_absolute(mock_os_getcwd):
-    assert Path("") == Path(".")
-    assert Path("foo") == Path("/testing/cwd", "foo")
-    assert Path("foo") == "foo"
-    assert Path("foo") == "/testing/cwd/foo"
+    def test_open(self):
+        fn = self.tmp_path + "/foo.txt"
+        path = Path(fn)
 
-    assert Path("foo") != Path("bar")
-    assert Path(".") != Path("/")
+        with open(fn, "w") as f:
+            f.write("file contents")
 
+        with path.open("r") as f:
+            actual = f.read()
 
-def test_open(tmp_path):
-    fn = tmp_path / "foo.txt"
-    path = Path(str(fn))
+        self.assertTrue(actual == "file contents")
 
-    with path.open("w") as f:
-        f.write("file contents")
+    def test_exists(self):
+        fn = self.tmp_path + "/foo.txt"
 
-    with path.open("r") as f:
-        actual = f.read()
+        path = Path(str(fn))
+        self.assertTrue(not path.exists())
 
-    assert actual == "file contents"
+        with open(fn, "w"):
+            pass
 
+        self.assertTrue(path.exists())
 
-def test_exists(tmp_path):
-    fn = tmp_path / "foo.txt"
+    def test_mkdir(self):
+        target = self.tmp_path + "/foo/bar/baz"
+        path = Path(target)
 
-    path = Path(str(fn))
-    assert not path.exists()
+        with self.assertRaises(OSError):
+            path.mkdir()
 
-    fn.touch()
+        with self.assertRaises(OSError):
+            path.mkdir(exist_ok=True)
 
-    assert path.exists()
+        path.mkdir(parents=True)
+        self.assertExists(target)
 
+        with self.assertRaises(OSError):
+            path.mkdir(exist_ok=False)
 
-def test_mkdir(tmp_path):
-    target = tmp_path / "foo" / "bar" / "baz"
-    path = Path(str(target))
-
-    with pytest.raises(OSError):
-        path.mkdir()
-
-    with pytest.raises(OSError):
         path.mkdir(exist_ok=True)
 
-    path.mkdir(parents=True)
-    assert target.is_dir()
+    def test_is_dir(self):
+        target = self.tmp_path
+        path = Path(target)
+        self.assertTrue(path.is_dir())
 
-    with pytest.raises(OSError):
-        path.mkdir(exist_ok=False)
+        target = self.tmp_path + "/foo"
+        path = Path(target)
+        self.assertTrue(not path.is_dir())
+        os.mkdir(target)
+        self.assertTrue(path.is_dir())
 
-    path.mkdir(exist_ok=True)
+        target = self.tmp_path + "/bar.txt"
+        path = Path(target)
+        self.assertTrue(not path.is_dir())
+        with open(target, "w"):
+            pass
+        self.assertTrue(not path.is_dir())
 
+    def test_is_file(self):
+        target = self.tmp_path
+        path = Path(target)
+        self.assertTrue(not path.is_file())
 
-def test_is_dir(tmp_path):
-    target = tmp_path
-    path = Path(str(target))
-    assert path.is_dir()
+        target = self.tmp_path + "/bar.txt"
+        path = Path(target)
+        self.assertTrue(not path.is_file())
+        with open(target, "w"):
+            pass
+        self.assertTrue(path.is_file())
 
-    target = tmp_path / "foo"
-    path = Path(str(target))
-    assert not path.is_dir()
-    target.mkdir()
-    assert path.is_dir()
+    def test_glob(self):
+        foo_txt = self.tmp_path + "/foo.txt"
+        with open(foo_txt, "w"):
+            pass
+        bar_txt = self.tmp_path + "/bar.txt"
+        with open(bar_txt, "w"):
+            pass
+        baz_bin = self.tmp_path + "/baz.bin"
+        with open(baz_bin, "w"):
+            pass
 
-    target = tmp_path / "bar.txt"
-    path = Path(str(target))
-    assert not path.is_dir()
-    target.touch()
-    assert not path.is_dir()
+        path = Path(self.tmp_path)
+        glob_gen = path.glob("*.txt")
+        self.assertTrue(_isgenerator(glob_gen))
 
+        res = [str(x) for x in glob_gen]
+        self.assertTrue(len(res) == 2)
+        self.assertTrue(foo_txt in res)
+        self.assertTrue(bar_txt in res)
 
-def test_is_file(tmp_path):
-    target = tmp_path
-    path = Path(str(target))
-    assert not path.is_file()
+    def test_rglob(self):
+        foo_txt = self.tmp_path + "/foo.txt"
+        with open(foo_txt, "w"):
+            pass
+        bar_txt = self.tmp_path + "/bar.txt"
+        with open(bar_txt, "w"):
+            pass
+        baz_bin = self.tmp_path + "/baz.bin"
+        with open(baz_bin, "w"):
+            pass
 
-    target = tmp_path / "bar.txt"
-    path = Path(str(target))
-    assert not path.is_file()
-    target.touch()
-    assert path.is_file()
+        boop_folder = self.tmp_path + "/boop"
+        os.mkdir(boop_folder)
+        bap_txt = self.tmp_path + "/boop/bap.txt"
+        with open(bap_txt, "w"):
+            pass
 
+        path = Path(self.tmp_path)
+        glob_gen = path.rglob("*.txt")
+        self.assertTrue(_isgenerator(glob_gen))
 
-def test_glob(tmp_path):
-    foo_txt = tmp_path / "foo.txt"
-    foo_txt.touch()
-    bar_txt = tmp_path / "bar.txt"
-    bar_txt.touch()
-    baz_bin = tmp_path / "baz.bin"
-    baz_bin.touch()
+        res = [str(x) for x in glob_gen]
+        self.assertTrue(len(res) == 3)
+        self.assertTrue(foo_txt in res)
+        self.assertTrue(bar_txt in res)
+        self.assertTrue(bap_txt in res)
 
-    path = Path(str(tmp_path))
-    res = path.glob("*.txt")
-    assert inspect.isgenerator(res)
+    def test_stat(self):
+        expected = os.stat(self.tmp_path)
+        path = Path(self.tmp_path)
+        actual = path.stat()
+        self.assertTrue(expected == actual)
 
-    res = [str(x) for x in res]
-    assert len(res) == 2
-    assert str(foo_txt) in res
-    assert str(bar_txt) in res
+    def test_rmdir(self):
+        target = self.tmp_path + "/foo"
+        path = Path(target)
 
+        with self.assertRaises(OSError):
+            # Doesn't exist
+            path.rmdir()
 
-def test_rglob(tmp_path):
-    foo_txt = tmp_path / "foo.txt"
-    foo_txt.touch()
-    bar_txt = tmp_path / "bar.txt"
-    bar_txt.touch()
-    baz_bin = tmp_path / "baz.bin"
-    baz_bin.touch()
-    boop_folder = tmp_path / "boop"
-    boop_folder.mkdir()
-    bap_txt = tmp_path / "boop" / "bap.txt"
-    bap_txt.touch()
-
-    path = Path(str(tmp_path))
-    res = path.rglob("*.txt")
-    assert inspect.isgenerator(res)
-
-    res = [str(x) for x in res]
-    assert len(res) == 3
-    assert str(foo_txt) in res
-    assert str(bar_txt) in res
-    assert str(bap_txt) in res
-
-
-def test_stat(tmp_path):
-    expected = os.stat(tmp_path)
-    path = Path(str(tmp_path))
-    actual = path.stat()
-    assert expected == actual
-
-
-def test_rmdir(tmp_path):
-    target = tmp_path / "foo"
-
-    path = Path(str(target))
-
-    with pytest.raises(OSError):
-        # Doesn't exist
+        os.mkdir(target)
+        self.assertExists(target)
         path.rmdir()
+        self.assertNotExists(target)
 
-    target.mkdir()
-    assert target.exists()
-    path.rmdir()
-    assert not target.exists()
+        os.mkdir(target)
+        with open(target + "/bar.txt", "w"):
+            pass
 
-    target.mkdir()
-    (target / "bar.txt").touch()
-    with pytest.raises(OSError):
-        # Cannot rmdir; contains file.
-        path.rmdir()
+        with self.assertRaises(OSError):
+            # Cannot rmdir; contains file.
+            path.rmdir()
 
+    def test_touch(self):
+        target = self.tmp_path + "/foo.txt"
 
-def test_touch(tmp_path):
-    target = tmp_path / "foo.txt"
-    assert not target.exists()
-
-    path = Path(str(target))
-    path.touch()
-    assert target.exists()
-
-    path = Path(str(tmp_path / "bar" / "baz.txt"))
-    with pytest.raises(OSError):
-        # Parent directory does not exist
+        path = Path(target)
         path.touch()
+        self.assertExists(target)
 
+        path = Path(self.tmp_path + "/bar/baz.txt")
+        with self.assertRaises(OSError):
+            # Parent directory does not exist
+            path.touch()
 
-def test_unlink(tmp_path):
-    target = tmp_path / "foo.txt"
+    def test_unlink(self):
+        target = self.tmp_path + "/foo.txt"
 
-    path = Path(str(target))
-    with pytest.raises(OSError):
-        # File does not exist
+        path = Path(target)
+        with self.assertRaises(OSError):
+            # File does not exist
+            path.unlink()
+
+        with open(target, "w"):
+            pass
+
+        self.assertExists(target)
         path.unlink()
+        self.assertNotExists(target)
 
-    target.touch()
-    assert target.exists()
-    path.unlink()
-    assert not target.exists()
+        path = Path(self.tmp_path)
+        with self.assertRaises(OSError):
+            # File does not exist
+            path.unlink()
 
-    path = Path(str(tmp_path))
-    with pytest.raises(OSError):
-        # File does not exist
-        path.unlink()
+    def test_write_bytes(self):
+        target = self.tmp_path + "/foo.bin"
+        path = Path(target)
+        path.write_bytes(b"test byte data")
+        with open(target, "rb") as f:
+            actual = f.read()
+        self.assertTrue(actual == b"test byte data")
 
+    def test_write_text(self):
+        target = self.tmp_path + "/foo.txt"
+        path = Path(target)
+        path.write_text("test string")
+        with open(target, "r") as f:
+            actual = f.read()
+        self.assertTrue(actual == "test string")
 
-def test_write_bytes(tmp_path):
-    target = tmp_path / "foo.bin"
-    path = Path(str(target))
-    path.write_bytes(b"test byte data")
-    actual = target.read_bytes()
-    assert actual == b"test byte data"
+    def test_read_bytes(self):
+        target = self.tmp_path + "/foo.bin"
+        with open(target, "wb") as f:
+            f.write(b"test byte data")
 
+        path = Path(target)
+        actual = path.read_bytes()
+        self.assertTrue(actual == b"test byte data")
 
-def test_write_text(tmp_path):
-    target = tmp_path / "foo.txt"
-    path = Path(str(target))
-    path.write_text("test string")
-    actual = target.read_text()
-    assert actual == "test string"
+    def test_read_text(self):
+        target = self.tmp_path + "/foo.bin"
+        with open(target, "w") as f:
+            f.write("test string")
 
+        path = Path(target)
+        actual = path.read_text()
+        self.assertTrue(actual == "test string")
 
-def test_read_bytes(tmp_path):
-    target = tmp_path / "foo.bin"
-    target.write_bytes(b"test byte data")
+    def test_stem(self):
+        self.assertTrue(Path("foo/test").stem == "test")
+        self.assertTrue(Path("foo/bar.bin").stem == "bar")
+        self.assertTrue(Path("").stem == "")
 
-    path = Path(str(target))
-    actual = path.read_bytes()
-    assert actual == b"test byte data"
+    def test_name(self):
+        self.assertTrue(Path("foo/test").name == "test")
+        self.assertTrue(Path("foo/bar.bin").name == "bar.bin")
 
+    def test_parent(self):
+        self.assertTrue(Path("foo/test").parent == Path("foo"))
+        self.assertTrue(Path("foo/bar.bin").parent == Path("foo"))
+        self.assertTrue(Path("bar.bin").parent == Path("."))
+        self.assertTrue(Path(".").parent == Path("."))
+        self.assertTrue(Path("/").parent == Path("/"))
 
-def test_read_text(tmp_path):
-    target = tmp_path / "foo.txt"
-    target.write_text("test string")
+    def test_suffix(self):
+        self.assertTrue(Path("foo/test").suffix == "")
+        self.assertTrue(Path("foo/bar.bin").suffix == ".bin")
+        self.assertTrue(Path("bar.txt").suffix == ".txt")
 
-    path = Path(str(target))
-    actual = path.read_text()
-    assert actual == "test string"
-
-
-def test_stem(mock_os_getcwd):
-    assert Path("foo/test").stem == "test"
-    assert Path("foo/bar.bin").stem == "bar"
-    assert Path("").stem == ""
-
-
-def test_name():
-    assert Path("foo/test").name == "test"
-    assert Path("foo/bar.bin").name == "bar.bin"
-
-
-def test_parent():
-    assert Path("foo/test").parent == Path("foo")
-    assert Path("foo/bar.bin").parent == Path("foo")
-    assert Path("bar.bin").parent == Path(".")
-    assert Path(".").parent == Path(".")
-    assert Path("/").parent == Path("/")
-
-
-def test_suffix():
-    assert Path("foo/test").suffix == ""
-    assert Path("foo/bar.bin").suffix == ".bin"
-    assert Path("bar.txt").suffix == ".txt"
-
-
-def test_with_suffix():
-    assert Path("foo/test").with_suffix(".tar") == Path("foo/test.tar")
-    assert Path("foo/bar.bin").with_suffix(".txt") == Path("foo/bar.txt")
-    assert Path("bar.txt").with_suffix("") == Path("bar")
+    def test_with_suffix(self):
+        self.assertTrue(Path("foo/test").with_suffix(".tar") == Path("foo/test.tar"))
+        self.assertTrue(Path("foo/bar.bin").with_suffix(".txt") == Path("foo/bar.txt"))
+        self.assertTrue(Path("bar.txt").with_suffix("") == Path("bar"))
