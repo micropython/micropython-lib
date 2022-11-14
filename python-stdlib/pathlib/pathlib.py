@@ -1,6 +1,10 @@
 import errno
 import os
 
+from micropython import const
+
+_SEP = const("/")
+
 
 def _mode_if_exists(path):
     try:
@@ -15,11 +19,11 @@ def _clean_segment(segment):
     segment = str(segment)
     if not segment:
         return "."
-    segment = segment.rstrip("/")
+    segment = segment.rstrip(_SEP)
     if not segment:
-        return "/"
+        return _SEP
     while True:
-        no_double = segment.replace("//", "/")
+        no_double = segment.replace(_SEP + _SEP, _SEP)
         if no_double == segment:
             break
         segment = no_double
@@ -31,14 +35,14 @@ class Path:
         segments_cleaned = []
         for segment in segments:
             segment = _clean_segment(segment)
-            if segment[0] == "/":
+            if segment[0] == _SEP:
                 segments_cleaned = [segment]
             elif segment == ".":
                 continue
             else:
                 segments_cleaned.append(segment)
 
-        self._path = _clean_segment("/".join(segments_cleaned))
+        self._path = _clean_segment(_SEP.join(segments_cleaned))
 
     def __truediv__(self, other):
         return Path(self._path, str(other))
@@ -57,9 +61,9 @@ class Path:
         cwd = os.getcwd()
         if not path or path == ".":
             return cwd
-        if path[0] == "/":
+        if path[0] == _SEP:
             return path
-        return "/" + path if cwd == "/" else cwd + "/" + path
+        return _SEP + path if cwd == _SEP else cwd + _SEP + path
 
     def resolve(self):
         return self.absolute()
@@ -82,13 +86,13 @@ class Path:
             else:
                 raise e
 
-        segments = self._path.split("/")
+        segments = self._path.split(_SEP)
         progressive_path = ""
         if segments[0] == "":
             segments = segments[1:]
-            progressive_path = "/"
+            progressive_path = _SEP
         for segment in segments:
-            progressive_path += "/" + segment
+            progressive_path += _SEP + segment
             try:
                 os.mkdir(progressive_path)
             except OSError as e:
@@ -117,7 +121,7 @@ class Path:
         prefix, suffix = pattern.split("*")
 
         for name, mode, *_ in os.ilistdir(path):
-            full_path = path + "/" + name
+            full_path = path + _SEP + name
             if name.startswith(prefix) and name.endswith(suffix):
                 yield full_path
             if recursive and mode & 0x4000:  # is_dir
@@ -186,16 +190,16 @@ class Path:
 
     @property
     def parent(self):
-        tokens = self._path.rsplit("/", 1)
+        tokens = self._path.rsplit(_SEP, 1)
         if len(tokens) == 2:
             if not tokens[0]:
-                tokens[0] = "/"
+                tokens[0] = _SEP
             return Path(tokens[0])
         return Path(".")
 
     @property
     def name(self):
-        return self._path.rsplit("/", 1)[-1]
+        return self._path.rsplit(_SEP, 1)[-1]
 
     @property
     def suffix(self):
