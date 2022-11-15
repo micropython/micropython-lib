@@ -1,13 +1,9 @@
-MicroPython-specific libraries
-==============================
+## MicroPython-specific packages
 
-These are libraries that have been written specifically for use on MicroPython.
+These are packages that have been written specifically for use on MicroPython.
 
-In some cases, the libraries are inspired by or based on equivalent CPython standard libraries, but compatibility varies. The libraries are often named with a "u" prefix.
+Packages in this directory should not have the same name as modules from the Python Standard Library.
 
-Other libraries have been written specifically for MicroPython use cases.
+### Future plans
 
-Future plans
-------------
-
-* More organised directory structure based on library purpose (e.g. drivers, network, etc).
+* More organised directory structure based on purpose (e.g. drivers, network, etc).
