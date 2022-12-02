@@ -21,13 +21,16 @@ def accumulate(iterable, func=lambda x, y: x + y, initial=None):
         total = func(total, element)
         yield total
 
+
 # chain('abcd',[],range(5))) --> 'a' 'b' 'c' 'd' 0 1 2 3 4
 class chain:
     def __init__(self, *iterables):
         self.iterables = list(iterables)
         self.it = iter([])
+
     def __iter__(self):
         return self
+
     def __next__(self):
         while True:
             try:
@@ -38,11 +41,13 @@ class chain:
                     continue
                 except IndexError:
                     raise StopIteration
+
     # chain.from_iterable(['ABC', 'DEF']) --> 'A' 'B' 'C' 'D' 'E' 'F'
     @staticmethod
-    def from_iterable(iterables):  
+    def from_iterable(iterables):
         for it in iterables:
             yield from it
+
 
 # combinations('ABCD', 2) --> ('A','B') ('A','C') ('A','D') ('B','C') ('B','D') ('C','D')
 def combinations(iterable, r):
@@ -65,6 +70,7 @@ def combinations(iterable, r):
             indices[j] = indices[j - 1] + 1
         yield tuple(pool[i] for i in indices)
 
+
 # combinations_with_replacement('ABC', 2) --> ('A','A') ('A','B') ('A','C') ('B','B') ('B','C') ('C','C')
 def combinations_with_replacement(iterable, r):
     pool = tuple(iterable)
@@ -84,9 +90,11 @@ def combinations_with_replacement(iterable, r):
         indices[index:] = [indices[index] + 1] * (r - index)
         yield tuple(pool[i] for i in indices)
 
+
 # compress('ABCDEF', [1,0,1,0,1,1]) --> A C E F
 def compress(data, selectors):
     return (d for d, s in zip(data, selectors) if s)
+
 
 # count(4, 3) --> 4 7 10 13 16 19 ....
 def count(start=0, step=1):
@@ -94,11 +102,12 @@ def count(start=0, step=1):
         yield start
         start += step
 
+
 # cycle('abc') --> a b c a b c a b c a ....
 def cycle(iterable):
     try:
         len(iterable)
-    except TypeError: # len() not defined: Assume p is a finite iterable: We cache the elements.
+    except TypeError:  # len() not defined: Assume p is a finite iterable: We cache the elements.
         cache = []
         for i in iterable:
             yield i
@@ -106,6 +115,7 @@ def cycle(iterable):
         iterable = cache
     while iterable:
         yield from iterable
+
 
 # # dropwhile(lambda x: x<5, [1,4,6,4,1]) --> 6 4 1
 def dropwhile(predicate, iterable):
@@ -117,6 +127,7 @@ def dropwhile(predicate, iterable):
     for x in it:
         yield x
 
+
 # filterfalse(lambda x: x%2, range(10)) --> 0 2 4 6 8
 def filterfalse(predicate, iterable):
     if predicate is None:
@@ -125,38 +136,48 @@ def filterfalse(predicate, iterable):
         if not predicate(x):
             yield x
 
+
 # groupby('aaaabbbccdaa'))) --> ('a', gen1) ('b', gen2) ('c', gen3) ('d', gen4) ('a', gen5)
 #                       where gen1 --> a a a a, gen2 --> b b b, gen3 --> c c, gen4 --> d, gen5 --> a a
 def groupby(iterable, key=None):
     it = iter(iterable)
     keyf = key if key is not None else lambda x: x
+
     def ggen(ktgt):
         nonlocal cur, kcur
         while kcur == ktgt:
             yield cur
             try:
-                cur = next(it); kcur = keyf(cur)
+                cur = next(it)
+                kcur = keyf(cur)
             except StopIteration:
-                break            
-    kcur = kold = object()    # need an object that never can be a returned from key function
+                break
+
+    kcur = kold = object()  # need an object that never can be a returned from key function
     while True:
-        while kcur == kold:   # not all iterables with the same (old) key were used up by ggen, so use them up here
+        while (
+            kcur == kold
+        ):  # not all iterables with the same (old) key were used up by ggen, so use them up here
             try:
-                cur = next(it); kcur = keyf(cur)
+                cur = next(it)
+                kcur = keyf(cur)
             except StopIteration:
                 return
         kold = kcur
         yield (kcur, ggen(kcur))
 
+
 # islice('abcdefghij', 2, None, 3)) --> c f i
 # islice(range(10), 2, 6, 2)) --> 2 4
 def islice(iterable, *sargs):
     if len(sargs) < 1 or len(sargs) > 3:
-        raise TypeError('islice expected at least 2, at most 4 arguments, got {:d}'.format(len(sargs)+1))
+        raise TypeError(
+            "islice expected at least 2, at most 4 arguments, got {:d}".format(len(sargs) + 1)
+        )
     step = 1 if len(sargs) < 3 else sargs[2]
     step = 1 if step is None else step
     if step <= 0:
-        raise ValueError('step for islice() must be a positive integer or None')
+        raise ValueError("step for islice() must be a positive integer or None")
     start = 0 if len(sargs) < 2 else sargs[0]
     stop = sargs[0] if len(sargs) == 1 else sargs[1]
     it = iter(iterable)
@@ -173,10 +194,11 @@ def islice(iterable, *sargs):
     except StopIteration:
         return
 
+
 # pairwise(range(5)) --> (0,1) (1,2) (2,3) (3,4)
 # pairwise('abcdefg') --> ('a','b') ('b','c') ('c','d') ('d','e') ('e','f') ('f','g')
 def pairwise(iterable):
-    it = iter(iterable)    
+    it = iter(iterable)
     try:
         l = next(it)
         while True:
@@ -184,7 +206,8 @@ def pairwise(iterable):
             yield l, c
             l = c
     except StopIteration:
-        return            
+        return
+
 
 # permutations('ABCD', 2) --> AB AC AD BA BC BD CA CB CD DA DB DC
 # permutations(range(3)) --> 012 021 102 120 201 210
@@ -211,6 +234,7 @@ def permutations(iterable, r=None):
         else:
             return
 
+
 # product('ABCD', 'xy') --> ('A','x') ('A','y') ('B','x') ('B','y') ('C','x') ('C','y') ('D','x') ('D','y')
 # product(range(2), repeat=3) --> 000 001 010 011 100 101 110 111  # but in tuples, of course
 def product(*args, repeat=1):
@@ -221,6 +245,7 @@ def product(*args, repeat=1):
     for prod in result:
         yield tuple(prod)
 
+
 # repeat(10, 3) --> 10 10 10
 def repeat(obj, times=None):
     if times is None:
@@ -230,10 +255,12 @@ def repeat(obj, times=None):
         for _ in range(times):
             yield obj
 
+
 # starmap(pow, [(2,5), (3,2), (10,3)]) --> 32 9 1000
 def starmap(function, iterable):
     for args in iterable:
         yield function(*args)
+
 
 # takewhile(lambda x: x<5, [1,4,6,4,1]) --> 1 4
 def takewhile(predicate, iterable):
@@ -243,27 +270,33 @@ def takewhile(predicate, iterable):
         else:
             break
 
+
 # tee(range(2,10), 3) --> (it1, it2, it3) all parallel generators, but dependent on original generator (e.g. range(2,10))
 #  --> (min(it1), max(it2), sum(it3)) --> (2, 9, 44)
 def tee(iterable, n=2):
-    if iter(iterable) is not iter(iterable):       # save buffer for special cases that iterable is range, tuple, list ...
+    if iter(iterable) is not iter(
+        iterable
+    ):  # save buffer for special cases that iterable is range, tuple, list ...
         return [iter(iterable) for _ in range(n)]  #   that have independent iterators
     it = iter(iterable)
     if n < 1:
         return ()
     elif n == 1:
         return (it,)
-    buf = []                            # Buffer, contains stored values from itr
-    ibuf = [0]*n                        # Indices of the individual generators, could be array('H', [0]*n)     
-    def gen(k):                         #   but we have no 0 in ibuf in MP
-        nonlocal buf, ibuf              # These are bound to the generators as closures 
+    buf = []  # Buffer, contains stored values from itr
+    ibuf = [0] * n  # Indices of the individual generators, could be array('H', [0]*n)
+
+    def gen(k):  #   but we have no 0 in ibuf in MP
+        nonlocal buf, ibuf  # These are bound to the generators as closures
         while True:
-            if ibuf[k] < len(buf):      # We get an object stored in the buffer.
+            if ibuf[k] < len(buf):  # We get an object stored in the buffer.
                 r = buf[ibuf[k]]
                 ibuf[k] += 1
-                if ibuf[k] == 1:        # If we got the first object in the buffer, 
-                    if 0 not in ibuf:   #   then check if other generators do not wait anymore on it
-                        buf.pop(0)      #   so it may be popped left. Afterwards decrease all indices by 1.
+                if ibuf[k] == 1:  # If we got the first object in the buffer,
+                    if 0 not in ibuf:  #   then check if other generators do not wait anymore on it
+                        buf.pop(
+                            0
+                        )  #   so it may be popped left. Afterwards decrease all indices by 1.
                         for i in range(n):
                             ibuf[i] -= 1
             elif ibuf[k] == len(buf):
@@ -273,8 +306,10 @@ def tee(iterable, n=2):
                     ibuf[k] += 1
                 except StopIteration:
                     return
-            yield r                     # The returned generators are not thread-safe. For that the access to the
-    return tuple(gen(i) for i in range(n))   #   shared buf and ibuf should be protected by locks.
+            yield r  # The returned generators are not thread-safe. For that the access to the
+
+    return tuple(gen(i) for i in range(n))  #   shared buf and ibuf should be protected by locks.
+
 
 # zip_longest('ABCD', 'xy', fillvalue='-') --> ('A','x') ('B','y') ('C','-') ('D','-')
 def zip_longest(*args, fillvalue=None):
@@ -299,12 +334,12 @@ def zip_longest(*args, fillvalue=None):
 
 # # Full analog of CPython builtin iter with 2 arguments
 # def iter(*args):
-# 
+#
 #     if len(args) == 1:
 #         return builtins.iter(args[0])
-# 
+#
 #     class _iter:
-# 
+#
 #         def __init__(self, args):
 #             self.f, self.sentinel = args
 #         def __next__(self):
@@ -312,6 +347,5 @@ def zip_longest(*args, fillvalue=None):
 #             if v == self.sentinel:
 #                 raise StopIteration
 #             return v
-# 
+#
 #     return _iter(args)
-
