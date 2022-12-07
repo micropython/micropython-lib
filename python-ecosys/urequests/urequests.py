@@ -12,7 +12,7 @@ class Response:
             self.raw.close()
             self.raw = None
         self._cached = None
-        
+
     def __del__(self):
         self.close()
 
