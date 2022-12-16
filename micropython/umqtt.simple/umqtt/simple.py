@@ -123,7 +123,7 @@ class MQTTClient:
 
     def ping(self):
         if self.pingresp_pending:
-            raise MQTTException('No response for previous ping')
+            raise MQTTException("No response for previous ping")
         self.pingresp_pending = True
         self.sock.write(b"\xc0\0")
 

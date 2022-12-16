@@ -52,7 +52,7 @@ class MQTTClient(simple.MQTTClient):
                 self.log(False, e)
             self.reconnect()
             attempts -= 1
-    
+
     def ping(self):
         while 1:
             try:
