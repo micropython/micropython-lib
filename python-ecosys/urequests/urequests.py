@@ -113,6 +113,8 @@ def request(
                 s.write(b"Content-Length: %d\r\n" % len(data))
         s.write(b"Connection: close\r\n\r\n")
         if data:
+            s.write(b"Content-Type: application/octet-stream\r\n")
+            
             if chunked_data:
                 for chunk in data:
                     s.write(b"%x\r\n" % len(chunk))
