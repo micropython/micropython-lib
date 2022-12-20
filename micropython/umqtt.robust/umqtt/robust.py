@@ -21,6 +21,11 @@ class MQTTClient(simple.MQTTClient):
         i = 0
         while 1:
             try:
+                if self.sock:
+                    self.sock.close()
+            except OSError as e:
+                self.log(True, e)
+            try:
                 return super().connect(False)
             except OSError as e:
                 self.log(True, e)
