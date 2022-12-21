@@ -3,9 +3,6 @@ from micropython import const
 import sys
 import time
 
-if hasattr(time, "strftime"):
-    from time import strftime
-
 CRITICAL = const(50)
 ERROR = const(40)
 WARNING = const(30)
@@ -92,7 +89,7 @@ class Formatter:
 
     def formatTime(self, datefmt, record):
         if hasattr(time, "strftime"):
-            return strftime(datefmt, time.localtime(record.ct))
+            return time.strftime(datefmt, time.localtime(record.ct))
         return None
 
     def format(self, record):
