@@ -23,6 +23,11 @@ class Response:
                 self.raw = None
         return self._cached
 
+    def readinto(self, buffer):
+        # Make sure to close the socket (self.raw) after you're done with this response.
+        if self.raw:
+            return self.raw.readinto(buffer)
+
     @property
     def text(self):
         return str(self.content, self.encoding)
