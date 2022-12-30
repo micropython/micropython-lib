@@ -41,8 +41,8 @@ while True:
     if INT_MODE:
         if INT_FLAG:
             INT_FLAG = False
-            print(UCF_LABELS[lsm.read_mlc_output()[0]])
+            print(UCF_LABELS[lsm.mlc_output()[0]])
     else:
-        buf = lsm.read_mlc_output()
+        buf = lsm.mlc_output()
         if buf != None:
             print(UCF_LABELS[buf[0]])
