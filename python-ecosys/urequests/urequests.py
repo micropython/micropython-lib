@@ -43,9 +43,12 @@ def request(
     auth=None,
     timeout=None,
     parse_headers=True,
+    http_version="1.0",
 ):
     redirect = None  # redirection url, None means no redirection
-    chunked_data = data and getattr(data, "__iter__", None) and not getattr(data, "__len__", None)
+    chunked_data = (
+        data and getattr(data, "__iter__", None) and not getattr(data, "__len__", None)
+    )
 
     if auth is not None:
         import ubinascii
@@ -91,7 +94,11 @@ def request(
         s.connect(ai[-1])
         if proto == "https:":
             s = ussl.wrap_socket(s, server_hostname=host)
-        s.write(b"%s /%s HTTP/1.0\r\n" % (method, path))
+
+        method_path = f"{method} /{path} HTTP/{http_version}\r\n"
+        # example string for method_path:
+        # POST /api/v1/rooms/1/samples HTTP/1.1
+        s.write(b"%s" % method_path)
         if not "Host" in headers:
             s.write(b"Host: %s\r\n" % host)
         # Iterate over keys to avoid tuple alloc
