@@ -24,6 +24,7 @@ _CMD_CLR_IRQ_STATUS = const(0x02)  # no args
 _CMD_GET_ERROR = const(0x17)
 _CMD_GET_IRQ_STATUS = const(0x12)  # args: (r) Status, IrqStatus
 _CMD_GET_RX_BUFFER_STATUS = const(0x13)  # args: (r) Status, RxPayloadLength, RxBufferPointer
+# NOTE: _CMD_GET_STATUS seems to have an issue, see _get_status() function below.
 _CMD_GET_STATUS = const(0xC0)  # args: (r) Status
 _CMD_GET_PACKET_STATUS = const(0x14)
 _CMD_READ_REGISTER = const(0x1D)  # args: addr (2b), status, (r) Data0 ... DataN
@@ -296,8 +297,21 @@ class _SX126x(BaseModem):
         return (mode, cmd)
 
     def _get_status(self):
-        # Issue the GetStatus command and return the decoded status of (mode value, command status)
-        res = self._cmd("B", _CMD_GET_STATUS, n_read=1)[0]
+        # Issue the GetStatus command and return the decoded status of (mode
+        # value, command status)
+        #
+        # Due to what appears to be a silicon bug, we send GetIrqStatus here
+        # instead of GetStatus. It seems that there is some specific sequence
+        # where sending command GetStatus to the chip immediately after SetRX
+        # (mode 5) will trip it it into an endless TX (mode 6) for no apparent
+        # reason!
+        #
+        # It doesn't seem to be timing dependent, all that's needed is that
+        # ordering (and the modem works fine otherwise).
+        #
+        # As a workaround we send the GetIrqStatus command and read an extra two
+        # bytes that are then ignored...
+        res = self._cmd("B", _CMD_GET_IRQ_STATUS, n_read=3)[0]
         return self._decode_status(res)
 
     def _check_error(self):
