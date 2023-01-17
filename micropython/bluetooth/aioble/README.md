@@ -70,13 +70,21 @@ Alternatively, install the `aioble` package, which will install everything.
 Usage
 -----
 
-Scan for nearby devices: (Observer)
+Passive scan for nearby devices for 5 seconds: (Observer)
 
 ```py
-async with aioble.scan() as scanner:
+async with aioble.scan(duration_ms=5000) as scanner:
     async for result in scanner:
-        if result.name():
-            print(result, result.name(), result.rssi, result.services())
+        print(result, result.name(), result.rssi, result.services())
+```
+
+Active scan (includes "scan response" data) for nearby devices for 5 seconds
+with the highest duty cycle: (Observer)
+
+```py
+async with aioble.scan(duration_ms=5000, interval_us=30000, window_us=30000, active=True) as scanner:
+    async for result in scanner:
+        print(result, result.name(), result.rssi, result.services())
 ```
 
 Connect to a peripheral device: (Central)
