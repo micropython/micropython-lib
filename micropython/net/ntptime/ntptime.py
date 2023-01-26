@@ -44,7 +44,7 @@ def time():
 
 def get_tz_offset(tz: str) -> int:
     tz = tz.strip()
-    if '/' not in tz or len(tz) < 3:
+    if "/" not in tz or len(tz) < 3:
         raise Exception("Unsupported timezone: {}. Example: asia/kolkata".format(tz))
 
     tz_offset = 0
@@ -60,11 +60,11 @@ def get_tz_offset(tz: str) -> int:
         response = response.decode()
 
         from json import loads
-        response = loads(response[response.find('{'):])
+        response = loads(response[response.find("{"):])
 
-        tokens = response['utc_offset'].split(':')
+        tokens = response["utc_offset"].split(":")
         tz_offset = (int(tokens[0][1:]) * 3600) + (int(tokens[1]) * 60)
-        if tokens[0][0] != '+':
+        if tokens[0][0] != "+":
             tz_offset *= -1
     except Exception:
         pass
