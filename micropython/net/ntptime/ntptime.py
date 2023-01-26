@@ -16,6 +16,7 @@ timeout = 1
 
 TZ_HOST = "worldtimeapi.org"
 
+
 def time():
     NTP_QUERY = bytearray(48)
     NTP_QUERY[0] = 0x1B
@@ -60,7 +61,8 @@ def get_tz_offset(tz: str) -> int:
         response = response.decode()
 
         from json import loads
-        response = loads(response[response.find("{"):])
+
+        response = loads(response[response.find("{") :])
 
         tokens = response["utc_offset"].split(":")
         tz_offset = (int(tokens[0][1:]) * 3600) + (int(tokens[1]) * 60)
@@ -68,7 +70,7 @@ def get_tz_offset(tz: str) -> int:
             tz_offset *= -1
     except Exception:
         pass
-        
+
     return tz_offset
 
 
