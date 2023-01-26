@@ -66,8 +66,10 @@ def get_tz_offset(tz: str) -> int:
         tz_offset = (int(tokens[0][1:]) * 3600) + (int(tokens[1]) * 60)
         if tokens[0][0] != '+':
             tz_offset *= -1
-    finally:
-        return tz_offset
+    except Exception:
+        pass
+        
+    return tz_offset
 
 
 # There's currently no timezone support in MicroPython, and the RTC is set in UTC time.
