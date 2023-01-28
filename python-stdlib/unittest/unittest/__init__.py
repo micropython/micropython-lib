@@ -401,8 +401,12 @@ def _run_suite(c, test_result: TestResult, suite_name=""):
             test_result.skippedNum += 1
             test_result.skipped.append((name, c, reason))
         except Exception as ex:
+            if hasattr(sys, 'exc_info'):
+                exc_info = sys.exc_info()
+            else:
+                exc_info = (ex.__class__, ex, None)
             _handle_test_exception(
-                current_test=(name, c), test_result=test_result, exc_info=sys.exc_info()
+                current_test=(name, c), test_result=test_result, exc_info=exc_info
             )
             # Uncomment to investigate failure in detail
             # raise
