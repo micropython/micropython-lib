@@ -1,5 +1,4 @@
 import utime
-
 try:
     import usocket as socket
 except:
@@ -50,31 +49,15 @@ def get_tz_offset(tz: str) -> int:
 
     tz_offset = 0
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            sock.connect((TZ_HOST, 80))
-            request = bytes(f"GET /api/timezone/{tz} HTTP/1.1\nHost: {TZ_HOST}\n\n", "UTF-8")
-            sock.send(request)
-            response = sock.recv(4096)
-        finally:
-            sock.close()
-        response = response.decode()
-
-        from json import loads
-
-        response = loads(response[response.find("{") :])
-
-        tokens = response["utc_offset"].split(":")
-        tz_offset = (int(tokens[0][1:]) * 3600) + (int(tokens[1]) * 60)
-        if tokens[0][0] != "+":
-            tz_offset *= -1
+        from urequests import get
+        response = get("http://{}/api/timezone/{}".format(TZ_HOST, tz))
+        tz_offset = response.json()["raw_offset"]
     except Exception:
         pass
 
     return tz_offset
 
 
-# There's currently no timezone support in MicroPython, and the RTC is set in UTC time.
 def settime(tz: str = None):
     t = time()
     if tz:
