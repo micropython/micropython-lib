@@ -2,10 +2,11 @@ import usocket
 
 
 class Response:
-    def __init__(self, f):
+    def __init__(self, f, length):
         self.raw = f
         self.encoding = "utf-8"
         self._cached = None
+        self.length = length
 
     def close(self):
         if self.raw:
@@ -17,7 +18,10 @@ class Response:
     def content(self):
         if self._cached is None:
             try:
-                self._cached = self.raw.read()
+                if self.length is None:
+                    self._cached = self.raw.read()
+                else:
+                    self._cached = self.raw.read(self.length)
             finally:
                 self.raw.close()
                 self.raw = None
@@ -164,7 +168,7 @@ def request(
         else:
             return request(method, redirect, data, json, headers, stream)
     else:
-        resp = Response(s)
+        resp = Response(s, headers.get("Content-Length"))
         resp.status_code = status
         resp.reason = reason
         if resp_d is not None:
