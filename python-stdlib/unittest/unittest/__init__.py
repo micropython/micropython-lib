@@ -402,9 +402,7 @@ def _run_suite(c, test_result: TestResult, suite_name=""):
             test_result.skipped.append((name, c, reason))
         except Exception as ex:
             _handle_test_exception(
-                current_test=(name, c),
-                test_result=test_result,
-                exc_info=(type(exc), exc, None)
+                current_test=(name, c), test_result=test_result, exc_info=(type(exc), exc, None)
             )
             # Uncomment to investigate failure in detail
             # raise
