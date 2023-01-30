@@ -1,4 +1,5 @@
 import utime
+
 try:
     import usocket as socket
 except:
@@ -50,11 +51,11 @@ def get_tz_offset(tz: str) -> int:
     tz_offset = 0
     try:
         from urequests import get
+
         response = get("http://{}/api/timezone/{}".format(TZ_HOST, tz))
         tz_offset = response.json()["raw_offset"]
     except Exception:
         pass
-
     return tz_offset
 
 
