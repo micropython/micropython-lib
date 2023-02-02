@@ -2499,7 +2499,7 @@ codepoint2name = {}
 # (or a character reference if the character is outside the Latin-1 range)
 entitydefs = {}
 
-for (name, codepoint) in name2codepoint.items():
+for name, codepoint in name2codepoint.items():
     codepoint2name[codepoint] = name
     entitydefs[name] = chr(codepoint)
 

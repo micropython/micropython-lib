@@ -34,6 +34,7 @@ _FLAG_WRITE = const(0x0008)
 _FLAG_NOTIFY = const(0x0010)
 _FLAG_INDICATE = const(0x0020)
 
+
 # Forward IRQs directly to static methods on the type that handles them and
 # knows how to map handles to instances. Note: We copy all uuid and data
 # params here for safety, but a future optimisation might be able to avoid

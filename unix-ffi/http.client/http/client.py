@@ -740,7 +740,6 @@ class HTTPResponse:
 
 
 class HTTPConnection:
-
     _http_vsn = 11
     _http_vsn_str = "HTTP/1.1"
 

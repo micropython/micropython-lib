@@ -2,7 +2,6 @@ import umachine
 
 
 class Pin(umachine.PinBase):
-
     IN = "in"
     OUT = "out"
 

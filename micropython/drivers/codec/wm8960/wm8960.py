@@ -244,7 +244,6 @@ class Regs:
 
 
 class WM8960:
-
     _bit_clock_divider_table = {
         2: 0,
         3: 1,
@@ -399,7 +398,6 @@ class WM8960:
         self.config_data_format(sysclk, sample_rate, bits)
 
     def deinit(self):
-
         self.set_module(MODULE_ADC, False)
         self.set_module(MODULE_DAC, False)
         self.set_module(MODULE_VREF, False)
@@ -467,33 +465,28 @@ class WM8960:
         )
 
     def set_module(self, module, is_enabled):
-
         is_enabled = 1 if is_enabled else 0
         regs = self.regs
 
         if module == MODULE_ADC:
-
             regs[_POWER1] = (
                 _POWER1_ADCL_MASK | _POWER1_ADCR_MASK,
                 (_POWER1_ADCL_MASK | _POWER1_ADCR_MASK) * is_enabled,
             )
 
         elif module == MODULE_DAC:
-
             regs[_POWER2] = (
                 _POWER2_DACL_MASK | _POWER2_DACR_MASK,
                 (_POWER2_DACL_MASK | _POWER2_DACR_MASK) * is_enabled,
             )
 
         elif module == MODULE_VREF:
-
             regs[_POWER1] = (
                 _POWER1_VREF_MASK,
                 (is_enabled << _POWER1_VREF_SHIFT),
             )
 
         elif module == MODULE_LINE_IN:
-
             regs[_POWER1] = (
                 _POWER1_AINL_MASK | _POWER1_AINR_MASK,
                 (_POWER1_AINL_MASK | _POWER1_AINR_MASK) * is_enabled,
@@ -504,21 +497,18 @@ class WM8960:
             )
 
         elif module == MODULE_LINE_OUT:
-
             regs[_POWER2] = (
                 _POWER2_LOUT1_MASK | _POWER2_ROUT1_MASK,
                 (_POWER2_LOUT1_MASK | _POWER2_ROUT1_MASK) * is_enabled,
             )
 
         elif module == MODULE_MIC_BIAS:
-
             regs[_POWER1] = (
                 _POWER1_MICB_MASK,
                 (is_enabled << _POWER1_MICB_SHIFT),
             )
 
         elif module == MODULE_SPEAKER:
-
             regs[_POWER2] = (
                 _POWER2_SPKL_MASK | _POWER2_SPKR_MASK,
                 (_POWER2_SPKL_MASK | _POWER2_SPKR_MASK) * is_enabled,
@@ -526,14 +516,12 @@ class WM8960:
             regs[_CLASSD1] = 0xF7
 
         elif module == MODULE_OMIX:
-
             regs[_POWER3] = (
                 _POWER3_LOMIX_MASK | _POWER3_ROMIX_MASK,
                 (_POWER3_LOMIX_MASK | _POWER3_ROMIX_MASK) * is_enabled,
             )
 
         elif module == MODULE_MONO_OUT:
-
             regs[_MONOMIX1] = regs[_MONOMIX2] = is_enabled << 7
             regs[_MONO] = is_enabled << 6
 

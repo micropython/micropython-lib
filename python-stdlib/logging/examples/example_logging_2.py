@@ -37,6 +37,7 @@ try:
 except:
     logger.error("Some trouble (%s)", "expected")
 
+
 # Custom handler example
 class MyHandler(logging.Handler):
     def emit(self, record):

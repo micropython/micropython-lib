@@ -64,7 +64,6 @@ class SDCard:
             self.spi.init(master, baudrate=baudrate, phase=0, polarity=0)
 
     def init_card(self, baudrate):
-
         # init CS pin
         self.cs.init(self.cs.OUT, value=1)
 

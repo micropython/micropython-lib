@@ -58,6 +58,7 @@ escapesre = re.compile(r'[\\"]')
 # source with undecodable characters.
 _has_surrogates = re.compile("([^\ud800-\udbff]|\A)[\udc00-\udfff]([^\udc00-\udfff]|\Z)").search
 
+
 # How to deal with a string containing bytes before handing it to the
 # application through the 'normal' interface.
 def _sanitize(string):

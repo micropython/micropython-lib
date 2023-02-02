@@ -115,7 +115,6 @@ def _extend_docstrings(cls):
 
 
 class Policy(_PolicyBase):  # , metaclass=abc.ABCMeta):
-
     r"""Controls for how messages are interpreted and formatted.
 
     Most of the classes and many of the methods in the email package accept
