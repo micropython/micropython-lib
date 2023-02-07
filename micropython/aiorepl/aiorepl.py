@@ -84,6 +84,45 @@ __exec_task = asyncio.create_task(__code())
         print(f"{type(err).__name__}: {err}")
 
 
+async def paste_mode(s):
+    sys.stdout.write("\npaste mode; Ctrl-C to cancel, Ctrl-D to finish\n=== ")
+    buff_paste = ""
+    while True:
+        b = await s.read(1)
+        c = ord(b)
+
+        if c == 0x03:
+            sys.stdout.write("\n")
+            return
+        elif c == 0x04:
+            sys.stdout.write("\n=== \n")
+            return buff_paste
+        else:
+            buff_paste += b
+            sys.stdout.write(b)
+
+
+async def raw_repl(s, g):
+    sys.stdout.write("\nraw REPL; CTRL-B to exit\n>")
+    buff_raw_repl = ""
+    while True:
+        b = await s.read(1)
+        c = ord(b)
+
+        if c == 0x02:
+            sys.stdout.write("\n")
+            return
+        elif c == 0x04:
+            if buff_raw_repl:
+                result = await execute(buff_raw_repl, g, s)
+                sys.stdout.write("OK")
+                sys.stdout.write("\x04\x04")
+                sys.stdout.write(">")
+                buff_raw_repl = ""
+        else:
+            buff_raw_repl += b
+
+
 # REPL task. Invoke this with an optional mutable globals dict.
 async def task(g=None, prompt="--> "):
     print("Starting asyncio REPL...")
@@ -134,8 +173,14 @@ async def task(g=None, prompt="--> "):
                         if cmd:
                             cmd = cmd[:-1]
                             sys.stdout.write("\x08 \x08")
+
+                    elif c == 0x01:
+                        # Ctrl-A --> Raw REPL
+                        res = await raw_repl(s, g)
+                        break
                     elif c == 0x02:
                         # Ctrl-B
+
                         continue
                     elif c == 0x03:
                         # Ctrl-C
@@ -153,6 +198,20 @@ async def task(g=None, prompt="--> "):
                         # Shutdown asyncio.
                         asyncio.new_event_loop()
                         return
+
+                    elif c == 0x05:
+                        # Paste mode
+                        _pbuff = await paste_mode(s)
+                        if _pbuff:
+                            cmd = _pbuff + "\r\n"
+                            result = await execute(cmd, g, s)
+                            if result is not None:
+                                sys.stdout.write(repr(result))
+                                sys.stdout.write("\n")
+                            break
+                        else:
+                            continue
+
                     elif c == 0x1B:
                         # Start of escape sequence.
                         key = await s.read(2)
