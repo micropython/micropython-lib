@@ -40,7 +40,7 @@ class Person:
 class TestSubtest(unittest.TestCase):
     """Examples/tests of unittest.subTest()"""
 
-    def test_selection_sort(self) -> None:
+    def test_sorted(self) -> None:
         """Test that the selection sort function correctly sorts lists"""
         tests = [
             {
