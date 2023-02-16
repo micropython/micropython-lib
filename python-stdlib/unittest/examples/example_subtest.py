@@ -1,4 +1,4 @@
-# MIT license; Copyright (c) <year>, Planet Innovation
+# MIT license; Copyright (c) 2023, Planet Innovation
 # SPDX-License-Identifier: MIT
 # 436 Elgar Road, Box Hill, 3128, VIC, Australia
 # Phone: +61 3 9945 7510
