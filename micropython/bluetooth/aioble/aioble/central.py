@@ -33,6 +33,7 @@ _SCAN_RSP = const(4)
 
 _ADV_TYPE_FLAGS = const(0x01)
 _ADV_TYPE_NAME = const(0x09)
+_ADV_TYPE_SHORT_NAME = const(0x08)
 _ADV_TYPE_UUID16_INCOMPLETE = const(0x2)
 _ADV_TYPE_UUID16_COMPLETE = const(0x3)
 _ADV_TYPE_UUID32_INCOMPLETE = const(0x4)
@@ -187,9 +188,9 @@ class ScanResult:
                     yield payload[i + 2 : i + payload[i] + 1]
                 i += 1 + payload[i]
 
-    # Returns the value of the advertised name, otherwise empty string.
+    # Returns the value of the complete (or shortened) advertised name, if available.
     def name(self):
-        for n in self._decode_field(_ADV_TYPE_NAME):
+        for n in self._decode_field(_ADV_TYPE_NAME, _ADV_TYPE_SHORT_NAME):
             return str(n, "utf-8") if n else ""
 
     # Generator that enumerates the service UUIDs that are advertised.
