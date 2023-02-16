@@ -13,28 +13,6 @@ def factorial(value: int) -> int:
     return result
 
 
-def selection_sort(unsorted_list):
-    """Selection sort algorithm implementation"""
-    running_sorted_list = unsorted_list[:]
-
-    # for items_sorted_count in range(len(running_sorted_list)):
-    for items_sorted_count, index_to_sort in enumerate(running_sorted_list):
-        min_index = items_sorted_count
-
-        # Get index of the minimum element in the unsorted sublist
-        for i in range(items_sorted_count + 1, len(running_sorted_list)):
-            if running_sorted_list[i] < running_sorted_list[min_index]:
-                min_index = i
-
-        # Swap the elements so that the sorted sublist grows
-        running_sorted_list[items_sorted_count], running_sorted_list[min_index] = (
-            running_sorted_list[min_index],
-            index_to_sort,
-        )
-
-    return running_sorted_list
-
-
 class Person:
     """Represents a person with a name, age, and who can make friends"""
 
@@ -115,10 +93,10 @@ class TestSubtest(unittest.TestCase):
         for test in tests:
             with self.subTest():  # Subtests continue to be tested, even if an earlier one fails
                 if test["correct"]:  # Tests that match what is expected
-                    self.assertEqual(selection_sort(test["unsorted"]), test["sorted"])
+                    self.assertEqual(sorted(test["unsorted"]), test["sorted"])
                 else:  # Tests that are meant to fail
                     with self.assertRaises(AssertionError):
-                        self.assertEqual(selection_sort(test["unsorted"]), test["sorted"])
+                        self.assertEqual(sorted(test["unsorted"]), test["sorted"])
 
     def test_factorial(self) -> None:
         """Test that the factorial fuction correctly calculates factorials
