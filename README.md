@@ -84,6 +84,37 @@ Note that unlike the other three approaches based on `mip` or `manifest.py`,
 you will need to manually resolve dependencies. You can inspect the relevant
 `manifest.py` file to view the list of dependencies for a given package.
 
+## Installing packages from forks
+
+It is possible to use the `mpremote mip install` or `mip.install()` methods to
+install packages built from a
+[fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/about-forks)
+of micropython-lib, if the fork's owner has opted in.
+
+This can be useful to install packages from a pending Pull Request, for example.
+
+First, the owner of the fork must opt-in as described under
+[Publishing packages from forks](CONTRIBUTING.md#publishing-packages-from-forks).
+
+After this has happened, each time someone pushes to a branch in that fork then
+GitHub Actions will automatically publish the packages to a GitHub Pages site.
+
+To install these packages, use commands such as:
+
+```bash
+$ mpremote connect /dev/ttyUSB0 mip install --index https://USERNAME.github.io/micropython-lib/mip/BRANCH_NAME PACKAGE_NAME
+```
+
+Or from a networked device:
+
+```py
+import mip
+mip.install(PACKAGE_NAME, index="https://USERNAME.github.io/micropython-lib/mip/BRANCH_NAME")
+```
+
+(Where `USERNAME`, `BRANCH_NAME` and `PACKAGE_NAME` are replaced with the owner
+of the fork, the branch the packages were built from, and the package name.)
+
 ## Contributing
 
 We use [GitHub Discussions](https://github.com/micropython/micropython/discussions)

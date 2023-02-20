@@ -69,3 +69,49 @@ There are some specific conventions and guidelines for micropython-lib:
 
 * When porting an existing third-party package, please ensure that the source
   license is compatible.
+
+* To make it easier for others to install packages directly from your PR before
+  it is merged, consider opting-in to automatic package publishing (see
+  [Publishing packages from forks](#publishing-packages-from-forks)). If you do
+  this, consider quoting the [commands to install
+  packages](README.md#installing-packages-from-forks) in your Pull Request
+  description.
+
+### Publishing packages from forks
+
+You can easily publish the packages from your micropython-lib
+[fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/about-forks)
+by opting in to a system based on [GitHub
+Actions](https://docs.github.com/en/actions) and [GitHub
+Pages](https://docs.github.com/en/pages):
+
+1. Open your fork's repository in the GitHub web interface.
+2. Navigate to "Settings" -> "Secrets and variables" -> "Actions" -> "Variables".
+3. Click "New repository variable"
+4. Create a variable named `MICROPY_PUBLISH_MIP_INDEX` with value `true` (or any
+   "truthy" value).
+5. The settings for GitHub Actions and GitHub Pages features should not need to
+   be changed from the repository defaults, unless you've explicitly disabled
+   them.
+
+The next time you push commits to a branch in your fork, GitHub Actions will run
+an additional step in the "Build All Packages" workflow named "Publish Packages
+for branch".
+
+Anyone can then install these packages as described under [Installing packages
+from forks](README.md#installing-packages-from-forks). The exact commands are also
+quoted in the GitHub Actions log for the "Publish Packages for branch" step.
+
+#### Opting Back Out
+
+To opt-out again, delete the `MICROPY_PUBLISH_MIP_INDEX` variable and
+(optionally) delete the `gh-pages` branch from your fork.
+
+*Note*: While enabled, all micropython-lib packages will be published each time
+a change is pushed to any branch in your fork. A commit is added to the
+`gh-pages` branch each time. In a busy repository, the `gh-pages` branch may
+become quite large. The actual `.git` directory size on disk should still be
+quite small, as most of the content will be duplicated. If you're worried that
+the `gh-pages` branch has become too large then you can always delete this
+branch from GitHub. GitHub Actions will create a new `gh-pages` branch the next
+time you push a change.
