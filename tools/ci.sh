@@ -1,10 +1,6 @@
 #!/bin/bash
 
 ########################################################################################
-# common "constants"
-PACKAGE_INDEX_PATH=/tmp/micropython-lib-deploy
-
-########################################################################################
 # code formatting
 
 function ci_code_formatting_setup {
