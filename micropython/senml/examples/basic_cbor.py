@@ -25,7 +25,7 @@ THE SOFTWARE.
 
 
 from senml import *
-import utime as time
+import time
 from cbor2 import decoder
 
 pack = SenmlPack("device_name")

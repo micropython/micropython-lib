@@ -25,7 +25,7 @@ THE SOFTWARE.
 
 
 from senml import *
-import utime as time
+import time
 
 pack = SenmlPack("device_name")
 

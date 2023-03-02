@@ -26,7 +26,7 @@ THE SOFTWARE.
 
 from senml.senml_record import SenmlRecord
 from senml.senml_base import SenmlBase
-import ujson
+import json
 from cbor2 import encoder
 from cbor2 import decoder
 
@@ -166,7 +166,7 @@ class SenmlPack(SenmlBase):
         :param data: a string containing json data.
         :return: None, will r
         """
-        records = ujson.loads(data)  # load the raw senml data
+        records = json.loads(data)  # load the raw senml data
         self._process_incomming_data(records, SenmlPack.json_mappings)
 
     def _process_incomming_data(self, records, naming_map):
@@ -242,7 +242,7 @@ class SenmlPack(SenmlBase):
         """
         converted = []
         self._build_rec_dict(SenmlPack.json_mappings, converted)
-        return ujson.dumps(converted)
+        return json.dumps(converted)
 
     def _build_rec_dict(self, naming_map, appendTo):
         """

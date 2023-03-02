@@ -24,7 +24,7 @@ THE SOFTWARE.
 """
 
 
-import ubinascii
+import binascii
 from senml.senml_base import SenmlBase
 
 
@@ -229,7 +229,7 @@ class SenmlRecord(SenmlBase):
         elif naming_map["vb"] in raw:
             val = raw[naming_map["vb"]]
         elif naming_map["vd"] in raw:
-            val = ubinascii.a2b_base64(raw[naming_map["vb"]])
+            val = binascii.a2b_base64(raw[naming_map["vb"]])
         else:
             val = None
         self.value = val
