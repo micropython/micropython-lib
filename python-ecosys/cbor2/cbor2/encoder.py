@@ -24,9 +24,9 @@ THE SOFTWARE.
 """
 
 
-import uio
+import io
 import math
-import ustruct as struct
+import struct
 
 
 class CBOREncodeError(Exception):
@@ -169,7 +169,7 @@ def dumps(obj, **kwargs):
     :return: the serialized output
     :rtype: bytes
     """
-    fp = uio.BytesIO()
+    fp = io.BytesIO()
     dump(obj, fp, **kwargs)
     return fp.getvalue()
 

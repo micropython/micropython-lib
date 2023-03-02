@@ -24,8 +24,8 @@ THE SOFTWARE.
 """
 
 
-import uio
-import ustruct as struct
+import io
+import struct
 
 
 class CBORDecodeError(Exception):
@@ -248,7 +248,7 @@ def loads(payload, **kwargs):
     :param kwargs: keyword arguments passed to :class:`~.CBORDecoder`
     :return: the deserialized object
     """
-    fp = uio.BytesIO(payload)
+    fp = io.BytesIO(payload)
     return CBORDecoder(fp, **kwargs).decode()
 
 
