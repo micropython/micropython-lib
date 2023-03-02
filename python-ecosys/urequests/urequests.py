@@ -123,6 +123,9 @@ def request(
                 s.write(data)
 
         l = s.readline()
+        if l[:-2] != b"\r\n":
+            # CRLF is required at EOL, as per standard
+            raise ValueError("HTTP error: SeparatorNotCRLF:\n%s" % l)
         # print(l)
         l = l.split(None, 2)
         if len(l) < 2:
@@ -137,6 +140,8 @@ def request(
             if not l or l == b"\r\n":
                 break
             # print(l)
+            if l[:-2] != b"\r\n":  # CRLF is required at EOL, as per standard
+                raise ValueError("HTTP error: SeparatorNotCRLF:\n%s" % l)
             if l.startswith(b"Transfer-Encoding:"):
                 if b"chunked" in l:
                     raise ValueError("Unsupported " + str(l, "utf-8"))
