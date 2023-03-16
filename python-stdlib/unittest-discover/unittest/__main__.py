@@ -111,7 +111,6 @@ def _dirname_filename_no_ext(path):
 
 
 def discover_main():
-    failures = 0
     runner = TestRunner()
 
     if len(sys.argv) == 1 or (
@@ -121,22 +120,27 @@ def discover_main():
     ):
         # No args, or `python -m unittest discover ...`.
         result = _discover(runner)
-        failures += result.failuresNum or result.errorsNum
     else:
+        result = TestResult()
         for test_spec in sys.argv[1:]:
             try:
                 os.stat(test_spec)
                 # File exists, strip extension and import with its parent directory in sys.path.
                 dirname, module_name = _dirname_filename_no_ext(test_spec)
-                result = _run_test_module(runner, module_name, dirname)
+                res = _run_test_module(runner, module_name, dirname)
             except OSError:
                 # Not a file, treat as named module to import.
-                result = _run_test_module(runner, test_spec)
+                res = _run_test_module(runner, test_spec)
 
-            failures += result.failuresNum or result.errorsNum
+            result += res
+
+    if not result.testsRun:
+        # If tests are run their results are already printed.
+        # Ensure an appropriate output is printed if no tests are found.
+        runner.run(TestSuite())
 
     # Terminate with non zero return code in case of failures.
-    sys.exit(failures)
+    sys.exit(result.failuresNum + result.errorsNum)
 
 
 discover_main()

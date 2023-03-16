@@ -300,9 +300,10 @@ class TestResult:
         return self.errorsNum == 0 and self.failuresNum == 0
 
     def printErrors(self):
-        print()
-        self.printErrorList(self.errors)
-        self.printErrorList(self.failures)
+        if self.errors or self.failures:
+            print()
+            self.printErrorList(self.errors)
+            self.printErrorList(self.failures)
 
     def printErrorList(self, lst):
         sep = "----------------------------------------------------------------------"
