@@ -110,9 +110,7 @@ class SSD1306(framebuf.FrameBuffer):
         self.write_data(self.buffer)
 
     def zoom(self):
-        '''
-        Set OLED to display double size
-        '''
+        # Set OLED to display double size
         self.temp[0] = 0x00
         self.temp[1] = 0xD6
         self.i2c.writeto(self.addr, self.temp)
@@ -120,9 +118,7 @@ class SSD1306(framebuf.FrameBuffer):
         self.i2c.writeto(self.addr, self.temp)
 
     def unzoom(self):
-        '''
-        Set OLED to display normal size
-        '''
+        # Set OLED to display normal size
         self.temp[0] = 0x00
         self.temp[1] = 0xD6
         self.i2c.writeto(self.addr, self.temp)
