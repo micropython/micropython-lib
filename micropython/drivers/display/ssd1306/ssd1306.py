@@ -109,22 +109,6 @@ class SSD1306(framebuf.FrameBuffer):
         self.write_cmd(self.pages - 1)
         self.write_data(self.buffer)
 
-    def zoom(self):
-        # Set OLED to display double size
-        self.temp[0] = 0x00
-        self.temp[1] = 0xD6
-        self.i2c.writeto(self.addr, self.temp)
-        self.temp[1] = 0x01
-        self.i2c.writeto(self.addr, self.temp)
-
-    def unzoom(self):
-        # Set OLED to display normal size
-        self.temp[0] = 0x00
-        self.temp[1] = 0xD6
-        self.i2c.writeto(self.addr, self.temp)
-        self.temp[1] = 0x00
-        self.i2c.writeto(self.addr, self.temp)
-
 
 class SSD1306_I2C(SSD1306):
     def __init__(self, width, height, i2c, addr=0x3C, external_vcc=False):
@@ -142,6 +126,22 @@ class SSD1306_I2C(SSD1306):
     def write_data(self, buf):
         self.write_list[1] = buf
         self.i2c.writevto(self.addr, self.write_list)
+
+    def zoom(self):
+        # Set OLED to display double size
+        temp = bytearray(3)
+        temp[0] = 0x00
+        temp[1] = 0xD6
+        temp[2] = 0x01
+        self.i2c.writeto(self.addr, self.temp)
+
+    def unzoom(self):
+        # Set OLED to display normal size
+        temp = bytearray(3)
+        temp[0] = 0x00
+        temp[1] = 0xD6
+        temp[2] = 0x00
+        self.i2c.writeto(self.addr, self.temp)
 
 
 class SSD1306_SPI(SSD1306):
