@@ -46,6 +46,6 @@ def settime(h_shift: int = 0):
     t = time()
     import machine
 
-    zone_t = t + h_shift*60*60
+    zone_t = t + h_shift * 60 * 60
     tm = utime.gmtime(zone_t)
     machine.RTC().datetime((tm[0], tm[1], tm[2], tm[6] + 1, tm[3], tm[4], tm[5], 0))
