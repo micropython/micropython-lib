@@ -41,10 +41,11 @@ def time():
     return val - NTP_DELTA
 
 
-# There's currently no timezone support in MicroPython, and the RTC is set in UTC time.
-def settime():
+# Time zone is supported. Counting starts from UTC time.
+def settime(h_shift: int = 0):
     t = time()
     import machine
 
-    tm = utime.gmtime(t)
+    zone_t = t + h_shift*60*60
+    tm = utime.gmtime(zone_t)
     machine.RTC().datetime((tm[0], tm[1], tm[2], tm[6] + 1, tm[3], tm[4], tm[5], 0))
