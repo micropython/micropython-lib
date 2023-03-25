@@ -1,7 +1,5 @@
 # MicroPython package installer
-# MIT license
-# Copyright (c) 2022 Jim Mussared
-# Extended with PyPI support by brainelectronics 2023
+# MIT license; Copyright (c) 2022 Jim Mussared
 
 import urequests as requests
 import sys
@@ -44,6 +42,8 @@ def _chunk(src, dest):
 
 # Check if the specified path exists and matches the hash.
 def _check_exists(path, short_hash):
+    import os
+
     try:
         import binascii
         import hashlib
@@ -92,24 +92,16 @@ def _download_file(url, dest):
         response.close()
 
 
-def _get_package_json(package_json_url, version):
-    package_json = {}
+def _install_json(package_json_url, index, target, version, mpy):
     response = requests.get(_rewrite_url(package_json_url, version))
     try:
         if response.status_code != 200:
             print("Package not found:", package_json_url)
-            return package_json
+            return False
 
         package_json = response.json()
     finally:
         response.close()
-
-    return package_json
-
-
-def _install_json(package_json_url, index, target, version, mpy):
-    package_json = _get_package_json(package_json_url, version)
-
     for target_path, short_hash in package_json.get("hashes", ()):
         fs_target_path = target + "/" + target_path
         if _check_exists(fs_target_path, short_hash):
@@ -130,124 +122,11 @@ def _install_json(package_json_url, index, target, version, mpy):
     return True
 
 
-def _install_tar(package_json_url, index, target, version):
-    import gc
-
-    package_json = _get_package_json(package_json_url, version)
-    meta = {}
-
-    if not version:
-        version = package_json.get("info", {}).get("version", "")
-
-    if version not in package_json.get("releases", ()):
-        print("Version {} not found".format(version))
-        return False
-
-    package_url = package_json["releases"][version][0]["url"]
-    # save some memory, the large dict is no longer required
-    del package_json
-    gc.collect()
-
-    fs_target_path = target + "/" + package_url.rsplit("/", 1)[1]
-
-    if not _download_file(package_url, fs_target_path):
-        print("Failed to download {} to {}".format(package_url, fs_target_path))
-        return False
-
-    try:
-        from uzlib import DecompIO
-        from utarfile import TarFile
-
-        gzdict_sz = 16 + 15
-        sz = gc.mem_free() + gc.mem_alloc()
-        if sz <= 65536:
-            gzdict_sz = 16 + 12
-
-        zipped_file = open(fs_target_path, "rb")
-        decompressed_file = DecompIO(zipped_file, gzdict_sz)
-        tar_file = TarFile(fileobj=decompressed_file)
-
-        meta = _install_tar_file(tar_file, target)
-
-        zipped_file.close()
-        del zipped_file
-        del decompressed_file
-        del tar_file
-    except Exception as e:
-        print("Failed to decompress downloaded file due to {}".format(e))
-        return False
-
-    # cleanup downloaded file
-    try:
-        from os import unlink
-
-        unlink(fs_target_path)
-    except Exception as e:
-        print("Error during cleanup of {}".format(fs_target_path), e)
-
-    gc.collect()
-
-    deps = meta.get("deps", "").rstrip()
-    if deps:
-        deps = deps.decode("utf-8").split("\n")
-        print("Install additional deps: {}".format(deps))
-        results = []
-
-        for ele in deps:
-            res = _install_package(
-                package=ele, index=index, target=target, version=None, mpy=False, pypi=True
-            )
-            if not res:
-                print("Package may be partially installed")
-            results.append(res)
-
-        return all(results)
-
-    return True
-
-
-def _install_tar_file(f, target):
-    from utarfile import DIRTYPE
-    from shutil import copyfileobj
-
-    meta = {}
-
-    for info in f:
-        if "PaxHeader" in info.name:
-            continue
-
-        print("Processing: {}".format(info))
-        fname = info.name
-        try:
-            fname = fname[fname.index("/") + 1 :]
-        except ValueError:
-            fname = ""
-
-        save = True
-        for p in ("setup.", "PKG-INFO", "README"):
-            if fname.startswith(p) or ".egg-info" in fname:
-                if fname.endswith("/requires.txt"):
-                    meta["deps"] = f.extractfile(info).read()
-                save = False
-                break
-
-        if save:
-            outfname = target + "/" + fname
-            _ensure_path_exists(outfname)
-
-            if info.type != DIRTYPE:
-                this_file = f.extractfile(info)
-                copyfileobj(this_file, open(outfname, "wb"))
-
-    return meta
-
-
-def _install_package(package, index, target, version, mpy, pypi):
+def _install_package(package, index, target, version, mpy):
     if (
         package.startswith("http://")
         or package.startswith("https://")
         or package.startswith("github:")
-        or pypi
     ):
         if package.endswith(".py") or package.endswith(".mpy"):
             print("Downloading {} to {}".format(package, target))
@@ -255,23 +134,11 @@ def _install_package(package, index, target, version, mpy, pypi):
                 _rewrite_url(package, version), target + "/" + package.rsplit("/")[-1]
             )
         else:
-            if pypi:
-                this_version = version
-                if not version:
-                    this_version = "latest"
-                print(
-                    "Installing {} ({}) from {} to {}".format(package, this_version, index, target)
-                )
-                package = "{}/{}/json".format(index, package)
-                install("utarfile")
-                install("shutil")
-                return _install_tar(package, index, target, version)
-            else:
-                if not package.endswith(".json"):
-                    if not package.endswith("/"):
-                        package += "/"
-                    package += "package.json"
-                print("Installing {} to {}".format(package, target))
+            if not package.endswith(".json"):
+                if not package.endswith("/"):
+                    package += "/"
+                package += "package.json"
+            print("Installing {} to {}".format(package, target))
     else:
         if not version:
             version = "latest"
@@ -286,7 +153,7 @@ def _install_package(package, index, target, version, mpy, pypi):
     return _install_json(package, index, target, version, mpy)
 
 
-def install(package, index=None, target=None, version=None, mpy=True, pypi=False):
+def install(package, index=None, target=None, version=None, mpy=True):
     if not target:
         for p in sys.path:
             if p.endswith("/lib"):
@@ -299,7 +166,7 @@ def install(package, index=None, target=None, version=None, mpy=True, pypi=False
     if not index:
         index = _PACKAGE_INDEX
 
-    if _install_package(package, index.rstrip("/"), target, version, mpy, pypi):
+    if _install_package(package, index.rstrip("/"), target, version, mpy):
         print("Done")
     else:
         print("Package may be partially installed")

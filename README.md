@@ -117,8 +117,8 @@ of the fork, the branch the packages were built from, and the package name.)
 
 ## Installing packages from Python Package Index
 
-It is possible to use the `mpremote mip install` or `mip.install()` methods to
-install packages built from the official
+It is possible to use the `mpremote upip install` or `upip.install()` methods
+to install packages built from the official
 [PyPI](https://pypi.org/), [Test PyPI](https://test.pypi.org/) or a selfhosted
 Python Package Index.
 
@@ -126,18 +126,22 @@ To install a package and its dependencies from a Python Package Index, use
 commands such as:
 
 ```bash
-$ mpremote connect /dev/ttyUSB0 mip install --index PACKAGE_INDEX --pypi PACKAGE_NAME
+$ mpremote connect /dev/ttyUSB0 upip install PACKAGE_NAME
 ```
 
 Or from a networked device:
 
 ```py
-import mip
-mip.install(PACKAGE_NAME, index=PACKAGE_INDEX, pypi=True)
+import upip
+upip.install(PACKAGE_NAME)
 ```
 
-(Where `PACKAGE_NAME` and `PACKAGE_INDEX` are replaced with the package name
-and the package index URL, e.g. `https://test.pypi.org/pypi` for Test PyPI)
+A custom Python Package Index can be specified with the `index` keyword or
+`--index` on the command line. `PACKAGE_NAME` and `PACKAGE_INDEX` are replaced
+with the package name and the package index URL, e.g.
+`https://test.pypi.org/pypi` for Test PyPI, default is `https://pypi.org/pypi`.
+Additionally the `version` keyword or `--version` on the command line allows
+the installation of a specific package version, default is latest available.
 
 ## Contributing
 
