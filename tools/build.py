@@ -112,7 +112,6 @@
 
 # mip (or other tools) should request /package/{mpy_version}/{package_name}/{version}.json.
 
-import argparse
 import glob
 import hashlib
 import json
@@ -132,7 +131,7 @@ _COLOR_ERROR_OFF = "\033[0m"
 
 
 # Create all directories in the path (such that the file can be created).
-def _ensure_path_exists(file_path):
+def ensure_path_exists(file_path):
     path = os.path.dirname(file_path)
     if not os.path.isdir(path):
         os.makedirs(path)
@@ -155,7 +154,7 @@ def _identical_files(path_a, path_b):
 # Helper to write the object as json to the specified path, creating any
 # directories as required.
 def _write_json(obj, path, minify=False):
-    _ensure_path_exists(path)
+    ensure_path_exists(path)
     with open(path, "w") as f:
         json.dump(
             obj, f, indent=(None if minify else 2), separators=((",", ":") if minify else None)
@@ -173,7 +172,7 @@ def _write_package_json(
 
 
 # Format s with bold red.
-def _error_color(s):
+def error_color(s):
     return _COLOR_ERROR_ON + s + _COLOR_ERROR_OFF
 
 
@@ -191,7 +190,7 @@ def _write_hashed_file(package_name, src, target_path, out_file_dir, hash_prefix
         # that it's actually the same file.
         if not _identical_files(src.name, output_file_path):
             print(
-                _error_color("Hash collision processing:"),
+                error_color("Hash collision processing:"),
                 package_name,
                 file=sys.stderr,
             )
@@ -204,7 +203,7 @@ def _write_hashed_file(package_name, src, target_path, out_file_dir, hash_prefix
             sys.exit(1)
     else:
         # Create new file.
-        _ensure_path_exists(output_file_path)
+        ensure_path_exists(output_file_path)
         shutil.copyfile(src.name, output_file_path)
 
     return short_file_hash
@@ -235,7 +234,7 @@ def _compile_as_mpy(
             )
         except mpy_cross.CrossCompileError as e:
             print(
-                _error_color("Error:"),
+                error_color("Error:"),
                 "Unable to compile",
                 target_path,
                 "in package",
@@ -329,7 +328,7 @@ def build(output_path, hash_prefix_len, mpy_cross_path):
 
             # Append this package to the index.
             if not manifest.metadata().version:
-                print(_error_color("Warning:"), package_name, "doesn't have a version.")
+                print(error_color("Warning:"), package_name, "doesn't have a version.")
 
             # Try to find this package in the previous index.json.
             for p in index_json["packages"]:
@@ -360,11 +359,12 @@ def build(output_path, hash_prefix_len, mpy_cross_path):
             for result in manifest.files():
                 # This isn't allowed in micropython-lib anyway.
                 if result.file_type != manifestfile.FILE_TYPE_LOCAL:
-                    print("Non-local file not supported.", file=sys.stderr)
+                    print(error_color("Error:"), "Non-local file not supported.", file=sys.stderr)
                     sys.exit(1)
 
                 if not result.target_path.endswith(".py"):
                     print(
+                        error_color("Error:"),
                         "Target path isn't a .py file:",
                         result.target_path,
                         file=sys.stderr,
