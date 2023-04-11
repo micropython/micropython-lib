@@ -38,9 +38,6 @@ _FLAG_WRITE_AUTHORIZED = const(0x4000)
 
 _FLAG_WRITE_CAPTURE = const(0x10000)
 
-_FLAG_DESC_READ = const(1)
-_FLAG_DESC_WRITE = const(2)
-
 
 _WRITE_CAPTURE_QUEUE_LIMIT = const(10)
 
@@ -307,14 +304,13 @@ class Descriptor(BaseCharacteristic):
     def __init__(self, characteristic, uuid, read=False, write=False, initial=None):
         characteristic.descriptors.append(self)
 
-        # Workaround for https://github.com/micropython/micropython/issues/6864
         flags = 0
         if read:
-            flags |= _FLAG_DESC_READ
+            flags |= _FLAG_READ
         if write:
+            flags |= _FLAG_WRITE
             self._write_event = asyncio.ThreadSafeFlag()
             self._write_data = None
-            flags |= _FLAG_DESC_WRITE
 
         self.uuid = uuid
         self.flags = flags

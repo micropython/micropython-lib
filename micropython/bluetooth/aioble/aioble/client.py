@@ -439,7 +439,7 @@ class ClientDescriptor(BaseClientCharacteristic):
     def __init__(self, characteristic, dsc_handle, uuid):
         self.characteristic = characteristic
 
-        super().__init__(dsc_handle, _FLAG_READ | _FLAG_WRITE_NO_RESPONSE, uuid)
+        super().__init__(dsc_handle, _FLAG_READ | _FLAG_WRITE, uuid)
 
     def __str__(self):
         return "Descriptor: {} {} {}".format(self._value_handle, self.properties, self.uuid)
