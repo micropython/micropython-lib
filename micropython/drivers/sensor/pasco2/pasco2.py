@@ -1,3 +1,5 @@
+# Infineon XENSIV PAS CO2 sensor driver for MicroPython
+
 from machine import I2C
 from utime import sleep, sleep_ms
 
@@ -15,8 +17,6 @@ _PASCO2_ERROR = -1
 
 addr = 0
 mask = 1
-
-i2c = I2C(0)
 
 class PASCO2:
     """IFX - XENSIV PAS CO2 sensor driver"""
@@ -65,7 +65,6 @@ class PASCO2:
         readData = self._read_reg(reg[addr])[0]
         writeData = bytes([(readData & ~(reg[mask])) | modeVal])
         self._write_reg(_PASCO2_REG_MEAS_CFG,writeData)
-        
         
     def initialize(self):
         """ Public function to initialize the sensor """
