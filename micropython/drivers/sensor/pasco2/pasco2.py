@@ -98,7 +98,7 @@ class PASCO2:
         except:
             return _PASCO2_ERROR
 
-    def getCO2Value(self):
+    def get_co2_value(self):
         """Public function to get the CO2 value"""
         while True:
             try:
