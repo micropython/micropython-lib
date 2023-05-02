@@ -578,7 +578,7 @@ class WM8960:
             raise ValueError("Invalid route")
 
     def set_left_input(self, input):
-        if not input in self._input_config_table.keys():
+        if input not in self._input_config_table:
             raise ValueError("Invalid input")
 
         input = self._input_config_table[input]
@@ -595,7 +595,7 @@ class WM8960:
             regs[_LINVOL] = input[1]
 
     def set_right_input(self, input):
-        if not input in self._input_config_table.keys():
+        if input not in self._input_config_table:
             raise ValueError("Invalid input name")
 
         input = self._input_config_table[input]
@@ -629,7 +629,7 @@ class WM8960:
         self.regs[_IFACE1] = (_IFACE1_WL_MASK, wl << _IFACE1_WL_SHIFT)
 
     def volume(self, module, volume_l=None, volume_r=None):
-        if not module in self._volume_config_table.keys():
+        if module not in self._volume_config_table:
             raise ValueError("Invalid module")
 
         if volume_l is None:  # get volume
@@ -644,7 +644,7 @@ class WM8960:
 
             if not ((0 <= volume_l <= 100) and (0 <= volume_r <= 100)):
                 raise ValueError("Invalid value for volume")
-            elif not module in self._volume_config_table.keys():
+            elif module not in self._volume_config_table:
                 raise ValueError("Invalid module")
 
             vol_max, regnum, flags = self._volume_config_table[module]

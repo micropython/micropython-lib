@@ -156,7 +156,6 @@ class Stats:
             st["errors"],
             "  receiver",
         )
-        return
 
 
 def recvn(s, n):

@@ -524,13 +524,13 @@ class BMI270:
         # Sanity checks
         if not self._use_i2c:
             raise ValueError("SPI mode is not supported")
-        if not gyro_odr in ODR:
+        if gyro_odr not in ODR:
             raise ValueError("Invalid gyro sampling rate: %d" % gyro_odr)
-        if not gyro_scale in GYRO_SCALE:
+        if gyro_scale not in GYRO_SCALE:
             raise ValueError("Invalid gyro scaling: %d" % gyro_scale)
-        if not accel_odr in ODR:
+        if accel_odr not in ODR:
             raise ValueError("Invalid accelerometer sampling rate: %d" % accel_odr)
-        if not accel_scale in ACCEL_SCALE:
+        if accel_scale not in ACCEL_SCALE:
             raise ValueError("Invalid accelerometer scaling: %d" % accel_scale)
         if self._read_reg(_CHIP_ID) != 0x24:
             raise OSError("No BMI270 device was found at address 0x%x" % (self.address))

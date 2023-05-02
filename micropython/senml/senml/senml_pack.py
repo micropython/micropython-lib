@@ -47,7 +47,7 @@ class SenmlPackIterator:
             self._index += 1
             return res
         else:
-            raise StopIteration()
+            raise StopIteration
 
 
 class SenmlPack(SenmlBase):
@@ -156,7 +156,7 @@ class SenmlPack(SenmlBase):
         checks if the type of value is allowed for senml
         :return: None, raisee exception if not ok.
         """
-        if not value == None:
+        if value is not None:
             if not (isinstance(value, int) or isinstance(value, float)):
                 raise Exception("invalid type for " + field_name + ", only numbers allowed")
 
@@ -330,7 +330,7 @@ class SenmlPack(SenmlBase):
         """
         if not (isinstance(item, SenmlBase)):
             raise Exception("invalid type of param, SenmlRecord or SenmlPack expected")
-        if not item._parent == None:
+        if item._parent is not None:
             raise Exception("item is already part of a pack")
 
         self._data.append(item)

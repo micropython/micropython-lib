@@ -282,7 +282,7 @@ class BaseModem:
         #
         # Part of common low-level modem API, see README.md for usage.
         if continuous and timeout_ms is not None:
-            raise ValueError()  # these two options are mutually exclusive
+            raise ValueError  # these two options are mutually exclusive
 
         if timeout_ms is not None:
             self._rx = time.ticks_add(time.ticks_ms(), timeout_ms)

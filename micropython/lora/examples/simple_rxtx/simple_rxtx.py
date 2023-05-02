@@ -40,7 +40,7 @@ def main():
         print("Receiving...")
         rx = modem.recv(timeout_ms=5000)
         if rx:
-            print(f"Received: {repr(rx)}")
+            print(f"Received: {rx!r}")
         else:
             print("Timeout!")
         time.sleep(2)

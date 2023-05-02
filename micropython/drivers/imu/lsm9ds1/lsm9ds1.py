@@ -95,19 +95,19 @@ class LSM9DS1:
         self.address_magnet = address_magnet
 
         # Sanity checks
-        if not gyro_odr in _ODR_IMU:
+        if gyro_odr not in _ODR_IMU:
             raise ValueError("Invalid gyro sampling rate: %d" % gyro_odr)
-        if not gyro_scale in _GYRO_SCALE:
+        if gyro_scale not in _GYRO_SCALE:
             raise ValueError("Invalid gyro scaling: %d" % gyro_scale)
 
-        if not accel_odr in _ODR_IMU:
+        if accel_odr not in _ODR_IMU:
             raise ValueError("Invalid accelerometer sampling rate: %d" % accel_odr)
-        if not accel_scale in _ACCEL_SCALE:
+        if accel_scale not in _ACCEL_SCALE:
             raise ValueError("Invalid accelerometer scaling: %d" % accel_scale)
 
-        if not magnet_odr in _ODR_MAGNET:
+        if magnet_odr not in _ODR_MAGNET:
             raise ValueError("Invalid magnet sampling rate: %d" % magnet_odr)
-        if not magnet_scale in _MAGNET_SCALE:
+        if magnet_scale not in _MAGNET_SCALE:
             raise ValueError("Invalid magnet scaling: %d" % magnet_scale)
 
         if (self.magent_id() != b"=") or (self.gyro_id() != b"h"):

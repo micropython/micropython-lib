@@ -82,7 +82,7 @@ async def l2cap_task(connection):
 
             if send_file:
                 print("Sending:", send_file)
-                with open(send_file, "rb") as f:
+                with open(send_file, "rb") as f:  # noqa: ASYNC101
                     buf = bytearray(channel.peer_mtu)
                     mv = memoryview(buf)
                     while n := f.readinto(buf):

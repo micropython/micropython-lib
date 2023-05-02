@@ -11,17 +11,17 @@ class AIOESPNow(espnow.ESPNow):
     # Read one ESPNow message
     async def arecv(self):
         yield asyncio.core._io_queue.queue_read(self)
-        return self.recv(0)  # type: ignore
+        return self.recv(0)  # type: ignore[misc]
 
     async def airecv(self):
         yield asyncio.core._io_queue.queue_read(self)
-        return self.irecv(0)  # type: ignore
+        return self.irecv(0)  # type: ignore[misc]
 
     async def asend(self, mac, msg=None, sync=None):
         if msg is None:
             msg, mac = mac, None  # If msg is None: swap mac and msg
         yield asyncio.core._io_queue.queue_write(self)
-        return self.send(mac, msg, sync)  # type: ignore
+        return self.send(mac, msg, sync)  # type: ignore[misc]
 
     # "async for" support
     def __aiter__(self):

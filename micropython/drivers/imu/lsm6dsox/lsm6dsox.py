@@ -130,20 +130,20 @@ class LSM6DSOX:
         accel_odr = round(accel_odr, 2)
 
         # Sanity checks
-        if not gyro_odr in ODR:
+        if gyro_odr not in ODR:
             raise ValueError("Invalid sampling rate: %d" % gyro_odr)
-        if not gyro_scale in SCALE_GYRO:
+        if gyro_scale not in SCALE_GYRO:
             raise ValueError("invalid gyro scaling: %d" % gyro_scale)
-        if not accel_odr in ODR:
+        if accel_odr not in ODR:
             raise ValueError("Invalid sampling rate: %d" % accel_odr)
-        if not accel_scale in SCALE_ACCEL:
+        if accel_scale not in SCALE_ACCEL:
             raise ValueError("invalid accelerometer scaling: %d" % accel_scale)
 
         # Soft-reset the device.
         self.reset()
 
         # Load and configure MLC if UCF file is provided
-        if ucf != None:
+        if ucf is not None:
             self.load_mlc(ucf)
 
         # Set Gyroscope datarate and scale.

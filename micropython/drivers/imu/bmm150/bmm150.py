@@ -80,7 +80,7 @@ class BMM150:
         # Sanity checks
         if not self._use_i2c:
             raise ValueError("SPI mode is not supported")
-        if not magnet_odr in _ODR:
+        if magnet_odr not in _ODR:
             raise ValueError("Invalid sampling rate: %d" % magnet_odr)
 
         # Perform soft reset, and power on.

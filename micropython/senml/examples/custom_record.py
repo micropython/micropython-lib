@@ -43,7 +43,7 @@ class Coordinates(SenmlRecord):
 
     def _check_value_type(self, value):
         """overriding the check on value type to make certain that only an array with 3 values is assigned: lat,lon/alt"""
-        if not value == None:
+        if value is not None:
             if not isinstance(value, list):
                 raise Exception("invalid data type: array with 3 elements expected lat, lon, alt")
 

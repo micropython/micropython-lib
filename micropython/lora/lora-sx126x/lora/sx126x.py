@@ -487,7 +487,7 @@ class _SX126x(BaseModem):
         else:
             # DS says "Contact your Semtech representative for the other optimal
             # calibration settings outside of the given frequency bands"
-            raise ValueError()
+            raise ValueError
 
         self._cmd(">BH", _CMD_CALIBRATE_IMAGE, args)
 

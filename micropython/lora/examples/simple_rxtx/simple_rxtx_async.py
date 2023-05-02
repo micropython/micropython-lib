@@ -41,7 +41,7 @@ async def recv_coro(modem):
         print("Receiving...")
         rx = await modem.recv(2000)
         if rx:
-            print(f"Received: {repr(rx)}")
+            print(f"Received: {rx!r}")
         else:
             print("Receive timeout!")
 

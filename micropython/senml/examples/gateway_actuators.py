@@ -56,7 +56,7 @@ def gateway_callback(record, **kwargs):
     :param kwargs: optional extra parameters (device can be found here)
     :return: None
     """
-    if "device" in kwargs and kwargs["device"] != None:
+    if "device" in kwargs and kwargs["device"] is not None:
         print("for device: " + kwargs["device"].name)
     else:
         print("for gateway: ")

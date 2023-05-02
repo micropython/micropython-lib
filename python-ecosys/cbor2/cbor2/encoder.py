@@ -25,7 +25,6 @@ THE SOFTWARE.
 
 
 import io
-import math
 import struct
 
 
