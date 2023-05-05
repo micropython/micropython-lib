@@ -94,6 +94,7 @@ class TarFile:
     def extractfile(self, tarinfo):
         return tarinfo.subf
 
+
 def extract(file, dest):
     dest = dest.rstrip("/")
     try:
