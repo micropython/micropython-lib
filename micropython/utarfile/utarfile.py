@@ -1,4 +1,4 @@
-import uctypes
+import uctypes, sys, os, shutil, errno
 
 # http://www.gnu.org/software/tar/manual/html_node/Standard.html
 TAR_HEADER = {
@@ -93,3 +93,33 @@ class TarFile:
 
     def extractfile(self, tarinfo):
         return tarinfo.subf
+
+def extract(file, dest):
+    dest = dest.rstrip("/")
+    try:
+        os.mkdir(dest)
+    except OSError as e:
+        if e.errno == errno.EEXIST:
+            pass
+        else:
+            raise e
+    
+    t = TarFile(file)
+    
+    dirs = files = 0
+    for i in t:
+        if i.type == DIRTYPE:
+            try:
+                os.mkdir(dest + "/" + i.name.rstrip('/'))
+            except OSError as e:
+                if e.errno == errno.EEXIST:
+                    dirs -= 1
+                else:
+                    raise e
+            dirs += 1
+        else:
+            in_file = t.extractfile(i)
+            with open(dest + "/" + i.name, "wb") as out_file:
+                shutil.copyfileobj(in_file, out_file)
+            files += 1
+    print(f"{dirs} dirs created, {files} files extracted.")
