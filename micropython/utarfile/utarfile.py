@@ -103,14 +103,14 @@ def extract(file, dest):
             pass
         else:
             raise e
-    
+
     t = TarFile(file)
-    
+
     dirs = files = 0
     for i in t:
         if i.type == DIRTYPE:
             try:
-                os.mkdir(dest + "/" + i.name.rstrip('/'))
+                os.mkdir(dest + "/" + i.name.rstrip("/"))
             except OSError as e:
                 if e.errno == errno.EEXIST:
                     dirs -= 1
