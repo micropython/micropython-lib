@@ -31,6 +31,7 @@ import struct
 from micropython import const
 from time import sleep
 import binascii
+import gc
 
 _CMD_SYNC = const(0x08)
 _CMD_CHANGE_BAUDRATE = const(0x0F)
@@ -113,8 +114,11 @@ class ESPFlash:
             raise Exception(f"Register poll timeout. Addr: 0x{addr:02X} Flag: 0x{flag:02X}.")
 
     def _write_slip(self, pkt):
+        gc.collect()
         pkt = pkt.replace(b"\xDB", b"\xdb\xdd").replace(b"\xc0", b"\xdb\xdc")
-        self.uart.write(b"\xC0" + pkt + b"\xC0")
+        self.uart.write(b"\xC0")
+        self.uart.write(pkt)
+        self.uart.write(b"\xC0")
         self._log(pkt)
 
     def _read_slip(self):
@@ -256,31 +260,36 @@ class ESPFlash:
         total_blocks = (size + blksize - 1) // blksize
         erase_blocks = 1
         print(f"Flash write size: {size} total_blocks: {total_blocks} block size: {blksize}")
+        gc.collect()
+        buf = bytearray(blksize + 16)
+        erase_cmd = bytearray(16)
+        mv = memoryview(buf)
         with open(path, "rb") as f:
             seq = 0
             for i in range(total_blocks):
-                buf = f.read(blksize)
+                nread = f.readinto(mv[16 : 16 + blksize])
                 # Update digest
                 if self.md5sum is not None:
-                    self.md5sum.update(buf)
+                    self.md5sum.update(mv[16 : 16 + blksize])
                 # The last data block should be padded to the block size with 0xFF bytes.
-                if len(buf) < blksize:
-                    buf += b"\xFF" * (blksize - len(buf))
-                checksum = self._checksum(buf)
+                if nread < blksize:
+                    mv[nread + 16 : blksize + 16] = b"\xFF" * (blksize - nread)
+                checksum = self._checksum(mv[16 : 16 + blksize])
                 if seq % erase_blocks == 0:
                     # print(f"Erasing {seq} -> {seq+erase_blocks}...")
-                    self._command(
-                        _CMD_SPI_FLASH_BEGIN,
-                        struct.pack(
-                            "<IIII", erase_blocks * blksize, erase_blocks, blksize, seq * blksize
-                        ),
-                    )
+                    struct.pack_into(
+                        "<IIII",
+                        erase_cmd,
+                        0,
+                        erase_blocks * blksize,
+                        erase_blocks,
+                        blksize,
+                        seq * blksize,
+                    ),
+                    self._command(_CMD_SPI_FLASH_BEGIN, erase_cmd)
                 print(f"Writing sequence number {seq}/{total_blocks}...")
-                self._command(
-                    _CMD_SPI_FLASH_DATA,
-                    struct.pack("<IIII", len(buf), seq % erase_blocks, 0, 0) + buf,
-                    checksum,
-                )
+                struct.pack_into("<IIII", mv[0:16], 0, nread, seq % erase_blocks, 0, 0)
+                self._command(_CMD_SPI_FLASH_DATA, buf, checksum)
                 seq += 1
 
         print("Flash write finished")
