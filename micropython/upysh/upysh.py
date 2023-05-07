@@ -148,9 +148,7 @@ pwd = _Pwd()
 ls = _Ls()
 clear = _Clear()
 
-head = _StdinCommand(
-    _head_func, [["Filename", str, None], ["Num of lines (default=10)", int, 10]]
-)
+head = _StdinCommand(_head_func, [["Filename", str, None], ["Num of lines (default=10)", int, 10]])
 
 cat = _StdinCommand(_cat_func, [["Filename", str, None]])
 
@@ -158,9 +156,7 @@ cp = _StdinCommand(_cp_func, [["Source", str, None], ["Target", str, None]])
 
 newfile = _StdinCommand(_newfile_func, [["Filename", str, None]])
 
-rm = _StdinCommand(
-    _rm_func, [["Filename", str, None], ["Recursive (default=False)", bool, False]]
-)
+rm = _StdinCommand(_rm_func, [["Filename", str, None], ["Recursive (default=False)", bool, False]])
 
 cd = _StdinCommand(os.chdir, [["Target", str, None]])
 
