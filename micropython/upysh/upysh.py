@@ -133,7 +133,7 @@ To see this help text again, type "man".
 
 upysh commands:
 clear, ls, ls(...), head(...)*, cat(...)*, newfile(...)*
-cp('src', 'dest')*, mv('old', 'new')*, rm(...)*
+cp('src', 'dest')*, mv('old', 'new')*, rm(name, recursive=False)*
 pwd, cd(...)*, mkdir(...)*, rmdir(...)*
 
 Most commands (marked with *) can be called interactively.
