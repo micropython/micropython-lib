@@ -7,6 +7,5 @@ if not tarfile.endswith(".tar"):
 
 t = utarfile.TarFile(sys.argv[1], "w")
 for filename in sys.argv[2:]:
-    print(filename)
     t.add(filename)
 t.close()

@@ -72,8 +72,17 @@ def _setstring(b, s, maxlen):
         b[i] = c
 
 
+_S_IFMT = 0o170000
+_S_IFREG = 0o100000
+_S_IFDIR = 0o040000
+
+
 def _isdir(finfo):
-    return (finfo[0] & 0o40000) > 0
+    return (finfo[0] & _S_IFMT) == _S_IFDIR
+
+
+def _isreg(finfo):
+    return (finfo[0] & _S_IFMT) == _S_IFREG
 
 
 class TarFile:
@@ -128,14 +137,17 @@ class TarFile:
         buf = bytearray(BLOCKSIZE)
         name = tarinfo.name
         finfo = tarinfo.finfo
-        if _isdir(finfo) and not name.endswith("/"):
-            name += "/"
+        size = finfo[6]
+        if _isdir(finfo):
+            size = 0
+            if not name.endswith("/"):
+                name += "/"
         hdr = uctypes.struct(uctypes.addressof(buf), TAR_HEADER, uctypes.LITTLE_ENDIAN)
         _setstring(hdr.name, name, 100)
         _setstring(hdr.mode, "%06o " % (finfo[0] & 0o7777), 7)
         _setstring(hdr.uid, "%06o " % finfo[4], 7)
         _setstring(hdr.gid, "%06o " % finfo[5], 7)
-        _setstring(hdr.size, "%011o " % finfo[6], 12)
+        _setstring(hdr.size, "%011o " % size, 12)
         _setstring(hdr.mtime, "%011o " % finfo[8], 12)
         _setstring(hdr.typeflag, "5" if _isdir(finfo) else "0", 1)
         # Checksum is calculated with checksum field all blanks.
@@ -160,7 +172,15 @@ class TarFile:
     def add(self, name, recursive=True):
         tarinfo = TarInfo()
         tarinfo.name = name
-        tarinfo.finfo = os.stat(name)
+        try:
+            tarinfo.finfo = os.stat(name)
+        except OSError:
+            print("Cannot stat", name, " - skipping.")
+            return
+        if not (_isdir(tarinfo.finfo) or _isreg(tarinfo.finfo)):
+            # We only accept directories or regular files.
+            print(name, "is not a directory or regular file - skipping.")
+            return
         tarinfo.type = DIRTYPE if _isdir(tarinfo.finfo) else REGTYPE
         if tarinfo.type == DIRTYPE:
             self.addfile(tarinfo)
