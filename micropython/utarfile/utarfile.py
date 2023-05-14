@@ -17,9 +17,9 @@ DIRTYPE = "dir"
 REGTYPE = "file"
 
 # Following https://github.com/python/cpython/blob/3.11/Lib/tarfile.py
-NUL = b"\0"                     # the null character
-BLOCKSIZE = 512                 # length of processing blocks
-RECORDSIZE = BLOCKSIZE * 20     # length of records
+NUL = b"\0"  # the null character
+BLOCKSIZE = 512  # length of processing blocks
+RECORDSIZE = BLOCKSIZE * 20  # length of records
 
 
 def roundup(val, align):
@@ -151,7 +151,7 @@ class TarFile:
         if fileobj:
             n_bytes = self.f.write(fileobj.read())
             self.offset += n_bytes
-            remains = (-n_bytes & (BLOCKSIZE - 1))  # == 0b111111111
+            remains = -n_bytes & (BLOCKSIZE - 1)  # == 0b111111111
             if remains:
                 buf = bytearray(remains)
                 self.f.write(buf)
@@ -166,15 +166,15 @@ class TarFile:
             self.addfile(tarinfo)
             if recursive:
                 for f in os.ilistdir(name):
-                    self.add(name + '/' + f[0], recursive)
-        else: # type == REGTYPE
+                    self.add(name + "/" + f[0], recursive)
+        else:  # type == REGTYPE
             self.addfile(tarinfo, open(name, "rb"))
 
     def close(self):
         # Must be called to complete writing a tar file.
         if self.mode == "w":
             self.f.write(NUL * (BLOCKSIZE * 2))
-            self.offset += (BLOCKSIZE * 2)
+            self.offset += BLOCKSIZE * 2
             remainder = self.offset % RECORDSIZE
             if remainder:
                 self.f.write(NUL * (RECORDSIZE - remainder))
