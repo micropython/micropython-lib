@@ -1,5 +1,5 @@
-metadata(description="Lightweight tarfile module subset", version="0.3.2")
+metadata(description="Read-only implementation of Python's tarfile.", version="0.4.0")
 
 # Originally written by Paul Sokolovsky.
 
-module("utarfile.py")
+package("utarfile")
