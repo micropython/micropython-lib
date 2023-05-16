@@ -10,6 +10,7 @@ _PASCO2_REG_MEAS_CFG = const(0x04)  # Measurement mode configuration register ad
 _PASCO2_REG_CO2PPM_H = const(0x05)  # CO2 concentration result MSB register address
 _PASCO2_REG_MEAS_STS = const(0x07)  # Measurement status register address
 _PASCO2_REG_SENS_RST = const(0x10)  # Soft reset register address
+_PASCO2_REG_PROD_ID = const(0x00)  # Product and revision ID register address
 
 # Error codes
 _PASCO2_SUCCESS = 0
@@ -28,6 +29,8 @@ class PASCO2:
         "REG_MEAS_CFG_BITF_OP_MODE": [_PASCO2_REG_MEAS_CFG, 0x03],  # Operation Mode type bit
         "REG_MEAS_STS_BITF_DATA_RDY": [_PASCO2_REG_MEAS_STS, 0x10],  # Data ready status bit
         "REG_CO2PPM_H_BITF_CO2_PPM_H": [_PASCO2_REG_CO2PPM_H, 0xFF],  # Stored CO2 value bit
+        "REG_PROD_ID_BITF_PROD": [_PASCO2_REG_PROD_ID, 0xE0],  # Product id bit
+        "REG_PROD_ID_BITF_REV": [_PASCO2_REG_PROD_ID, 0x1F],  # Revision id bit
     }
 
     def __init__(self, bus, measInterval=10, sensorAddr=0x28):
@@ -69,6 +72,8 @@ class PASCO2:
         readData = self._read_reg(reg[addr])[0]
         writeData = bytes([(readData & ~(reg[mask])) | modeVal])
         self._write_reg(_PASCO2_REG_MEAS_CFG, writeData)
+
+    # def _get_bit_field(self, bitField, bitValue):
 
     def initialize(self):
         """Public function to initialize the sensor"""
@@ -115,3 +120,23 @@ class PASCO2:
                     return co2_value
             except:
                 return _PASCO2_ERROR
+
+    def get_prod_id(self):
+        """Public function to get the sensor product id"""
+        try:
+            reg = self.regMap["REG_PROD_ID_BITF_PROD"]
+            readID = (self._read_reg(reg[addr])[0] & 0xE0) >> 5
+            return readID
+
+        except:
+            return _PASCO2_ERROR
+
+    def get_rev_id(self):
+        """Public function to get the sensor revision id"""
+        try:
+            reg = self.regMap["REG_PROD_ID_BITF_REV"]
+            readID = (self._read_reg(reg[addr])[0] & 0x1F) >> 0
+            return readID
+
+        except:
+            return _PASCO2_ERROR
