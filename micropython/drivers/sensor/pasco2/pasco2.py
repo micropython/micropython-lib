@@ -73,8 +73,6 @@ class PASCO2:
         writeData = bytes([(readData & ~(reg[mask])) | modeVal])
         self._write_reg(_PASCO2_REG_MEAS_CFG, writeData)
 
-    # def _get_bit_field(self, bitField, bitValue):
-
     def initialize(self):
         """Public function to initialize the sensor"""
         try:
