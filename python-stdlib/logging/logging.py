@@ -1,5 +1,5 @@
 from micropython import const
-
+import io
 import sys
 import time
 
@@ -148,10 +148,17 @@ class Logger:
     def critical(self, msg, *args):
         self.log(CRITICAL, msg, *args)
 
-    def exception(self, msg, *args):
+    def exception(self, msg, *args, exc_info=True):
         self.log(ERROR, msg, *args)
-        if hasattr(sys, "exc_info"):
-            sys.print_exception(sys.exc_info()[1], _stream)
+        tb = None
+        if isinstance(exc_info, BaseException):
+            tb = exc_info
+        elif hasattr(sys, "exc_info"):
+            tb = sys.exc_info()[1]
+        if tb:
+            buf = io.StringIO()
+            sys.print_exception(tb, buf)
+            self.log(ERROR, buf.getvalue())
 
     def addHandler(self, handler):
         self.handlers.append(handler)
