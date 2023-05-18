@@ -55,13 +55,12 @@ class FileSection:
 
 
 class TarInfo:
-    def __init__(self, name=''):
+    def __init__(self, name=""):
         self.name = name
         self.type = DIRTYPE if self.name[-1] == "/" else REGTYPE
 
     def __str__(self):
         return "TarInfo(%r, %s, %d)" % (self.name, self.type, self.size)
-
 
 
 class TarFile:
@@ -87,9 +86,7 @@ class TarFile:
         if not buf:
             return None
 
-        h = uctypes.struct(
-            uctypes.addressof(buf), TAR_HEADER, uctypes.LITTLE_ENDIAN
-        )
+        h = uctypes.struct(uctypes.addressof(buf), TAR_HEADER, uctypes.LITTLE_ENDIAN)
 
         # Empty block means end of archive
         if h.name[0] == 0:
@@ -99,9 +96,7 @@ class TarFile:
         self.offset += len(buf)
         d = TarInfo(str(h.name, "utf-8").rstrip("\0"))
         d.size = int(bytes(h.size), 8)
-        self.subf = d.subf = FileSection(
-            self.f, d.size, roundup(d.size, BLOCKSIZE)
-        )
+        self.subf = d.subf = FileSection(self.f, d.size, roundup(d.size, BLOCKSIZE))
         self.offset += roundup(d.size, BLOCKSIZE)
         return d
 

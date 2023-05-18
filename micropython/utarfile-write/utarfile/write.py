@@ -44,7 +44,7 @@ def _setstring(b, s, maxlen):
 
 class TarInfoWrite:
     added_methods = ["_from_stat", "isdir", "isreg"]
-  
+
     def _from_stat(self, stat):
         """Extended TarInfo for use by utarfile-write."""
         # stat is return from os.stat.
@@ -55,7 +55,7 @@ class TarInfoWrite:
         self.gid = stat[5]
         self.size = stat[6]
         self.mtime = stat[8]
-        
+
     def isdir(self):
         return (self.mode & _S_IFMT) == _S_IFDIR
 
@@ -64,9 +64,7 @@ class TarInfoWrite:
 
 
 class TarFileWrite:
-    added_methods = [
-      "_open_write", "__enter__", "__exit__", "addfile", "add", "close"
-    ]
+    added_methods = ["_open_write", "__enter__", "__exit__", "addfile", "add", "close"]
 
     def _open_write(self, name, mode, fileobj):
         if mode == "w":
@@ -104,9 +102,7 @@ class TarFileWrite:
             size = 0
             if not name.endswith("/"):
                 name += "/"
-        hdr = uctypes.struct(
-          uctypes.addressof(buf), TAR_HEADER, uctypes.LITTLE_ENDIAN
-        )
+        hdr = uctypes.struct(uctypes.addressof(buf), TAR_HEADER, uctypes.LITTLE_ENDIAN)
         _setstring(hdr.name, name, 100)
         _setstring(hdr.mode, "%06o " % (tarinfo.mode & 0o7777), 7)
         _setstring(hdr.uid, "%06o " % tarinfo.uid, 7)
