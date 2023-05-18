@@ -1,13 +1,16 @@
 import sys
 import os
-import shutil
 import utarfile
+
+if len(sys.argv) < 2:
+    raise ValueError("Usage: %s inputfile.tar" % sys.argv[0])
 
 t = utarfile.TarFile(sys.argv[1])
 for i in t:
-    print(i)
+    print(i.name)
     if i.type == utarfile.DIRTYPE:
-        os.makedirs(i.name)
+        os.mkdir(i.name)
     else:
         f = t.extractfile(i)
-        shutil.copyfileobj(f, open(i.name, "wb"))
+        with open(i.name, "wb") as of:
+            of.write(f.read())
