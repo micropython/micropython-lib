@@ -322,3 +322,14 @@ class TestPathlib(unittest.TestCase):
         self.assertTrue(Path("foo/test").with_suffix(".tar") == Path("foo/test.tar"))
         self.assertTrue(Path("foo/bar.bin").with_suffix(".txt") == Path("foo/bar.txt"))
         self.assertTrue(Path("bar.txt").with_suffix("") == Path("bar"))
+
+    def test_rtruediv(self):
+        """Works as of micropython ea7031f"""
+        res = "foo" / Path("bar")
+        self.assertTrue(res == Path("foo/bar"))
+
+    def test_rtruediv_inplace(self):
+        """Works as of micropython ea7031f"""
+        res = "foo"
+        res /= Path("bar")
+        self.assertTrue(res == Path("foo/bar"))
