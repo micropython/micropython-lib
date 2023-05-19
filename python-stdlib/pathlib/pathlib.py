@@ -47,6 +47,9 @@ class Path:
     def __truediv__(self, other):
         return Path(self._path, str(other))
 
+    def __rtruediv__(self, other):
+        return Path(other, self._path)
+
     def __repr__(self):
         return f'{type(self).__name__}("{self._path}")'
 
