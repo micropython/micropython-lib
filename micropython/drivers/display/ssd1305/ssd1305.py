@@ -145,7 +145,7 @@ class SSD1305_I2C(SSD1305):
 
 class SSD1305_SPI(SSD1305):
     def __init__(
-        self, width, height, spi, dc, res, cs, external_vcc=False, column_offset=None
+        self, width, height, spi, dc, res, cs, external_vcc=False, column_offset: int = None
     ):
         self.rate = 10 * 1024 * 1024
         dc.init(dc.OUT, value=0)
