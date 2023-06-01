@@ -1,19 +1,19 @@
+# Use built-in functions preferentially (on most ports this is just sha256).
 try:
-    import uhashlib
+    from uhashlib import *
 except ImportError:
-    uhashlib = None
+    pass
 
 
-def init():
-    for i in ("sha1", "sha224", "sha256", "sha384", "sha512"):
-        c = getattr(uhashlib, i, None)
-        if not c:
-            c = __import__("_" + i, None, None, (), 1)
-            c = getattr(c, i)
-        globals()[i] = c
-
-
-init()
+# Add missing functions.
+if "sha224" not in globals():
+    from ._sha256 import sha224
+if "sha256" not in globals():
+    from ._sha256 import sha256
+if "sha384" not in globals():
+    from ._sha512 import sha384
+if "sha512" not in globals():
+    from ._sha512 import sha512
 
 
 def new(algo, data=b""):
