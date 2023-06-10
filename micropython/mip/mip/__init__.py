@@ -9,9 +9,11 @@ _PACKAGE_INDEX = const("https://micropython.org/pi/v2")
 _CHUNK_SIZE = 128
 _URL_PREFIXES = const(("http://", "https://", "github:", "file://"))
 
+
 # Return true if name is a URI that we understand
 def _is_url(name):
     return any(name.startswith(prefix) for prefix in _URL_PREFIXES)
+
 
 # This implements os.makedirs(os.dirname(path))
 def _ensure_path_exists(path):
@@ -121,6 +123,7 @@ def _install_json(package_json_url, index, target, version, mpy):
     # and use its json directly
     if package_json_url.startswith("file://"):
         import ujson as json
+
         pkg_file_name = package_json_url[7:]
         try:
             with open(pkg_file_name) as json_file:
