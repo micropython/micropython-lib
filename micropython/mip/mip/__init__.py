@@ -4,8 +4,10 @@
 
 import urequests as requests
 import sys
-import gc  # TODO: remove
+import gc
 import network
+import time
+import os
 
 _PACKAGE_INDEX = const("https://micropython.org/pi/v2")
 _CHUNK_SIZE = 128
@@ -83,8 +85,6 @@ def _rewrite_github_url(url, branch):
 def _rewrite_url(orig_url, branch=None):
     global _top_url  # the origin of the package.json URL for re-writing relative URLs
 
-    print(f"Rewriting {orig_url} with branch {branch} from {_top_url} to ", end="")  # TODO remove
-
     # rewrite relative URLs as absolute URLs
     if not _is_url(orig_url):
         orig_url = _top_url + "/" + orig_url
@@ -100,8 +100,6 @@ def _rewrite_url(orig_url, branch=None):
         # catch URLs that don't start with the same github:user/repo
         if not url.startswith(_top_url):
             url = _rewrite_github_url(orig_url, "HEAD")
-
-    print(url)  # TODO remove
     return url
 
 
@@ -133,7 +131,6 @@ def _download_file(url, dest):
     retries = 0
     while retries < 5:
         gc.collect()
-        print(f"Free memory: {gc.mem_free()}")  # TODO: remove
         try:
             response = requests.get(url)
 
@@ -148,7 +145,12 @@ def _download_file(url, dest):
 
             return True
         except OSError as e:
-            print(f"after exc {e}: Free memory: {gc.mem_free()}; waiting")  # TODO: remove
+            bytes_copied = 0
+            try:
+                bytes_copied = os.stat(dest)[6]
+            except:
+                pass
+            print(f"Exception {e} after copying {bytes_copied} bytes; retrying after 1 second")
             retries += 1
             time.sleep(1)
             response.close()
