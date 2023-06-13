@@ -5,7 +5,6 @@
 import urequests as requests
 import sys
 import gc
-import network
 import time
 import os
 
@@ -101,16 +100,6 @@ def _rewrite_url(orig_url, branch=None):
         if not url.startswith(_top_url):
             url = _rewrite_github_url(orig_url, "HEAD")
     return url
-
-
-def _check_network():
-    global _wlan
-    if not _wlan:
-        _wlan = network.WLAN(network.STA_IF)
-    if not _wlan.isconnected():
-        print("waiting for network...")
-        while not _wlan.isconnected():
-            pass
 
 
 def _download_file(url, dest):
