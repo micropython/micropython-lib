@@ -116,7 +116,7 @@ class TarFile:
         # Update the offset once we're sure it's not the run-out.
         self.offset += len(buf)
         d = TarInfo(str(h.name, "utf-8").rstrip("\0"))
-        d.size = int(bytes(h.size), 8)
+        d.size = int(bytes(h.size.replace(b"\x00", b"")), 8)
         self.subf = d.subf = FileSection(self.f, d.size, _roundup(d.size, _BLOCKSIZE))
         self.offset += _roundup(d.size, _BLOCKSIZE)
         return d
