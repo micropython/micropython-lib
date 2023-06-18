@@ -137,10 +137,11 @@ def request(
             if not l or l == b"\r\n":
                 break
             # print(l)
-            if l.startswith(b"Transfer-Encoding:"):
+            lowerl = l.lower()
+            if lowerl.startswith(b"transfer-encoding:"):
                 if b"chunked" in l:
                     raise ValueError("Unsupported " + str(l, "utf-8"))
-            elif l.startswith(b"Location:") and not 200 <= status <= 299:
+            elif lowerl.startswith(b"location:") and not 200 <= status <= 299:
                 if status in [301, 302, 303, 307, 308]:
                     redirect = str(l[10:-2], "utf-8")
                 else:
