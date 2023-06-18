@@ -110,7 +110,7 @@ def request(
             if chunked_data:
                 s.write(b"Transfer-Encoding: chunked\r\n")
             else:
-                s.write(b"Content-Length: %d\r\n" % len(data))
+                s.write(b"Content-Length: %d\r\n" % len(data.encode()))
         s.write(b"Connection: close\r\n\r\n")
         if data:
             if chunked_data:
