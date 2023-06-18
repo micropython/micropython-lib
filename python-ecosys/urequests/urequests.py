@@ -13,6 +13,9 @@ class Response:
             self.raw = None
         self._cached = None
 
+    def __del__(self):
+        self.close()
+
     @property
     def content(self):
         if self._cached is None:
