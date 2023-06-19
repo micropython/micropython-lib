@@ -56,6 +56,10 @@ same scope as the regular REPL (and `main.py`). In the example above, the
 REPL will be able to call the `demo()` function as well as get/set the
 `state` variable.
 
+To pass a specific object to be in scope for the REPL it is necessary to wrap
+it in a dictionary - ie. `aiorepl.task({"obj": obj })` which allows all the object
+attributes and methods to be accessed as `obj.attribute` or `obj.method()`.
+
 Instead of the regular `>>> ` prompt, the asyncio REPL will show `--> `.
 
 ```
