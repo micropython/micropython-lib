@@ -26,19 +26,21 @@ async def execute(code, g, s):
         if "await " in code:
             # Execute the code snippet in an async context.
             if m := _RE_IMPORT.match(code) or _RE_FROM_IMPORT.match(code):
-                code = f"global {m.group(3) or m.group(1)}\n    {code}"
+                code = "global {}\n    {}".format(m.group(3) or m.group(1), code)
             elif m := _RE_GLOBAL.match(code):
-                code = f"global {m.group(1)}\n    {code}"
+                code = "global {}\n    {}".format(m.group(1), code)
             elif not _RE_ASSIGN.search(code):
-                code = f"return {code}"
+                code = "return {}".format(code)
 
-            code = f"""
+            code = """
 import uasyncio as asyncio
 async def __code():
-    {code}
+    {}
 
 __exec_task = asyncio.create_task(__code())
-"""
+""".format(
+                code
+            )
 
             async def kbd_intr_task(exec_task, s):
                 while True:
@@ -81,7 +83,7 @@ __exec_task = asyncio.create_task(__code())
                 micropython.kbd_intr(-1)
 
     except Exception as err:
-        print(f"{type(err).__name__}: {err}")
+        print("{}: {}".format(type(err).__name__, err))
 
 
 # REPL task. Invoke this with an optional mutable globals dict.
