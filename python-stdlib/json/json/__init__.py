@@ -99,7 +99,7 @@ Using json.tool from the shell to validate and pretty-print::
     $ echo '{ 1.2:3.4}' | python -m json.tool
     Expecting property name enclosed in double quotes: line 1 column 3 (char 2)
 """
-__version__ = "2.0.9"
+
 __all__ = [
     "dump",
     "dumps",
