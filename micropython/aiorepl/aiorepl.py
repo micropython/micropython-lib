@@ -15,7 +15,7 @@ _RE_GLOBAL = re.compile("^([a-zA-Z0-9_]+) ?=[^=]")
 _RE_ASSIGN = re.compile("[^=]=[^=]")
 
 # Command hist (One reserved slot for the current command).
-_HISTORY_LIMIT = const(5 + 1)
+_HISTORY_LIMIT = micropython.const(5 + 1)
 
 
 async def execute(code, g, s):
