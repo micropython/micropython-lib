@@ -41,9 +41,9 @@ def time():
     return val - NTP_DELTA
 
 
-# There's currently no timezone support in MicroPython, and the RTC is set in UTC time.
-def settime():
-    t = time()
+# Set the zone to fit timezone, default zone=0, and the RTC is set in UTC time.
+def settime(zone=0):
+    t = time() + zone * 3600
     import machine
 
     tm = utime.gmtime(t)
