@@ -1,36 +1,104 @@
-from ussl import *
-import ussl as _ussl
+import ussl as _ssl
+from ussl import (
+    CERT_NONE,
+    CERT_REQUIRED,
+    CERT_OPTIONAL,
+    PROTOCOL_TLS_CLIENT,
+    PROTOCOL_TLS_SERVER,  # noqa
+    wrap_socket,  # noqa
+    MBEDTLS_VERSION,  # noqa
+)
 
-# Constants
-for sym in "CERT_NONE", "CERT_OPTIONAL", "CERT_REQUIRED":
-    if sym not in globals():
-        globals()[sym] = object()
 
+class SSLContext:
+    def __init__(self, protocol):
+        # protocol is PROTOCOL_TLS_CLIENT or PROTOCOL_TLS_SERVER
+        self._protocol = protocol
+        self._check_hostname = False
 
-def wrap_socket(
-    sock,
-    keyfile=None,
-    certfile=None,
-    server_side=False,
-    cert_reqs=CERT_NONE,
-    *,
-    ca_certs=None,
-    server_hostname=None
-):
-    # TODO: More arguments accepted by CPython could also be handled here.
-    # That would allow us to accept ca_certs as a positional argument, which
-    # we should.
-    kw = {}
-    if keyfile is not None:
-        kw["keyfile"] = keyfile
-    if certfile is not None:
-        kw["certfile"] = certfile
-    if server_side is not False:
-        kw["server_side"] = server_side
-    if cert_reqs is not CERT_NONE:
-        kw["cert_reqs"] = cert_reqs
-    if ca_certs is not None:
-        kw["ca_certs"] = ca_certs
-    if server_hostname is not None:
-        kw["server_hostname"] = server_hostname
-    return _ussl.wrap_socket(sock, **kw)
+        self.ctx = _ssl.SSLContext(self._protocol)
+        if protocol == PROTOCOL_TLS_CLIENT:
+            self.ctx.verify_mode = CERT_REQUIRED
+            self.check_hostname = True
+        self.cadata = None
+
+    @property
+    def protocol(self):
+        return self._protocol
+
+    @property
+    def check_hostname(self):
+        return self._check_hostname
+
+    @check_hostname.setter
+    def check_hostname(self, value):
+        assert type(value) == bool
+
+        if value is True and not self.ctx.verify_mode:
+            self.ctx.verify_mode = CERT_REQUIRED
+
+        self._check_hostname = value
+
+    @property
+    def verify_mode(self):
+        return self.ctx.verify_mode
+
+    @verify_mode.setter
+    def verify_mode(self, value):
+        assert value in (CERT_NONE, CERT_OPTIONAL, CERT_REQUIRED)
+        if not self.check_hostname:
+            self.ctx.verify_mode = value
+
+    def load_cert_chain(self, certfile, keyfile=None):
+        if isinstance(certfile, bytes):
+            pass
+        else:
+            with open(certfile, "rb") as cert:
+                certfile = cert.read()
+        if keyfile:
+            if isinstance(keyfile, bytes):
+                pass
+            else:
+                with open(keyfile, "rb") as key:
+                    keyfile = key.read()
+
+        self.ctx.load_cert_chain(certfile, keyfile=keyfile)
+
+    def load_default_certs(self):
+        pass
+
+    def load_verify_locations(self, cafile=None, capath=None, cadata=None):
+        if cafile:
+            with open(cafile, "rb") as ca_cert:
+                cadata = ca_cert.read()
+        if capath:
+            pass  ## not implemented, it needs to concatenate multiple files
+
+        # if cadata:
+        #     self.cadata = True
+
+        self.ctx.load_verify_locations(cadata=cadata)
+
+    def get_ciphers(self):
+        return self.ctx.get_ciphers()
+
+    def set_ciphers(self, ciphersuite):
+        ciphersuite = ciphersuite.split(":")
+        self.ctx.set_ciphers(ciphersuite)
+
+    def wrap_socket(  # noqa
+        self,
+        sock,
+        server_side=False,
+        do_handshake_on_connect=True,
+        server_hostname=None,
+    ):
+        if self.check_hostname and server_hostname is None:
+            raise ValueError("check_hostname requires server_hostname")
+
+        return self.ctx.wrap_socket(
+            sock,
+            server_side=server_side,
+            server_hostname=server_hostname,
+            do_handshake_on_connect=do_handshake_on_connect,
+        )
