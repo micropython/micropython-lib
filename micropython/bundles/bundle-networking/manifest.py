@@ -5,5 +5,9 @@ metadata(
 
 require("mip")
 require("ntptime")
-require("urequests")
+require("requests")
 require("webrepl")
+
+# Provide urequests (which just forwards to requests) for backwards
+# compatibility.
+require("urequests")

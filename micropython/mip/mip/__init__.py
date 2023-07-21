@@ -1,7 +1,7 @@
 # MicroPython package installer
 # MIT license; Copyright (c) 2022 Jim Mussared
 
-import urequests as requests
+import requests
 import sys
 
 
