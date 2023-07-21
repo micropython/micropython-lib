@@ -51,13 +51,12 @@ this means that that help by doc string feature doesn't work.
 completions have also been stripped out.
 """
 
-# import string, sys
-import sys  # MiroPython doesn't yet have a string module
+import sys
 
 __all__ = ["Cmd"]
 
 PROMPT = "(Cmd) "
-# IDENTCHARS = string.ascii_letters + string.digits + '_'
+# This is equivalent to string.ascii_letters + string.digits + '_'
 IDENTCHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
 
 
