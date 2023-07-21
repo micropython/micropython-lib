@@ -1,7 +1,7 @@
 """Additions to the TarFile class to support creating and appending tar files.
 
 The methods defined below in are injected into the TarFile class in the
-utarfile package.
+tarfile package.
 """
 
 import uctypes

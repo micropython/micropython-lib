@@ -93,7 +93,7 @@ class TarFile:
             try:
                 self._open_write(name=name, mode=mode, fileobj=fileobj)
             except AttributeError:
-                raise NotImplementedError("Install utarfile-write")
+                raise NotImplementedError("Install tarfile-write")
 
     def __enter__(self):
         return self
@@ -141,7 +141,7 @@ class TarFile:
             pass
         self.f.close()
 
-    # Add additional methods to support write/append from the utarfile-write package.
+    # Add additional methods to support write/append from the tarfile-write package.
     try:
         from .write import _open_write, _close_write, addfile, add
     except ImportError:
