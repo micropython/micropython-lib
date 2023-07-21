@@ -1,3 +1,3 @@
-metadata(version="1.0")
+metadata(version="1.0.0")
 
 package("hashlib")

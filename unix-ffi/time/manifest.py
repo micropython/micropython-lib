@@ -1,4 +1,4 @@
-metadata(version="0.5")
+metadata(version="0.5.0")
 
 require("ffilib", unix_ffi=True)
 

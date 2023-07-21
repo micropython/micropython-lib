@@ -1,4 +1,4 @@
-metadata(version="0.1", pypi="pyjwt")
+metadata(version="0.1.0", pypi="pyjwt")
 
 require("hmac")
 
