@@ -4,9 +4,10 @@ import uctypes
 
 # Minimal set of tar header fields for reading.
 # http://www.gnu.org/software/tar/manual/html_node/Standard.html
+# The "size" entry is 11 (not 12) to implicitly cut off the null terminator.
 _TAR_HEADER = {
     "name": (uctypes.ARRAY | 0, uctypes.UINT8 | 100),
-    "size": (uctypes.ARRAY | 124, uctypes.UINT8 | 12),
+    "size": (uctypes.ARRAY | 124, uctypes.UINT8 | 11),
 }
 
 DIRTYPE = const("dir")

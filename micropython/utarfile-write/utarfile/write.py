@@ -11,9 +11,9 @@ import os
 # http://www.gnu.org/software/tar/manual/html_node/Standard.html
 _TAR_HEADER = {
     "name": (uctypes.ARRAY | 0, uctypes.UINT8 | 100),
-    "mode": (uctypes.ARRAY | 100, uctypes.UINT8 | 7),
-    "uid": (uctypes.ARRAY | 108, uctypes.UINT8 | 7),
-    "gid": (uctypes.ARRAY | 116, uctypes.UINT8 | 7),
+    "mode": (uctypes.ARRAY | 100, uctypes.UINT8 | 8),
+    "uid": (uctypes.ARRAY | 108, uctypes.UINT8 | 8),
+    "gid": (uctypes.ARRAY | 116, uctypes.UINT8 | 8),
     "size": (uctypes.ARRAY | 124, uctypes.UINT8 | 12),
     "mtime": (uctypes.ARRAY | 136, uctypes.UINT8 | 12),
     "chksum": (uctypes.ARRAY | 148, uctypes.UINT8 | 8),
@@ -24,12 +24,6 @@ _TAR_HEADER = {
 _NUL = const(b"\0")  # the null character
 _BLOCKSIZE = const(512)  # length of processing blocks
 _RECORDSIZE = const(_BLOCKSIZE * 20)  # length of records
-
-
-# Write a string into a bytearray by copying each byte.
-def _setstring(b, s, maxlen):
-    for i, c in enumerate(s.encode("utf-8")[:maxlen]):
-        b[i] = c
 
 
 def _open_write(self, name, mode, fileobj):
@@ -72,18 +66,18 @@ def addfile(self, tarinfo, fileobj=None):
         if not name.endswith("/"):
             name += "/"
     hdr = uctypes.struct(uctypes.addressof(buf), _TAR_HEADER, uctypes.LITTLE_ENDIAN)
-    _setstring(hdr.name, name, 100)
-    _setstring(hdr.mode, "%06o " % (tarinfo.mode & 0o7777), 7)
-    _setstring(hdr.uid, "%06o " % tarinfo.uid, 7)
-    _setstring(hdr.gid, "%06o " % tarinfo.gid, 7)
-    _setstring(hdr.size, "%011o " % size, 12)
-    _setstring(hdr.mtime, "%011o " % tarinfo.mtime, 12)
-    _setstring(hdr.typeflag, "5" if tarinfo.isdir() else "0", 1)
+    hdr.name[:] = name.encode("utf-8")[:100]
+    hdr.mode[:] = b"%07o\0" % (tarinfo.mode & 0o7777)
+    hdr.uid[:] = b"%07o\0" % tarinfo.uid
+    hdr.gid[:] = b"%07o\0" % tarinfo.gid
+    hdr.size[:] = b"%011o\0" % size
+    hdr.mtime[:] = b"%011o\0" % tarinfo.mtime
+    hdr.typeflag[:] = b"5" if tarinfo.isdir() else b"0"
     # Checksum is calculated with checksum field all blanks.
-    _setstring(hdr.chksum, " " * 8, 8)
+    hdr.chksum[:] = b"        "
     # Calculate and insert the actual checksum.
     chksum = sum(buf)
-    _setstring(hdr.chksum, "%06o\0" % chksum, 7)
+    hdr.chksum[:] = b"%06o\0 " % chksum
     # Emit the header.
     self.f.write(buf)
     self.offset += len(buf)
