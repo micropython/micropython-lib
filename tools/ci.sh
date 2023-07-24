@@ -41,6 +41,12 @@ function ci_build_packages_compile_index {
     python3 tools/build.py --micropython /tmp/micropython --output $PACKAGE_INDEX_PATH
 }
 
+function ci_build_packages_examples {
+    for example in $(find -path \*example\*.py); do
+        /tmp/micropython/mpy-cross/build/mpy-cross $example
+    done
+}
+
 function ci_push_package_index {
     set -euo pipefail
 
