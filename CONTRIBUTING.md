@@ -25,11 +25,21 @@ or packages from micropython-lib, please post at the
 ### Pull requests
 
 The same rules for commit messages, signing-off commits, and commit structure
-apply as for the main MicroPython repository. All Python code is formatted
-using `black`. See [`tools/codeformat.py`](tools/codeformat.py) to apply
-`black` automatically before submitting a PR.
+apply [as for the main MicroPython repository](https://github.com/micropython/micropython/blob/master/CODECONVENTIONS.md).
 
-There are some specific conventions and guidelines for micropython-lib:
+All Python code is formatted using the [black](https://github.com/psf/black)
+tool. You can run [`tools/codeformat.py`](tools/codeformat.py) to apply
+`black` automatically before submitting a PR. The GitHub CI will also run the
+[ruff](https://github.com/astral-sh/ruff) tool to apply further "linting"
+checks.
+
+Similar to the main repository, a configuration is provided for the
+[pre-commit](https://pre-commit.com/) tool to apply `black` code formatting
+rules and run `ruff` automatically. See the documentation for using pre-commit
+in [the code conventions document](https://github.com/micropython/micropython/blob/master/CODECONVENTIONS.md#automatic-pre-commit-hooks)
+
+In addition to the conventions from the main repository, there are some
+specific conventions and guidelines for micropython-lib:
 
 * The first line of the commit message should start with the name of the
   package, followed by a short description of the commit. Package names are
