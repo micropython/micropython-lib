@@ -147,6 +147,10 @@ class Stats:
 
     def report_receiver(self, stats):
         st = stats["streams"][0]
+
+        # iperf servers pre 3.2 do not transmit start, end time
+        #  so use local as fallback if not available
+
         dt = ticks_diff(self.t3, self.t0)
         self.print_line(
             st.get("start_time", 0.0),
