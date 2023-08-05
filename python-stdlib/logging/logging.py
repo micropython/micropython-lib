@@ -58,6 +58,8 @@ class Handler:
 
 class StreamHandler(Handler):
     def __init__(self, stream=None):
+        # Not allowing `level` to be set via the initialiser to mirror CPython's implementation
+        super().__init__()
         self.stream = _stream if stream is None else stream
         self.terminator = "\n"
 
