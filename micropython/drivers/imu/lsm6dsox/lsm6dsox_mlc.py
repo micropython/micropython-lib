@@ -17,7 +17,7 @@ def imu_int_handler(pin):
     INT_FLAG = True
 
 
-if INT_MODE == True:
+if INT_MODE is True:
     int_pin = Pin(24)
     int_pin.irq(handler=imu_int_handler, trigger=Pin.IRQ_RISING)
 
@@ -41,8 +41,8 @@ while True:
     if INT_MODE:
         if INT_FLAG:
             INT_FLAG = False
-            print(UCF_LABELS[lsm.read_mlc_output()[0]])
+            print(UCF_LABELS[lsm.mlc_output()[0]])
     else:
-        buf = lsm.read_mlc_output()
-        if buf != None:
+        buf = lsm.mlc_output()
+        if buf is not None:
             print(UCF_LABELS[buf[0]])

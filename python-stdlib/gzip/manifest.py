@@ -1,3 +1,3 @@
-metadata(version="0.1.1")
+metadata(version="1.0.0")
 
 module("gzip.py")

@@ -34,6 +34,7 @@ _FLAG_WRITE = const(0x0008)
 _FLAG_NOTIFY = const(0x0010)
 _FLAG_INDICATE = const(0x0020)
 
+
 # Forward IRQs directly to static methods on the type that handles them and
 # knows how to map handles to instances. Note: We copy all uuid and data
 # params here for safety, but a future optimisation might be able to avoid
@@ -438,7 +439,7 @@ class ClientDescriptor(BaseClientCharacteristic):
     def __init__(self, characteristic, dsc_handle, uuid):
         self.characteristic = characteristic
 
-        super().__init__(dsc_handle, _FLAG_READ | _FLAG_WRITE_NO_RESPONSE, uuid)
+        super().__init__(dsc_handle, _FLAG_READ | _FLAG_WRITE, uuid)
 
     def __str__(self):
         return "Descriptor: {} {} {}".format(self._value_handle, self.properties, self.uuid)

@@ -12,9 +12,19 @@ Usage:
     iperf3.client('192.168.1.5', udp=True, reverse=True)
 """
 
-import sys, os, struct
+import sys, struct
 import time, select, socket
 import json
+
+# Provide a urandom() function, supporting devices without os.urandom().
+try:
+    from os import urandom
+except ImportError:
+    from random import randint
+
+    def urandom(n):
+        return bytes(randint(0, 255) for _ in range(n))
+
 
 DEBUG = False
 
@@ -137,16 +147,19 @@ class Stats:
 
     def report_receiver(self, stats):
         st = stats["streams"][0]
-        dt = st["end_time"] - st["start_time"]
+
+        # iperf servers pre 3.2 do not transmit start or end time,
+        # so use local as fallback if not available.
+        dt = ticks_diff(self.t3, self.t0)
+
         self.print_line(
-            st["start_time"],
-            st["end_time"],
+            st.get("start_time", 0.0),
+            st.get("end_time", dt * 1e-6),
             st["bytes"],
             st["packets"],
             st["errors"],
             "  receiver",
         )
-        return
 
 
 def recvn(s, n):
@@ -177,7 +190,7 @@ def recvninto(s, buf):
 def make_cookie():
     cookie_chars = b"abcdefghijklmnopqrstuvwxyz234567"
     cookie = bytearray(COOKIE_SIZE)
-    for i, x in enumerate(os.urandom(COOKIE_SIZE - 1)):
+    for i, x in enumerate(urandom(COOKIE_SIZE - 1)):
         cookie[i] = cookie_chars[x & 31]
     return cookie
 
@@ -243,7 +256,7 @@ def server_once():
     stats = Stats(param)
     stats.start()
     running = True
-    data_buf = bytearray(os.urandom(param["len"]))
+    data_buf = bytearray(urandom(param["len"]))
     while running:
         for pollable in poll.poll(stats.max_dt_ms()):
             if pollable_is_sock(pollable, s_ctrl):
@@ -445,7 +458,7 @@ def client(host, udp=False, reverse=False, bandwidth=10 * 1024 * 1024):
                         s_data = socket.socket(ai[0], socket.SOCK_STREAM)
                         s_data.connect(ai[-1])
                         s_data.sendall(cookie)
-                    buf = bytearray(os.urandom(param["len"]))
+                    buf = bytearray(urandom(param["len"]))
                 elif cmd == EXCHANGE_RESULTS:
                     # Close data socket now that server knows we are finished, to prevent it flooding us
                     poll.unregister(s_data)

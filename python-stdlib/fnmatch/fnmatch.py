@@ -27,8 +27,6 @@ except ImportError:
 
 __all__ = ["filter", "fnmatch", "fnmatchcase", "translate"]
 
-COMPAT = re.__name__ == "ure"
-
 
 def fnmatch(name, pat):
     """Test whether FILENAME matches PATTERN.
@@ -58,12 +56,18 @@ def _compile_pattern(pat):
         res = bytes(res_str, "ISO-8859-1")
     else:
         res = translate(pat)
-    if COMPAT:
+
+    try:
+        ptn = re.compile(res)
+    except ValueError:
+        # re1.5 doesn't support all regex features
         if res.startswith("(?ms)"):
             res = res[5:]
         if res.endswith("\\Z"):
             res = res[:-2] + "$"
-    return re.compile(res).match
+        ptn = re.compile(res)
+
+    return ptn.match
 
 
 def filter(names, pat):

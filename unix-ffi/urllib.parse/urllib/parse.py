@@ -332,6 +332,7 @@ _ParseResultBase = namedtuple("ParseResult", "scheme netloc path params query fr
 # retained since deprecating it isn't worth the hassle
 ResultBase = _NetlocResultMixinStr
 
+
 # Structured result objects for string data
 class DefragResult(_DefragResultBase, _ResultMixinStr):
     __slots__ = ()

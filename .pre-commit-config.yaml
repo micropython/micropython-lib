@@ -1,0 +1,11 @@
+repos:
+  - repo: local
+    hooks:
+      - id: codeformat
+        name: MicroPython codeformat.py for changed files
+        entry: tools/codeformat.py -v -f
+        language: python
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.0.280
+    hooks:
+      - id: ruff

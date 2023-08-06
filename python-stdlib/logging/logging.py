@@ -1,75 +1,137 @@
+from micropython import const
+import io
 import sys
+import time
 
-CRITICAL = 50
-ERROR = 40
-WARNING = 30
-INFO = 20
-DEBUG = 10
-NOTSET = 0
+CRITICAL = const(50)
+ERROR = const(40)
+WARNING = const(30)
+INFO = const(20)
+DEBUG = const(10)
+NOTSET = const(0)
+
+_DEFAULT_LEVEL = const(WARNING)
 
 _level_dict = {
-    CRITICAL: "CRIT",
+    CRITICAL: "CRITICAL",
     ERROR: "ERROR",
-    WARNING: "WARN",
+    WARNING: "WARNING",
     INFO: "INFO",
     DEBUG: "DEBUG",
+    NOTSET: "NOTSET",
 }
 
+_loggers = {}
 _stream = sys.stderr
+_default_fmt = "%(levelname)s:%(name)s:%(message)s"
+_default_datefmt = "%Y-%m-%d %H:%M:%S"
 
 
 class LogRecord:
-    def __init__(self):
-        self.__dict__ = {}
-
-    def __getattr__(self, key):
-        return self.__dict__[key]
+    def set(self, name, level, message):
+        self.name = name
+        self.levelno = level
+        self.levelname = _level_dict[level]
+        self.message = message
+        self.ct = time.time()
+        self.msecs = int((self.ct - int(self.ct)) * 1000)
+        self.asctime = None
 
 
 class Handler:
-    def __init__(self):
+    def __init__(self, level=NOTSET):
+        self.level = level
+        self.formatter = None
+
+    def close(self):
         pass
 
-    def setFormatter(self, fmtr):
-        pass
+    def setLevel(self, level):
+        self.level = level
+
+    def setFormatter(self, formatter):
+        self.formatter = formatter
+
+    def format(self, record):
+        return self.formatter.format(record)
+
+
+class StreamHandler(Handler):
+    def __init__(self, stream=None):
+        self.stream = _stream if stream is None else stream
+        self.terminator = "\n"
+
+    def close(self):
+        if hasattr(self.stream, "flush"):
+            self.stream.flush()
+
+    def emit(self, record):
+        if record.levelno >= self.level:
+            self.stream.write(self.format(record) + self.terminator)
+
+
+class FileHandler(StreamHandler):
+    def __init__(self, filename, mode="a", encoding="UTF-8"):
+        super().__init__(stream=open(filename, mode=mode, encoding=encoding))
+
+    def close(self):
+        super().close()
+        self.stream.close()
+
+
+class Formatter:
+    def __init__(self, fmt=None, datefmt=None):
+        self.fmt = _default_fmt if fmt is None else fmt
+        self.datefmt = _default_datefmt if datefmt is None else datefmt
+
+    def usesTime(self):
+        return "asctime" in self.fmt
+
+    def formatTime(self, datefmt, record):
+        if hasattr(time, "strftime"):
+            return time.strftime(datefmt, time.localtime(record.ct))
+        return None
+
+    def format(self, record):
+        if self.usesTime():
+            record.asctime = self.formatTime(self.datefmt, record)
+        return self.fmt % {
+            "name": record.name,
+            "message": record.message,
+            "msecs": record.msecs,
+            "asctime": record.asctime,
+            "levelname": record.levelname,
+        }
 
 
 class Logger:
-
-    level = NOTSET
-    handlers = []
-    record = LogRecord()
-
-    def __init__(self, name):
+    def __init__(self, name, level=NOTSET):
         self.name = name
-
-    def _level_str(self, level):
-        l = _level_dict.get(level)
-        if l is not None:
-            return l
-        return "LVL%s" % level
+        self.level = level
+        self.handlers = []
+        self.record = LogRecord()
 
     def setLevel(self, level):
         self.level = level
 
     def isEnabledFor(self, level):
-        return level >= (self.level or _level)
+        return level >= self.getEffectiveLevel()
+
+    def getEffectiveLevel(self):
+        return self.level or getLogger().level or _DEFAULT_LEVEL
 
     def log(self, level, msg, *args):
         if self.isEnabledFor(level):
-            levelname = self._level_str(level)
             if args:
+                if isinstance(args[0], dict):
+                    args = args[0]
                 msg = msg % args
-            if self.handlers:
-                d = self.record.__dict__
-                d["levelname"] = levelname
-                d["levelno"] = level
-                d["message"] = msg
-                d["name"] = self.name
-                for h in self.handlers:
-                    h.emit(self.record)
-            else:
-                print(levelname, ":", self.name, ":", msg, sep="", file=_stream)
+            self.record.set(self.name, level, msg)
+            handlers = self.handlers
+            if not handlers:
+                handlers = getLogger().handlers
+            for h in handlers:
+                h.emit(self.record)
 
     def debug(self, msg, *args):
         self.log(DEBUG, msg, *args)
@@ -86,43 +148,105 @@ class Logger:
     def critical(self, msg, *args):
         self.log(CRITICAL, msg, *args)
 
-    def exc(self, e, msg, *args):
+    def exception(self, msg, *args, exc_info=True):
         self.log(ERROR, msg, *args)
-        sys.print_exception(e, _stream)
+        tb = None
+        if isinstance(exc_info, BaseException):
+            tb = exc_info
+        elif hasattr(sys, "exc_info"):
+            tb = sys.exc_info()[1]
+        if tb:
+            buf = io.StringIO()
+            sys.print_exception(tb, buf)
+            self.log(ERROR, buf.getvalue())
 
-    def exception(self, msg, *args):
-        self.exc(sys.exc_info()[1], msg, *args)
+    def addHandler(self, handler):
+        self.handlers.append(handler)
 
-    def addHandler(self, hndlr):
-        self.handlers.append(hndlr)
-
-
-_level = INFO
-_loggers = {}
-
-
-def getLogger(name="root"):
-    if name in _loggers:
-        return _loggers[name]
-    l = Logger(name)
-    _loggers[name] = l
-    return l
+    def hasHandlers(self):
+        return len(self.handlers) > 0
 
 
-def info(msg, *args):
-    getLogger().info(msg, *args)
+def getLogger(name=None):
+    if name is None:
+        name = "root"
+    if name not in _loggers:
+        _loggers[name] = Logger(name)
+        if name == "root":
+            basicConfig()
+    return _loggers[name]
+
+
+def log(level, msg, *args):
+    getLogger().log(level, msg, *args)
 
 
 def debug(msg, *args):
     getLogger().debug(msg, *args)
 
 
-def basicConfig(level=INFO, filename=None, stream=None, format=None):
-    global _level, _stream
-    _level = level
-    if stream:
-        _stream = stream
-    if filename is not None:
-        print("logging.basicConfig: filename arg is not supported")
-    if format is not None:
-        print("logging.basicConfig: format arg is not supported")
+def info(msg, *args):
+    getLogger().info(msg, *args)
+
+
+def warning(msg, *args):
+    getLogger().warning(msg, *args)
+
+
+def error(msg, *args):
+    getLogger().error(msg, *args)
+
+
+def critical(msg, *args):
+    getLogger().critical(msg, *args)
+
+
+def exception(msg, *args):
+    getLogger().exception(msg, *args)
+
+
+def shutdown():
+    for k, logger in _loggers.items():
+        for h in logger.handlers:
+            h.close()
+        _loggers.pop(logger, None)
+
+
+def addLevelName(level, name):
+    _level_dict[level] = name
+
+
+def basicConfig(
+    filename=None,
+    filemode="a",
+    format=None,
+    datefmt=None,
+    level=WARNING,
+    stream=None,
+    encoding="UTF-8",
+    force=False,
+):
+    if "root" not in _loggers:
+        _loggers["root"] = Logger("root")
+
+    logger = _loggers["root"]
+
+    if force or not logger.handlers:
+        for h in logger.handlers:
+            h.close()
+        logger.handlers = []
+
+        if filename is None:
+            handler = StreamHandler(stream)
+        else:
+            handler = FileHandler(filename, filemode, encoding)
+
+        handler.setLevel(level)
+        handler.setFormatter(Formatter(format, datefmt))
+
+        logger.setLevel(level)
+        logger.addHandler(handler)
+
+
+if hasattr(sys, "atexit"):
+    sys.atexit(shutdown)

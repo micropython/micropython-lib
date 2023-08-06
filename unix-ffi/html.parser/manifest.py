@@ -1,4 +1,4 @@
-metadata(version="3.3.3-2")
+metadata(version="3.3.4")
 
 require("_markupbase", unix_ffi=True)
 require("warnings")

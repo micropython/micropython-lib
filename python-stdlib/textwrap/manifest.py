@@ -1,3 +1,3 @@
-metadata(version="3.4.2-1")
+metadata(version="3.4.3")
 
 module("textwrap.py")

@@ -112,7 +112,6 @@ class TestUnittestAssertions(unittest.TestCase):
         self.fail("this should be skipped")
 
     def testAssert(self):
-
         e1 = None
         try:
 

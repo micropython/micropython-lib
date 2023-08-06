@@ -1,4 +1,4 @@
-metadata(description="Port of contextlib for micropython", version="3.4.2-4")
+metadata(description="Port of contextlib for micropython", version="3.4.3")
 
 require("ucontextlib")
 require("collections")

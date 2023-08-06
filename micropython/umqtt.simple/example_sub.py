@@ -4,6 +4,7 @@ from umqtt.simple import MQTTClient
 # Publish test messages e.g. with:
 # mosquitto_pub -t foo_topic -m hello
 
+
 # Received messages from subscriptions will be delivered to this callback
 def sub_cb(topic, msg):
     print((topic, msg))

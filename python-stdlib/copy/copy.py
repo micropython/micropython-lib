@@ -374,6 +374,7 @@ del d
 
 del types
 
+
 # Helper for instance creation without calling __init__
 class _EmptyClass:
     pass

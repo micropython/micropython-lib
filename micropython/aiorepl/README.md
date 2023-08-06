@@ -50,11 +50,17 @@ async def main():
 asyncio.run(main())
 ```
 
-The optional globals passed to `task([globals])` allows you to specify what
-will be in scope for the REPL. By default it uses `__main__`, which is the
-same scope as the regular REPL (and `main.py`). In the example above, the
-REPL will be able to call the `demo()` function as well as get/set the
-`state` variable.
+An optional globals dictionary can be passed to `aiorepl.task()`, which allows
+you to specify what will be in scope for the REPL. By default it uses the
+globals dictionary from the `__main__` module, which is the same scope as the
+regular REPL (and `main.py`). In the example above, the REPL will be able to
+call the `demo()` function as well as get/set the `state` variable.
+
+You can also provide your own dictionary, e.g. `aiorepl.task({"obj": obj })`,
+or use the globals dict from the current module, e.g.
+`aiorepl.task(globals())`. Note that you cannot use a class instance's members
+dictionary, e.g. `aiorepl.task(obj.__dict__)`, as this is read-only in
+MicroPython.
 
 Instead of the regular `>>> ` prompt, the asyncio REPL will show `--> `.
 

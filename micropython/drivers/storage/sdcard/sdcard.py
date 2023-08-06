@@ -64,7 +64,6 @@ class SDCard:
             self.spi.init(master, baudrate=baudrate, phase=0, polarity=0)
 
     def init_card(self, baudrate):
-
         # init CS pin
         self.cs.init(self.cs.OUT, value=1)
 
@@ -243,6 +242,10 @@ class SDCard:
         self.spi.write(b"\xff")
 
     def readblocks(self, block_num, buf):
+        # workaround for shared bus, required for (at least) some Kingston
+        # devices, ensure MOSI is high before starting transaction
+        self.spi.write(b"\xff")
+
         nblocks = len(buf) // 512
         assert nblocks and not len(buf) % 512, "Buffer length is invalid"
         if nblocks == 1:
@@ -270,6 +273,10 @@ class SDCard:
                 raise OSError(5)  # EIO
 
     def writeblocks(self, block_num, buf):
+        # workaround for shared bus, required for (at least) some Kingston
+        # devices, ensure MOSI is high before starting transaction
+        self.spi.write(b"\xff")
+
         nblocks, err = divmod(len(buf), 512)
         assert nblocks and not err, "Buffer length is invalid"
         if nblocks == 1:

@@ -87,7 +87,7 @@ class FileClient:
 
         send_seq = await self._command(_COMMAND_SEND, path.encode())
 
-        with open(dest, "wb") as f:
+        with open(dest, "wb") as f:  # noqa: ASYNC101
             total = 0
             buf = bytearray(self._channel.our_mtu)
             mv = memoryview(buf)

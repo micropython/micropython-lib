@@ -37,7 +37,6 @@ class SuppressTestCase(unittest.TestCase):
 
 
 class TestExitStack(unittest.TestCase):
-
     # @support.requires_docstrings
     def _test_instance_docs(self):
         # Issue 19330: ensure context manager instances have good docstrings

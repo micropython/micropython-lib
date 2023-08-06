@@ -21,6 +21,7 @@ SERVICE_UUID = bluetooth.UUID("A5A5A5A5-FFFF-9999-1111-5A5A5A5A5A5A")
 CHAR_FIRST_UUID = bluetooth.UUID("00000000-1111-2222-3333-444444444444")
 CHAR_SECOND_UUID = bluetooth.UUID("00000000-1111-2222-3333-555555555555")
 
+
 # Acting in peripheral role.
 async def instance0_task():
     service = aioble.Service(SERVICE_UUID)

@@ -1,5 +1,5 @@
-metadata(version="0.1.0", description="On-device package installer for network-capable boards")
+metadata(version="0.2.0", description="On-device package installer for network-capable boards")
 
-require("urequests")
+require("requests")
 
-module("mip.py")
+package("mip", opt=3)

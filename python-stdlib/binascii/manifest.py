@@ -1,3 +1,3 @@
-metadata(version="2.4.0-5")
+metadata(version="2.4.1")
 
 module("binascii.py")

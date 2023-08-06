@@ -1,0 +1,29 @@
+name: Build all packages
+
+on: [push, pull_request]
+
+env:
+  PACKAGE_INDEX_PATH: /tmp/micropython-lib-deploy
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+    - name: Setup environment
+      run: source tools/ci.sh && ci_build_packages_setup
+    - name: Check manifest files
+      run: source tools/ci.sh && ci_build_packages_check_manifest
+    - name: Compile package index
+      run: source tools/ci.sh && ci_build_packages_compile_index
+    - name: Compile package examples
+      run: source tools/ci.sh && ci_build_packages_examples
+    - name: Publish packages for branch
+      if: vars.MICROPY_PUBLISH_MIP_INDEX && github.event_name == 'push' && ! github.event.deleted
+      run: source tools/ci.sh && ci_push_package_index
+    - name: Upload packages as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: packages-${{ github.sha }}
+        path: ${{ env.PACKAGE_INDEX_PATH }}

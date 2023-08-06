@@ -294,7 +294,6 @@ def _make_iterencode(
     str=str,
     tuple=tuple,
 ):
-
     if _indent is not None and not isinstance(_indent, str):
         _indent = " " * _indent
 

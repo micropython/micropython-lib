@@ -1,4 +1,4 @@
-metadata(version="3.3.3-3")
+metadata(version="3.3.4")
 
 require("getopt", unix_ffi=True)
 require("itertools")

@@ -2,8 +2,6 @@
 
 import time as _tmod
 
-__version__ = "2.0.0"
-
 _DBM = (0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334)
 _DIM = (0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 _TIME_SPEC = ("auto", "hours", "minutes", "seconds", "milliseconds", "microseconds")
