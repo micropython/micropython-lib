@@ -111,9 +111,8 @@ class AsyncModem:
         if _DEBUG:
             print(f"wait complete")
 
-    def _callback(self, _):
-        # IRQ callback from BaseModem._radio_isr. Hard IRQ context unless _DEBUG
-        # is on.
+    def _callback(self):
+        # IRQ callback from BaseModem._radio_isr. May be in Hard IRQ context.
         #
         # Set both RX & TX flag. This isn't necessary for "real" interrupts, but may be necessary
         # to wake both for the case of a "soft" interrupt triggered by sleep() or standby(), where

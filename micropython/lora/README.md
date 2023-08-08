@@ -1028,12 +1028,12 @@ following different approaches:
   `poll_send()` now?" check function if there's no easy way to determine
   which interrupt has woken the board up.
 * Implement a custom interrupt callback function and call
-  `modem.set_irq_callback()` to install it. The function will be called with a
-  single argument, which is either the `Pin` that triggered a hardware interrupt
-  or `None` for a soft interrupt. Refer to the documentation about [writing interrupt
-  handlers](https://docs.micropython.org/en/latest/reference/isr_rules.html) for
-  more information. The `lora-async` modem classes install their own callback here,
-  so it's not possible to mix this approach with the provided asynchronous API.
+  `modem.set_irq_callback()` to install it. The function will be called if a
+  hardware interrupt occurs, possibly in hard interrupt context. Refer to the
+  documentation about [writing interrupt handlers][isr_rules] for more
+  information. It may also be called if the driver triggers a soft interrupt.
+  The `lora-async` modem classes install their own callback here, so it's not
+  possible to mix this approach with the provided asynchronous API.
 * Call `modem.poll_recv()` or `modem.poll_send()`. This takes more time
   and uses more power as it reads the modem IRQ status directly from the modem
   via SPI, but it also give the most definite result.
@@ -1154,3 +1154,5 @@ Usually, this means the constructor parameter `dio3_tcxo_millivolts` (see above)
 must be set as the SX126x chip DIO3 output pin is the power source for the TCXO
 connected to the modem.  Often this parameter should be set to `3300` (3.3V) but
 it may be another value, consult the documentation for your LoRa modem module.
+
+[isr_rules]: https://docs.micropython.org/en/latest/reference/isr_rules.html
