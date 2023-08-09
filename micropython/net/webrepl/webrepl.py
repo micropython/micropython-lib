@@ -1,6 +1,7 @@
 # This module should be imported from REPL, not run from command line.
 import binascii
 import hashlib
+from micropython import const
 import network
 import os
 import socket

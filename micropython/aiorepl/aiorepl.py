@@ -1,6 +1,7 @@
 # MIT license; Copyright (c) 2022 Jim Mussared
 
 import micropython
+from micropython import const
 import re
 import sys
 import time
