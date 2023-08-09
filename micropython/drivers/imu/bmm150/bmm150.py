@@ -165,9 +165,6 @@ class BMM150:
             z = (z5 / (z4 * 4)) / 16
         return z
 
-    def reset(self):
-        self._write_reg(_CMD, 0xB6)
-
     def magnet_raw(self):
         for i in range(0, 10):
             self._read_reg_into(_DATA, self.scratch)
