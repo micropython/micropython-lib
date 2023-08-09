@@ -9,7 +9,7 @@ def print_stream(resp):
     print((yield from resp.read()))
     return
     while True:
-        line = yield from reader.readline()
+        line = yield from resp.readline()
         if not line:
             break
         print(line.rstrip())
