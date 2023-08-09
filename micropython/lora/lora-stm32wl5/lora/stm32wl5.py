@@ -101,6 +101,8 @@ class _WL55SubGhzModem(sx126x._SX126x):
         # power).
 
         if tx_ant is not None:
+            # Note: currently HP antenna power output is less than it should be,
+            # due to some (unknown) bug.
             self._hp = tx_ant == "PA_BOOST"
 
         # Update the OCP register to match the maximum power level

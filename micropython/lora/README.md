@@ -444,9 +444,11 @@ datasheet Table 32 "Frequency Bands" for more details.
 | `"PA_BOOST"`    | RFO_HP pin (high power) |
 | Any other value | RFO_LP pin (low power)  |
 
+**NOTE**: Currently the `PA_BOOST` HP antenna output is lower than it should be
+on this board, due to an unknown driver bug.
 
-**Important**: If setting `tx_ant` value, also set `output_power` at the same
-time or again before transmitting.
+If setting `tx_ant` value, also set `output_power` at the same time or again
+before transmitting.
 
 #### `output_power` - Transmit output power level
 Type: `int`
