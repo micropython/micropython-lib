@@ -46,6 +46,7 @@ while (True):
 
 import array
 from micropython import const
+import time
 
 _CTRL3_C = const(0x12)
 _CTRL1_XL = const(0x10)
