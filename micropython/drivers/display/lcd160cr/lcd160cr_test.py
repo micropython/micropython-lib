@@ -5,7 +5,7 @@ import time, math, framebuf, lcd160cr
 
 
 def get_lcd(lcd):
-    if type(lcd) is str:
+    if isinstance(lcd, str):
         lcd = lcd160cr.LCD160CR(lcd)
     return lcd
 
