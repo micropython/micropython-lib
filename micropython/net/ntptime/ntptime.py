@@ -13,6 +13,8 @@ except:
 host = "pool.ntp.org"
 # The NTP socket timeout can be configured at runtime by doing: ntptime.timeout = 2
 timeout = 1
+# The timezone can be configured at runtime by doing: ntptime.timezone = 8
+timezone = 0
 
 
 def time():
@@ -38,7 +40,7 @@ def time():
     else:
         raise Exception("Unsupported epoch: {}".format(EPOCH_YEAR))
 
-    return val - NTP_DELTA
+    return val - NTP_DELTA + timezone * 3600
 
 
 # There's currently no timezone support in MicroPython, and the RTC is set in UTC time.
