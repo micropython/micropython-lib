@@ -65,7 +65,7 @@ class _WL55SubGhzModem(sx126x._SX126x):
             DIO1(),
             False,  # dio2_rf_sw
             tcxo_millivolts,  # dio3_tcxo_millivolts
-            1000,  # dio3_tcxo_start_time_us
+            10_000,  # dio3_tcxo_start_time_us, first time after POR is quite long
             None,  # reset
             lora_cfg,
             ant_sw,

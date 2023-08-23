@@ -99,7 +99,7 @@ _IRQ_DRIVER_RX_MASK = const(_IRQ_RX_DONE | _IRQ_TIMEOUT | _IRQ_CRC_ERR | _IRQ_HE
 # In any case, timeouts here are to catch broken/bad hardware or massive driver
 # bugs rather than commonplace issues.
 #
-_CMD_BUSY_TIMEOUT_BASE_US = const(3000)
+_CMD_BUSY_TIMEOUT_BASE_US = const(7000)
 
 # Datasheet says 3.5ms needed to run a full Calibrate command (all blocks),
 # however testing shows it can be as much as as 18ms.
@@ -148,7 +148,9 @@ class _SX126x(BaseModem):
         if hasattr(dio1, "init"):
             dio1.init(Pin.IN)
 
-        self._busy_timeout = _CMD_BUSY_TIMEOUT_BASE_US
+        self._busy_timeout = _CMD_BUSY_TIMEOUT_BASE_US + (
+            dio3_tcxo_start_time_us if dio3_tcxo_millivolts else 0
+        )
 
         self._buf = bytearray(9)  # shared buffer for commands
 
@@ -168,7 +170,8 @@ class _SX126x(BaseModem):
             reset(1)
             time.sleep_ms(5)
         else:
-            self.standby()  # Otherwise, at least put the radio to a known state
+            # Otherwise, at least put the radio to a known state
+            self._cmd("BB", _CMD_SET_STANDBY, 0)  # STDBY_RC mode, not ready for TCXO yet
 
         status = self._get_status()
         if (status[0] != _STATUS_MODE_STANDBY_RC and status[0] != _STATUS_MODE_STANDBY_HSE32) or (
@@ -187,7 +190,6 @@ class _SX126x(BaseModem):
             #
             # timeout register is set in units of 15.625us each, use integer math
             # to calculate and round up:
-            self._busy_timeout = (_CMD_BUSY_TIMEOUT_BASE_US + dio3_tcxo_start_time_us) * 2
             timeout = (dio3_tcxo_start_time_us * 1000 + 15624) // 15625
             if timeout < 0 or timeout > 1 << 24:
                 raise ValueError("{} out of range".format("dio3_tcxo_start_time_us"))
@@ -668,7 +670,7 @@ class _SX126x(BaseModem):
         while self._busy():
             ticks_diff = time.ticks_diff(time.ticks_us(), start)
             if ticks_diff > timeout_us:
-                raise RuntimeError("BUSY timeout")
+                raise RuntimeError("BUSY timeout", timeout_us)
             time.sleep_us(1)
         if _DEBUG and ticks_diff > 105:
             # By default, debug log any busy time that takes longer than the
