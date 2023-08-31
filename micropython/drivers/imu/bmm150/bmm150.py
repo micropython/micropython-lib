@@ -166,7 +166,7 @@ class BMM150:
         return z
 
     def magnet_raw(self):
-        for i in range(0, 10):
+        for i in range(10):
             self._read_reg_into(_DATA, self.scratch)
             if self.scratch[3] & 0x1:
                 return (
