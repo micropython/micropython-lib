@@ -290,8 +290,8 @@ class Characteristic(BaseCharacteristic):
 
 
 class BufferedCharacteristic(Characteristic):
-    def __init__(self, service, uuid, max_len=20, append=False):
-        super().__init__(service, uuid, read=True)
+    def __init__(self, *args, max_len=20, append=False, **kwargs):
+        super().__init__(*args, **kwargs)
         self._max_len = max_len
         self._append = append
 
