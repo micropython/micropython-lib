@@ -20,3 +20,7 @@ assert not exists(dir + "/test_path.py--")
 assert isdir(dir + "/os")
 assert not isdir(dir + "/os--")
 assert not isdir(dir + "/test_path.py")
+
+assert not isfile(dir + "/os")
+assert isfile(dir + "/test_path.py")
+assert not isfile(dir + "/test_path.py--")

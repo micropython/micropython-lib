@@ -66,6 +66,13 @@ def isdir(path):
         return False
 
 
+def isfile(path):
+    try:
+        return bool(os.stat(path)[0] & 0x8000)
+    except OSError:
+        return False
+
+
 def expanduser(s):
     if s == "~" or s.startswith("~/"):
         h = os.getenv("HOME")
