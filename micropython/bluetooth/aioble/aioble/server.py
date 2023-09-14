@@ -257,7 +257,7 @@ class Characteristic(BaseCharacteristic):
             raise ValueError("Not supported")
         ble.gatts_notify(connection._conn_handle, self._value_handle, data)
 
-    async def indicate(self, connection, timeout_ms=1000):
+    async def indicate(self, connection, data=None, timeout_ms=1000):
         if not (self.flags & _FLAG_INDICATE):
             raise ValueError("Not supported")
         if self._indicate_connection is not None:
@@ -270,7 +270,7 @@ class Characteristic(BaseCharacteristic):
 
         try:
             with connection.timeout(timeout_ms):
-                ble.gatts_indicate(connection._conn_handle, self._value_handle)
+                ble.gatts_indicate(connection._conn_handle, self._value_handle, data)
                 await self._indicate_event.wait()
                 if self._indicate_status != 0:
                     raise GattError(self._indicate_status)
