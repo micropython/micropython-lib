@@ -339,3 +339,11 @@ class TestPathlib(unittest.TestCase):
         res = "foo"
         res /= Path("bar")
         self.assertTrue(res == Path("foo/bar"))
+
+    def test_expanduser(self):
+        self.assertFalse(str(Path("~").expanduser()) == "~")
+        self.assertTrue(str(Path("~").expanduser()) == os.getenv("HOME"))
+        self.assertTrue(str(Path("~/foo").expanduser()) == os.getenv("HOME") + "/foo")
+
+        with self.assertRaises(RuntimeError):
+            Path("~foo").expanduser()
