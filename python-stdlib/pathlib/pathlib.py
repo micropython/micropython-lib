@@ -184,6 +184,13 @@ class Path:
         index = -len(self.suffix) or None
         return Path(self._path[:index] + suffix)
 
+    def expanduser(self):
+        if self._path == "~" or self._path.startswith("~" + _SEP):
+            return Path(os.getenv("HOME") + self._path[1:])
+        if self._path[0] == "~":
+            raise RuntimeError("User home directory expansion not supported.")
+        return self
+
     @property
     def stem(self):
         return self.name.rsplit(".", 1)[0]
