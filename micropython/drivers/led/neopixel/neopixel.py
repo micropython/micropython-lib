@@ -8,10 +8,11 @@ class NeoPixel:
     # G R B W
     ORDER = (1, 0, 2, 3)
 
-    def __init__(self, pin, n, bpp=3, timing=1):
+    def __init__(self, pin, n, bpp=3, timing=1, brightness: float = 1.0):
         self.pin = pin
         self.n = n
         self.bpp = bpp
+        self.brightness = brightness
         self.buf = bytearray(n * bpp)
         self.pin.init(pin.OUT)
         # Timing arg can either be 1 for 800kHz or 0 for 400kHz,
@@ -22,28 +23,25 @@ class NeoPixel:
             else timing
         )
 
+    def _calculate_brightness(self, v):
+        return round(v * self.brightness)
+
     def __len__(self):
         return self.n
 
     def __setitem__(self, i, v):
         offset = i * self.bpp
         for i in range(self.bpp):
-            self.buf[offset + self.ORDER[i]] = v[i]
+            adjusted_v = tuple(self._calculate_brightness(c) for c in v)
+            self.buf[offset + self.ORDER[i]] = adjusted_v[i]
 
     def __getitem__(self, i):
         offset = i * self.bpp
         return tuple(self.buf[offset + self.ORDER[i]] for i in range(self.bpp))
 
     def fill(self, v):
-        b = self.buf
-        l = len(self.buf)
-        bpp = self.bpp
-        for i in range(bpp):
-            c = v[i]
-            j = self.ORDER[i]
-            while j < l:
-                b[j] = c
-                j += bpp
+        for i in range(self.n):
+            self[i] = v
 
     def write(self):
         # BITSTREAM_TYPE_HIGH_LOW = 0
