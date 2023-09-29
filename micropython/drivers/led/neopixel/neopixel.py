@@ -31,8 +31,8 @@ class NeoPixel:
 
     def __setitem__(self, i, v):
         offset = i * self.bpp
+        adjusted_v = tuple(self._calculate_brightness(c) for c in v)
         for i in range(self.bpp):
-            adjusted_v = tuple(self._calculate_brightness(c) for c in v)
             self.buf[offset + self.ORDER[i]] = adjusted_v[i]
 
     def __getitem__(self, i):
