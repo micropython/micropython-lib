@@ -44,8 +44,8 @@ class NeoPixel:
             self[i] = v
 
     def set_brightness(self, b: float):
-        self.brightness = b
-        for i in range(self.n):
+        self.brightness = min(max(b, 0.0), 1.0)
+        for i in range(self.n)
             self[i] = self[i]
 
     def write(self):
