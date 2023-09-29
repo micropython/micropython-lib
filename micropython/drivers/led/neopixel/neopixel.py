@@ -12,7 +12,7 @@ class NeoPixel:
         self.pin = pin
         self.n = n
         self.bpp = bpp
-        self.brightness = brightness
+        self.brightness = min(max(brightness, 0.0), 1.0)
         self.buf = bytearray(n * bpp)
         self.pin.init(pin.OUT)
         # Timing arg can either be 1 for 800kHz or 0 for 400kHz,
@@ -45,7 +45,7 @@ class NeoPixel:
 
     def set_brightness(self, b: float):
         self.brightness = min(max(b, 0.0), 1.0)
-        for i in range(self.n)
+        for i in range(self.n):
             self[i] = self[i]
 
     def write(self):
