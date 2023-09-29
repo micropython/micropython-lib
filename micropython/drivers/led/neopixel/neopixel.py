@@ -43,6 +43,11 @@ class NeoPixel:
         for i in range(self.n):
             self[i] = v
 
+    def set_brightness(self, b: float):
+        self.brightness = b
+        for i in range(self.n):
+            self[i] = self[i]
+
     def write(self):
         # BITSTREAM_TYPE_HIGH_LOW = 0
         bitstream(self.pin, 0, self.timing, self.buf)
