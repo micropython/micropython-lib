@@ -8,12 +8,12 @@ class NeoPixel:
     # G R B W
     ORDER = (1, 0, 2, 3)
 
-    def __init__(self, pin, n, bpp=3, timing=1, brightness: float = None):
+    def __init__(self, pin, n, bpp=3, timing=1, brightness=None):
         self.pin = pin
         self.n = n
         self.bpp = bpp
         self.brightness = (
-            min(max(brightness, 0.0), 1.0) if brightness is not None else None
+            min(max(float(brightness), 0.0), 1.0) if brightness is not None else None
         )
         self.buf = bytearray(n * bpp)
         self.pin.init(pin.OUT)
