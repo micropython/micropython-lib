@@ -8,13 +8,16 @@ class NeoPixel:
     # G R B W
     ORDER = (1, 0, 2, 3)
 
+    def _clamp(self, v, c_min, c_max):
+        return min(max(v, c_min), c_max)
+
     def __init__(self, pin, n, bpp=3, timing=1, brightness=None):
         self.pin = pin
         self.n = n
         self.bpp = bpp
-        self.brightness = (
-            min(max(float(brightness), 0.0), 1.0) if brightness is not None else None
-        )
+        self.brightness = None
+        if brightness is not None:
+            self.brightness = self._clamp(float(brightness), 0.0, 1.0)
         self.buf = bytearray(n * bpp)
         self.pin.init(pin.OUT)
         # Timing arg can either be 1 for 800kHz or 0 for 400kHz,
@@ -56,7 +59,7 @@ class NeoPixel:
                 j += bpp
 
     def set_brightness(self, b: float):
-        self.brightness = min(max(b, 0.0), 1.0)
+        self.brightness = self._clamp(b, 0.0, 1.0)
         # This may look odd but because __getitem__ and __setitem__ handle all the
         # brightness logic already, we can offload the work to those methods.
         for i in range(self.n):
