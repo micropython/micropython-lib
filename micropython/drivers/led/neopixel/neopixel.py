@@ -53,14 +53,12 @@ class NeoPixel:
                 b[j] = c
                 j += bpp
 
-    def brightness(self, b: float):
+    def brightness(self, b=None):
         if b is None:
             return self.b
         self.b = min(max(b, 0), 1)
-        # This may look odd but because __getitem__ and __setitem__ handle all the
-        # brightness logic already, we can offload the work to those methods.
-        for i in range(self.n):
-            self[i] = self[i]
+        for i in range(self.n * self.bpp):
+            self.buf[i] = round(self.buf[i] * self.b)
 
     def write(self):
         # BITSTREAM_TYPE_HIGH_LOW = 0
