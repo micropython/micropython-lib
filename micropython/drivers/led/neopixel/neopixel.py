@@ -8,16 +8,11 @@ class NeoPixel:
     # G R B W
     ORDER = (1, 0, 2, 3)
 
-    def _clamp(self, v, c_min, c_max):
-        return min(max(v, c_min), c_max)
-
     def __init__(self, pin, n, bpp=3, timing=1, brightness=None):
         self.pin = pin
         self.n = n
         self.bpp = bpp
-        self.brightness = None
-        if brightness is not None:
-            self.brightness = self._clamp(float(brightness), 0.0, 1.0)
+        self.b = None if brightness is None else min(max(brightness, 0), 1)
         self.buf = bytearray(n * bpp)
         self.pin.init(pin.OUT)
         # Timing arg can either be 1 for 800kHz or 0 for 400kHz,
@@ -28,9 +23,9 @@ class NeoPixel:
             else timing
         )
 
-    def _apply_brightness(self, v):
-        if self.brightness is not None:
-            return tuple(round(c * self.brightness) for c in v)
+    def _b(self, v):
+        if self.b is not None:
+            return tuple(round(c * self.b) for c in v)
         return v
 
     def __len__(self):
@@ -38,7 +33,7 @@ class NeoPixel:
 
     def __setitem__(self, i, v):
         offset = i * self.bpp
-        v = self._apply_brightness(v)
+        v = self._b(v)
         for i in range(self.bpp):
             self.buf[offset + self.ORDER[i]] = v[i]
 
@@ -47,7 +42,7 @@ class NeoPixel:
         return tuple(self.buf[offset + self.ORDER[i]] for i in range(self.bpp))
 
     def fill(self, v):
-        v = self._apply_brightness(v)
+        v = self._b(v)
         b = self.buf
         l = len(self.buf)
         bpp = self.bpp
@@ -58,8 +53,10 @@ class NeoPixel:
                 b[j] = c
                 j += bpp
 
-    def set_brightness(self, b: float):
-        self.brightness = self._clamp(b, 0.0, 1.0)
+    def brightness(self, b: float):
+        if b is None:
+            return self.b
+        self.b = min(max(b, 0), 1)
         # This may look odd but because __getitem__ and __setitem__ handle all the
         # brightness logic already, we can offload the work to those methods.
         for i in range(self.n):
