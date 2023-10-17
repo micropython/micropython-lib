@@ -39,9 +39,7 @@ async def __code():
     {}
 
 __exec_task = asyncio.create_task(__code())
-""".format(
-                code
-            )
+""".format(code)
 
             async def kbd_intr_task(exec_task, s):
                 while True:
