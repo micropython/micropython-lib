@@ -1,16 +1,10 @@
-name: Check code formatting
-
+# https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+name: Python code formatting with black
 on: [push, pull_request]
-
 jobs:
-  build:
+  black:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v4
-    - name: Install packages
-      run: source tools/ci.sh && ci_code_formatting_setup
-    - name: Run code formatting
-      run: source tools/ci.sh && ci_code_formatting_run
-    - name: Check code formatting
-      run: git diff --exit-code
+    - uses: actions/checkout@v4
+    - run: pip install --user black==23.7.0
+    - run: black --diff .

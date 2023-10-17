@@ -97,3 +97,7 @@ max-statements = 166
 
 # ble multitests are evaluated with some names pre-defined
 "micropython/bluetooth/aioble/multitests/*" = ["F821"]
+
+[tool.black]
+line-length = 99
+fast = 1
