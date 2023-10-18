@@ -25,6 +25,7 @@ _loggers = {}
 _stream = sys.stderr
 _default_fmt = "%(levelname)s:%(name)s:%(message)s"
 _default_datefmt = "%Y-%m-%d %H:%M:%S"
+_default_formatter = None
 
 
 class LogRecord:
@@ -43,6 +44,13 @@ class Handler:
         self.level = level
         self.formatter = None
 
+    @staticmethod
+    def _default_formatter():
+        global _default_formatter
+        if _default_formatter is None:
+            _default_formatter = Formatter()
+        return _default_formatter
+
     def close(self):
         pass
 
@@ -53,11 +61,16 @@ class Handler:
         self.formatter = formatter
 
     def format(self, record):
-        return self.formatter.format(record)
+        if self.formatter:
+            fmt = self.formatter
+        else:
+            fmt = self._default_formatter()
+        return fmt.format(record)
 
 
 class StreamHandler(Handler):
     def __init__(self, stream=None):
+        super().__init__()
         self.stream = _stream if stream is None else stream
         self.terminator = "\n"
 
@@ -128,7 +141,7 @@ class Logger:
                 msg = msg % args
             self.record.set(self.name, level, msg)
             handlers = self.handlers
-            if not handlers:
+            if not self.hasHandlers():
                 handlers = getLogger().handlers
             for h in handlers:
                 h.emit(self.record)
@@ -161,7 +174,13 @@ class Logger:
             self.log(ERROR, buf.getvalue())
 
     def addHandler(self, handler):
-        self.handlers.append(handler)
+        if handler not in self.handlers:
+            self.handlers.append(handler)
+
+    def removeHandler(self, handler):
+        if handler in self.handlers:
+            handler.close()
+            self.handlers.remove(handler)
 
     def hasHandlers(self):
         return len(self.handlers) > 0
@@ -225,17 +244,28 @@ def basicConfig(
     stream=None,
     encoding="UTF-8",
     force=False,
+    handlers=None,
 ):
     if "root" not in _loggers:
         _loggers["root"] = Logger("root")
 
     logger = _loggers["root"]
 
-    if force or not logger.handlers:
+    if force:
         for h in logger.handlers:
             h.close()
         logger.handlers = []
 
+    if len([arg for arg in (filename, stream, handlers) if arg is not None]) > 1:
+        raise ValueError("can only set one of 'filename', 'stream' or 'handlers'")
+
+    if handlers is not None:
+        for h in handlers:
+            if h.formatter is None:
+                h.setFormatter(Formatter(format, datefmt))
+            logger.addHandler(h)
+
+    if not logger.hasHandlers():
         if filename is None:
             handler = StreamHandler(stream)
         else:
@@ -244,8 +274,9 @@ def basicConfig(
         handler.setLevel(level)
         handler.setFormatter(Formatter(format, datefmt))
 
-        logger.setLevel(level)
         logger.addHandler(handler)
+
+        logger.setLevel(level)
 
 
 if hasattr(sys, "atexit"):
