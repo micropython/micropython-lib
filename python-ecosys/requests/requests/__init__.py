@@ -111,6 +111,14 @@ def request(
     else:
         raise ValueError("Unsupported protocol: " + proto)
 
+    if "?" in host:
+        host, _path = host.split("?", 1)
+        path = "?" + _path + path
+
+    if "#" in host:
+        host, _path = host.split("#", 1)
+        path = "#" + _path + path
+
     if ":" in host:
         host, port = host.split(":", 1)
         port = int(port)
