@@ -11,7 +11,8 @@ async def fetch(client):
 async def main():
     async with aiohttp.ClientSession() as client:
         html = await fetch(client)
-        print(html)
+        print(html.decode())
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
