@@ -19,6 +19,13 @@ _RE_ASSIGN = re.compile("[^=]=[^=]")
 _HISTORY_LIMIT = const(5 + 1)
 
 
+CHAR_CTRL_A = const(1)
+CHAR_CTRL_B = const(2)
+CHAR_CTRL_C = const(3)
+CHAR_CTRL_D = const(4)
+CHAR_CTRL_E = const(5)
+
+
 async def execute(code, g, s):
     if not code.strip():
         return
@@ -43,7 +50,7 @@ __exec_task = asyncio.create_task(__code())
 
             async def kbd_intr_task(exec_task, s):
                 while True:
-                    if ord(await s.read(1)) == 0x03:
+                    if ord(await s.read(1)) == CHAR_CTRL_C:
                         exec_task.cancel()
                         return
 
@@ -102,7 +109,8 @@ async def task(g=None, prompt="--> "):
         while True:
             hist_b = 0  # How far back in the history are we currently.
             sys.stdout.write(prompt)
-            cmd = ""
+            cmd: str = ""
+            paste = False
             while True:
                 b = await s.read(1)
                 pc = c  # save previous character
@@ -112,6 +120,10 @@ async def task(g=None, prompt="--> "):
                 if c < 0x20 or c > 0x7E:
                     if c == 0x0A:
                         # LF
+                        if paste:
+                            sys.stdout.write(b)
+                            cmd += b
+                            continue
                         # If the previous character was also LF, and was less
                         # than 20 ms ago, this was likely due to CRLF->LFLF
                         # conversion, so ignore this linefeed.
@@ -135,12 +147,12 @@ async def task(g=None, prompt="--> "):
                         if cmd:
                             cmd = cmd[:-1]
                             sys.stdout.write("\x08 \x08")
-                    elif c == 0x02:
-                        # Ctrl-B
+                    elif c == CHAR_CTRL_B:
                         continue
-                    elif c == 0x03:
-                        # Ctrl-C
-                        if pc == 0x03 and time.ticks_diff(t, pt) < 20:
+                    elif c == CHAR_CTRL_C:
+                        if paste:
+                            break
+                        if pc == CHAR_CTRL_C and time.ticks_diff(t, pt) < 20:
                             # Two very quick Ctrl-C (faster than a human
                             # typing) likely means mpremote trying to
                             # escape.
@@ -148,12 +160,21 @@ async def task(g=None, prompt="--> "):
                             return
                         sys.stdout.write("\n")
                         break
-                    elif c == 0x04:
-                        # Ctrl-D
+                    elif c == CHAR_CTRL_D:
+                        if paste:
+                            result = await execute(cmd, g, s)
+                            if result is not None:
+                                sys.stdout.write(repr(result))
+                                sys.stdout.write("\n")
+                            break
+
                         sys.stdout.write("\n")
                         # Shutdown asyncio.
                         asyncio.new_event_loop()
                         return
+                    elif c == CHAR_CTRL_E:
+                        sys.stdout.write("paste mode; Ctrl-C to cancel, Ctrl-D to finish\n===\n")
+                        paste = True
                     elif c == 0x1B:
                         # Start of escape sequence.
                         key = await s.read(2)
