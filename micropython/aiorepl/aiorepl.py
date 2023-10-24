@@ -5,7 +5,7 @@ from micropython import const
 import re
 import sys
 import time
-import uasyncio as asyncio
+import asyncio
 
 # Import statement (needs to be global, and does not return).
 _RE_IMPORT = re.compile("^import ([^ ]+)( as ([^ ]+))?")
