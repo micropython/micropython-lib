@@ -111,6 +111,7 @@ async def task(g=None, prompt="--> "):
             sys.stdout.write(prompt)
             cmd: str = ""
             paste = False
+            curs = 0  # cursor offset from end of cmd buffer
             while True:
                 b = await s.read(1)
                 pc = c  # save previous character
@@ -129,6 +130,10 @@ async def task(g=None, prompt="--> "):
                         # conversion, so ignore this linefeed.
                         if pc == 0x0A and time.ticks_diff(t, pt) < 20:
                             continue
+                        if curs:
+                            # move cursor to end of the line
+                            sys.stdout.write("\x1B[{}C".format(curs))
+                            curs = 0
                         sys.stdout.write("\n")
                         if cmd:
                             # Push current command.
@@ -145,8 +150,16 @@ async def task(g=None, prompt="--> "):
                     elif c == 0x08 or c == 0x7F:
                         # Backspace.
                         if cmd:
-                            cmd = cmd[:-1]
-                            sys.stdout.write("\x08 \x08")
+                            if curs:
+                                cmd = "".join((cmd[: -curs - 1], cmd[-curs:]))
+                                sys.stdout.write(
+                                    "\x08\x1B[K"
+                                )  # move cursor back, erase to end of line
+                                sys.stdout.write(cmd[-curs:])  # redraw line
+                                sys.stdout.write("\x1B[{}D".format(curs))  # reset cursor location
+                            else:
+                                cmd = cmd[:-1]
+                                sys.stdout.write("\x08 \x08")
                     elif c == CHAR_CTRL_B:
                         continue
                     elif c == CHAR_CTRL_C:
@@ -178,7 +191,7 @@ async def task(g=None, prompt="--> "):
                     elif c == 0x1B:
                         # Start of escape sequence.
                         key = await s.read(2)
-                        if key in ("[A", "[B"):
+                        if key in ("[A", "[B"):  # up, down
                             # Stash the current command.
                             hist[(hist_i - hist_b) % _HISTORY_LIMIT] = cmd
                             # Clear current command.
@@ -194,12 +207,36 @@ async def task(g=None, prompt="--> "):
                             # Update current command.
                             cmd = hist[(hist_i - hist_b) % _HISTORY_LIMIT]
                             sys.stdout.write(cmd)
+                        elif key == "[D":  # left
+                            if curs < len(cmd) - 1:
+                                curs += 1
+                                sys.stdout.write("\x1B")
+                                sys.stdout.write(key)
+                        elif key == "[C":  # right
+                            if curs:
+                                curs -= 1
+                                sys.stdout.write("\x1B")
+                                sys.stdout.write(key)
+                        elif key == "[H":  # home
+                            pcurs = curs
+                            curs = len(cmd)
+                            sys.stdout.write("\x1B[{}D".format(curs - pcurs))  # move cursor left
+                        elif key == "[F":  # end
+                            pcurs = curs
+                            curs = 0
+                            sys.stdout.write("\x1B[{}C".format(pcurs))  # move cursor right
                     else:
                         # sys.stdout.write("\\x")
                         # sys.stdout.write(hex(c))
                         pass
                 else:
-                    sys.stdout.write(b)
-                    cmd += b
+                    if curs:
+                        # inserting into middle of line
+                        cmd = "".join((cmd[:-curs], b, cmd[-curs:]))
+                        sys.stdout.write(cmd[-curs - 1 :])  # redraw line to end
+                        sys.stdout.write("\x1B[{}D".format(curs))  # reset cursor location
+                    else:
+                        sys.stdout.write(b)
+                        cmd += b
     finally:
         micropython.kbd_intr(3)
