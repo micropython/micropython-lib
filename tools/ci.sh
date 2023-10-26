@@ -16,6 +16,18 @@ function ci_code_formatting_run {
 }
 
 ########################################################################################
+# commit formatting
+
+function ci_commit_formatting_run {
+    git remote add upstream https://github.com/micropython/micropython-lib.git
+    git fetch --depth=100 upstream master
+    # If the common ancestor commit hasn't been found, fetch more.
+    git merge-base upstream/master HEAD || git fetch --unshallow upstream master
+    # For a PR, upstream/master..HEAD ends with a merge commit into master, exclude that one.
+    tools/verifygitlog.py -v upstream/master..HEAD --no-merges
+}
+
+########################################################################################
 # build packages
 
 function ci_build_packages_setup {
