@@ -19,10 +19,10 @@ class ChunkedClientResponse(ClientResponse):
 
     def read(self, sz=4 * 1024 * 1024):
         if self.chunk_size == 0:
-            l = yield from self.content.readline()
+            line = yield from self.content.readline()
             # print("chunk line:", l)
-            l = l.split(b";", 1)[0]
-            self.chunk_size = int(l, 16)
+            line = line.split(b";", 1)[0]
+            self.chunk_size = int(line, 16)
             # print("chunk size:", self.chunk_size)
             if self.chunk_size == 0:
                 # End of message
@@ -56,9 +56,10 @@ def request_raw(method, url):
     if proto != "http:":
         raise ValueError("Unsupported protocol: " + proto)
     reader, writer = yield from asyncio.open_connection(host, port)
-    # Use protocol 1.0, because 1.1 always allows to use chunked transfer-encoding
-    # But explicitly set Connection: close, even though this should be default for 1.0,
-    # because some servers misbehave w/o it.
+    # Use protocol 1.0, because 1.1 always allows to use chunked
+    # transfer-encoding But explicitly set Connection: close, even
+    # though this should be default for 1.0, because some servers
+    # misbehave w/o it.
     query = "%s /%s HTTP/1.0\r\nHost: %s\r\nConnection: close\r\nUser-Agent: compat\r\n\r\n" % (
         method,
         path,
@@ -71,7 +72,6 @@ def request_raw(method, url):
 
 def request(method, url):
     redir_cnt = 0
-    redir_url = None
     while redir_cnt < 2:
         reader = yield from request_raw(method, url)
         headers = []
