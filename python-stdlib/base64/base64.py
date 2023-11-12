@@ -52,6 +52,25 @@ def _bytes_from_decode_data(s):
         raise TypeError("argument should be bytes or ASCII string, not %s" % s.__class__.__name__)
 
 
+def _maketrans(f, t):
+    """Re-implement bytes.maketrans() as there is no such function in micropython"""
+    if len(f) != len(t):
+        raise ValueError("maketrans arguments must have same length")
+    translation_table = dict(zip(f, t))
+    return translation_table
+
+
+def _translate(input_bytes, trans_table):
+    """Re-implement bytes.translate() as there is no such function in micropython"""
+    result = bytearray()
+
+    for byte in input_bytes:
+        translated_byte = trans_table.get(byte, byte)
+        result.append(translated_byte)
+
+    return bytes(result)
+
+
 # Base64 encoding/decoding uses binascii
 
 
@@ -73,7 +92,7 @@ def b64encode(s, altchars=None):
         if not isinstance(altchars, bytes_types):
             raise TypeError("expected bytes, not %s" % altchars.__class__.__name__)
         assert len(altchars) == 2, repr(altchars)
-        return encoded.translate(bytes.maketrans(b"+/", altchars))
+        encoded = _translate(encoded, _maketrans(b"+/", altchars))
     return encoded
 
 
@@ -95,7 +114,7 @@ def b64decode(s, altchars=None, validate=False):
     if altchars is not None:
         altchars = _bytes_from_decode_data(altchars)
         assert len(altchars) == 2, repr(altchars)
-        s = s.translate(bytes.maketrans(altchars, b"+/"))
+        s = _translate(s, _maketrans(altchars, b"+/"))
     if validate and not re.match(b"^[A-Za-z0-9+/]*=*$", s):
         raise binascii.Error("Non-base64 digit found")
     return binascii.a2b_base64(s)
@@ -120,8 +139,8 @@ def standard_b64decode(s):
     return b64decode(s)
 
 
-# _urlsafe_encode_translation = bytes.maketrans(b'+/', b'-_')
-# _urlsafe_decode_translation = bytes.maketrans(b'-_', b'+/')
+# _urlsafe_encode_translation = _maketrans(b'+/', b'-_')
+# _urlsafe_decode_translation = _maketrans(b'-_', b'+/')
 
 
 def urlsafe_b64encode(s):
@@ -132,7 +151,7 @@ def urlsafe_b64encode(s):
     '/'.
     """
     #    return b64encode(s).translate(_urlsafe_encode_translation)
-    raise NotImplementedError()
+    return b64encode(s, b"-_").rstrip(b"\n")
 
 
 def urlsafe_b64decode(s):
@@ -266,7 +285,7 @@ def b32decode(s, casefold=False, map01=None):
     if map01 is not None:
         map01 = _bytes_from_decode_data(map01)
         assert len(map01) == 1, repr(map01)
-        s = s.translate(bytes.maketrans(b"01", b"O" + map01))
+        s = _translate(s, _maketrans(b"01", b"O" + map01))
     if casefold:
         s = s.upper()
     # Strip off pad characters from the right.  We need to count the pad
