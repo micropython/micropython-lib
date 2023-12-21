@@ -24,7 +24,7 @@ THE SOFTWARE.
 """
 
 
-from senml import *
+from mpsenml import *
 
 
 def do_actuate(record):

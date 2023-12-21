@@ -24,8 +24,8 @@ THE SOFTWARE.
 """
 
 
-from senml.senml_record import SenmlRecord
-from senml.senml_base import SenmlBase
+from mpsenml.senml_record import SenmlRecord
+from mpsenml.senml_base import SenmlBase
 import json
 from cbor2 import encoder
 from cbor2 import decoder

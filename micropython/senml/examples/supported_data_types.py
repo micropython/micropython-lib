@@ -24,7 +24,7 @@ THE SOFTWARE.
 """
 
 
-from senml import *
+from mpsenml import *
 import time
 
 pack = SenmlPack("device_name")

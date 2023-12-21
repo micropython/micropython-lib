@@ -24,7 +24,7 @@ THE SOFTWARE.
 """
 
 
-from senml import *
+from mpsenml import *
 import time
 
 gateway_pack = SenmlPack("gateway")

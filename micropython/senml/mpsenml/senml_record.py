@@ -25,7 +25,7 @@ THE SOFTWARE.
 
 
 import binascii
-from senml.senml_base import SenmlBase
+from mpsenml.senml_base import SenmlBase
 
 
 class SenmlRecord(SenmlBase):

@@ -6,4 +6,4 @@ metadata(
 
 require("cbor2")
 
-package("senml")
+package("mpsenml")
