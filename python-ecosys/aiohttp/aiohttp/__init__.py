@@ -38,10 +38,10 @@ class ClientResponse:
         return self._decode(await self.content.read(sz))
 
     async def text(self, encoding="utf-8"):
-        return (await self.read(sz=-1)).decode(encoding)
+        return (await self.read(int(self.headers.get("Content-Length", -1)))).decode(encoding)
 
     async def json(self):
-        return _json.loads(await self.read())
+        return _json.loads(await self.read(int(self.headers.get("Content-Length", -1))))
 
     def __repr__(self):
         return "<ClientResponse %d %s>" % (self.status, self.headers)
@@ -121,7 +121,7 @@ class ClientSession:
                     if b"chunked" in line:
                         chunked = True
                 elif line.startswith(b"Location:"):
-                    url = line.rstrip().split(None, 1)[1].decode("latin-1")
+                    url = line.rstrip().split(None, 1)[1].decode()
 
             if 301 <= status <= 303:
                 redir_cnt += 1
@@ -195,17 +195,22 @@ class ClientSession:
         if "Host" not in headers:
             headers.update(Host=host)
         if not data:
-            query = "%s /%s %s\r\n%s\r\n" % (
+            query = b"%s /%s %s\r\n%s\r\n" % (
                 method,
                 path,
                 version,
                 "\r\n".join(f"{k}: {v}" for k, v in headers.items()) + "\r\n" if headers else "",
             )
         else:
-            headers.update(**{"Content-Length": len(str(data))})
             if json:
                 headers.update(**{"Content-Type": "application/json"})
-            query = """%s /%s %s\r\n%s\r\n%s\r\n\r\n""" % (
+            if isinstance(data, bytes):
+                headers.update(**{"Content-Type": "application/octet-stream"})
+            else:
+                data = data.encode()
+
+            headers.update(**{"Content-Length": len(data)})
+            query = b"""%s /%s %s\r\n%s\r\n%s""" % (
                 method,
                 path,
                 version,
@@ -213,10 +218,10 @@ class ClientSession:
                 data,
             )
         if not is_handshake:
-            await writer.awrite(query.encode("latin-1"))
+            await writer.awrite(query)
             return reader
         else:
-            await writer.awrite(query.encode())
+            await writer.awrite(query)
             return reader, writer
 
     def request(self, method, url, data=None, json=None, ssl=None, params=None, headers={}):
