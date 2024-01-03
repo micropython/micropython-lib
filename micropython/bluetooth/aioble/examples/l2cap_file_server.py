@@ -97,7 +97,7 @@ async def l2cap_task(connection):
             if list_path:
                 print("List:", list_path)
                 try:
-                    for name, _, _, size in os.ilistdir(list_path):
+                    for name, _, _, size in os.listdir(list_path):
                         await channel.send("{}:{}\n".format(size, name))
                     await channel.send("\n")
                     await channel.flush()
