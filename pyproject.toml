@@ -61,9 +61,10 @@ ignore = [
   "F401",
   "F403",
   "F405",
+  "E501",
   "F541",
-  "F821",
   "F841",
+  "ISC001",
   "ISC003",  # micropython does not support implicit concatenation of f-strings
   "PIE810",  # micropython does not support passing tuples to .startswith or .endswith
   "PLC1901",
@@ -75,8 +76,9 @@ ignore = [
   "PLW2901",
   "RUF012",
   "RUF100",
+  "W191",
 ]
-line-length = 260
+line-length = 99
 target-version = "py37"
 
 [tool.ruff.mccabe]
@@ -91,3 +93,12 @@ max-statements = 166
 
 [tool.ruff.per-file-ignores]
 "micropython/aiorepl/aiorepl.py" = ["PGH001"]
+
+# manifest.py files are evaluated with some global names pre-defined
+"**/manifest.py" = ["F821"]
+"ports/**/boards/manifest*.py" = ["F821"]
+
+# ble multitests are evaluated with some names pre-defined
+"micropython/bluetooth/aioble/multitests/*" = ["F821"]
+
+[tool.ruff.format]

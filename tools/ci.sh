@@ -1,18 +1,15 @@
 #!/bin/bash
 
 ########################################################################################
-# code formatting
+# commit formatting
 
-function ci_code_formatting_setup {
-    sudo apt-add-repository --yes --update ppa:pybricks/ppa
-    sudo apt-get install uncrustify
-    pip3 install black
-    uncrustify --version
-    black --version
-}
-
-function ci_code_formatting_run {
-    tools/codeformat.py -v
+function ci_commit_formatting_run {
+    git remote add upstream https://github.com/micropython/micropython-lib.git
+    git fetch --depth=100 upstream master
+    # If the common ancestor commit hasn't been found, fetch more.
+    git merge-base upstream/master HEAD || git fetch --unshallow upstream master
+    # For a PR, upstream/master..HEAD ends with a merge commit into master, exclude that one.
+    tools/verifygitlog.py -v upstream/master..HEAD --no-merges
 }
 
 ########################################################################################

@@ -1,4 +1,4 @@
-metadata(version="3.3.4")
+metadata(version="3.3.5")
 
 require("binascii")
 require("struct")

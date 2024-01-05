@@ -683,7 +683,7 @@ class WM8960:
         )
         self.regs[_ALC3] = (_ALC_MODE_MASK, mode << _ALC_MODE_SHIFT)
         try:
-            rate = _alc_sample_rate_table[self.sample_rate]
+            rate = self._alc_sample_rate_table[self.sample_rate]
         except:
             rate = 0
         self.regs[_ADDCTL3] = (_DACCTL3_ALCSR_MASK, rate)

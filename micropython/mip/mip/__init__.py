@@ -1,6 +1,7 @@
 # MicroPython package installer
 # MIT license; Copyright (c) 2022 Jim Mussared
 
+from micropython import const
 import requests
 import sys
 

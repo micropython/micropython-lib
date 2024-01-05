@@ -233,25 +233,16 @@ class BaseModem:
     #
     # ISR implementation is relatively simple, just exists to signal an optional
     # callback, record a timestamp, and wake up the hardware if
-    # needed. ppplication code is expected to call poll_send() or
+    # needed. Application code is expected to call poll_send() or
     # poll_recv() as applicable in order to confirm the modem state.
     #
-    # This is a MP hard irq in some configurations, meaning no memory allocation is possible.
-    #
-    # 'pin' may also be None if this is a "soft" IRQ triggered after a receive
-    # timed out during a send (meaning no receive IRQ will fire, but the
-    # receiver should wake up and move on anyhow.)
-    def _radio_isr(self, pin):
+    # This is a MP hard irq in some configurations.
+    def _radio_isr(self, _):
         self._last_irq = time.ticks_ms()
         if self._irq_callback:
-            self._irq_callback(pin)
+            self._irq_callback()
         if _DEBUG:
-            # Note: this may cause a MemoryError and fail if _DEBUG is enabled in this base class
-            # but disabled in the subclass, meaning this is a hard irq handler
-            try:
-                print("_radio_isr pin={}".format(pin))
-            except MemoryError:
-                pass
+            print("_radio_isr")
 
     def irq_triggered(self):
         # Returns True if the ISR has executed since the last time a send or a receive
@@ -264,8 +255,7 @@ class BaseModem:
         # This is used by the AsyncModem implementation, but can be called in
         # other circumstances to implement custom ISR logic.
         #
-        # Note that callback may be called in hard ISR context, meaning no
-        # memory allocation is possible.
+        # Note that callback may be called in hard ISR context.
         self._irq_callback = callback
 
     def _get_last_irq(self):

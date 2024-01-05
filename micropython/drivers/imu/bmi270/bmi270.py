@@ -598,7 +598,7 @@ class BMI270:
     def _write_burst(self, reg, data, chunk=16):
         self._write_reg(_INIT_ADDR_0, 0)
         self._write_reg(_INIT_ADDR_1, 0)
-        for i in range(0, len(data) // chunk):
+        for i in range(len(data) // chunk):
             offs = i * chunk
             self._write_reg(reg, data[offs : offs + chunk])
             init_addr = ((i + 1) * chunk) // 2
@@ -606,7 +606,7 @@ class BMI270:
             self._write_reg(_INIT_ADDR_1, (init_addr >> 4) & 0xFF)
 
     def _poll_reg(self, reg, mask, retry=10, delay=100):
-        for i in range(0, retry):
+        for i in range(retry):
             if self._read_reg(reg) & mask:
                 return True
             time.sleep_ms(delay)

@@ -38,6 +38,7 @@ while (True):
     time.sleep_ms(10)
 """
 import machine
+from micropython import const
 
 _LPS22_CTRL_REG1 = const(0x10)
 _LPS22_CTRL_REG2 = const(0x11)

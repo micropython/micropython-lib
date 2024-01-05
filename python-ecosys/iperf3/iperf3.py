@@ -380,9 +380,11 @@ def client(host, udp=False, reverse=False, bandwidth=10 * 1024 * 1024):
     ticks_us_end = param["time"] * 1000000
     poll = select.poll()
     poll.register(s_ctrl, select.POLLIN)
+    buf = None
     s_data = None
     start = None
     udp_packet_id = 0
+    udp_last_send = None
     while True:
         for pollable in poll.poll(stats.max_dt_ms()):
             if pollable_is_sock(pollable, s_data):

@@ -104,7 +104,7 @@ class ESPFlash:
             raise Exception("Command ESP_WRITE_REG failed.")
 
     def _poll_reg(self, addr, flag, retry=10, delay=0.050):
-        for i in range(0, retry):
+        for i in range(retry):
             reg = self._read_reg(addr)
             if (reg & flag) == 0:
                 break

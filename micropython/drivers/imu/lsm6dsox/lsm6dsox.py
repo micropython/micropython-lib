@@ -46,6 +46,7 @@ while (True):
 
 import array
 from micropython import const
+import time
 
 _CTRL3_C = const(0x12)
 _CTRL1_XL = const(0x10)
@@ -196,7 +197,7 @@ class LSM6DSOX:
 
     def reset(self):
         self._write_reg(_CTRL3_C, self._read_reg(_CTRL3_C) | 0x1)
-        for i in range(0, 10):
+        for i in range(10):
             if (self._read_reg(_CTRL3_C) & 0x01) == 0:
                 return
             time.sleep_ms(10)

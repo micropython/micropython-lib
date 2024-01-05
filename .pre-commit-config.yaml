@@ -1,11 +1,14 @@
 repos:
   - repo: local
     hooks:
-      - id: codeformat
-        name: MicroPython codeformat.py for changed files
-        entry: tools/codeformat.py -v -f
+      - id: verifygitlog
+        name: MicroPython git commit message format checker
+        entry: tools/verifygitlog.py --check-file --ignore-rebase
         language: python
+        verbose: true
+        stages: [commit-msg]
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.280
+    rev: v0.1.2
     hooks:
       - id: ruff
+        id: ruff-format

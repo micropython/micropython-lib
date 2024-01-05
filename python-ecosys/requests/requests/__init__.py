@@ -45,7 +45,7 @@ def request(
     parse_headers=True,
 ):
     redirect = None  # redirection url, None means no redirection
-    chunked_data = data and getattr(data, "__iter__", None) and not getattr(data, "__len__", None)
+    chunked_data = data and getattr(data, "__next__", None) and not getattr(data, "__len__", None)
 
     if auth is not None:
         import ubinascii

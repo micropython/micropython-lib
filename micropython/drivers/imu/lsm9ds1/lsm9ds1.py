@@ -44,6 +44,7 @@ while (True):
     time.sleep_ms(100)
 """
 import array
+from micropython import const
 
 
 _WHO_AM_I = const(0xF)

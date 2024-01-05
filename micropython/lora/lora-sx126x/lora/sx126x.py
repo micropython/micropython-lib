@@ -99,7 +99,7 @@ _IRQ_DRIVER_RX_MASK = const(_IRQ_RX_DONE | _IRQ_TIMEOUT | _IRQ_CRC_ERR | _IRQ_HE
 # In any case, timeouts here are to catch broken/bad hardware or massive driver
 # bugs rather than commonplace issues.
 #
-_CMD_BUSY_TIMEOUT_BASE_US = const(200)
+_CMD_BUSY_TIMEOUT_BASE_US = const(7000)
 
 # Datasheet says 3.5ms needed to run a full Calibrate command (all blocks),
 # however testing shows it can be as much as as 18ms.
@@ -141,12 +141,16 @@ class _SX126x(BaseModem):
         self._sleep = True  # assume the radio is in sleep mode to start, will wake on _cmd
         self._dio1 = dio1
 
-        busy.init(Pin.IN)
-        cs.init(Pin.OUT, value=1)
-        if dio1:
+        if hasattr(busy, "init"):
+            busy.init(Pin.IN)
+        if hasattr(cs, "init"):
+            cs.init(Pin.OUT, value=1)
+        if hasattr(dio1, "init"):
             dio1.init(Pin.IN)
 
-        self._busy_timeout = _CMD_BUSY_TIMEOUT_BASE_US
+        self._busy_timeout = _CMD_BUSY_TIMEOUT_BASE_US + (
+            dio3_tcxo_start_time_us if dio3_tcxo_millivolts else 0
+        )
 
         self._buf = bytearray(9)  # shared buffer for commands
 
@@ -166,7 +170,8 @@ class _SX126x(BaseModem):
             reset(1)
             time.sleep_ms(5)
         else:
-            self.standby()  # Otherwise, at least put the radio to a known state
+            # Otherwise, at least put the radio to a known state
+            self._cmd("BB", _CMD_SET_STANDBY, 0)  # STDBY_RC mode, not ready for TCXO yet
 
         status = self._get_status()
         if (status[0] != _STATUS_MODE_STANDBY_RC and status[0] != _STATUS_MODE_STANDBY_HSE32) or (
@@ -185,7 +190,6 @@ class _SX126x(BaseModem):
             #
             # timeout register is set in units of 15.625us each, use integer math
             # to calculate and round up:
-            self._busy_timeout = (_CMD_BUSY_TIMEOUT_BASE_US + dio3_tcxo_start_time_us) * 2
             timeout = (dio3_tcxo_start_time_us * 1000 + 15624) // 15625
             if timeout < 0 or timeout > 1 << 24:
                 raise ValueError("{} out of range".format("dio3_tcxo_start_time_us"))
@@ -231,7 +235,7 @@ class _SX126x(BaseModem):
                 0x0,  # DIO2Mask, not used
                 0x0,  # DIO3Mask, not used
             )
-            dio1.irq(self._radio_isr, trigger=Pin.IRQ_RISING)
+            dio1.irq(self._radio_isr, Pin.IRQ_RISING)
 
         self._clear_irq()
 
@@ -382,7 +386,9 @@ class _SX126x(BaseModem):
             self._cmd(">BBH", _CMD_WRITE_REGISTER, _REG_LSYNCRH, syncword)
 
         if "output_power" in lora_cfg:
-            pa_config_args, self._output_power = self._get_pa_tx_params(lora_cfg["output_power"])
+            pa_config_args, self._output_power = self._get_pa_tx_params(
+                lora_cfg["output_power"], lora_cfg.get("tx_ant", None)
+            )
             self._cmd("BBBBB", _CMD_SET_PA_CONFIG, *pa_config_args)
 
         if "pa_ramp_us" in lora_cfg:
@@ -664,7 +670,7 @@ class _SX126x(BaseModem):
         while self._busy():
             ticks_diff = time.ticks_diff(time.ticks_us(), start)
             if ticks_diff > timeout_us:
-                raise RuntimeError("BUSY timeout")
+                raise RuntimeError("BUSY timeout", timeout_us)
             time.sleep_us(1)
         if _DEBUG and ticks_diff > 105:
             # By default, debug log any busy time that takes longer than the
@@ -760,7 +766,7 @@ class _SX1262(_SX126x):
         # SX1262 has High Power only (deviceSel==0)
         return True
 
-    def _get_pa_tx_params(self, output_power):
+    def _get_pa_tx_params(self, output_power, tx_ant):
         # Given an output power level in dB, return a 2-tuple:
         # - First item is the 3 arguments for SetPaConfig command
         # - Second item is the power level argument value for SetTxParams command.
@@ -831,7 +837,7 @@ class _SX1261(_SX126x):
         # SX1261 has Low Power only (deviceSel==1)
         return False
 
-    def _get_pa_tx_params(self, output_power):
+    def _get_pa_tx_params(self, output_power, tx_ant):
         # Given an output power level in dB, return a 2-tuple:
         # - First item is the 3 arguments for SetPaConfig command
         # - Second item is the power level argument value for SetTxParams command.

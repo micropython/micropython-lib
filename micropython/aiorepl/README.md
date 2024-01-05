@@ -21,7 +21,7 @@ To use this library, you need to import the library and then start the REPL task
 For example, in main.py:
 
 ```py
-import uasyncio as asyncio
+import asyncio
 import aiorepl
 
 async def demo():
