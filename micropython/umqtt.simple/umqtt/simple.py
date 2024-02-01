@@ -16,8 +16,7 @@ class MQTTClient:
         user=None,
         password=None,
         keepalive=0,
-        ssl=False,
-        ssl_params={},
+        ssl=None,
     ):
         if port == 0:
             port = 8883 if ssl else 1883
@@ -26,7 +25,6 @@ class MQTTClient:
         self.server = server
         self.port = port
         self.ssl = ssl
-        self.ssl_params = ssl_params
         self.pid = 0
         self.cb = None
         self.user = user
@@ -67,9 +65,7 @@ class MQTTClient:
         addr = socket.getaddrinfo(self.server, self.port)[0][-1]
         self.sock.connect(addr)
         if self.ssl:
-            import ussl
-
-            self.sock = ussl.wrap_socket(self.sock, **self.ssl_params)
+            self.sock = self.ssl.wrap_socket(self.sock, server_hostname=self.server)
         premsg = bytearray(b"\x10\0\0\0\0\0")
         msg = bytearray(b"\x04MQTT\x04\x02\0\0")
 

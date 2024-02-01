@@ -12,7 +12,7 @@ def urlopen(url, data=None, method="GET"):
     if proto == "http:":
         port = 80
     elif proto == "https:":
-        import ussl
+        import tls
 
         port = 443
     else:
@@ -29,7 +29,9 @@ def urlopen(url, data=None, method="GET"):
     try:
         s.connect(ai[-1])
         if proto == "https:":
-            s = ussl.wrap_socket(s, server_hostname=host)
+            context = tls.SSLContext(tls.PROTOCOL_TLS_CLIENT)
+            context.verify_mode = tls.CERT_NONE
+            s = context.wrap_socket(s, server_hostname=host)
 
         s.write(method)
         s.write(b" /")
