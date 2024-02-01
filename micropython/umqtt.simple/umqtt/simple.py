@@ -75,7 +75,7 @@ class MQTTClient:
 
         sz = 10 + 2 + len(self.client_id)
         msg[6] = clean_session << 1
-        if self.user is not None:
+        if self.user:
             sz += 2 + len(self.user) + 2 + len(self.pswd)
             msg[6] |= 0xC0
         if self.keepalive:
@@ -101,7 +101,7 @@ class MQTTClient:
         if self.lw_topic:
             self._send_str(self.lw_topic)
             self._send_str(self.lw_msg)
-        if self.user is not None:
+        if self.user:
             self._send_str(self.user)
             self._send_str(self.pswd)
         resp = self.sock.read(4)
