@@ -99,7 +99,7 @@ def add(self, name, recursive=True):
     tarinfo = TarInfo(name)
     try:
         stat = os.stat(name)
-        tarinfo.mode = stat[0]
+        tarinfo.mode = 0x1a4
         tarinfo.uid = stat[4]
         tarinfo.gid = stat[5]
         tarinfo.size = stat[6]
