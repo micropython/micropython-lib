@@ -67,7 +67,7 @@ def addfile(self, tarinfo, fileobj=None):
             name += "/"
     hdr = uctypes.struct(uctypes.addressof(buf), _TAR_HEADER, uctypes.LITTLE_ENDIAN)
     hdr.name[:] = name.encode("utf-8")[:100]
-    hdr.mode[:] = b"%07o\0" % (tarinfo.mode & 0o7777)
+    hdr.mode[:] = b"%07o\0" % ((0o755 if tarinfo.isdir() else 0o644) & 0o7777)
     hdr.uid[:] = b"%07o\0" % tarinfo.uid
     hdr.gid[:] = b"%07o\0" % tarinfo.gid
     hdr.size[:] = b"%011o\0" % size
@@ -96,9 +96,10 @@ def addfile(self, tarinfo, fileobj=None):
 def add(self, name, recursive=True):
     from . import TarInfo
 
-    tarinfo = TarInfo(name)
     try:
         stat = os.stat(name)
+        res_name = (name + '/') if (stat[0] & 0xf000) == 0x4000 else name
+        tarinfo = TarInfo(res_name)
         tarinfo.mode = stat[0]
         tarinfo.uid = stat[4]
         tarinfo.gid = stat[5]
