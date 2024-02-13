@@ -30,7 +30,11 @@ function ci_build_packages_check_manifest {
     for file in $(find -name manifest.py); do
         echo "##################################################"
         echo "# Testing $file"
-        python3 /tmp/micropython/tools/manifestfile.py --lib . --compile $file
+        extra_args=
+        if [[ "$file" =~ "/unix-ffi/" ]]; then
+            extra_args="--unix-ffi"
+        fi
+        python3 /tmp/micropython/tools/manifestfile.py $extra_args --lib . --compile $file
     done
 }
 
