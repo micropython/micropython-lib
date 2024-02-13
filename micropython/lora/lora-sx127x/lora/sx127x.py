@@ -519,6 +519,9 @@ class _SX127x(BaseModem):
 
         self._reg_update(_REG_MODEM_CONFIG3, update_mask, modem_config3)
 
+        if "syncword" in lora_cfg:
+            self._reg_write(_REG_SYNC_WORD, lora_cfg["syncword"])
+
     def _reg_write(self, reg, value):
         self._cs(0)
         if isinstance(value, int):
