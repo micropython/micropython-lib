@@ -469,7 +469,7 @@ class _SX126x(BaseModem):
         # See DS 13.1.12 Calibrate Function
 
         # calibParam 0xFE means to calibrate all blocks.
-        self._cmd("<BB", _CMD_CALIBRATE, 0xFE)
+        self._cmd("BB", _CMD_CALIBRATE, 0xFE)
 
         time.sleep_us(_CALIBRATE_TYPICAL_TIME_US)
 
@@ -545,7 +545,7 @@ class _SX126x(BaseModem):
         else:
             timeout = 0  # Single receive mode, no timeout
 
-        self._cmd(">BBH", _CMD_SET_RX, timeout >> 16, timeout)
+        self._cmd(">BBH", _CMD_SET_RX, timeout >> 16, timeout)  # 24 bits
 
         return self._dio1
 
@@ -729,10 +729,10 @@ class _SX126x(BaseModem):
             return res
 
     def _reg_read(self, addr):
-        return self._cmd("BBBB", _CMD_READ_REGISTER, addr >> 8, addr & 0xFF, n_read=1)[0]
+        return self._cmd(">BHB", _CMD_READ_REGISTER, addr, 0, n_read=1)[0]
 
     def _reg_write(self, addr, val):
-        return self._cmd("BBBB", _CMD_WRITE_REGISTER, addr >> 8, addr & 0xFF, val & 0xFF)
+        return self._cmd(">BHB", _CMD_WRITE_REGISTER, addr, val & 0xFF)
 
 
 class _SX1262(_SX126x):
