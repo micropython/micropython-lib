@@ -37,10 +37,11 @@ class BaseModem:
         self._ant_sw = ant_sw
         self._irq_callback = None
 
-        # Common configuration settings that need to be tracked by all modem drivers
-        # (Note that subclasses may set these to other values in their constructors, to match
-        # the power-on-reset configuration of a particular modem.)
+        # Common configuration settings that need to be tracked by all modem drivers.
         #
+        # Where modem hardware sets different values after reset, the driver should
+        # set them back to these defaults (if not provided by the user), so that
+        # behaviour remains consistent between different modems using the same driver.
         self._rf_freq_hz = 0  # Needs to be set via configure()
         self._sf = 7  # Spreading factor
         self._bw_hz = 125000  # Reset value

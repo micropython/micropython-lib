@@ -163,6 +163,9 @@ class _SX126x(BaseModem):
         # 0x02 is 40us, default value appears undocumented but this is the SX1276 default
         self._ramp_val = 0x02
 
+        # Configure the SX126x at least once after reset
+        self._configured = False
+
         if reset:
             # If the caller supplies a reset pin argument, reset the radio
             reset.init(Pin.OUT, value=0)
@@ -385,22 +388,22 @@ class _SX126x(BaseModem):
                 syncword = 0x0404 + ((syncword & 0x0F) << 4) + ((syncword & 0xF0) << 8)
             self._cmd(">BBH", _CMD_WRITE_REGISTER, _REG_LSYNCRH, syncword)
 
-        if "output_power" in lora_cfg:
+        if not self._configured or any(
+            key in lora_cfg for key in ("output_power", "pa_ramp_us", "tx_ant")
+        ):
             pa_config_args, self._output_power = self._get_pa_tx_params(
-                lora_cfg["output_power"], lora_cfg.get("tx_ant", None)
+                lora_cfg.get("output_power", self._output_power), lora_cfg.get("tx_ant", None)
             )
             self._cmd("BBBBB", _CMD_SET_PA_CONFIG, *pa_config_args)
 
-        if "pa_ramp_us" in lora_cfg:
-            self._ramp_val = self._get_pa_ramp_val(
-                lora_cfg, [10, 20, 40, 80, 200, 800, 1700, 3400]
-            )
+            if "pa_ramp_us" in lora_cfg:
+                self._ramp_val = self._get_pa_ramp_val(
+                    lora_cfg, [10, 20, 40, 80, 200, 800, 1700, 3400]
+                )
 
-        if "output_power" in lora_cfg or "pa_ramp_us" in lora_cfg:
-            # Only send the SetTxParams command if power level or PA ramp time have changed
             self._cmd("BBB", _CMD_SET_TX_PARAMS, self._output_power, self._ramp_val)
 
-        if any(key in lora_cfg for key in ("sf", "bw", "coding_rate")):
+        if not self._configured or any(key in lora_cfg for key in ("sf", "bw", "coding_rate")):
             if "sf" in lora_cfg:
                 self._sf = lora_cfg["sf"]
                 if self._sf < _CFG_SF_MIN or self._sf > _CFG_SF_MAX:
@@ -441,6 +444,7 @@ class _SX126x(BaseModem):
             self._reg_write(_REG_RX_GAIN, 0x96 if lora_cfg["rx_boost"] else 0x94)
 
         self._check_error()
+        self._configured = True
 
     def _invert_workaround(self, enable):
         # Apply workaround for DS 15.4 Optimizing the Inverted IQ Operation
