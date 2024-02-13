@@ -386,7 +386,7 @@ class _SX126x(BaseModem):
                 # see
                 # https://www.thethingsnetwork.org/forum/t/should-private-lorawan-networks-use-a-different-sync-word/34496/15
                 syncword = 0x0404 + ((syncword & 0x0F) << 4) + ((syncword & 0xF0) << 8)
-            self._cmd(">BBH", _CMD_WRITE_REGISTER, _REG_LSYNCRH, syncword)
+            self._cmd(">BHH", _CMD_WRITE_REGISTER, _REG_LSYNCRH, syncword)
 
         if not self._configured or any(
             key in lora_cfg for key in ("output_power", "pa_ramp_us", "tx_ant")
