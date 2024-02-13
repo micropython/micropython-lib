@@ -42,8 +42,8 @@ class SyncModem:
 
         tx = True
         while tx is True:
-            tx = self.poll_send()
             self._sync_wait(will_irq)
+            tx = self.poll_send()
         return tx
 
     def recv(self, timeout_ms=None, rx_length=0xFF, rx_packet=None):
