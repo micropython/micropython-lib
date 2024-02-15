@@ -54,6 +54,9 @@ class Handler:
     def close(self):
         pass
 
+    def flush(self):
+        pass
+
     def setLevel(self, level):
         self.level = level
 
@@ -74,7 +77,7 @@ class StreamHandler(Handler):
         self.stream = _stream if stream is None else stream
         self.terminator = "\n"
 
-    def close(self):
+    def flush(self):
         if hasattr(self.stream, "flush"):
             self.stream.flush()
 
