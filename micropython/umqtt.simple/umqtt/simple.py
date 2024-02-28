@@ -133,7 +133,15 @@ class MQTTClient:
             self.pid += 1
             pid = self.pid
             struct.pack_into("!H", pkt, 0, pid)
-            self.sock.write(pkt, 2)
+            try:
+                self.sock.write(pkt, 2)
+            except OSError as e:
+                if e.args[0] == -1:
+                    print("OSError: -1 occurred. Reconnecting...")
+                    self.connect()
+                    self.sock.write(pkt, 2)
+            else:
+                raise
         self.sock.write(msg)
         if qos == 1:
             while 1:
