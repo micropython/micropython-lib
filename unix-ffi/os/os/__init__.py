@@ -5,6 +5,12 @@ import stat as stat_
 import ffilib
 import uos
 
+# Provide optional dependencies (which may be installed separately).
+try:
+    from . import path
+except ImportError:
+    pass
+
 R_OK = const(4)
 W_OK = const(2)
 X_OK = const(1)

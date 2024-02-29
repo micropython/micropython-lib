@@ -1,7 +1,7 @@
 metadata(version="0.5.3")
 
 require("re", unix_ffi=True)
-require("uu")
+require("uu", unix_ffi=True)
 require("base64")
 require("binascii")
 require("email.utils", unix_ffi=True)
