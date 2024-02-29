@@ -71,8 +71,7 @@ class WebreplWrapper(io.IOBase):
         self.sock.close()
 
 
-def server_handshake(cl):
-    req = cl.makefile("rwb", 0)
+def server_handshake(req):
     # Skip HTTP GET line.
     l = req.readline()
     if DEBUG:
@@ -114,28 +113,28 @@ def server_handshake(cl):
     if DEBUG:
         print("respkey:", respkey)
 
-    cl.send(
+    req.write(
         b"""\
 HTTP/1.1 101 Switching Protocols\r
 Upgrade: websocket\r
 Connection: Upgrade\r
 Sec-WebSocket-Accept: """
     )
-    cl.send(respkey)
-    cl.send("\r\n\r\n")
+    req.write(respkey)
+    req.write("\r\n\r\n")
 
     return True
 
 
 def send_html(cl):
-    cl.send(
+    cl.write(
         b"""\
 HTTP/1.0 200 OK\r
 \r
 <base href=\""""
     )
-    cl.send(static_host)
-    cl.send(
+    cl.write(static_host)
+    cl.write(
         b"""\"></base>\r
 <script src="webreplv2_content.js"></script>\r
 """
@@ -160,11 +159,16 @@ def setup_conn(port, accept_handler):
 
 
 def accept_conn(listen_sock):
-    global client_s
+    global client_s, webrepl_ssl_context
     cl, remote_addr = listen_sock.accept()
+    req = cl.makefile("rwb", 0)
+    sock = cl
+    if webrepl_ssl_context is not None:
+        sock = webrepl_ssl_context.wrap_socket(sock)
+        req = sock
 
-    if not server_handshake(cl):
-        send_html(cl)
+    if not server_handshake(req):
+        send_html(sock)
         return False
 
     prev = os.dupterm(None)
@@ -176,13 +180,13 @@ def accept_conn(listen_sock):
     print("\nWebREPL connection from:", remote_addr)
     client_s = cl
 
-    ws = websocket.websocket(cl, True)
-    ws = WebreplWrapper(ws)
+    sock = websocket.websocket(sock)
+    sock = WebreplWrapper(sock)
     cl.setblocking(False)
     # notify REPL on socket incoming data (ESP32/ESP8266-only)
     if hasattr(os, "dupterm_notify"):
         cl.setsockopt(socket.SOL_SOCKET, 20, os.dupterm_notify)
-    os.dupterm(ws)
+    os.dupterm(sock)
 
     return True
 
@@ -196,9 +200,10 @@ def stop():
         listen_s.close()
 
 
-def start(port=8266, password=None, accept_handler=accept_conn):
-    global static_host, webrepl_pass
+def start(port=8266, password=None, ssl_context=None, accept_handler=accept_conn):
+    global static_host, webrepl_pass, webrepl_ssl_context
     stop()
+    webrepl_ssl_context = ssl_context
     webrepl_pass = password
     if password is None:
         try:
