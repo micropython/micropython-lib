@@ -322,3 +322,11 @@ class TestPathlib(unittest.TestCase):
         self.assertTrue(Path("foo/test").with_suffix(".tar") == Path("foo/test.tar"))
         self.assertTrue(Path("foo/bar.bin").with_suffix(".txt") == Path("foo/bar.txt"))
         self.assertTrue(Path("bar.txt").with_suffix("") == Path("bar"))
+
+    def test_expanduser(self):
+        self.assertFalse(str(Path("~").expanduser()) == "~")
+        self.assertTrue(str(Path("~").expanduser()) == os.getenv("HOME"))
+        self.assertTrue(str(Path("~/foo").expanduser()) == os.getenv("HOME") + "/foo")
+
+        with self.assertRaises(RuntimeError):
+            Path("~foo").expanduser()
