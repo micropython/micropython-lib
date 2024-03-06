@@ -1,13 +1,25 @@
 # MicroPython package installer
 # MIT license; Copyright (c) 2022 Jim Mussared
+# Modified by Ned Konz to allow relative source URLs in package.json files
 
 from micropython import const
 import requests
 import sys
-
+import gc
+import time
+import os
 
 _PACKAGE_INDEX = const("https://micropython.org/pi/v2")
 _CHUNK_SIZE = 128
+_URL_PREFIXES = const(("http://", "https://", "github:", "file://"))
+
+_top_url = ""
+_wlan = None
+
+
+# Return true if name is a URI that we understand
+def _is_url(name):
+    return any(name.startswith(prefix) for prefix in _URL_PREFIXES)
 
 
 # This implements os.makedirs(os.dirname(path))
@@ -43,8 +55,6 @@ def _chunk(src, dest):
 
 # Check if the specified path exists and matches the hash.
 def _check_exists(path, short_hash):
-    import os
-
     try:
         import binascii
         import hashlib
@@ -58,51 +68,116 @@ def _check_exists(path, short_hash):
         return False
 
 
-def _rewrite_url(url, branch=None):
-    if not branch:
-        branch = "HEAD"
-    if url.startswith("github:"):
-        url = url[7:].split("/")
-        url = (
-            "https://raw.githubusercontent.com/"
-            + url[0]
-            + "/"
-            + url[1]
-            + "/"
-            + branch
-            + "/"
-            + "/".join(url[2:])
+def _rewrite_github_url(url, branch):
+    url = url[7:].split("/")  # user, repo, path...
+    url = "/".join(
+        (
+            "https://raw.githubusercontent.com",
+            url[0],  # user
+            url[1],  # repo
+            branch,
+            "/".join(url[2:]),
         )
+    )
+    return url
+
+
+def _rewrite_url(orig_url, branch=None):
+    global _top_url  # the origin of the package.json URL for re-writing relative URLs
+
+    # rewrite relative URLs as absolute URLs
+    if not _is_url(orig_url):
+        orig_url = _top_url + "/" + orig_url
+
+    url = orig_url
+
+    # now rewrite github: URLs as raw.githubusercontent.com URLs
+    if orig_url.startswith("github:"):
+        if not branch:
+            branch = "HEAD"
+        url = _rewrite_github_url(orig_url, branch)
+
+        # catch URLs that don't start with the same github:user/repo
+        if not url.startswith(_top_url):
+            url = _rewrite_github_url(orig_url, "HEAD")
     return url
 
 
 def _download_file(url, dest):
-    response = requests.get(url)
-    try:
-        if response.status_code != 200:
-            print("Error", response.status_code, "requesting", url)
+    # if url is a file:// url, just copy it
+    if url.startswith("file://"):
+        src_name = url[7:]
+        try:
+            with open(src_name, "rb") as src:
+                print(f"Copying file {src_name} to {dest}")
+                _ensure_path_exists(dest)
+                with open(dest, "wb") as dst:
+                    _chunk(src, dst.write)
+            return True
+        except OSError:
+            print(f"File {src_name} not found")
             return False
 
-        print("Copying:", dest)
-        _ensure_path_exists(dest)
-        with open(dest, "wb") as f:
-            _chunk(response.raw, f.write)
+    retries = 0
+    while retries < 5:
+        gc.collect()
+        try:
+            response = requests.get(url)
 
-        return True
-    finally:
-        response.close()
+            if response.status_code != 200:
+                print("Error", response.status_code, "requesting", url)
+                return False
+
+            print("Copying:", dest)
+            _ensure_path_exists(dest)
+            with open(dest, "wb") as f:
+                _chunk(response.raw, f.write)
+
+            return True
+        except OSError as e:
+            bytes_copied = 0
+            try:
+                bytes_copied = os.stat(dest)[6]
+            except:
+                pass
+            print(f"Exception {e} after copying {bytes_copied} bytes; retrying after 1 second")
+            retries += 1
+            time.sleep(1)
+            response.close()
+            continue
+
+        finally:
+            response.close()
 
 
 def _install_json(package_json_url, index, target, version, mpy):
-    response = requests.get(_rewrite_url(package_json_url, version))
-    try:
-        if response.status_code != 200:
-            print("Package not found:", package_json_url)
-            return False
+    global _top_url
+    # if package_json_url is a file:// url, just download it
+    # and use its json directly
+    if package_json_url.startswith("file://"):
+        import ujson as json
 
-        package_json = response.json()
-    finally:
-        response.close()
+        pkg_name = package_json_url[7:]
+        try:
+            with open(pkg_name) as json_file:
+                package_json = json.load(json_file)
+        except OSError:
+            print(f"File {pkg_name} not found")
+            return False
+    else:
+        pkg_name = _rewrite_url(package_json_url, version)
+        response = requests.get(pkg_name)
+        try:
+            if response.status_code != 200:
+                print(f"Package {package_json_url} not found (tried {pkg_name})")
+                return False
+
+            package_json = response.json()
+        finally:
+            response.close()
+    _top_url = pkg_name.rsplit("/", 1)[0]
+
+    # get mpy files from hashes
     for target_path, short_hash in package_json.get("hashes", ()):
         fs_target_path = target + "/" + target_path
         if _check_exists(fs_target_path, short_hash):
@@ -112,11 +187,13 @@ def _install_json(package_json_url, index, target, version, mpy):
             if not _download_file(file_url, fs_target_path):
                 print("File not found: {} {}".format(target_path, short_hash))
                 return False
+    # get other files from URLs
     for target_path, url in package_json.get("urls", ()):
         fs_target_path = target + "/" + target_path
         if not _download_file(_rewrite_url(url, version), fs_target_path):
             print("File not found: {} {}".format(target_path, url))
             return False
+    # install dependencies
     for dep, dep_version in package_json.get("deps", ()):
         if not _install_package(dep, index, target, dep_version, mpy):
             return False
@@ -124,11 +201,7 @@ def _install_json(package_json_url, index, target, version, mpy):
 
 
 def _install_package(package, index, target, version, mpy):
-    if (
-        package.startswith("http://")
-        or package.startswith("https://")
-        or package.startswith("github:")
-    ):
+    if _is_url(package):
         if package.endswith(".py") or package.endswith(".mpy"):
             print("Downloading {} to {}".format(package, target))
             return _download_file(
