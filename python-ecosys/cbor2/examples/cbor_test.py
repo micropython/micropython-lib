@@ -24,16 +24,15 @@ THE SOFTWARE.
 """
 
 
-from cbor2 import encoder
-from cbor2 import decoder
+import cbor2
 
 input = [
     {"bn": "urn:dev:ow:10e2073a01080063", "u": "Cel", "t": 1.276020076e09, "v": 23.5},
     {"u": "Cel", "t": 1.276020091e09, "v": 23.6},
 ]
 
-data = encoder.dumps(input)
+data = cbor2.dumps(input)
 print(data)
 print(data.hex())
-text = decoder.loads(data)
+text = cbor2.loads(data)
 print(text)
