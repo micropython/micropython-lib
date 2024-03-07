@@ -75,6 +75,23 @@ def top(update_interval_ms=1000, timeout_ms=None):
             print("INFO: Platform does not support listing active tasks.\x1B[K")
             line_count += 1
 
+        if esp32 is not None:
+            print("\x1B[K")
+            line_count += 1
+            for name, cap in (("data", esp32.HEAP_DATA), ("exec", esp32.HEAP_EXEC)):
+                heaps = esp32.idf_heap_info(cap)
+                print(
+                    "IDF heap ({}): {} regions, {} total, {} free, {} largest contiguous, {} min free watermark\x1B[K".format(
+                        name,
+                        len(heaps),
+                        sum((h[0] for h in heaps)),
+                        sum((h[1] for h in heaps)),
+                        max((h[2] for h in heaps)),
+                        sum((h[3] for h in heaps)),
+                    )
+                )
+                line_count += 1
+
         if previous_line_count > line_count:
             for _ in range(previous_line_count - line_count):
                 print("\x1B[K")
