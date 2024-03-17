@@ -19,9 +19,13 @@ replacement for CPython.
 
 ### Usage
 
-To use a unix-specific library, pass `unix_ffi=True` to `require()` in your
-manifest file.
+To use a unix-specific library, a manifest file must add the `unix-ffi`
+library to the library search path using `add_library()`:
 
 ```py
-require("os", unix_ffi=True) # Use the unix-ffi version instead of python-stdlib.
+add_library("unix-ffi", "$(MPY_LIB_DIR)/unix-ffi", prepend=True)
 ```
+
+Prepending the `unix-ffi` library to the path will make it so that the
+`unix-ffi` version of a package will be preferred if that package appears in
+both `unix-ffi` and another library (eg `python-stdlib`).

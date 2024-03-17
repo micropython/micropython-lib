@@ -1,8 +1,8 @@
 metadata(version="3.3.4")
 
-require("_markupbase", unix_ffi=True)
+require("_markupbase")
 require("warnings")
-require("html.entities", unix_ffi=True)
-require("re", unix_ffi=True)
+require("html.entities")
+require("re")
 
 package("html")

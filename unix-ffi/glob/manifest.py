@@ -1,8 +1,8 @@
 metadata(version="0.5.2")
 
-require("os", unix_ffi=True)
+require("os")
 require("os-path")
-require("re", unix_ffi=True)
+require("re")
 require("fnmatch")
 
 module("glob.py")
