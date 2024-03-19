@@ -53,11 +53,17 @@ class Handler:
         self.formatter = formatter
 
     def format(self, record):
-        return self.formatter.format(record)
+        if self.formatter:
+            fmt = self.formatter
+        else:
+            fmt = _defaultFormatter
+        return fmt.format(record)
 
 
 class StreamHandler(Handler):
     def __init__(self, stream=None):
+        # Not allowing `level` to be set via the initialiser to mirror CPython's implementation
+        super().__init__()
         self.stream = _stream if stream is None else stream
         self.terminator = "\n"
 
@@ -102,6 +108,12 @@ class Formatter:
             "asctime": record.asctime,
             "levelname": record.levelname,
         }
+
+
+#
+#   The default formatter to use when no other is specified
+#
+_defaultFormatter = Formatter()
 
 
 class Logger:
