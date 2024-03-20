@@ -102,15 +102,20 @@ Pages](https://docs.github.com/en/pages):
    "truthy" value).
 5. The settings for GitHub Actions and GitHub Pages features should not need to
    be changed from the repository defaults, unless you've explicitly disabled
-   them.
+   Actions or Pages in your fork.
 
 The next time you push commits to a branch in your fork, GitHub Actions will run
 an additional step in the "Build All Packages" workflow named "Publish Packages
-for branch".
+for branch". This step runs in *your fork*, but if you open a pull request then
+this workflow is not shown in the Pull Request's "Checks". These run in the
+upstream repository. Navigate to your fork's Actions tab in order to see
+the additional "Publish Packages for branch" step.
 
 Anyone can then install these packages as described under [Installing packages
-from forks](README.md#installing-packages-from-forks). The exact commands are also
-quoted in the GitHub Actions log for the "Publish Packages for branch" step.
+from forks](README.md#installing-packages-from-forks).
+
+The exact command is also quoted in the GitHub Actions log in your fork's
+Actions for the "Publish Packages for branch" step of "Build All Packages".
 
 #### Opting Back Out
 
