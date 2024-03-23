@@ -22,11 +22,36 @@ def time():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         s.settimeout(timeout)
-        res = s.sendto(NTP_QUERY, addr)
+        s.sendto(NTP_QUERY, addr)
         msg = s.recv(48)
     finally:
         s.close()
     val = struct.unpack("!I", msg[40:44])[0]
+
+    # 2024-01-01 00:00:00 converted to an NTP timestamp
+    MIN_NTP_TIMESTAMP = 3913056000
+
+    # Y2036 fix
+    #
+    # The NTP timestamp has a 32-bit count of seconds, which will wrap back
+    # to zero on 7 Feb 2036 at 06:28:16.
+    #
+    # We know that this software was written during 2024 (or later).
+    # So we know that timestamps less than MIN_NTP_TIMESTAMP are impossible.
+    # So if the timestamp is less than MIN_NTP_TIMESTAMP, that probably means
+    # that the NTP time wrapped at 2^32 seconds.  (Or someone set the wrong
+    # time on their NTP server, but we can't really do anything about that).
+    #
+    # So in that case, we need to add in those extra 2^32 seconds, to get the
+    # correct timestamp.
+    #
+    # This means that this code will work until the year 2160.  More precisely,
+    # this code will not work after 7th Feb 2160 at 06:28:15.
+    #
+    if val < MIN_NTP_TIMESTAMP:
+        val += 0x100000000
+
+    # Convert timestamp from NTP format to our internal format
 
     EPOCH_YEAR = utime.gmtime(0)[0]
     if EPOCH_YEAR == 2000:
