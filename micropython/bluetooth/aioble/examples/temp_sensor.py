@@ -39,7 +39,7 @@ def _encode_temperature(temp_deg_c):
 async def sensor_task():
     t = 24.5
     while True:
-        temp_characteristic.write(_encode_temperature(t))
+        temp_characteristic.write(_encode_temperature(t), send_update=True)
         t += random.uniform(-0.5, 0.5)
         await asyncio.sleep_ms(1000)
 
@@ -55,7 +55,7 @@ async def peripheral_task():
             appearance=_ADV_APPEARANCE_GENERIC_THERMOMETER,
         ) as connection:
             print("Connection from", connection.device)
-            await connection.disconnected()
+            await connection.disconnected(timeout_ms=None)
 
 
 # Run both tasks.
