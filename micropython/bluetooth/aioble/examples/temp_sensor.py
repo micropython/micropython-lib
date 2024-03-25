@@ -56,7 +56,7 @@ async def peripheral_task():
             appearance=_ADV_APPEARANCE_GENERIC_THERMOMETER,
         ) as connection:
             print("Connection from", connection.device)
-            await connection.disconnected()
+            await connection.disconnected(timeout_ms=None)
 
 
 # Run both tasks.
