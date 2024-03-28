@@ -1,12 +1,5 @@
 import tls
-from tls import (
-    CERT_NONE,
-    CERT_OPTIONAL,
-    CERT_REQUIRED,
-    MBEDTLS_VERSION,
-    PROTOCOL_TLS_CLIENT,
-    PROTOCOL_TLS_SERVER,
-)
+from tls import *
 
 
 class SSLContext:
