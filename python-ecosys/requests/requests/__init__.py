@@ -1,6 +1,16 @@
 import usocket
 
 
+def _make_user_agent():
+    import sys
+    comment = sys.implementation._machine
+    comment = comment.replace('\\', '\\\\').replace('(', '\\(').replace(')', '\\)')
+    ua = "MicroPython/{}.{}.{} ({})".format(*sys.implementation[1][:3], comment)
+    return ua
+
+default_user_agent = _make_user_agent()
+
+
 class Response:
     def __init__(self, f):
         self.raw = f
@@ -43,6 +53,7 @@ def request(
     auth=None,
     timeout=None,
     parse_headers=True,
+    user_agent=True
 ):
     redirect = None  # redirection url, None means no redirection
     chunked_data = data and getattr(data, "__next__", None) and not getattr(data, "__len__", None)
@@ -64,6 +75,17 @@ def request(
         username, password = auth
         basic_auth_header = b"{}:{}".format(username, password)
         basic_auth_header = ubinascii.b2a_base64(basic_auth_header)[:-1]
+
+    if user_agent:
+        if user_agent is True:
+            # Use the standard User-Agent
+            user_agent = default_user_agent
+        elif user_agent[0] == ' ':
+            # It's a suffix to append to the standard User-Agent
+            user_agent = default_user_agent + user_agent
+
+        if user_agent:
+            user_agent = user_agent.encode('ascii')
 
     try:
         proto, dummy, host, path = url.split("/", 3)
@@ -120,6 +142,10 @@ def request(
         if basic_auth_header:
             s.write(b"Authorization: Basic ")
             s.write(basic_auth_header)
+            s.write(b"\r\n")
+        if user_agent:
+            s.write(b"User-Agent: ")
+            s.write(user_agent)
             s.write(b"\r\n")
 
         # Iterate over keys to avoid tuple alloc
