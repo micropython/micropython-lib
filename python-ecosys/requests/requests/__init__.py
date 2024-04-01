@@ -42,6 +42,29 @@ class Response:
 
         return ujson.loads(self.content)
 
+    def get_date(self, k):
+        import email.utils
+        as_str = self.headers.get(k)
+        if not as_str:
+            return None
+        return email.utils.parsedate_to_datetime(as_str)
+
+    def get_date_as_int(self, k):
+        import datetime
+        dt = self.get_date(k)
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.timezone.utc)
+        else:
+            dt = dt.astimezone(datetime.timezone.utc)
+
+        # dt.timestamp() returns a value of type float, but the number
+        # inside that float will always be an integer in this case,
+        # because the formats supported by parsedate_to_datetime()
+        # only have 1 second resolution.
+        return int(dt.timestamp())
+
 
 def request(
     method,
