@@ -831,6 +831,7 @@ class datetime:
             conv = _tmod.gmtime
             epoch = datetime.EPOCH.replace(tzinfo=None)
         else:
+            # TODO this is wrong when a timezone is set
             conv = _tmod.localtime
             epoch = datetime.EPOCH
         return conv(round((self - epoch).total_seconds()))
