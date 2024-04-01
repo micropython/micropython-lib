@@ -47,13 +47,23 @@ def request(
     redirect = None  # redirection url, None means no redirection
     chunked_data = data and getattr(data, "__next__", None) and not getattr(data, "__len__", None)
 
+    # Security and correctness: Can't add extra fields to `headers`,
+    # we have to have separate variables for them.
+    #
+    # This is because have `headers={}` in the function prototype.
+    # So the same dictionary will get reused for every call that doesn't
+    # explicitly specify a `headers` parameter.
+    #
+    # So if we put an Authorization header in `headers`, then following a
+    # request to a site that requires a username and password, that same
+    # plain-text username and password would be sent with every following HTTP
+    # request that used the default for the `headers` parameter.
+    basic_auth_header = None
     if auth is not None:
         import ubinascii
-
         username, password = auth
-        formated = b"{}:{}".format(username, password)
-        formated = str(ubinascii.b2a_base64(formated)[:-1], "ascii")
-        headers["Authorization"] = "Basic {}".format(formated)
+        basic_auth_header = b"{}:{}".format(username, password)
+        basic_auth_header = ubinascii.b2a_base64(basic_auth_header)[:-1]
 
     try:
         proto, dummy, host, path = url.split("/", 3)
@@ -96,6 +106,11 @@ def request(
         s.write(b"%s /%s HTTP/1.0\r\n" % (method, path))
         if "Host" not in headers:
             s.write(b"Host: %s\r\n" % host)
+        if basic_auth_header:
+            s.write(b"Authorization: Basic ")
+            s.write(basic_auth_header)
+            s.write(b"\r\n")
+
         # Iterate over keys to avoid tuple alloc
         for k in headers:
             s.write(k)
