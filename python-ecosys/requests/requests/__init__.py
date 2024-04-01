@@ -204,7 +204,10 @@ def request(
             elif parse_headers is True:
                 l = str(l, "utf-8")
                 k, v = l.split(":", 1)
-                resp_d[k] = v.strip()
+                # Headers are case insensitive, so we lowercase them.
+                # This avoids having to do a linear case-insensitive search
+                # through the dictionary later.
+                resp_d[k.lower()] = v.strip()
             else:
                 parse_headers(l, resp_d)
     except OSError:
