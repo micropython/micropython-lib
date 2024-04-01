@@ -101,6 +101,17 @@ def request(
         s.connect(ai[-1])
         if proto == "https:":
             context = tls.SSLContext(tls.PROTOCOL_TLS_CLIENT)
+            # TODO: This is a security vulnerability.
+            # HTTPS is providing nearly zero security, because of the next
+            # line.  We disable all the protection against MiTM attacks!
+            #
+            # I mean... with this configuration, HTTPS still provides
+            # protection against passive eavesdropping, so there's that?
+            # But with modern network design, and modern attacks, anyone
+            # able to passively eavesdrop is almost certainly able to MiTM
+            # too.  So the safety level is technically not quite zero, but
+            # it is very close to zero, and is far less than people using
+            # HTTPS expect.
             context.verify_mode = tls.CERT_NONE
             s = context.wrap_socket(s, server_hostname=host)
         s.write(b"%s /%s HTTP/1.0\r\n" % (method, path))
