@@ -86,7 +86,7 @@ class WebSocketClient:
 
     def _process_websocket_frame(self, opcode, payload):
         if opcode == self.TEXT:
-            payload = payload.decode()
+            payload = str(payload, "utf-8")
         elif opcode == self.BINARY:
             pass
         elif opcode == self.CLOSE:
@@ -143,7 +143,7 @@ class WebSocketClient:
         headers["Host"] = f"{uri.hostname}:{uri.port}"
         headers["Connection"] = "Upgrade"
         headers["Upgrade"] = "websocket"
-        headers["Sec-WebSocket-Key"] = key
+        headers["Sec-WebSocket-Key"] = str(key, "utf-8")
         headers["Sec-WebSocket-Version"] = "13"
         headers["Origin"] = f"{_http_proto}://{uri.hostname}:{uri.port}"
 
