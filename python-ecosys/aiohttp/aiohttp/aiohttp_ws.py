@@ -143,7 +143,7 @@ class WebSocketClient:
         headers["Host"] = f"{uri.hostname}:{uri.port}"
         headers["Connection"] = "Upgrade"
         headers["Upgrade"] = "websocket"
-        headers["Sec-WebSocket-Key"] = key
+        headers["Sec-WebSocket-Key"] = key.decode()
         headers["Sec-WebSocket-Version"] = "13"
         headers["Origin"] = f"{_http_proto}://{uri.hostname}:{uri.port}"
 
