@@ -43,36 +43,28 @@ def parse_resp(buf, is_ipv6):
     if is_ipv6:
         typ = 28  # AAAA
 
-    id = buf.readbin(">H")
+    buf.readbin(">H")  # id
     flags = buf.readbin(">H")
     assert flags & 0x8000
-    qcnt = buf.readbin(">H")
+    buf.readbin(">H")  # qcnt
     acnt = buf.readbin(">H")
-    nscnt = buf.readbin(">H")
-    addcnt = buf.readbin(">H")
-    # print(qcnt, acnt, nscnt, addcnt)
+    buf.readbin(">H")  # nscnt
+    buf.readbin(">H")  # addcnt
 
     skip_fqdn(buf)
-    v = buf.readbin(">H")
-    # print(v)
-    v = buf.readbin(">H")
-    # print(v)
+    buf.readbin(">H")
+    buf.readbin(">H")
 
     for i in range(acnt):
         # print("Resp #%d" % i)
         # v = read_fqdn(buf)
         # print(v)
         skip_fqdn(buf)
-        t = buf.readbin(">H")
-        # print("Type", t)
-        v = buf.readbin(">H")
-        # print("Class", v)
-        v = buf.readbin(">I")
-        # print("TTL", v)
+        t = buf.readbin(">H")  # Type
+        buf.readbin(">H")  # Class
+        buf.readbin(">I")  # TTL
         rlen = buf.readbin(">H")
-        # print("rlen", rlen)
         rval = buf.read(rlen)
-        # print(rval)
 
         if t == typ:
             return rval

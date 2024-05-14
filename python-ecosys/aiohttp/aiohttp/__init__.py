@@ -104,7 +104,6 @@ class ClientSession:
 
     async def _request(self, method, url, data=None, json=None, ssl=None, params=None, headers={}):
         redir_cnt = 0
-        redir_url = None
         while redir_cnt < 2:
             reader = await self.request_raw(method, url, data, json, ssl, params, headers)
             _headers = []

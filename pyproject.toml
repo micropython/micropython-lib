@@ -63,7 +63,6 @@ ignore = [
   "F405",
   "E501",
   "F541",
-  "F841",
   "ISC001",
   "ISC003",  # micropython does not support implicit concatenation of f-strings
   "PIE810",  # micropython does not support passing tuples to .startswith or .endswith

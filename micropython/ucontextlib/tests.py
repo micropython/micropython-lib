@@ -24,7 +24,7 @@ class ContextManagerTestCase(unittest.TestCase):
     def test_context_manager_on_error(self):
         exc = Exception()
         try:
-            with self._manager(123) as x:
+            with self._manager(123):
                 raise exc
         except Exception as e:
             self.assertEqual(exc, e)

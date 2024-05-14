@@ -48,10 +48,10 @@ def urlopen(url, data=None, method="GET"):
         if data:
             s.write(data)
 
-        l = s.readline()
-        l = l.split(None, 2)
+        l = s.readline()  # Status-Line
+        # l = l.split(None, 2)
         # print(l)
-        status = int(l[1])
+        # status = int(l[1])  # FIXME: Status-Code element is not currently checked
         while True:
             l = s.readline()
             if not l or l == b"\r\n":

@@ -132,15 +132,12 @@ async def control_task(connection):
                 file = msg[2:].decode()
 
                 if command == _COMMAND_SEND:
-                    op_seq = seq
                     send_file = file
                     l2cap_event.set()
                 elif command == _COMMAND_RECV:
-                    op_seq = seq
                     recv_file = file
                     l2cap_event.set()
                 elif command == _COMMAND_LIST:
-                    op_seq = seq
                     list_path = file
                     l2cap_event.set()
                 elif command == _COMMAND_SIZE:
@@ -148,7 +145,7 @@ async def control_task(connection):
                         stat = os.stat(file)
                         size = stat[6]
                         status = 0
-                    except OSError as e:
+                    except OSError:
                         size = 0
                         status = _STATUS_NOT_FOUND
                     control_characteristic.notify(

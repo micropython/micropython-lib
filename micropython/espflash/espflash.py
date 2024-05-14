@@ -258,7 +258,6 @@ class ESPFlash:
         print(f"Flash write size: {size} total_blocks: {total_blocks} block size: {blksize}")
         with open(path, "rb") as f:
             seq = 0
-            subseq = 0
             for i in range(total_blocks):
                 buf = f.read(blksize)
                 # Update digest

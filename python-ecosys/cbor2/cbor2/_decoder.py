@@ -159,7 +159,7 @@ def decode_simple_value(decoder):
 
 
 def decode_float16(decoder):
-    payload = decoder.read(2)
+    decoder.read(2)
     raise NotImplementedError  # no float16 unpack function
 
 
