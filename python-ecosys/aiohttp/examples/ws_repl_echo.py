@@ -1,5 +1,6 @@
 import sys
 
+# ruff: noqa: E402
 sys.path.insert(0, ".")
 import aiohttp
 import asyncio

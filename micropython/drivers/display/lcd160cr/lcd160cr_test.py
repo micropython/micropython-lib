@@ -1,7 +1,10 @@
 # Driver test for official MicroPython LCD160CR display
 # MIT license; Copyright (c) 2017 Damien P. George
 
-import time, math, framebuf, lcd160cr
+import framebuf
+import lcd160cr
+import math
+import time
 
 
 def get_lcd(lcd):

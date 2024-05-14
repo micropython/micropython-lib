@@ -22,7 +22,8 @@ class ClientResponse:
         c_encoding = self.headers.get("Content-Encoding")
         if c_encoding in ("gzip", "deflate", "gzip,deflate"):
             try:
-                import deflate, io
+                import deflate
+                import io
 
                 if c_encoding == "deflate":
                     with deflate.DeflateIO(io.BytesIO(data), deflate.ZLIB) as d:

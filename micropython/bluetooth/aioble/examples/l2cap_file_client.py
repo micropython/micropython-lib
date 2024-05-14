@@ -5,6 +5,7 @@
 
 import sys
 
+# ruff: noqa: E402
 sys.path.append("")
 
 from micropython import const

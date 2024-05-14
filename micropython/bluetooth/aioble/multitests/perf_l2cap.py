@@ -1,9 +1,11 @@
 import sys
 
+# ruff: noqa: E402
 sys.path.append("")
 
 from micropython import const
-import time, machine
+import machine
+import time
 
 import uasyncio as asyncio
 import aioble

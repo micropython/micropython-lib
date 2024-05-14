@@ -54,14 +54,12 @@ select = [
   # "UP",   # pyupgrade
 ]
 ignore = [
-  "E401",
-  "E402",
   "E722",
-  "E741",
+  "E741",  # 'l' is currently widely used
   "F401",
   "F403",
   "F405",
-  "E501",
+  "E501",  # line length, recommended to disable
   "ISC001",
   "ISC003",  # micropython does not support implicit concatenation of f-strings
   "PIE810",  # micropython does not support passing tuples to .startswith or .endswith
@@ -74,7 +72,7 @@ ignore = [
   "PLW2901",
   "RUF012",
   "RUF100",
-  "W191",
+  "W191",  # tab-indent, redundant when using formatter
 ]
 line-length = 99
 target-version = "py37"
