@@ -43,9 +43,7 @@ from struct import pack, unpack
 
 
 class RORegBit:
-    def __init__(
-        self, i2c, dev_addr, reg_addr, num_bytes, bit_location, endian="", fmt="B"
-    ):
+    def __init__(self, i2c, dev_addr, reg_addr, num_bytes, bit_location, endian="", fmt="B"):
         """
         Creates an :class:`RORegBit` object which allows read only access to a single bit within a register.
 
@@ -143,9 +141,7 @@ class RORegBit:
 
 
 class RWRegBit:
-    def __init__(
-        self, i2c, dev_addr, reg_addr, num_bytes, bit_location, endian="", fmt="B"
-    ):
+    def __init__(self, i2c, dev_addr, reg_addr, num_bytes, bit_location, endian="", fmt="B"):
         """
         Creates an :class:`RORegBit` object which allows read and write access to a single bit within a register.
 
@@ -231,9 +227,7 @@ class RWRegBit:
 
         __check_reg(self)
 
-        self._premask, self._postmask = __calc_mask(
-            bit_location, bit_location, num_bytes
-        )
+        self._premask, self._postmask = __calc_mask(bit_location, bit_location, num_bytes)
 
         del (i2c, dev_addr, reg_addr, num_bytes, bit_location, endian, fmt)
 
@@ -253,9 +247,7 @@ class RWRegBit:
 
 
 class RORegBits:
-    def __init__(
-        self, i2c, dev_addr, reg_addr, num_bytes, lsb, msb, endian="", fmt="B"
-    ):
+    def __init__(self, i2c, dev_addr, reg_addr, num_bytes, lsb, msb, endian="", fmt="B"):
         """
         Creates an :class:`RORegBits` object which allows read only access to a sequential set of bits within a bitfield.
 
@@ -359,9 +351,7 @@ class RORegBits:
 
 
 class RWRegBits:
-    def __init__(
-        self, i2c, dev_addr, reg_addr, num_bytes, lsb, msb, endian="", fmt="B"
-    ):
+    def __init__(self, i2c, dev_addr, reg_addr, num_bytes, lsb, msb, endian="", fmt="B"):
         """
         Creates an :class:`RWRegBits` object which allows read and write access to a sequential set of bits within a bitfield.
 
@@ -742,9 +732,7 @@ def __setbit(reg_object, setting):
             value = pack(reg_object._endian + reg_object._fmt, value)
 
             # Write to I2C
-            reg_object._i2c.writeto_mem(
-                reg_object._dev_addr, reg_object._reg_addr, value
-            )
+            reg_object._i2c.writeto_mem(reg_object._dev_addr, reg_object._reg_addr, value)
 
             # Return True for success
             return True
@@ -775,7 +763,6 @@ def __getbits(reg_object):
 def __setbits(reg_object, setting):
     if isinstance(reg_object, RWRegBits):
         if isinstance(setting, int) and setting <= reg_object._mask:
-
             # Retrieve register value and unpack to int
             value = reg_object._i2c.readfrom_mem(
                 reg_object._dev_addr, reg_object._reg_addr, reg_object._num_bytes
@@ -795,16 +782,12 @@ def __setbits(reg_object, setting):
             value = struct.pack(reg_object._endian + reg_object._fmt, value)
 
             # Write to device
-            reg_object._i2c.writeto_mem(
-                reg_object._dev_addr, reg_object._reg_addr, value
-            )
+            reg_object._i2c.writeto_mem(reg_object._dev_addr, reg_object._reg_addr, value)
 
             return True
 
         else:
-            raise ValueError(
-                f"value of setting exceeds max value of bitfield: {reg_object._mask}"
-            )
+            raise ValueError(f"value of setting exceeds max value of bitfield: {reg_object._mask}")
     else:
         raise TypeError("incorrect object type - must be RWRegBits")
 
@@ -824,13 +807,10 @@ def __getreg(reg_object):
 
 
 def __setreg(reg_object, settings):
-
     if isinstance(reg_object, RWReg):
         if isinstance(settings, (bytes, bytearray)):
             # Write to device
-            reg_object._i2c.writeto_mem(
-                reg_object._dev_addr, reg_object._reg_addr, settings
-            )
+            reg_object._i2c.writeto_mem(reg_object._dev_addr, reg_object._reg_addr, settings)
 
         elif isinstance(settings, (tuple, list)):
             # Where our data will go
@@ -867,10 +847,8 @@ def __calc_mask(lsb, msb, numbytes):
     if lsb.__class__() == int() and lsb >= 0:
         if msb.__class__() == int() and msb >= 0:
             if numbytes.__class__() == int() and numbytes >= 0:
-
                 # Check for detectable errors
                 if msb >= lsb:
-
                     # Single bit mask
                     if msb == lsb:
                         pre, post = 0b0, 0b0
@@ -887,7 +865,6 @@ def __calc_mask(lsb, msb, numbytes):
 
                     # Multibit mask
                     else:
-
                         # Values to return
                         pre, mask, post = 0b0, 0b0, 0b0
 
@@ -919,7 +896,6 @@ def __calc_mask(lsb, msb, numbytes):
 
 
 def __check_reg(reg_object):
-
     # Alowable struct.pack/unpack formats to check for
     fmts = {
         "b": 1,
@@ -939,10 +915,8 @@ def __check_reg(reg_object):
 
     # Take in only register objects
     if isinstance(reg_object, (RORegBit, RWRegBit, RORegBits, RWRegBits, ROReg, RWReg)):
-
         # Make sure they are strings
         if type(reg_object._fmt) == str and type(reg_object._endian) == str:
-
             # Check each letter in format string, To see if allowable
             for n in range(0, len(reg_object._fmt)):
                 if reg_object._fmt[n] in fmts:
@@ -950,9 +924,7 @@ def __check_reg(reg_object):
                     byte_count = byte_count + fmts[reg_object._fmt[n]]
 
                 else:
-                    raise ValueError(
-                        f"unsupported format code of '{reg_object._fmt[n]}'"
-                    )
+                    raise ValueError(f"unsupported format code of '{reg_object._fmt[n]}'")
 
             if byte_count != reg_object._num_bytes:
                 raise ValueError(
