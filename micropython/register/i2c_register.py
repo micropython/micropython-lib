@@ -34,8 +34,6 @@
                 Q         unsigned long long      8
                 f         float                   4
                 d         double                  8
-   
-
 """
 
 from machine import I2C
@@ -44,8 +42,7 @@ from struct import pack, unpack
 class RORegBit:
     def __init__(self, i2c, dev_addr, reg_addr, num_bytes, bit_location, endian='', fmt='B'):
         """
-        Creates an :class:`RORegBit` object which allows read only access to a single bit within a register. 
-            
+        Creates an :class:`RORegBit` object which allows read only access to a single bit within a register.             
             
         :param i2c: I2C bus which connects the host system to the peripheral device
         :type kind: machine.I2C()
@@ -780,8 +777,7 @@ def __setreg(reg_object, settings):
     if isinstance(reg_object, RWReg):
         if isinstance(settings, (bytes, bytearray)):
                 # Write to device
-                reg_object._i2c.writeto_mem(reg_object._dev_addr, reg_object._reg_addr, settings)
-                
+                reg_object._i2c.writeto_mem(reg_object._dev_addr, reg_object._reg_addr, settings)      
                 
         elif isinstance(settings, (tuple, list)):
             # Where our data will go
@@ -809,8 +805,7 @@ def __calc_mask(lsb, msb, numbytes):
     Takes in full description of bitfield that needs masking
     
     returns ints() pre, mask, post
-    """
-    
+    """    
     # Check input types
     if lsb.__class__() == int() and lsb >= 0:
         if msb.__class__() == int() and msb >= 0:
@@ -894,106 +889,3 @@ def __check_reg(reg_object):
             raise TypeError("format and endian must be of type str()")
     else:
         raise TypeError("incorrect object type - must be ROReg, RWReg, ROBits, RWBits, ROReg, RWReg")
-
-class Transaction:
-    """
-    The user can supply a transaction object with a list of any number of
-    Register objects. The Transaction object will then perform one I2C
-    transaction and return all data as a list OR perform all write operations.
-    
-    1) The Register objects should all be from one physical I2C device
-    2) True = Read, False = Write (Default is read)
-    3) Reads can be from non-sequential registers
-    4) Writes can be made only to sequential registers OR more than one
-       transaction will be generated
-    
-    i.e.
-    
-    # Define Register objects
-    register1 = ROBits()
-    register2 = ROBits()
-    register3 = ROBits()
-    
-    # Create list object containing only Register objects
-    list_of_registers = [register1, register2, register3]
-    
-    # Instantiate Transaction object
-    data_from_device = Transaction(list_of_registers)
-    
-    # Retrieve data
-    data = data_from_device.__get__()
-    
-    # Use data as desired
-    datapoint_1 = data_from_device[0]
-    datapoint_2 = data_from_device[1]
-    datapoint_3 = data_from_device[2]
-    """
-    
-    
-    def __init__(self, read_or_write:bool = True, list_of_registers:list() =[]):
-        # Data
-        self.__list_of_registers = list_of_registers
-        
-        # Check if it is a list
-        if self.__list_of_registers.__class__() == list():            
-            
-            for reg in self.__list_of_registers:
-                # Check each element against all possible Register types
-                if self.__list_of_registers[reg].__class__() in [RORegBit, RORegBits, RWRegBit, RWRegBits, RORegStruct]:
-                    pass
-                    
-                else:
-                    # Error - list_element[reg] not a register object
-                    pass
-        
-        else:
-            # Error - list_of_registers object must be list()
-            pass
-                
-    def add_reg(self, reg_object):
-        """
-        This function allows for register objects to be added to an already
-        instantiated Transaction object
-        """
-        if reg_object.__class__() in [RORegBit, RORegBits, RWRegBit, RWRegBits, RORegStruct]:
-            self.__list_of_registers.append(reg_object)
-            
-            self._order_list()
-            
-        else:
-            # Error - reg object of incorrect type()
-            pass
-        
-    def rem_reg(self, index):
-        """
-        This function allows for a register object to be removed from an
-        already instantiated transaction object
-        """        
-        if index in range(0, len(self.__list_of_registers)):
-            # Remove element 
-            self.__list_of_registers.remove(index)
-        else:
-            # Error - index out of bounds
-            pass
-        
-    def order_list(self):        
-        """        
-        Sorts list of registers by register address            
-        """
-        self.__list_of_registers = sorted(self.__list_of_registers, key=lambda reg:reg.reg_addr)
-        
-    def data(self):
-        """
-        Performs 1 i2c transaction and returns data as list
-        """
-            
-        
-            
-            
-        
-            
-                 
-        
-                 
-        
-        
