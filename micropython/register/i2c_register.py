@@ -1,8 +1,8 @@
 """
     * Author(s): SquirtleSquadLeader
-    
+
     * License: MIT
-        
+
     * Purpose:
         * The purpose of this module is to provide easy I2C Register
         * access.  It is inspired by the CircuitPython Register
@@ -16,8 +16,8 @@
             
             * ROReg - Single/Multi Read Only
             * RWReg - Single/Multi Read/Write
-            
-        
+
+
     * Notes:
         1) Reference format strings below:                   
              Format          C Type          Standard size    
@@ -34,8 +34,6 @@
                 Q         unsigned long long      8
                 f         float                   4
                 d         double                  8
-   
-
 """
 
 from machine import I2C
@@ -118,8 +116,8 @@ class RORegBit:
 
             # invoke class object
             device = FooDevice(i2c)
-
         """
+
         self._i2c = i2c
         self._dev_addr = dev_addr
         self._reg_addr = reg_addr
@@ -215,7 +213,6 @@ class RWRegBit:
 
             # invoke class object
             device = FooDevice(i2c)
-
         """
         self._i2c = i2c
         self._dev_addr = dev_addr
@@ -327,7 +324,6 @@ class RORegBits:
 
             n1 = device.get_my_reg()
             n2 = device.my_reg2
-
         """
         self._i2c = i2c
         self._dev_addr = dev_addr
@@ -441,7 +437,6 @@ class RWRegBits:
 
            device.my_reg2 = 0b110
            print(device.my_reg2) # prints 6
-
         """
         self._i2c = i2c
         self._dev_addr = dev_addr
@@ -548,7 +543,6 @@ class ROReg:
 
             print(device.get_my_reg1())
             print(device.my_reg2)
-
         """
         self._i2c = i2c
         self._dev_addr = dev_addr
@@ -646,7 +640,6 @@ class RWReg:
                 def my_reg2(self, n):
                     return self._my_reg_1.__set__(n)
 
-
             # invoke class object
             device = FooDevice(i2c)
 
@@ -655,7 +648,6 @@ class RWReg:
 
             device.my_reg2 = 0b1111_0000
             print(device.my_reg2) # prints 240
-
         """
         self._i2c = i2c
         self._dev_addr = dev_addr
