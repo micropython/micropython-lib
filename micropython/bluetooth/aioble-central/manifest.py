@@ -1,4 +1,4 @@
-metadata(version="0.2.1")
+metadata(version="0.2.2")
 
 require("aioble-core")
 

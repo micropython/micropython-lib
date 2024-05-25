@@ -195,12 +195,14 @@ class ScanResult:
 
     # Generator that enumerates the service UUIDs that are advertised.
     def services(self):
-        for u in self._decode_field(_ADV_TYPE_UUID16_INCOMPLETE, _ADV_TYPE_UUID16_COMPLETE):
-            yield bluetooth.UUID(struct.unpack("<H", u)[0])
-        for u in self._decode_field(_ADV_TYPE_UUID32_INCOMPLETE, _ADV_TYPE_UUID32_COMPLETE):
-            yield bluetooth.UUID(struct.unpack("<I", u)[0])
-        for u in self._decode_field(_ADV_TYPE_UUID128_INCOMPLETE, _ADV_TYPE_UUID128_COMPLETE):
-            yield bluetooth.UUID(u)
+        for uuid_len, codes in (
+            (2, (_ADV_TYPE_UUID16_INCOMPLETE, _ADV_TYPE_UUID16_COMPLETE)),
+            (4, (_ADV_TYPE_UUID32_INCOMPLETE, _ADV_TYPE_UUID32_COMPLETE)),
+            (16, (_ADV_TYPE_UUID128_INCOMPLETE, _ADV_TYPE_UUID128_COMPLETE)),
+        ):
+            for u in self._decode_field(*codes):
+                for i in range(0, len(u), uuid_len):
+                    yield bluetooth.UUID(u[i : i + uuid_len])
 
     # Generator that returns (manufacturer_id, data) tuples.
     def manufacturer(self, filter=None):
