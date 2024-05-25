@@ -47,6 +47,8 @@ async def instance0_task():
         20_000, adv_data=b"\x02\x01\x06\x04\xffMPY", timeout_ms=TIMEOUT_MS
     )
 
+    print("connect")
+
     client_characteristic = await discover_server(connection)
 
     # Give the central enough time to discover chars.
@@ -61,7 +63,7 @@ async def instance0_task():
 
     ticks_end = time.ticks_ms()
     ticks_total = time.ticks_diff(ticks_end, ticks_start)
-    print(
+    multitest.output_metric(
         "Acknowledged {} notifications in {} ms. {} ms/notification.".format(
             _NUM_NOTIFICATIONS, ticks_total, ticks_total // _NUM_NOTIFICATIONS
         )
@@ -86,6 +88,8 @@ async def instance1_task():
 
     device = aioble.Device(*BDADDR)
     connection = await device.connect(timeout_ms=TIMEOUT_MS)
+
+    print("connect")
 
     client_characteristic = await discover_server(connection)
 

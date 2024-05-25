@@ -32,6 +32,8 @@ async def instance0_task():
         20_000, adv_data=b"\x02\x01\x06\x04\xffMPY", timeout_ms=TIMEOUT_MS
     )
 
+    print("connect")
+
     channel = await connection.l2cap_accept(_L2CAP_PSM, _L2CAP_MTU, timeout_ms=TIMEOUT_MS)
 
     random.seed(_RANDOM_SEED)
@@ -66,6 +68,8 @@ async def instance1_task():
     device = aioble.Device(*BDADDR)
     connection = await device.connect(timeout_ms=TIMEOUT_MS)
 
+    print("connect")
+
     await asyncio.sleep_ms(500)
 
     channel = await connection.l2cap_connect(_L2CAP_PSM, _L2CAP_MTU, timeout_ms=TIMEOUT_MS)
@@ -90,7 +94,7 @@ async def instance1_task():
     ticks_end = time.ticks_ms()
     total_ticks = time.ticks_diff(ticks_end, ticks_first_byte)
 
-    print(
+    multitest.output_metric(
         "Received {}/{} bytes in {} ms. {} B/s".format(
             recv_bytes, recv_correct, total_ticks, recv_bytes * 1000 // total_ticks
         )
