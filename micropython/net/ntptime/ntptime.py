@@ -17,7 +17,7 @@ timeout = 1
 
 def time():
     NTP_QUERY = bytearray(48)
-    NTP_QUERY[0] = 0x1B
+    NTP_QUERY[0] = 0x23
     addr = socket.getaddrinfo(host, 123)[0][-1]
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
