@@ -34,6 +34,7 @@ class MQTTClient:
         self.lw_msg = None
         self.lw_qos = 0
         self.lw_retain = False
+        self.ping_response_received = False
 
     def _send_str(self, s):
         self.sock.write(struct.pack("!H", len(s)))
@@ -112,6 +113,7 @@ class MQTTClient:
 
     def ping(self):
         self.sock.write(b"\xc0\0")
+        self.ping_response_received = False
 
     def publish(self, topic, msg, retain=False, qos=0):
         pkt = bytearray(b"\x30\0\0\0")
@@ -181,6 +183,7 @@ class MQTTClient:
         if res == b"\xd0":  # PINGRESP
             sz = self.sock.read(1)[0]
             assert sz == 0
+            self.ping_response_received = True
             return None
         op = res[0]
         if op & 0xF0 != 0x30:
