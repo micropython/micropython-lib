@@ -8,6 +8,14 @@ from micropython import const
 import machine
 import struct
 
+try:
+    from _thread import get_ident
+except ImportError:
+
+    def get_ident():
+        return 0  # Placeholder, for no threading support
+
+
 _EP_IN_FLAG = const(1 << 7)
 
 # USB descriptor types
@@ -76,6 +84,8 @@ class _Device:
         self._itfs = {}  # Mapping from interface number to interface object, set by init()
         self._eps = {}  # Mapping from endpoint address to interface object, set by _open_cb()
         self._ep_cbs = {}  # Mapping from endpoint address to Optional[xfer callback]
+        self._cb_thread = None  # Thread currently running endpoint callback
+        self._cb_ep = None  # Endpoint number currently running callback
         self._usbd = machine.USBDevice()  # low-level API
 
     def init(self, *itfs, **kwargs):
@@ -176,7 +186,9 @@ class _Device:
             itf.desc_cfg(desc, itf_num, ep_num, strs)
 
             for _ in range(itf.num_itfs()):
-                self._itfs[itf_num] = itf  # Mapping from interface numbers to interfaces
+                self._itfs[itf_num] = (
+                    itf  # Mapping from interface numbers to interfaces
+                )
                 itf_num += 1
 
             ep_num += itf.num_eps()
@@ -298,7 +310,7 @@ class _Device:
         # that function for documentation about the possible parameter values.
         if ep_addr not in self._eps:
             raise ValueError("ep_addr")
-        if self._ep_cbs[ep_addr]:
+        if self._xfer_pending(ep_addr):
             raise RuntimeError("xfer_pending")
 
         # USBDevice callback may be called immediately, before Python execution
@@ -308,12 +320,26 @@ class _Device:
         self._ep_cbs[ep_addr] = done_cb or True
         return self._usbd.submit_xfer(ep_addr, data)
 
+    def _xfer_pending(self, ep_addr):
+        # Singleton function to return True if transfer is pending on this endpoint.
+        #
+        # Generally, drivers should call Interface.xfer_pending() instead. See that
+        # function for more documentation.
+        return bool(self._ep_cbs[ep_addr]) or (
+            self._cb_ep == ep_addr and self._cb_thread != get_ident()
+        )
+
     def _xfer_cb(self, ep_addr, result, xferred_bytes):
         # Singleton callback from TinyUSB custom class driver when a transfer completes.
         cb = self._ep_cbs.get(ep_addr, None)
+        self._cb_thread = get_ident()
+        self._cb_ep = ep_addr  # Track while callback is running
         self._ep_cbs[ep_addr] = None
-        if callable(cb):
-            cb(ep_addr, result, xferred_bytes)
+        try:
+            if callable(cb):
+                cb(ep_addr, result, xferred_bytes)
+        finally:
+            self._cb_ep = None
 
     def _control_xfer_cb(self, stage, request):
         # Singleton callback from TinyUSB custom class driver when a control
@@ -528,7 +554,12 @@ class Interface:
         # Return True if a transfer is already pending on ep_addr.
         #
         # Only one transfer can be submitted at a time.
-        return _dev and bool(_dev._ep_cbs[ep_addr])
+        #
+        # The transfer is marked pending while a completion callback is running
+        # for that endpoint, unless this function is called from the callback
+        # itself. This makes it simple to submit a new transfer from the
+        # completion callback.
+        return _dev and _dev._xfer_pending(ep_addr)
 
     def submit_xfer(self, ep_addr, data, done_cb=None):
         # Submit a USB transfer (of any type except control)
