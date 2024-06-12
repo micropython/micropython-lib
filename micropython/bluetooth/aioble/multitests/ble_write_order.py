@@ -44,12 +44,12 @@ async def instance0_task():
 
     # Register characteristic.written() handlers as asyncio background tasks.
     # The order of these is important!
-    asyncio.create_task(task_written(characteristic_second, "second"))
-    asyncio.create_task(task_written(characteristic_first, "first"))
+    task_second = asyncio.create_task(task_written(characteristic_second, "second"))
+    task_first = asyncio.create_task(task_written(characteristic_first, "first"))
 
     # This dummy task simulates background processing on a real system that
     # can block the asyncio loop for brief periods of time
-    asyncio.create_task(task_dummy())
+    task_dummy_ = asyncio.create_task(task_dummy())
 
     multitest.globals(BDADDR=aioble.config("mac"))
     multitest.next()
@@ -62,6 +62,10 @@ async def instance0_task():
         print("connected")
 
         await connection.disconnected()
+
+    task_second.cancel()
+    task_first.cancel()
+    task_dummy_.cancel()
 
 
 async def task_written(chr, label):
