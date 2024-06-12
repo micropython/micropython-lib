@@ -7,7 +7,7 @@ from micropython import const
 import machine
 import time
 
-import uasyncio as asyncio
+import asyncio
 import aioble
 import bluetooth
 import random

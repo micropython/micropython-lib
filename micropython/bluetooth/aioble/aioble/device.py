@@ -3,7 +3,7 @@
 
 from micropython import const
 
-import uasyncio as asyncio
+import asyncio
 import binascii
 
 from .core import ble, register_irq_handler, log_error

@@ -2,7 +2,7 @@
 # uaiohttpclient - fetch URL passed as command line argument.
 #
 import sys
-import uasyncio as asyncio
+import asyncio
 import uaiohttpclient as aiohttp
 
 

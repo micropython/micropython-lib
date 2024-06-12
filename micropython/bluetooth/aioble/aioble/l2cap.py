@@ -3,7 +3,7 @@
 
 from micropython import const
 
-import uasyncio as asyncio
+import asyncio
 
 from .core import ble, log_error, register_irq_handler
 from .device import DeviceConnection

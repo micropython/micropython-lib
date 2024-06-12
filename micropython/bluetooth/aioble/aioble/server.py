@@ -4,7 +4,7 @@
 from micropython import const
 from collections import deque
 import bluetooth
-import uasyncio as asyncio
+import asyncio
 
 from .core import (
     ensure_active,

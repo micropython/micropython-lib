@@ -4,7 +4,7 @@ A supplementary module which extends the micropython `espnow` module to provide
 `asyncio` support.
 
 - Asyncio support is available on all ESP32 targets as well as those ESP8266
-boards which include the `uasyncio` module (ie. ESP8266 devices with at least
+boards which include the `asyncio` module (ie. ESP8266 devices with at least
 2MB flash storage).
 
 ## API reference
@@ -52,7 +52,7 @@ A small async server example::
 ```python
     import network
     import aioespnow
-    import uasyncio as asyncio
+    import asyncio
 
     # A WLAN interface must be active to send()/recv()
     network.WLAN(network.STA_IF).active(True)

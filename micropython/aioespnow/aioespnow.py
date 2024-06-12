@@ -1,12 +1,12 @@
 # aioespnow module for MicroPython on ESP32 and ESP8266
 # MIT license; Copyright (c) 2022 Glenn Moloney @glenn20
 
-import uasyncio as asyncio
+import asyncio
 import espnow
 
 
-# Modelled on the uasyncio.Stream class (extmod/stream/stream.py)
-# NOTE: Relies on internal implementation of uasyncio.core (_io_queue)
+# Modelled on the asyncio.Stream class (extmod/asyncio/stream.py)
+# NOTE: Relies on internal implementation of asyncio.core (_io_queue)
 class AIOESPNow(espnow.ESPNow):
     # Read one ESPNow message
     async def arecv(self):

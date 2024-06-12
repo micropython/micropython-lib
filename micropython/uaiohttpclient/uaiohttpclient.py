@@ -1,4 +1,4 @@
-import uasyncio as asyncio
+import asyncio
 
 
 class ClientResponse:

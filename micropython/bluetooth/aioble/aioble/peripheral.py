@@ -6,7 +6,7 @@ from micropython import const
 import bluetooth
 import struct
 
-import uasyncio as asyncio
+import asyncio
 
 from .core import (
     ensure_active,

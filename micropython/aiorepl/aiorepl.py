@@ -41,7 +41,7 @@ async def execute(code, g, s):
                 code = "return {}".format(code)
 
             code = """
-import uasyncio as asyncio
+import asyncio
 async def __code():
     {}
 
