@@ -1,4 +1,4 @@
-import usocket
+import socket
 
 
 class Response:
@@ -28,9 +28,9 @@ class Response:
         return str(self.content, self.encoding)
 
     def json(self):
-        import ujson
+        import json
 
-        return ujson.loads(self.content)
+        return json.loads(self.content)
 
 
 def request(
@@ -51,11 +51,11 @@ def request(
     chunked_data = data and getattr(data, "__next__", None) and not getattr(data, "__len__", None)
 
     if auth is not None:
-        import ubinascii
+        import binascii
 
         username, password = auth
         formated = b"{}:{}".format(username, password)
-        formated = str(ubinascii.b2a_base64(formated)[:-1], "ascii")
+        formated = str(binascii.b2a_base64(formated)[:-1], "ascii")
         headers["Authorization"] = "Basic {}".format(formated)
 
     try:
@@ -76,14 +76,14 @@ def request(
         host, port = host.split(":", 1)
         port = int(port)
 
-    ai = usocket.getaddrinfo(host, port, 0, usocket.SOCK_STREAM)
+    ai = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)
     ai = ai[0]
 
     resp_d = None
     if parse_headers is not False:
         resp_d = {}
 
-    s = usocket.socket(ai[0], usocket.SOCK_STREAM, ai[2])
+    s = socket.socket(ai[0], socket.SOCK_STREAM, ai[2])
 
     if timeout is not None:
         # Note: settimeout is not supported on all platforms, will raise
@@ -103,9 +103,9 @@ def request(
 
         if json is not None:
             assert data is None
-            import ujson
+            from json import dumps
 
-            data = ujson.dumps(json)
+            data = dumps(json)
 
             if "Content-Type" not in headers:
                 headers["Content-Type"] = "application/json"

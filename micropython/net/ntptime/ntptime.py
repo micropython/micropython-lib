@@ -1,13 +1,6 @@
-import utime
-
-try:
-    import usocket as socket
-except:
-    import socket
-try:
-    import ustruct as struct
-except:
-    import struct
+from time import gmtime
+import socket
+import struct
 
 # The NTP host can be configured at runtime by doing: ntptime.host = 'myhost.org'
 host = "pool.ntp.org"
@@ -53,7 +46,7 @@ def time():
 
     # Convert timestamp from NTP format to our internal format
 
-    EPOCH_YEAR = utime.gmtime(0)[0]
+    EPOCH_YEAR = gmtime(0)[0]
     if EPOCH_YEAR == 2000:
         # (date(2000, 1, 1) - date(1900, 1, 1)).days * 24*60*60
         NTP_DELTA = 3155673600
@@ -71,5 +64,5 @@ def settime():
     t = time()
     import machine
 
-    tm = utime.gmtime(t)
+    tm = gmtime(t)
     machine.RTC().datetime((tm[0], tm[1], tm[2], tm[6] + 1, tm[3], tm[4], tm[5], 0))

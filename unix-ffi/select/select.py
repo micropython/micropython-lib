@@ -1,5 +1,5 @@
 import ffi
-import ustruct as struct
+import struct
 import os
 import errno
 import ffilib

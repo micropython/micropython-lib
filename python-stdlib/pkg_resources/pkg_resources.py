@@ -1,4 +1,4 @@
-import uio
+import io
 
 c = {}
 
@@ -18,11 +18,11 @@ def resource_stream(package, resource):
             else:
                 d = "."
             #            if d[0] != "/":
-            #                import uos
-            #                d = uos.getcwd() + "/" + d
+            #                import os
+            #                d = os.getcwd() + "/" + d
             c[package] = d + "/"
 
     p = c[package]
     if isinstance(p, dict):
-        return uio.BytesIO(p[resource])
+        return io.BytesIO(p[resource])
     return open(p + resource, "rb")

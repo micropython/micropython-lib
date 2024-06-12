@@ -1,8 +1,8 @@
 import ffilib
 import uctypes
-import ustruct
+import struct
 
-from ucollections import namedtuple
+from collections import namedtuple
 
 
 libc = ffilib.libc()
@@ -20,6 +20,6 @@ def getpwnam(user):
     if not passwd:
         raise KeyError("getpwnam(): name not found: {}".format(user))
     passwd_fmt = "SSIISSS"
-    passwd = uctypes.bytes_at(passwd, ustruct.calcsize(passwd_fmt))
-    passwd = ustruct.unpack(passwd_fmt, passwd)
+    passwd = uctypes.bytes_at(passwd, struct.calcsize(passwd_fmt))
+    passwd = struct.unpack(passwd_fmt, passwd)
     return struct_passwd(*passwd)

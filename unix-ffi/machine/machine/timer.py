@@ -1,9 +1,7 @@
 import ffilib
 import uctypes
 import array
-import uos
 import os
-import utime
 from signal import *
 
 libc = ffilib.libc()

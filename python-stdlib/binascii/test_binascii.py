@@ -1,5 +1,5 @@
 from binascii import *
-import utime
+import time
 
 data = b"zlutoucky kun upel dabelske ody"
 h = hexlify(data)
@@ -14,10 +14,10 @@ if data2 != data:
 
 a2b_base64(b"as==") == b"j"
 
-start = utime.time()
+start = time.time()
 for x in range(100000):
     d = unhexlify(h)
 
-print("100000 iterations in: " + str(utime.time() - start))
+print("100000 iterations in: " + str(time.time() - start))
 
 print("OK")

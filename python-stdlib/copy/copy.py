@@ -62,7 +62,7 @@ class Error(Exception):
 error = Error  # backward compatibility
 
 try:
-    from ucollections import OrderedDict
+    from collections import OrderedDict
 except ImportError:
     OrderedDict = None
 

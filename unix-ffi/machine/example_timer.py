@@ -1,4 +1,4 @@
-import utime
+import time
 from machine import Timer
 
 
@@ -7,5 +7,5 @@ t2 = Timer(1, 3)
 t1.callback(lambda t: print(t, "tick1"))
 t2.callback(lambda t: print(t, "tick2"))
 
-utime.sleep(3)
+time.sleep(3)
 print("done")

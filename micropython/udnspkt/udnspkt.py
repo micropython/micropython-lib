@@ -1,6 +1,3 @@
-import uio
-
-
 def write_fqdn(buf, name):
     parts = name.split(".")
     for p in parts:

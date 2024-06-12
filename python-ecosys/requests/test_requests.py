@@ -17,20 +17,20 @@ class Socket:
         return self._read_buffer.readline()
 
 
-class usocket:
+class socket:
     AF_INET = 2
     SOCK_STREAM = 1
     IPPROTO_TCP = 6
 
     @staticmethod
     def getaddrinfo(host, port, af=0, type=0, flags=0):
-        return [(usocket.AF_INET, usocket.SOCK_STREAM, usocket.IPPROTO_TCP, "", ("127.0.0.1", 80))]
+        return [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", ("127.0.0.1", 80))]
 
     def socket(af=AF_INET, type=SOCK_STREAM, proto=IPPROTO_TCP):
         return Socket()
 
 
-sys.modules["usocket"] = usocket
+sys.modules["socket"] = socket
 # ruff: noqa: E402
 import requests
 

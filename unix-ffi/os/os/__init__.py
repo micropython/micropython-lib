@@ -1,5 +1,5 @@
 import array
-import ustruct as struct
+import struct
 import errno as errno_
 import stat as stat_
 import ffilib

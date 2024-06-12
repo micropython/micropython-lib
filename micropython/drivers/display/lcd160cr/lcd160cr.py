@@ -5,7 +5,7 @@ from micropython import const
 import machine
 from utime import sleep_ms
 from ustruct import calcsize, pack_into
-import uerrno
+import errno
 
 # for set_orient
 PORTRAIT = const(0)
@@ -110,7 +110,7 @@ class LCD160CR:
                 return
             t -= 1
             sleep_ms(1)
-        raise OSError(uerrno.ETIMEDOUT)
+        raise OSError(errno.ETIMEDOUT)
 
     def oflush(self, n=255):
         t = 5000
@@ -121,7 +121,7 @@ class LCD160CR:
                 return
             t -= 1
             machine.idle()
-        raise OSError(uerrno.ETIMEDOUT)
+        raise OSError(errno.ETIMEDOUT)
 
     def iflush(self):
         t = 5000
@@ -131,7 +131,7 @@ class LCD160CR:
                 return
             t -= 1
             sleep_ms(1)
-        raise OSError(uerrno.ETIMEDOUT)
+        raise OSError(errno.ETIMEDOUT)
 
     #### MISC METHODS ####
 
@@ -254,7 +254,7 @@ class LCD160CR:
                 return self.buf[3][1] | self.buf[3][2] << 8
             t -= 1
             sleep_ms(1)
-        raise OSError(uerrno.ETIMEDOUT)
+        raise OSError(errno.ETIMEDOUT)
 
     def get_line(self, x, y, buf):
         l = len(buf) // 2
@@ -268,7 +268,7 @@ class LCD160CR:
                 return
             t -= 1
             sleep_ms(1)
-        raise OSError(uerrno.ETIMEDOUT)
+        raise OSError(errno.ETIMEDOUT)
 
     def screen_dump(self, buf, x=0, y=0, w=None, h=None):
         if w is None:
