@@ -1,0 +1,16 @@
+name: Package tests
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+    - name: Setup environment
+      run: source tools/ci.sh && ci_package_tests_setup_micropython
+    - name: Setup libraries
+      run: source tools/ci.sh && ci_package_tests_setup_lib
+    - name: Run tests
+      run: source tools/ci.sh && ci_package_tests_run
