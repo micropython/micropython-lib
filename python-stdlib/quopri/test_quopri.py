@@ -1,7 +1,6 @@
-from test import support
 import unittest
 
-import sys, os, io, subprocess
+import sys, os, io
 import quopri
 
 
@@ -193,7 +192,8 @@ zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz""",
         for p, e in self.HSTRINGS:
             self.assertEqual(quopri.decodestring(e, header=True), p)
 
-    def _test_scriptencode(self):
+    @unittest.skip("requires subprocess")
+    def test_scriptencode(self):
         (p, e) = self.STRINGS[-1]
         process = subprocess.Popen(
             [sys.executable, "-mquopri"], stdin=subprocess.PIPE, stdout=subprocess.PIPE
@@ -210,7 +210,8 @@ zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz""",
             self.assertEqual(cout[i], e[i])
         self.assertEqual(cout, e)
 
-    def _test_scriptdecode(self):
+    @unittest.skip("requires subprocess")
+    def test_scriptdecode(self):
         (p, e) = self.STRINGS[-1]
         process = subprocess.Popen(
             [sys.executable, "-mquopri", "-d"], stdin=subprocess.PIPE, stdout=subprocess.PIPE
@@ -220,11 +221,3 @@ zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz""",
         cout = cout.decode("latin-1")
         p = p.decode("latin-1")
         self.assertEqual(cout.splitlines(), p.splitlines())
-
-
-def test_main():
-    support.run_unittest(QuopriTestCase)
-
-
-if __name__ == "__main__":
-    test_main()
