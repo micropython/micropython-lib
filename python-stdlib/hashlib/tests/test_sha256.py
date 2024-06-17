@@ -1,3 +1,7 @@
+# Prevent importing any built-in hashes, so this test tests only the pure Python hashes.
+import sys
+sys.modules['uhashlib'] = sys
+
 import unittest
 from hashlib import sha256
 
