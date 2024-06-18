@@ -144,8 +144,8 @@ class CDCInterface(io.IOBase, Interface):
         if flow != 0:
             raise NotImplementedError  # UART flow control currently not supported
 
-        if not (txbuf and rxbuf):
-            raise ValueError  # Buffer sizes are required
+        if not (txbuf and rxbuf >= _BULK_EP_LEN):
+            raise ValueError  # Buffer sizes are required, rxbuf must be at least one EP
 
         self._timeout = timeout
         self._wb = Buffer(txbuf)
@@ -330,7 +330,11 @@ class CDCInterface(io.IOBase, Interface):
     def _rd_xfer(self):
         # Keep an active data OUT transfer to read data from the host,
         # whenever the receive buffer has room for new data
-        if self.is_open() and not self.xfer_pending(self.ep_d_out) and self._rb.writable():
+        if (
+            self.is_open()
+            and not self.xfer_pending(self.ep_d_out)
+            and self._rb.writable() >= _BULK_EP_LEN
+        ):
             # Can only submit up to the endpoint length per transaction, otherwise we won't
             # get any transfer callback until the full transaction completes.
             self.submit_xfer(self.ep_d_out, self._rb.pend_write(_BULK_EP_LEN), self._rd_cb)
