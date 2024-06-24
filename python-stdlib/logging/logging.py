@@ -58,6 +58,7 @@ class Handler:
 
 class StreamHandler(Handler):
     def __init__(self, stream=None):
+        super().__init__()
         self.stream = _stream if stream is None else stream
         self.terminator = "\n"
 
