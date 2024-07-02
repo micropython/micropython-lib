@@ -6,7 +6,12 @@ import sys
 from fnmatch import fnmatch
 from micropython import const
 
-from unittest import TestRunner, TestResult, TestSuite
+try:
+    from unittest import TestRunner, TestResult, TestSuite
+except ImportError:
+    print("Error: This must be used from an installed copy of unittest-discover which will"
+          " also install base unittest module.")
+    raise
 
 
 # Run a single test in a clean environment.
@@ -14,11 +19,11 @@ def _run_test_module(runner: TestRunner, module_name: str, *extra_paths: list[st
     module_snapshot = {k: v for k, v in sys.modules.items()}
     path_snapshot = sys.path[:]
     try:
-        for path in reversed(extra_paths):
+        for path in extra_paths:
             if path:
                 sys.path.insert(0, path)
 
-        module = __import__(module_name)
+        module = __import__(module_name, None, None, module_name)
         suite = TestSuite(module_name)
         suite._load_module(module)
         return runner.run(suite)
@@ -36,16 +41,18 @@ def _run_all_in_dir(runner: TestRunner, path: str, pattern: str, top: str):
     for fname, ftype, *_ in os.ilistdir(path):
         if fname in ("..", "."):
             continue
+        fpath = "/".join((path, fname))
         if ftype == _DIR_TYPE:
             result += _run_all_in_dir(
                 runner=runner,
-                path="/".join((path, fname)),
+                path=fpath,
                 pattern=pattern,
                 top=top,
             )
         if fnmatch(fname, pattern):
-            module_name = fname.rsplit(".", 1)[0]
-            result += _run_test_module(runner, module_name, path, top)
+            module_path = fpath.rsplit(".", 1)[0]  # remove ext
+            module_path = module_path.replace("/", ".").strip(".")
+            result += _run_test_module(runner, module_path, top)
     return result
 
 
