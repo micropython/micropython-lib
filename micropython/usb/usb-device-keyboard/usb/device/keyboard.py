@@ -85,6 +85,7 @@ class KeyboardInterface(HIDInterface):
     '''
 
 
+
 # HID keyboard report descriptor
 #
 # From p69 of http://www.usb.org/developers/devclass_docs/HID1_11.pdf
