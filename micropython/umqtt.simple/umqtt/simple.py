@@ -60,8 +60,16 @@ class MQTTClient:
         self.lw_qos = qos
         self.lw_retain = retain
 
+    def settimeout(self, value):
+        '''Blocking socket can cause non determinstic hang incase of n/w failure.
+        Hence, by setting timeout, application programmer can get exception in case of failure.
+        This enable him/her to take appropriate action like restarting the task etc.
+        This works for async apps too.
+        '''
+        self._sock.settimeout(value)
+
     def connect(self, clean_session=True):
-        self.sock = socket.socket()
+        self._sock = self.sock = socket.socket()
         addr = socket.getaddrinfo(self.server, self.port)[0][-1]
         self.sock.connect(addr)
         if self.ssl:
