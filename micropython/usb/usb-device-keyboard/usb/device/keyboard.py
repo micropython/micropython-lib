@@ -163,9 +163,9 @@ class KeyCode:
     CLOSE_BRACKET = 48  # ] }
     BACKSLASH = 49  # \ |
     HASH = 50  # # ~
-    COLON = 51  # ; :
+    SEMICOLON = 51  # ; :
     QUOTE = 52  # ' "
-    TILDE = 53  # ` ~
+    GRAVE = 53  # ` ~
     COMMA = 54  # , <
     DOT = 55  # . >
     SLASH = 56  # / ?
