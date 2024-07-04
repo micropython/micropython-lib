@@ -416,12 +416,12 @@ class _SX127x(BaseModem):
             modem_config1 |= (self._coding_rate - 4) << _MODEM_CONFIG1_CODING_RATE_SHIFT
             update_mask |= _MODEM_CONFIG1_CODING_RATE_MASK << _MODEM_CONFIG1_CODING_RATE_SHIFT
 
-        self._reg_update(_REG_MODEM_CONFIG1, update_mask, modem_config1)
-
         if "implicit_header" in lora_cfg:
             self._implicit_header = lora_cfg["implicit_header"]
             modem_config1 |= _flag(_MODEM_CONFIG1_IMPLICIT_HEADER_MODE_ON, self._implicit_header)
             update_mask |= _MODEM_CONFIG1_IMPLICIT_HEADER_MODE_ON
+
+        self._reg_update(_REG_MODEM_CONFIG1, update_mask, modem_config1)
 
         # Update MODEM_CONFIG2, for any fields that changed
         modem_config2 = 0
