@@ -76,15 +76,15 @@ class KeyboardInterface(HIDInterface):
             return True
         return False
 
-    '''Example usage
+    """Example usage
 
     k = KeyboardInterface()
     usb.device.get().init(k, builtin_driver=True)
     key = [4] #It clicks letter A (refer KeyCode class)
     k.send_keys(key)
     k.release_all()
+    """
 
-    '''
 
 # HID keyboard report descriptor
 #
