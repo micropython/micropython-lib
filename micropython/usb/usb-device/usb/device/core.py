@@ -110,6 +110,7 @@ class _Device:
         device_protocol=0,
         config_str=None,
         max_power_ma=None,
+        remote_wakeup=False,
     ):
         # Configure the USB device with a set of interfaces, and optionally reconfiguring the
         # device and configuration descriptor fields
@@ -199,7 +200,7 @@ class _Device:
         bmAttributes = (
             (1 << 7)  # Reserved
             | (0 if max_power_ma else (1 << 6))  # Self-Powered
-            # Remote Wakeup not currently supported
+            | ((1 << 5) if remote_wakeup else 0)
         )
 
         # Configuration string is optional but supported
