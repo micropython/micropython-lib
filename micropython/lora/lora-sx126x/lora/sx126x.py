@@ -152,7 +152,7 @@ class _SX126x(BaseModem):
             dio3_tcxo_start_time_us if dio3_tcxo_millivolts else 0
         )
 
-        self._buf = bytearray(9)  # shared buffer for commands
+        self._buf_view = memoryview(bytearray(9))  # shared buffer for commands
 
         # These settings are kept in the object (as can't read them back from the modem)
         self._output_power = 14
@@ -704,11 +704,11 @@ class _SX126x(BaseModem):
         # have happened well before _cmd() is called again.
         self._wait_not_busy(self._busy_timeout)
 
-        # Pack write_args into _buf and wrap a memoryview of the correct length around it
+        # Pack write_args into slice of _buf_view memoryview of correct length
         wrlen = struct.calcsize(fmt)
-        assert n_read + wrlen <= len(self._buf)  # if this fails, make _buf bigger!
-        struct.pack_into(fmt, self._buf, 0, *write_args)
-        buf = memoryview(self._buf)[: (wrlen + n_read)]
+        assert n_read + wrlen <= len(self._buf_view)  # if this fails, make _buf bigger!
+        struct.pack_into(fmt, self._buf_view, 0, *write_args)
+        buf = self._buf_view[: (wrlen + n_read)]
 
         if _DEBUG:
             print(">>> {}".format(buf[:wrlen].hex()))
@@ -723,7 +723,7 @@ class _SX126x(BaseModem):
         self._cs(1)
 
         if n_read > 0:
-            res = memoryview(buf)[wrlen : (wrlen + n_read)]  # noqa: E203
+            res = self._buf_view[wrlen : (wrlen + n_read)]  # noqa: E203
             if _DEBUG:
                 print("<<< {}".format(res.hex()))
             return res
