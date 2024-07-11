@@ -134,3 +134,15 @@ USB MIDI devices in MicroPython.
 
 The example [midi_example.py](examples/device/midi_example.py) demonstrates how
 to create a simple MIDI device to send MIDI data to and from the USB host.
+
+### Limitations
+
+#### Buffer thread safety
+
+The internal Buffer class that's used by most of the USB device classes expects data
+to be written to it (i.e. sent to the host) by only one thread. Bytes may be
+lost from the USB transfers if more than one thread (or a thread and a callback)
+try to write to the buffer simultaneously.
+
+If writing USB data from multiple sources, your code may need to add
+synchronisation (i.e. locks).
