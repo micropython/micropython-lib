@@ -152,8 +152,7 @@ class _SX126x(BaseModem):
             dio3_tcxo_start_time_us if dio3_tcxo_millivolts else 0
         )
 
-        self._buf = bytearray(9)  # shared buffer for commands, access through _buf_view
-        self._buf_view = memoryview(self._buf) 
+        self._buf_view = memoryview(bytearray(9))  # shared buffer for commands
 
         # These settings are kept in the object (as can't read them back from the modem)
         self._output_power = 14
