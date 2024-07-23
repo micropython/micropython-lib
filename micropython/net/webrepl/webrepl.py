@@ -7,19 +7,71 @@ import os
 import socket
 import sys
 import websocket
-import _webrepl
+import io
 
 listen_s = None
 client_s = None
 
 DEBUG = 0
 
-_DEFAULT_STATIC_HOST = const("https://micropython.org/webrepl/")
+_DEFAULT_STATIC_HOST = const("https://felix.dogcraft.de/webrepl/")
+_WELCOME_PROMPT = const("\r\nWebREPL connected\r\n>>> ")
 static_host = _DEFAULT_STATIC_HOST
+webrepl_pass = None
 
 
-def server_handshake(cl):
-    req = cl.makefile("rwb", 0)
+class WebreplWrapper(io.IOBase):
+    def __init__(self, sock):
+        self.sock = sock
+        self.sock.ioctl(9, 2)
+        if webrepl_pass is not None:
+            self.pw = bytearray(16)
+            self.pwPos = 0
+            self.sock.write("Password: ")
+        else:
+            self.pw = None
+            self.sock.write(_WELCOME_PROMPT)
+
+    def readinto(self, buf):
+        if self.pw is not None:
+            buf = bytearray(1)
+            while True:
+                l = self.sock.readinto(buf)
+                if l is None:
+                    continue
+                if l <= 0:
+                    return l
+                if buf[0] == 10 or buf[0] == 13:
+                    if bytes(self.pw[0 : self.pwPos]) == webrepl_pass:
+                        self.pw = None
+                        del self.pwPos
+                        self.sock.write(_WELCOME_PROMPT)
+                        break
+                    else:
+                        self.sock.write("\r\nAccess denied\r\n")
+                        return 0
+                else:
+                    if self.pwPos < len(self.pw):
+                        self.pw[self.pwPos] = buf[0]
+                        self.pwPos = self.pwPos + 1
+        return self.sock.readinto(buf)
+
+    def write(self, buf):
+        if self.pw is not None:
+            return len(buf)
+        return self.sock.write(buf)
+
+    def ioctl(self, kind, arg):
+        if kind == 4:
+            self.sock.close()
+            return 0
+        return -1
+
+    def close(self):
+        self.sock.close()
+
+
+def server_handshake(req):
     # Skip HTTP GET line.
     l = req.readline()
     if DEBUG:
@@ -61,30 +113,30 @@ def server_handshake(cl):
     if DEBUG:
         print("respkey:", respkey)
 
-    cl.send(
+    req.write(
         b"""\
 HTTP/1.1 101 Switching Protocols\r
 Upgrade: websocket\r
 Connection: Upgrade\r
 Sec-WebSocket-Accept: """
     )
-    cl.send(respkey)
-    cl.send("\r\n\r\n")
+    req.write(respkey)
+    req.write("\r\n\r\n")
 
     return True
 
 
 def send_html(cl):
-    cl.send(
+    cl.write(
         b"""\
 HTTP/1.0 200 OK\r
 \r
 <base href=\""""
     )
-    cl.send(static_host)
-    cl.send(
+    cl.write(static_host)
+    cl.write(
         b"""\"></base>\r
-<script src="webrepl_content.js"></script>\r
+<script src="webreplv2_content.js"></script>\r
 """
     )
     cl.close()
@@ -95,10 +147,7 @@ def setup_conn(port, accept_handler):
     listen_s = socket.socket()
     listen_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-    ai = socket.getaddrinfo("0.0.0.0", port)
-    addr = ai[0][4]
-
-    listen_s.bind(addr)
+    listen_s.bind(("", port))
     listen_s.listen(1)
     if accept_handler:
         listen_s.setsockopt(socket.SOL_SOCKET, 20, accept_handler)
@@ -110,11 +159,16 @@ def setup_conn(port, accept_handler):
 
 
 def accept_conn(listen_sock):
-    global client_s
+    global client_s, webrepl_ssl_context
     cl, remote_addr = listen_sock.accept()
+    req = cl.makefile("rwb", 0)
+    sock = cl
+    if webrepl_ssl_context is not None:
+        sock = webrepl_ssl_context.wrap_socket(sock)
+        req = sock
 
-    if not server_handshake(cl):
-        send_html(cl)
+    if not server_handshake(req):
+        send_html(sock)
         return False
 
     prev = os.dupterm(None)
@@ -126,13 +180,13 @@ def accept_conn(listen_sock):
     print("\nWebREPL connection from:", remote_addr)
     client_s = cl
 
-    ws = websocket.websocket(cl, True)
-    ws = _webrepl._webrepl(ws)
+    sock = websocket.websocket(sock)
+    sock = WebreplWrapper(sock)
     cl.setblocking(False)
     # notify REPL on socket incoming data (ESP32/ESP8266-only)
     if hasattr(os, "dupterm_notify"):
         cl.setsockopt(socket.SOL_SOCKET, 20, os.dupterm_notify)
-    os.dupterm(ws)
+    os.dupterm(sock)
 
     return True
 
@@ -146,11 +200,12 @@ def stop():
         listen_s.close()
 
 
-def start(port=8266, password=None, accept_handler=accept_conn):
-    global static_host
+def start(port=8266, password=None, ssl_context=None, accept_handler=accept_conn):
+    global static_host, webrepl_pass, webrepl_ssl_context
     stop()
+    webrepl_ssl_context = ssl_context
     webrepl_pass = password
-    if webrepl_pass is None:
+    if password is None:
         try:
             import webrepl_cfg
 
@@ -160,7 +215,9 @@ def start(port=8266, password=None, accept_handler=accept_conn):
         except:
             print("WebREPL is not configured, run 'import webrepl_setup'")
 
-    _webrepl.password(webrepl_pass)
+    if webrepl_pass is not None:
+        webrepl_pass = webrepl_pass.encode()
+
     s = setup_conn(port, accept_handler)
 
     if accept_handler is None:
