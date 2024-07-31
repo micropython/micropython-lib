@@ -84,6 +84,11 @@ class Cursor:
         self.stmnt = None
 
     def execute(self, sql, params=None):
+        if self.stmnt:
+            # If there is an existing statement, finalize that to free it
+            res = sqlite3_finalize(self.stmnt)
+            check_error(self.h, res)
+
         if params:
             params = [quote(v) for v in params]
             sql = sql % tuple(params)
