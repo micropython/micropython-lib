@@ -1,5 +1,6 @@
 import sys
 import ffilib
+import uctypes
 
 
 sq3 = ffilib.open("libsqlite3")
@@ -61,6 +62,10 @@ def check_error(db, s):
         raise Error(s, sqlite3_errmsg(db))
 
 
+def get_ptr_size():
+    return uctypes.sizeof({"ptr": (0 | uctypes.PTR, uctypes.PTR)})
+
+
 class Connections:
     def __init__(self, h):
         self.h = h
@@ -83,13 +88,13 @@ class Cursor:
             params = [quote(v) for v in params]
             sql = sql % tuple(params)
         print(sql)
-        b = bytearray(4)
-        s = sqlite3_prepare(self.h, sql, -1, b, None)
-        check_error(self.h, s)
-        self.stmnt = int.from_bytes(b, sys.byteorder)
-        # print("stmnt", self.stmnt)
+
+        stmnt_ptr = bytes(get_ptr_size())
+        res = sqlite3_prepare(self.h, sql, -1, stmnt_ptr, None)
+        check_error(self.h, res)
+        self.stmnt = int.from_bytes(stmnt_ptr, sys.byteorder)
         self.num_cols = sqlite3_column_count(self.stmnt)
-        # print("num_cols", self.num_cols)
+
         # If it's not select, actually execute it here
         # num_cols == 0 for statements which don't return data (=> modify it)
         if not self.num_cols:
@@ -127,10 +132,9 @@ class Cursor:
 
 
 def connect(fname):
-    b = bytearray(4)
-    sqlite3_open(fname, b)
-    h = int.from_bytes(b, sys.byteorder)
-    return Connections(h)
+    sqlite_ptr = bytes(get_ptr_size())
+    sqlite3_open(fname, sqlite_ptr)
+    return Connections(int.from_bytes(sqlite_ptr, sys.byteorder))
 
 
 def quote(val):
