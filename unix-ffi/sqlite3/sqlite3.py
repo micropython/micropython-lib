@@ -6,6 +6,8 @@ import uctypes
 sq3 = ffilib.open("libsqlite3")
 
 sqlite3_open = sq3.func("i", "sqlite3_open", "sp")
+# int sqlite3_config(int, ...);
+sqlite3_config = sq3.func("i", "sqlite3_config", "ii")
 # int sqlite3_close(sqlite3*);
 sqlite3_close = sq3.func("i", "sqlite3_close", "p")
 # int sqlite3_prepare(
@@ -51,6 +53,8 @@ SQLITE_FLOAT = 2
 SQLITE_TEXT = 3
 SQLITE_BLOB = 4
 SQLITE_NULL = 5
+
+SQLITE_CONFIG_URI = 17
 
 
 class Error(Exception):
@@ -136,7 +140,9 @@ class Cursor:
         check_error(self.h, res)
 
 
-def connect(fname):
+def connect(fname, uri=False):
+    sqlite3_config(SQLITE_CONFIG_URI, int(uri))
+
     sqlite_ptr = bytes(get_ptr_size())
     sqlite3_open(fname, sqlite_ptr)
     return Connections(int.from_bytes(sqlite_ptr, sys.byteorder))
