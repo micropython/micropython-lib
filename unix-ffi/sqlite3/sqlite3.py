@@ -5,11 +5,15 @@ import uctypes
 
 sq3 = ffilib.open("libsqlite3")
 
+# int sqlite3_open(
+#  const char *filename,   /* Database filename (UTF-8) */
+#  sqlite3 **ppDb          /* OUT: SQLite db handle */
+# );
 sqlite3_open = sq3.func("i", "sqlite3_open", "sp")
 # int sqlite3_config(int, ...);
 sqlite3_config = sq3.func("i", "sqlite3_config", "ii")
-# int sqlite3_close(sqlite3*);
-sqlite3_close = sq3.func("i", "sqlite3_close", "p")
+# int sqlite3_close_v2(sqlite3*);
+sqlite3_close = sq3.func("i", "sqlite3_close_v2", "p")
 # int sqlite3_prepare(
 #  sqlite3 *db,            /* Database handle */
 #  const char *zSql,       /* SQL statement, UTF-8 encoded */
@@ -17,7 +21,7 @@ sqlite3_close = sq3.func("i", "sqlite3_close", "p")
 #  sqlite3_stmt **ppStmt,  /* OUT: Statement handle */
 #  const char **pzTail     /* OUT: Pointer to unused portion of zSql */
 # );
-sqlite3_prepare = sq3.func("i", "sqlite3_prepare", "psipp")
+sqlite3_prepare = sq3.func("i", "sqlite3_prepare_v2", "psipp")
 # int sqlite3_finalize(sqlite3_stmt *pStmt);
 sqlite3_finalize = sq3.func("i", "sqlite3_finalize", "p")
 # int sqlite3_step(sqlite3_stmt*);
@@ -26,19 +30,16 @@ sqlite3_step = sq3.func("i", "sqlite3_step", "p")
 sqlite3_column_count = sq3.func("i", "sqlite3_column_count", "p")
 # int sqlite3_column_type(sqlite3_stmt*, int iCol);
 sqlite3_column_type = sq3.func("i", "sqlite3_column_type", "pi")
+# int sqlite3_column_int(sqlite3_stmt*, int iCol);
 sqlite3_column_int = sq3.func("i", "sqlite3_column_int", "pi")
-# using "d" return type gives wrong results
+# double sqlite3_column_double(sqlite3_stmt*, int iCol);
 sqlite3_column_double = sq3.func("d", "sqlite3_column_double", "pi")
+# const unsigned char *sqlite3_column_text(sqlite3_stmt*, int iCol);
 sqlite3_column_text = sq3.func("s", "sqlite3_column_text", "pi")
 # sqlite3_int64 sqlite3_last_insert_rowid(sqlite3*);
-# TODO: should return long int
-sqlite3_last_insert_rowid = sq3.func("i", "sqlite3_last_insert_rowid", "p")
+sqlite3_last_insert_rowid = sq3.func("l", "sqlite3_last_insert_rowid", "p")
 # const char *sqlite3_errmsg(sqlite3*);
 sqlite3_errmsg = sq3.func("s", "sqlite3_errmsg", "p")
-
-# Too recent
-##const char *sqlite3_errstr(int);
-# sqlite3_errstr = sq3.func("s", "sqlite3_errstr", "i")
 
 
 SQLITE_OK = 0
@@ -78,8 +79,10 @@ class Connections:
         return Cursor(self.h)
 
     def close(self):
-        s = sqlite3_close(self.h)
-        check_error(self.h, s)
+        if self.h:
+            s = sqlite3_close(self.h)
+            check_error(self.h, s)
+            self.h = None
 
 
 class Cursor:
@@ -96,7 +99,6 @@ class Cursor:
         if params:
             params = [quote(v) for v in params]
             sql = sql % tuple(params)
-        print(sql)
 
         stmnt_ptr = bytes(get_ptr_size())
         res = sqlite3_prepare(self.h, sql, -1, stmnt_ptr, None)
@@ -104,22 +106,23 @@ class Cursor:
         self.stmnt = int.from_bytes(stmnt_ptr, sys.byteorder)
         self.num_cols = sqlite3_column_count(self.stmnt)
 
-        # If it's not select, actually execute it here
-        # num_cols == 0 for statements which don't return data (=> modify it)
         if not self.num_cols:
             v = self.fetchone()
+            # If it's not select, actually execute it here
+            # num_cols == 0 for statements which don't return data (=> modify it)
             assert v is None
             self.lastrowid = sqlite3_last_insert_rowid(self.h)
 
     def close(self):
-        s = sqlite3_finalize(self.stmnt)
-        check_error(self.h, s)
+        if self.stmnt:
+            s = sqlite3_finalize(self.stmnt)
+            check_error(self.h, s)
+            self.stmnt = None
 
     def make_row(self):
         res = []
         for i in range(self.num_cols):
             t = sqlite3_column_type(self.stmnt, i)
-            # print("type", t)
             if t == SQLITE_INTEGER:
                 res.append(sqlite3_column_int(self.stmnt, i))
             elif t == SQLITE_FLOAT:
@@ -132,7 +135,6 @@ class Cursor:
 
     def fetchone(self):
         res = sqlite3_step(self.stmnt)
-        # print("step:", res)
         if res == SQLITE_DONE:
             return None
         if res == SQLITE_ROW:
