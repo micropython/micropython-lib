@@ -104,7 +104,9 @@ async def _cancel_pending():
 
 # Start connecting to a peripheral.
 # Call device.connect() rather than using method directly.
-async def _connect(connection, timeout_ms):
+async def _connect(
+    connection, timeout_ms, scan_duration_ms, min_conn_interval_us, max_conn_interval_us
+):
     device = connection.device
     if device in _connecting:
         return
@@ -122,7 +124,13 @@ async def _connect(connection, timeout_ms):
 
     try:
         with DeviceTimeout(None, timeout_ms):
-            ble.gap_connect(device.addr_type, device.addr)
+            ble.gap_connect(
+                device.addr_type,
+                device.addr,
+                scan_duration_ms,
+                min_conn_interval_us,
+                max_conn_interval_us,
+            )
 
             # Wait for the connected IRQ.
             await connection._event.wait()
