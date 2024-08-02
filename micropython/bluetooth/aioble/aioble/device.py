@@ -132,14 +132,26 @@ class Device:
     def addr_hex(self):
         return binascii.hexlify(self.addr, ":").decode()
 
-    async def connect(self, timeout_ms=10000):
+    async def connect(
+        self,
+        timeout_ms=10000,
+        scan_duration_ms=None,
+        min_conn_interval_us=None,
+        max_conn_interval_us=None,
+    ):
         if self._connection:
             return self._connection
 
         # Forward to implementation in central.py.
         from .central import _connect
 
-        await _connect(DeviceConnection(self), timeout_ms)
+        await _connect(
+            DeviceConnection(self),
+            timeout_ms,
+            scan_duration_ms,
+            min_conn_interval_us,
+            max_conn_interval_us,
+        )
 
         # Start the device task that will clean up after disconnection.
         self._connection._run_task()
