@@ -17,3 +17,6 @@ while True:
     assert row == e
 
 assert expected == []
+
+cur.close()
+conn.close()

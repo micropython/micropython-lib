@@ -10,3 +10,6 @@ assert cur.lastrowid == 1
 cur.execute("SELECT * FROM foo")
 assert cur.fetchone() == (42,)
 assert cur.fetchone() is None
+
+cur.close()
+conn.close()
