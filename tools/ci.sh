@@ -66,6 +66,9 @@ function ci_package_tests_run {
         unix-ffi/gettext/test_gettext.py \
         unix-ffi/pwd/test_getpwnam.py \
         unix-ffi/re/test_re.py \
+        unix-ffi/sqlite3/test_sqlite3.py \
+        unix-ffi/sqlite3/test_sqlite3_2.py \
+        unix-ffi/sqlite3/test_sqlite3_3.py \
         unix-ffi/time/test_strftime.py \
         ; do
         echo "Running test $test"
