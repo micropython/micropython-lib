@@ -19,8 +19,7 @@ c.set_callback(sub_cb)
 #
 # There can be a problem when a session for a given client exists,
 # but doesn't have subscriptions a particular application expects.
-# In this case, a session needs to be cleaned first. See
-# example_reset_session.py for an obvious way how to do that.
+# In this case, a session needs to be cleaned first.
 #
 # In an actual application, it's up to its developer how to
 # manage these issues. One extreme is to have external "provisioning"
