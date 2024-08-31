@@ -633,10 +633,9 @@ class datetime:
         else:
             us = 0
         if tz is None:
-            raise NotImplementedError
-        else:
-            dt = cls(*_tmod.gmtime(ts)[:6], microsecond=us, tzinfo=tz)
-            dt = tz.fromutc(dt)
+            tz = timezone.utc
+        dt = cls(*_tmod.gmtime(ts)[:6], microsecond=us, tzinfo=tz)
+        dt = tz.fromutc(dt)
         return dt
 
     @classmethod
