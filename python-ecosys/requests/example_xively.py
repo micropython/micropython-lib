@@ -1,6 +1,6 @@
 import requests
 
-r = requests.get("http://api.xively.com/")
+r = requests.get("http://api.xively.com/") # this site may not respond. OSError: -202
 print(r)
 print(r.content)
 print(r.text)
