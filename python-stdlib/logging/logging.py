@@ -36,6 +36,7 @@ class LogRecord:
         self.ct = time.time()
         self.msecs = int((self.ct - int(self.ct)) * 1000)
         self.asctime = None
+        self.ticks = time.ticks_ms()
 
 
 class Handler:
@@ -102,6 +103,7 @@ class Formatter:
             "msecs": record.msecs,
             "asctime": record.asctime,
             "levelname": record.levelname,
+            "ticks": record.ticks,
         }
 
 
