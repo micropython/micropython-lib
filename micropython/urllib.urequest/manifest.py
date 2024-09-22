@@ -1,4 +1,4 @@
-metadata(version="0.7.0")
+metadata(version="0.8.0")
 
 # Originally written by Paul Sokolovsky.
 
