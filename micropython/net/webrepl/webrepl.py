@@ -7,56 +7,73 @@ import socket
 import sys
 import websocket
 import io
+from micropython import const
+from legacy_file_transfer import LegacyFileTransfer
 
 listen_s = None
 client_s = None
 
 DEBUG = 0
 
-_DEFAULT_STATIC_HOST = const("https://felix.dogcraft.de/webrepl/")
+_DEFAULT_STATIC_HOST = const("https://micropython.org/webrepl/")
 _WELCOME_PROMPT = const("\r\nWebREPL connected\r\n>>> ")
 static_host = _DEFAULT_STATIC_HOST
 webrepl_pass = None
 
+legacy = LegacyFileTransfer()
+
+
 class WebreplWrapper(io.IOBase):
     def __init__(self, sock):
         self.sock = sock
-        self.sock.ioctl(9, 2)
+        self.sock.ioctl(9, 1 if legacy else 2)
         if webrepl_pass is not None:
             self.pw = bytearray(16)
             self.pwPos = 0
             self.sock.write("Password: ")
         else:
             self.pw = None
-            self.sock.write(_WELCOME_PROMPT);
+            self.sock.write(_WELCOME_PROMPT)
 
     def readinto(self, buf):
         if self.pw is not None:
-            buf = bytearray(1)
+            buf1 = bytearray(1)
             while True:
-                l = self.sock.readinto(buf)
+                l = self.sock.readinto(buf1)
                 if l is None:
                     continue
                 if l <= 0:
                     return l
-                if buf[0] == 10 or buf[0] == 13:
+                if buf1[0] == 10 or buf1[0] == 13:
                     print("Authenticating with:")
-                    print(self.pw[0:self.pwPos])
-                    if bytes(self.pw[0:self.pwPos]) == webrepl_pass:
+                    print(self.pw[0 : self.pwPos])
+                    if bytes(self.pw[0 : self.pwPos]) == webrepl_pass:
                         self.pw = None
                         del self.pwPos
                         self.sock.write(_WELCOME_PROMPT)
                         break
                     else:
-                        print(bytes(self.pw[0:self.pwPos]))
+                        print(bytes(self.pw[0 : self.pwPos]))
                         print(webrepl_pass)
                         self.sock.write("\r\nAccess denied\r\n")
                         return 0
                 else:
                     if self.pwPos < len(self.pw):
-                        self.pw[self.pwPos] = buf[0]
+                        self.pw[self.pwPos] = buf1[0]
                         self.pwPos = self.pwPos + 1
-        return self.sock.readinto(buf)
+        ret = None
+        while True:
+            ret = self.sock.readinto(buf)
+            if ret is None or ret <= 0:
+                break
+            # ignore any non-data frames
+            if self.sock.ioctl(8) >= 8:
+                continue
+            if self.sock.ioctl(8) == 2 and legacy:
+                legacy.handle(buf, self.sock)
+                continue
+            break
+        return ret
 
     def write(self, buf):
         if self.pw is not None:
@@ -72,8 +89,8 @@ class WebreplWrapper(io.IOBase):
     def close(self):
         self.sock.close()
 
-def server_handshake(cl):
-    req = cl.makefile("rwb", 0)
+
+def server_handshake(req):
     # Skip HTTP GET line.
     l = req.readline()
     if DEBUG:
@@ -115,30 +132,35 @@ def server_handshake(cl):
     if DEBUG:
         print("respkey:", respkey)
 
-    cl.send(
+    req.write(
         b"""\
 HTTP/1.1 101 Switching Protocols\r
 Upgrade: websocket\r
 Connection: Upgrade\r
 Sec-WebSocket-Accept: """
     )
-    cl.send(respkey)
-    cl.send("\r\n\r\n")
+    req.write(respkey)
+    req.write("\r\n\r\n")
 
     return True
 
 
 def send_html(cl):
-    cl.send(
+    cl.write(
         b"""\
 HTTP/1.0 200 OK\r
 \r
 <base href=\""""
     )
-    cl.send(static_host)
-    cl.send(
+    cl.write(static_host)
+    cl.write(
         b"""\"></base>\r
-<script src="webreplv2_content.js"></script>\r
+<script src="webrepl"""
+    )
+    if not legacy:
+        cl.write("v2")
+    cl.write(
+        b"""_content.js"></script>\r
 """
     )
     cl.close()
@@ -149,10 +171,7 @@ def setup_conn(port, accept_handler):
     listen_s = socket.socket()
     listen_s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-    ai = socket.getaddrinfo("0.0.0.0", port)
-    addr = ai[0][4]
-
-    listen_s.bind(addr)
+    listen_s.bind(("", port))
     listen_s.listen(1)
     if accept_handler:
         listen_s.setsockopt(socket.SOL_SOCKET, 20, accept_handler)
@@ -164,11 +183,14 @@ def setup_conn(port, accept_handler):
 
 
 def accept_conn(listen_sock):
-    global client_s
+    global client_s, webrepl_ssl_context
     cl, remote_addr = listen_sock.accept()
+    sock = cl
+    if webrepl_ssl_context is not None:
+        sock = webrepl_ssl_context.wrap_socket(sock)
 
     if not server_handshake(cl):
-        send_html(cl)
+        send_html(sock)
         return False
 
     prev = os.dupterm(None)
@@ -180,13 +202,13 @@ def accept_conn(listen_sock):
     print("\nWebREPL connection from:", remote_addr)
     client_s = cl
 
-    ws = websocket.websocket(cl, True)
-    ws = WebreplWrapper(ws)
+    sock = websocket.websocket(sock)
+    sock = WebreplWrapper(sock)
     cl.setblocking(False)
     # notify REPL on socket incoming data (ESP32/ESP8266-only)
     if hasattr(os, "dupterm_notify"):
         cl.setsockopt(socket.SOL_SOCKET, 20, os.dupterm_notify)
-    os.dupterm(ws)
+    os.dupterm(sock)
 
     return True
 
@@ -200,9 +222,10 @@ def stop():
         listen_s.close()
 
 
-def start(port=8266, password=None, accept_handler=accept_conn):
-    global static_host, webrepl_pass
+def start(port=8266, password=None, ssl_context=None, accept_handler=accept_conn):
+    global static_host, webrepl_pass, webrepl_ssl_context
     stop()
+    webrepl_ssl_context = ssl_context
     webrepl_pass = password
     if password is None:
         try:
@@ -230,5 +253,5 @@ def start(port=8266, password=None, accept_handler=accept_conn):
         print("Started webrepl in manual override mode")
 
 
-def start_foreground(port=8266, password=None):
-    start(port, password, None)
+def start_foreground(port=8266, password=None, ssl_context=None):
+    start(port, password, ssl_context=ssl_context, accept_handler=None)
