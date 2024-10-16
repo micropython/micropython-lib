@@ -6,6 +6,7 @@ class SSLContext:
     def __init__(self, *args):
         self._context = tls.SSLContext(*args)
         self._context.verify_mode = CERT_NONE
+        self._context.ecdsa_sign_callback = None
 
     @property
     def verify_mode(self):
@@ -14,6 +15,14 @@ class SSLContext:
     @verify_mode.setter
     def verify_mode(self, val):
         self._context.verify_mode = val
+
+    @property
+    def ecdsa_sign_callback(self):
+        return self._context.ecdsa_sign_callback
+
+    @ecdsa_sign_callback.setter
+    def ecdsa_sign_callback(self, val):
+        self._context.ecdsa_sign_callback = val
 
     def load_cert_chain(self, certfile, keyfile):
         if isinstance(certfile, str):
