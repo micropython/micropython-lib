@@ -34,6 +34,7 @@ class MQTTClient:
         self.lw_msg = None
         self.lw_qos = 0
         self.lw_retain = False
+        self.pingresp_pending = False
 
     def _send_str(self, s):
         self.sock.write(struct.pack("!H", len(s)))
@@ -61,6 +62,10 @@ class MQTTClient:
         self.lw_retain = retain
 
     def connect(self, clean_session=True):
+        try:
+            self.sock.close()
+        except:
+            pass
         self.sock = socket.socket()
         addr = socket.getaddrinfo(self.server, self.port)[0][-1]
         self.sock.connect(addr)
@@ -104,13 +109,18 @@ class MQTTClient:
         assert resp[0] == 0x20 and resp[1] == 0x02
         if resp[3] != 0:
             raise MQTTException(resp[3])
+        self.pingresp_pending = False
         return resp[2] & 1
 
     def disconnect(self):
         self.sock.write(b"\xe0\0")
         self.sock.close()
+        self.pingresp_pending = False
 
     def ping(self):
+        if self.pingresp_pending:
+            raise MQTTException("No response for previous ping")
+        self.pingresp_pending = True
         self.sock.write(b"\xc0\0")
 
     def publish(self, topic, msg, retain=False, qos=0):
@@ -181,6 +191,7 @@ class MQTTClient:
         if res == b"\xd0":  # PINGRESP
             sz = self.sock.read(1)[0]
             assert sz == 0
+            self.pingresp_pending = False
             return None
         op = res[0]
         if op & 0xF0 != 0x30:
