@@ -55,7 +55,7 @@ A small async server example::
     import asyncio
 
     # A WLAN interface must be active to send()/recv()
-    network.WLAN(network.STA_IF).active(True)
+    network.WLAN(network.WLAN.IF_STA).active(True)
 
     e = aioespnow.AIOESPNow()  # Returns AIOESPNow enhanced with async support
     e.active(True)

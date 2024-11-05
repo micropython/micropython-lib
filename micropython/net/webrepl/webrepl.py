@@ -102,7 +102,7 @@ def setup_conn(port, accept_handler):
     listen_s.listen(1)
     if accept_handler:
         listen_s.setsockopt(socket.SOL_SOCKET, 20, accept_handler)
-    for i in (network.AP_IF, network.STA_IF):
+    for i in (network.WLAN.IF_AP, network.WLAN.IF_STA):
         iface = network.WLAN(i)
         if iface.active():
             print("WebREPL server started on http://%s:%d/" % (iface.ifconfig()[0], port))
