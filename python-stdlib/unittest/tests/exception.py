@@ -1,3 +1,5 @@
+# This makes unittest return an error code, so is not named "test_xxx.py".
+
 import unittest
 
 

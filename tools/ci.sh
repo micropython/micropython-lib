@@ -63,6 +63,7 @@ function ci_package_tests_run {
         python-stdlib/os-path/test_path.py \
         python-stdlib/pickle/test_pickle.py \
         python-stdlib/string/test_translate.py \
+        python-stdlib/unittest/tests/exception.py \
         unix-ffi/gettext/test_gettext.py \
         unix-ffi/pwd/test_getpwnam.py \
         unix-ffi/re/test_re.py \
@@ -90,6 +91,7 @@ function ci_package_tests_run {
         python-stdlib/shutil \
         python-stdlib/tempfile \
         python-stdlib/time \
+        python-stdlib/unittest/tests \
         python-stdlib/unittest-discover/tests \
         ; do
         (cd $path && $MICROPYTHON -m unittest)
