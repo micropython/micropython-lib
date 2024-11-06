@@ -348,7 +348,13 @@ def _handle_test_exception(
     exc = exc_info[1]
     traceback = exc_info[2]
     ex_str = _capture_exc(exc, traceback)
-    if isinstance(exc, AssertionError):
+    if isinstance(exc, SkipTest):
+        reason = exc.args[0]
+        test_result.skippedNum += 1
+        test_result.skipped.append((current_test, reason))
+        print(" skipped:", reason)
+        return
+    elif isinstance(exc, AssertionError):
         test_result.failuresNum += 1
         test_result.failures.append((current_test, ex_str))
         if verbose:
@@ -396,11 +402,6 @@ def _run_suite(c, test_result: TestResult, suite_name=""):
                 print(" FAIL")
             else:
                 print(" ok")
-        except SkipTest as e:
-            reason = e.args[0]
-            print(" skipped:", reason)
-            test_result.skippedNum += 1
-            test_result.skipped.append((name, c, reason))
         except Exception as ex:
             _handle_test_exception(
                 current_test=(name, c), test_result=test_result, exc_info=(type(ex), ex, None)
