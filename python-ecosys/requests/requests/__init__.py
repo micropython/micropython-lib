@@ -180,6 +180,9 @@ def request(
 
     if redirect:
         s.close()
+        # use the Host in the redirect URL
+        if "Host" in headers:
+            headers.pop("Host")
         if status in [301, 302, 303]:
             return request("GET", redirect, None, None, headers, stream)
         else:
