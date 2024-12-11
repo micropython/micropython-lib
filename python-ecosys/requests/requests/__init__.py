@@ -46,6 +46,8 @@ def request(
 ):
     if headers is None:
         headers = {}
+    else:
+        headers = headers.copy()
 
     redirect = None  # redirection url, None means no redirection
     chunked_data = data and getattr(data, "__next__", None) and not getattr(data, "__len__", None)

@@ -102,11 +102,11 @@ def test_post_chunked_data():
 
 def test_overwrite_get_headers():
     response = requests.request(
-        "GET", "http://example.com", headers={"Connection": "keep-alive", "Host": "test.com"}
+        "GET", "http://example.com", headers={"Host": "test.com", "Connection": "keep-alive"}
     )
 
     assert response.raw._write_buffer.getvalue() == (
-        b"GET / HTTP/1.0\r\n" + b"Host: test.com\r\n" + b"Connection: keep-alive\r\n\r\n"
+        b"GET / HTTP/1.0\r\n" + b"Connection: keep-alive\r\n" + b"Host: test.com\r\n\r\n"
     ), format_message(response)
 
 
@@ -145,6 +145,14 @@ def test_overwrite_post_chunked_data_headers():
     ), format_message(response)
 
 
+def test_do_not_modify_headers_argument():
+    global do_not_modify_this_dict
+    do_not_modify_this_dict = {}
+    requests.request("GET", "http://example.com", headers=do_not_modify_this_dict)
+
+    assert do_not_modify_this_dict == {}, do_not_modify_this_dict
+
+
 test_simple_get()
 test_get_auth()
 test_get_custom_header()
@@ -153,3 +161,4 @@ test_post_chunked_data()
 test_overwrite_get_headers()
 test_overwrite_post_json_headers()
 test_overwrite_post_chunked_data_headers()
+test_do_not_modify_headers_argument()
