@@ -145,6 +145,14 @@ def test_overwrite_post_chunked_data_headers():
     ), format_message(response)
 
 
+def test_do_not_modify_headers_argument():
+    original_headers = {}
+    headers = dict(original_headers)
+    requests.request("GET", "https://example.com", headers=original_headers)
+
+    assert headers == original_headers
+
+
 test_simple_get()
 test_get_auth()
 test_get_custom_header()
@@ -153,3 +161,4 @@ test_post_chunked_data()
 test_overwrite_get_headers()
 test_overwrite_post_json_headers()
 test_overwrite_post_chunked_data_headers()
+test_do_not_modify_headers_argument()
