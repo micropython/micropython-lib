@@ -104,6 +104,7 @@ class AllTestCase(unittest.TestCase):
 
         def newhandler():
             pass
+
         self.ee4.on("4_new", newhandler)
 
         self.assertTrue(stack[-1] == (newhandler, "4_new"))

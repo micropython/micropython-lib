@@ -10,6 +10,7 @@ sys.path.insert(0, base)
 
 # create an EventEmitter instance
 from pymitter import EventEmitter
+
 ee = EventEmitter(wildcard=True, new_listener=True, max_listeners=-1)
 
 

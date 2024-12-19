@@ -32,7 +32,9 @@ class EventEmitter(object):
     CB_KEY = "__callbacks"
     WC_CHAR = "*"
 
-    def __init__(self, wildcard=False, new_listener=False, max_listeners=-1, delimiter="."):
+    def __init__(
+        self, wildcard=False, new_listener=False, max_listeners=-1, delimiter="."
+    ):
         super(EventEmitter, self).__init__()
 
         self.wildcard = wildcard
@@ -85,6 +87,7 @@ class EventEmitter(object):
         Registers a function to an event. *ttl* defines the times to listen. Negative values mean
         infinity. When *func* is *None*, decorator usage is assumed. Returns the function.
         """
+
         def on(func):
             if not callable(func):
                 return func
@@ -124,6 +127,7 @@ class EventEmitter(object):
         to listen. Negative values mean infinity. When *func* is *None*, decorator usage is assumed.
         Returns the function.
         """
+
         def on_any(func):
             if not callable(func):
                 return func
@@ -147,6 +151,7 @@ class EventEmitter(object):
         Removes a function that is registered to an event. When *func* is *None*, decorator usage is
         assumed. Returns the function.
         """
+
         def off(func):
             branch = self._find_branch(event)
             if branch is None:
@@ -163,6 +168,7 @@ class EventEmitter(object):
         Removes a function that was registered via :py:meth:`on_any`. When *func* is *None*,
         decorator usage is assumed. Returns the function.
         """
+
         def off_any(func):
             self._remove_listener(self._tree, func)
 

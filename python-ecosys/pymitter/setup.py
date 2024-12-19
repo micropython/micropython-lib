@@ -10,7 +10,12 @@ import pymitter
 this_dir = os.path.dirname(os.path.abspath(__file__))
 
 keywords = [
-    "event", "emitter", "eventemitter", "wildcard", "node", "nodejs",
+    "event",
+    "emitter",
+    "eventemitter",
+    "wildcard",
+    "node",
+    "nodejs",
 ]
 
 classifiers = [
