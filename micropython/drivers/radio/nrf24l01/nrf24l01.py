@@ -220,6 +220,13 @@ class NRF24L01:
         result = None
         while result is None and utime.ticks_diff(utime.ticks_ms(), start) < timeout:
             result = self.send_done()  # 1 == success, 2 == fail
+
+        if result is None:
+            # timed out, cancel sending and power down the module
+            self.flush_tx()
+            self.reg_write(CONFIG, self.reg_read(CONFIG) & ~PWR_UP)
+            raise OSError("timed out")
+
         if result == 2:
             raise OSError("send failed")
 
