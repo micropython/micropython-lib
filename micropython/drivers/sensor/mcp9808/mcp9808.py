@@ -23,7 +23,7 @@ SOFTWARE.
 
 
 
-Microchip MCP9808 driver for MicroPython v.1.0.0
+Microchip MCP9808 driver for MicroPython
 
 THE MCP9808 IS A COMPLEX SENSOR WITH MANY FEATURES. IS IT ADVISABLE TO READ THE DATASHEET.
 
@@ -243,35 +243,35 @@ class MCP9808(object):
         # Type/value check the parameters
         if hyst_mode not in [HYST_00, HYST_15, HYST_30, HYST_60]:
             raise ValueError(f"hyst_mode: {hyst_mode}. Value should be between 0 and 3 inclusive.")
-        if shdn is not bool:
+        if shdn.__class__ is not bool:
             raise TypeError(
                 f"shdn: {shdn} {shdn.__class__}. Expecting a bool.",
             )
-        if crit_lock is not bool:
+        if crit_lock.__class__ is not bool:
             raise TypeError(
                 f"crit_lock: {crit_lock} {crit_lock.__class__}. Expecting a bool.",
             )
-        if alerts_lock is not bool:
+        if alerts_lock.__class__ is not bool:
             raise TypeError(
                 f"alerts_lock: {alerts_lock} {alerts_lock.__class__}. Expecting a bool.",
             )
-        if irq_clear_bit is not bool:
+        if irq_clear_bit.__class__ is not bool:
             raise TypeError(
                 f"irq_clear_bit: {irq_clear_bit} {irq_clear_bit.__class__}. Expecting a bool.",
             )
-        if alert_ctrl is not bool:
+        if alert_ctrl.__class__ is not bool:
             raise TypeError(
                 f"alert_ctrl: {alert_ctrl} {alert_ctrl.__class__}. Expecting a bool.",
             )
-        if alert_sel is not bool:
+        if alert_sel.__class__ is not bool:
             raise TypeError(
                 f"alert_sel: {alert_sel} {alert_sel.__class__}. Expecting a bool.",
             )
-        if alert_pol is not bool:
+        if alert_pol.__class__ is not bool:
             raise TypeError(
                 f"alert_pol: {alert_pol} {alert_pol.__class__}. Expecting a bool.",
             )
-        if alert_mode is not bool:
+        if alert_mode.__class__ is not bool:
             raise TypeError(
                 f"alert_mode: {alert_mode} {alert_mode.__class__}. Expecting a bool.",
             )
@@ -346,7 +346,7 @@ class MCP9808(object):
             ``None``
         """
 
-        if limit.__class__ not in [float]:
+        if limit.__class__ not in [float, int]:
             raise TypeError(
                 f"limit: {limit} {limit.__class__}. Expecting float|int.",
             )
