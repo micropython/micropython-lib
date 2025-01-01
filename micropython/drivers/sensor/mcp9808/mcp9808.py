@@ -23,7 +23,7 @@ SOFTWARE.
 
 
 
-Microchip MCP9808 driver for MicroPython
+Microchip MCP9808 driver for MicroPython v.1.0.0
 
 THE MCP9808 IS A COMPLEX SENSOR WITH MANY FEATURES. IS IT ADVISABLE TO READ THE DATASHEET.
 
