@@ -7,7 +7,6 @@ from pymitter import EventEmitter
 
 
 class AllTestCase(unittest.TestCase):
-
     def __init__(self, *args, **kwargs):
         super(AllTestCase, self).__init__(*args, **kwargs)
 

@@ -32,9 +32,7 @@ class EventEmitter(object):
     CB_KEY = "__callbacks"
     WC_CHAR = "*"
 
-    def __init__(
-        self, wildcard=False, new_listener=False, max_listeners=-1, delimiter="."
-    ):
+    def __init__(self, wildcard=False, new_listener=False, max_listeners=-1, delimiter="."):
         super(EventEmitter, self).__init__()
 
         self.wildcard = wildcard
