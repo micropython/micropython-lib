@@ -7,6 +7,7 @@ class Response:
         self.raw = f
         self.encoding = "utf-8"
         self._cached = None
+        self.headers = None
 
     def close(self):
         if self.raw:
@@ -17,8 +18,21 @@ class Response:
     @property
     def content(self):
         if self._cached is None:
+            # Pass the content length from headers
+            cont_len = None
+            if self.headers is not None:
+                # We got headers
+                if 'Content-Length' in self.headers:
+                    # We good, get that length
+                    try:
+                        cont_len = int(self.headers['Content-Length'])
+                    except:
+                        cont_len = None
             try:
-                self._cached = self.raw.read()
+                if cont_len is None:
+                    self._cached = self.raw.read()
+                else:
+                    self._cached = self.raw.read(cont_len)
             finally:
                 self.raw.close()
                 self.raw = None
