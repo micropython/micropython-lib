@@ -123,7 +123,7 @@ while True:
             appearance=_GENERIC_THERMOMETER,
             manufacturer=(0xabcd, b"1234"),
         )
-    print("Connection from", device)
+    print("Connection from", connection.device)
 ```
 
 #### Update characteristic value: (Server)
