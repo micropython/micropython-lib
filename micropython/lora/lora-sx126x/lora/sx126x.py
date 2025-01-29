@@ -363,11 +363,11 @@ class _SX126x(BaseModem):
         if "preamble_len" in lora_cfg:
             self._preamble_len = lora_cfg["preamble_len"]
 
-        self._invert_iq = (
+        self._invert_iq = [
             lora_cfg.get("invert_iq_rx", self._invert_iq[0]),
             lora_cfg.get("invert_iq_tx", self._invert_iq[1]),
             self._invert_iq[2],
-        )
+        ]
 
         if "freq_khz" in lora_cfg:
             self._rf_freq_hz = int(lora_cfg["freq_khz"] * 1000)
@@ -449,7 +449,7 @@ class _SX126x(BaseModem):
     def _invert_workaround(self, enable):
         # Apply workaround for DS 15.4 Optimizing the Inverted IQ Operation
         if self._invert_iq[2] != enable:
-            val = self._read_read(_REG_IQ_POLARITY_SETUP)
+            val = self._reg_read(_REG_IQ_POLARITY_SETUP)
             val = (val & ~4) | _flag(4, enable)
             self._reg_write(_REG_IQ_POLARITY_SETUP, val)
             self._invert_iq[2] = enable
