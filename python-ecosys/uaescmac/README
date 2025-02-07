@@ -1,0 +1,11 @@
+uaesmac is a module containing an aes cypher and aes-cmac hash algorithm,
+it was adapted to Micropython based on the work from https://github.com/secworks/aes/blob/master/src/model/python/aes.py
+and https://github.com/secworks/cmac/blob/master/src/model/python/cmac.py .
+
+It was adapted to match the same functions as other hashers, with "update"
+and "digest" methods.
+
+Keys and messages to test the digest, cipher and decipher methods were taken
+from https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_Core128.pdf ,
+https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_Core256.pdf and
+https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/AES_CMAC.pdf . 
