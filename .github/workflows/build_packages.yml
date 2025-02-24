@@ -23,7 +23,7 @@ jobs:
       if: vars.MICROPY_PUBLISH_MIP_INDEX && github.event_name == 'push' && ! github.event.deleted
       run: source tools/ci.sh && ci_push_package_index
     - name: Upload packages as artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: packages-${{ github.sha }}
         path: ${{ env.PACKAGE_INDEX_PATH }}
