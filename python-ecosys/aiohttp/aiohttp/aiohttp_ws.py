@@ -136,7 +136,7 @@ class WebSocketClient:
         return frame + payload
 
     async def handshake(self, uri, ssl, req):
-        headers = {}
+        headers = self.params
         _http_proto = "http" if uri.protocol != "wss" else "https"
         url = f"{_http_proto}://{uri.hostname}:{uri.port}{uri.path or '/'}"
         key = binascii.b2a_base64(bytes(random.getrandbits(8) for _ in range(16)))[:-1]

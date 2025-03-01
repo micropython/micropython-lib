@@ -263,7 +263,7 @@ class ClientSession:
         return _WSRequestContextManager(self, self._ws_connect(url, ssl=ssl))
 
     async def _ws_connect(self, url, ssl=None):
-        ws_client = WebSocketClient(None)
+        ws_client = WebSocketClient(self._base_headers)
         await ws_client.connect(url, ssl=ssl, handshake_request=self.request_raw)
         self._reader = ws_client.reader
         return ClientWebSocketResponse(ws_client)
