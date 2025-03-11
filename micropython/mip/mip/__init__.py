@@ -171,7 +171,7 @@ def _install_package(package, index, target, version, mpy):
 def install(package, index=None, target=None, version=None, mpy=True):
     if not target:
         for p in sys.path:
-            if p.endswith("/lib"):
+            if not p.startswith("/rom") and p.endswith("/lib"):
                 target = p
                 break
         else:
