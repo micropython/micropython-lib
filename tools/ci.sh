@@ -54,6 +54,7 @@ function ci_package_tests_run {
         python-stdlib/base64/test_base64.py \
         python-stdlib/binascii/test_binascii.py \
         python-stdlib/collections-defaultdict/test_defaultdict.py \
+        python-stdlib/enum/enum_test.py  \
         python-stdlib/functools/test_partial.py \
         python-stdlib/functools/test_reduce.py \
         python-stdlib/heapq/test_heapq.py \
