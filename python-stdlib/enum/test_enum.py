@@ -83,4 +83,9 @@ print(
 assert int(str(State(State.Ready))) == State.Ready
 assert int(str(State(State.Ready))) != State.Disabled
 print("will raise exception")
-del state.Triggered
+try:
+    del state.Triggered
+except Exception as e:
+    print("Exception:", e)
+
+print("OK")
