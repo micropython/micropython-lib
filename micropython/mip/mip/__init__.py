@@ -91,6 +91,14 @@ def _rewrite_url(url, branch=None):
 
 
 def _download_file(url, dest):
+    if url.startswith("file://"):
+        print("Copying:", dest)
+        src = url[7:]
+        _ensure_path_exists(dest)
+        with open(src, "b") as sf:
+            with open(dest, "wb") as f:
+                _chunk(sf, f.write)
+        return True
     response = requests.get(url)
     try:
         if response.status_code != 200:
@@ -108,15 +116,20 @@ def _download_file(url, dest):
 
 
 def _install_json(package_json_url, index, target, version, mpy):
-    response = requests.get(_rewrite_url(package_json_url, version))
-    try:
-        if response.status_code != 200:
-            print("Package not found:", package_json_url)
-            return False
+    if package_json_url.startswith("file://"):
+        import json
 
-        package_json = response.json()
-    finally:
-        response.close()
+        package_json = json.load(open(package_json_url[7:]))
+    else:
+        response = requests.get(_rewrite_url(package_json_url, version))
+        try:
+            if response.status_code != 200:
+                print("Package not found:", package_json_url)
+                return False
+
+            package_json = response.json()
+        finally:
+            response.close()
     for target_path, short_hash in package_json.get("hashes", ()):
         fs_target_path = target + "/" + target_path
         if _check_exists(fs_target_path, short_hash):
