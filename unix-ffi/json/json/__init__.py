@@ -354,8 +354,8 @@ def loads(
     object_pairs_hook=None,
     **kw
 ):
-    """Deserialize ``s`` (a ``str`` instance containing a JSON
-    document) to a Python object.
+    """Deserialize ``s`` (a ``str``, ``bytes`` or ``bytearray`` instance
+    containing a JSON document) to a Python object.
 
     ``object_hook`` is an optional function that will be called with the
     result of any object literal decode (a ``dict``). The return value of
@@ -413,4 +413,6 @@ def loads(
         kw["parse_int"] = parse_int
     if parse_constant is not None:
         kw["parse_constant"] = parse_constant
+    if isinstance(s, (bytes, bytearray)):
+        s = s.decode('utf-8')
     return cls(**kw).decode(s)
