@@ -413,4 +413,6 @@ def loads(
         kw["parse_int"] = parse_int
     if parse_constant is not None:
         kw["parse_constant"] = parse_constant
+    if isinstance(s, bytes):
+        s = s.decode('utf-8')
     return cls(**kw).decode(s)
