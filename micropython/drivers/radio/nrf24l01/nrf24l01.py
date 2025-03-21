@@ -227,7 +227,7 @@ class NRF24L01:
     def send_start(self, buf):
         # power up
         self.reg_write(CONFIG, (self.reg_read(CONFIG) | PWR_UP) & ~PRIM_RX)
-        utime.sleep_us(150)
+        utime.sleep_us(1500)  # needs to be 1.5ms
         # send the data
         self.cs(0)
         self.spi.readinto(self.buf, W_TX_PAYLOAD)
