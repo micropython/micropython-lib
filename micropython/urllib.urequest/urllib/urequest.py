@@ -1,7 +1,7 @@
 import socket
 
 
-def urlopen(url, data=None, method="GET"):
+def urlopen(url, data=None, method="GET", headers={}):
     if data is not None and method == "GET":
         method = "POST"
     try:
@@ -39,6 +39,12 @@ def urlopen(url, data=None, method="GET"):
         s.write(b" HTTP/1.0\r\nHost: ")
         s.write(host)
         s.write(b"\r\n")
+
+        for k in headers:
+            s.write(k)
+            s.write(b": ")
+            s.write(headers[k])
+            s.write(b"\r\n")
 
         if data:
             s.write(b"Content-Length: ")
