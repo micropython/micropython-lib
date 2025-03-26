@@ -350,10 +350,9 @@ class CDCInterface(io.IOBase, Interface):
     ###
 
     def write(self, buf):
-        # use a memoryview to track how much of 'buf' we've written so far
-        # (unfortunately, this means a 1 block allocation for each write, but it's otherwise allocation free.)
         start = time.ticks_ms()
-        mv = memoryview(buf)
+        # use a memoryview to track partial writes
+        mv = buf
         while True:
             # Keep pushing buf into _wb into it's all gone
             nbytes = self._wb.write(mv)
@@ -362,6 +361,8 @@ class CDCInterface(io.IOBase, Interface):
             if nbytes == len(mv):
                 return len(buf)  # Success
 
+            if mv is buf:
+                mv = memoryview(buf)
             mv = mv[nbytes:]
 
             # check for timeout
