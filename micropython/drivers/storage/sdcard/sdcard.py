@@ -295,14 +295,14 @@ class SDCard:
         assert nblocks and not err, "Buffer length is invalid"
         if nblocks == 1:
             # CMD24: set write address for single block
-            if self.cmd(24, block_num * self.cdv, 0) != 0:
+            if self.cmd(24, block_num * self.cdv, 0x7F) != 0:
                 raise OSError(5)  # EIO
 
             # send the data
             self.write(_TOKEN_DATA, buf)
         else:
             # CMD25: set write address for first block
-            if self.cmd(25, block_num * self.cdv, 0) != 0:
+            if self.cmd(25, block_num * self.cdv, 0x7F) != 0:
                 raise OSError(5)  # EIO
             # send the data
             offset = 0
