@@ -71,6 +71,10 @@ def request(
         import tls
 
         port = 443
+    elif proto == "file:":
+        r = Response(open(url[7:], "b"))
+        r.status_code = 200
+        return r
     else:
         raise ValueError("Unsupported protocol: " + proto)
 
