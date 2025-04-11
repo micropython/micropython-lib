@@ -18,8 +18,14 @@ class ClientResponse:
     def __init__(self, reader):
         self.content = reader
 
+    def _get_header(self, keyname, default):
+        for k in self.headers:
+            if k.lower() == keyname:
+                return self.headers[k]
+        return default
+
     def _decode(self, data):
-        c_encoding = self.headers.get("Content-Encoding")
+        c_encoding = self._get_header("content-encoding", None)
         if c_encoding in ("gzip", "deflate", "gzip,deflate"):
             try:
                 import deflate
@@ -39,10 +45,10 @@ class ClientResponse:
         return self._decode(await self.content.read(sz))
 
     async def text(self, encoding="utf-8"):
-        return (await self.read(int(self.headers.get("Content-Length", -1)))).decode(encoding)
+        return (await self.read(int(self._get_header("content-length", -1)))).decode(encoding)
 
     async def json(self):
-        return _json.loads(await self.read(int(self.headers.get("Content-Length", -1))))
+        return _json.loads(await self.read(int(self._get_header("content-length", -1))))
 
     def __repr__(self):
         return "<ClientResponse %d %s>" % (self.status, self.headers)
