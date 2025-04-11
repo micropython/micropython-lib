@@ -1,5 +1,7 @@
 import sys
 
+_g = lambda: (yield)
+
 
 def getmembers(obj, pred=None):
     res = []
@@ -16,11 +18,11 @@ def isfunction(obj):
 
 
 def isgeneratorfunction(obj):
-    return isinstance(obj, type(lambda: (yield)))
+    return isinstance(obj, type(_g))
 
 
 def isgenerator(obj):
-    return isinstance(obj, type(lambda: (yield)()))
+    return isinstance(obj, type((_g)()))
 
 
 class _Class:
