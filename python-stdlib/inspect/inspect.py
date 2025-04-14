@@ -25,6 +25,11 @@ def isgenerator(obj):
     return isinstance(obj, type((_g)()))
 
 
+# In MicroPython there's currently no way to distinguish between generators and coroutines.
+iscoroutinefunction = isgeneratorfunction
+iscoroutine = isgenerator
+
+
 class _Class:
     def meth():
         pass

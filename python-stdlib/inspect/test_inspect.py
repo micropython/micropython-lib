@@ -44,6 +44,12 @@ class TestInspect(unittest.TestCase):
     def test_isgenerator(self):
         self._test_is_helper(inspect.isgenerator, entities[2])
 
+    def test_iscoroutinefunction(self):
+        self._test_is_helper(inspect.iscoroutinefunction, entities[1])
+
+    def test_iscoroutine(self):
+        self._test_is_helper(inspect.iscoroutine, entities[2])
+
     def test_ismethod(self):
         self._test_is_helper(inspect.ismethod, entities[5])
 
