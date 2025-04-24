@@ -1,5 +1,4 @@
-"""NRF24L01 driver for MicroPython
-"""
+"""NRF24L01 driver for MicroPython"""
 
 from micropython import const
 import utime

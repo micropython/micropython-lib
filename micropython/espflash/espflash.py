@@ -113,22 +113,22 @@ class ESPFlash:
             raise Exception(f"Register poll timeout. Addr: 0x{addr:02X} Flag: 0x{flag:02X}.")
 
     def _write_slip(self, pkt):
-        pkt = pkt.replace(b"\xDB", b"\xdb\xdd").replace(b"\xc0", b"\xdb\xdc")
-        self.uart.write(b"\xC0" + pkt + b"\xC0")
+        pkt = pkt.replace(b"\xdb", b"\xdb\xdd").replace(b"\xc0", b"\xdb\xdc")
+        self.uart.write(b"\xc0" + pkt + b"\xc0")
         self._log(pkt)
 
     def _read_slip(self):
         pkt = None
         # Find the packet start.
-        if self.uart.read(1) == b"\xC0":
+        if self.uart.read(1) == b"\xc0":
             pkt = bytearray()
             while True:
                 b = self.uart.read(1)
-                if b is None or b == b"\xC0":
+                if b is None or b == b"\xc0":
                     break
                 pkt += b
-            pkt = pkt.replace(b"\xDB\xDD", b"\xDB").replace(b"\xDB\xDC", b"\xC0")
-            self._log(b"\xC0" + pkt + b"\xC0", False)
+            pkt = pkt.replace(b"\xdb\xdd", b"\xdb").replace(b"\xdb\xdc", b"\xc0")
+            self._log(b"\xc0" + pkt + b"\xc0", False)
         return pkt
 
     def _strerror(self, err):
@@ -230,7 +230,7 @@ class ESPFlash:
             raise Exception(f"Unexpected flash size bits: 0x{flash_bits:02X}.")
 
         flash_size = 2**flash_bits
-        print(f"Flash size {flash_size/1024/1024} MBytes")
+        print(f"Flash size {flash_size / 1024 / 1024} MBytes")
         return flash_size
 
     def flash_attach(self):
@@ -265,7 +265,7 @@ class ESPFlash:
                     self.md5sum.update(buf)
                 # The last data block should be padded to the block size with 0xFF bytes.
                 if len(buf) < blksize:
-                    buf += b"\xFF" * (blksize - len(buf))
+                    buf += b"\xff" * (blksize - len(buf))
                 checksum = self._checksum(buf)
                 if seq % erase_blocks == 0:
                     # print(f"Erasing {seq} -> {seq+erase_blocks}...")
