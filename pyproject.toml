@@ -64,7 +64,7 @@ ignore = [
   "ISC003",  # micropython does not support implicit concatenation of f-strings
   "PIE810",  # micropython does not support passing tuples to .startswith or .endswith
   "PLC1901",
-  "PLR1701",
+  "PLR1704",  # sometimes desirable to redefine an argument to save code size
   "PLR1714",
   "PLR5501",
   "PLW0602",
@@ -72,6 +72,7 @@ ignore = [
   "PLW2901",
   "RUF012",
   "RUF100",
+  "SIM101",
   "W191",  # tab-indent, redundant when using formatter
 ]
 line-length = 99

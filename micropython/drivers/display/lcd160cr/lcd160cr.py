@@ -189,10 +189,8 @@ class LCD160CR:
                         c[3] = h - 1
                 else:
                     if c[0] == c[2]:
-                        if c[1] < 0:
-                            c[1] = 0
-                        if c[3] < 0:
-                            c[3] = 0
+                        c[1] = max(c[1], 0)
+                        c[3] = max(c[3], 0)
                     else:
                         if c[3] < c[1]:
                             c[0], c[2] = c[2], c[0]
