@@ -596,8 +596,9 @@ class _SX126x(BaseModem):
         pkt_status = self._cmd("B", _CMD_GET_PACKET_STATUS, n_read=4)
 
         rx_packet.ticks_ms = ticks_ms
-        rx_packet.snr = pkt_status[2]  # SNR, units: dB *4
-        rx_packet.rssi = 0 - pkt_status[1] // 2  # RSSI, units: dBm
+        # SNR units are dB * 4 (signed)
+        rx_packet.rssi, rx_packet.snr = struct.unpack("xBbx", pkt_status)
+        rx_packet.rssi //= -2  # RSSI, units: dBm
         rx_packet.crc_error = (flags & _IRQ_CRC_ERR) != 0
 
         return rx_packet
