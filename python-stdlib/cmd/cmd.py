@@ -85,12 +85,15 @@ class Cmd:
     nohelp = "*** No help on %s"
     use_rawinput = 1
 
-    def __init__(self, stdin=None, stdout=None):
+    def __init__(self, completekey='tab', stdin=None, stdout=None):
         """Instantiate a line-oriented interpreter framework.
 
         The optional arguments stdin and stdout
         specify alternate input and output file objects; if not specified,
         sys.stdin and sys.stdout are used.
+
+        The optional argument completekey is not used, but provided for 
+        compatibility with calling libraries.
 
         """
         if stdin is not None:
