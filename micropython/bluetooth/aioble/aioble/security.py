@@ -7,7 +7,7 @@ import binascii
 import json
 
 from .core import log_info, log_warn, ble, register_irq_handler
-from .device import DeviceConnection
+from .device import DeviceConnection, Device
 
 _IRQ_ENCRYPTION_UPDATE = const(28)
 _IRQ_GET_SECRET = const(29)
@@ -72,6 +72,15 @@ def _save_secrets(arg=None):
         _modified = False
 
 
+def _get_connection(key) -> DeviceConnection:
+    if not key:
+        return None
+    addr = bytes(reversed(key[-6:]))
+    for connection in DeviceConnection._connected.values():
+        if connection.device.addr == addr:
+            return connection
+
+
 def _security_irq(event, data):
     global _modified
 
@@ -84,6 +93,7 @@ def _security_irq(event, data):
             connection.authenticated = authenticated
             connection.bonded = bonded
             connection.key_size = key_size
+            connection.pairing_in_progress = False
             # TODO: Handle failure.
             if encrypted and connection._pair_event:
                 connection._pair_event.set()
@@ -128,6 +138,12 @@ def _security_irq(event, data):
         else:
             # Return the secret for this key (or None).
             key = sec_type, bytes(key)
+
+            if sec_type in SEC_TYPES_PEER:
+                if conn := _get_connection(key):
+                    log_info("encryption / pairing started", conn)
+                    conn.pairing_in_progress = True
+                
             return _secrets.get(key, None)
 
     elif event == _IRQ_PASSKEY_ACTION:
