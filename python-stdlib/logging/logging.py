@@ -125,7 +125,7 @@ class Logger:
     def getEffectiveLevel(self):
         return self.level or getLogger().level or _DEFAULT_LEVEL
 
-    def log(self, level, msg, *args, extra=None):
+    def log(self, level, msg, *args, exc_info=False, extra=None):
         if self.isEnabledFor(level):
             if args:
                 if isinstance(args[0], dict):
@@ -137,6 +137,16 @@ class Logger:
                 handlers = getLogger().handlers
             for h in handlers:
                 h.emit(record)
+
+        tb = None
+        if isinstance(exc_info, BaseException):
+            tb = exc_info
+        elif hasattr(sys, "exc_info"):
+            tb = sys.exc_info()[1]
+        if tb:
+            buf = io.StringIO()
+            sys.print_exception(tb, buf)
+            self.log(ERROR, buf.getvalue())
 
     def debug(self, msg, *args, **kwargs):
         self.log(DEBUG, msg, *args, **kwargs)
@@ -153,17 +163,8 @@ class Logger:
     def critical(self, msg, *args, **kwargs):
         self.log(CRITICAL, msg, *args, **kwargs)
 
-    def exception(self, msg, *args, exc_info=True, **kwargs):
+    def exception(self, msg, *args, **kwargs):
         self.log(ERROR, msg, *args, **kwargs)
-        tb = None
-        if isinstance(exc_info, BaseException):
-            tb = exc_info
-        elif hasattr(sys, "exc_info"):
-            tb = sys.exc_info()[1]
-        if tb:
-            buf = io.StringIO()
-            sys.print_exception(tb, buf)
-            self.log(ERROR, buf.getvalue())
 
     def addHandler(self, handler):
         self.handlers.append(handler)
