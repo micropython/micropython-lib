@@ -28,7 +28,7 @@ _default_datefmt = "%Y-%m-%d %H:%M:%S"
 
 
 class LogRecord:
-    def set(self, name, level, message):
+    def __init__(self, name, level, message, extra=None):
         self.name = name
         self.levelno = level
         self.levelname = _level_dict[level]
@@ -36,6 +36,11 @@ class LogRecord:
         self.ct = time.time()
         self.msecs = int((self.ct - int(self.ct)) * 1000)
         self.asctime = None
+        if extra is not None:
+            for key in extra:
+                if (key in ["message", "asctime"]) or (key in self.__dict__):
+                    raise KeyError("Attempt to overwrite %r in LogRecord" % key)
+                setattr(self, key, extra[key])
 
 
 class Handler:
@@ -110,7 +115,6 @@ class Logger:
         self.name = name
         self.level = level
         self.handlers = []
-        self.record = LogRecord()
 
     def setLevel(self, level):
         self.level = level
@@ -121,36 +125,36 @@ class Logger:
     def getEffectiveLevel(self):
         return self.level or getLogger().level or _DEFAULT_LEVEL
 
-    def log(self, level, msg, *args):
+    def log(self, level, msg, *args, extra=None):
         if self.isEnabledFor(level):
             if args:
                 if isinstance(args[0], dict):
                     args = args[0]
                 msg = msg % args
-            self.record.set(self.name, level, msg)
+            record = LogRecord(self.name, level, msg, extra)
             handlers = self.handlers
             if not handlers:
                 handlers = getLogger().handlers
             for h in handlers:
-                h.emit(self.record)
+                h.emit(record)
 
-    def debug(self, msg, *args):
-        self.log(DEBUG, msg, *args)
+    def debug(self, msg, *args, **kwargs):
+        self.log(DEBUG, msg, *args, **kwargs)
 
-    def info(self, msg, *args):
-        self.log(INFO, msg, *args)
+    def info(self, msg, *args, **kwargs):
+        self.log(INFO, msg, *args, **kwargs)
 
-    def warning(self, msg, *args):
-        self.log(WARNING, msg, *args)
+    def warning(self, msg, *args, **kwargs):
+        self.log(WARNING, msg, *args, **kwargs)
 
-    def error(self, msg, *args):
-        self.log(ERROR, msg, *args)
+    def error(self, msg, *args, **kwargs):
+        self.log(ERROR, msg, *args, **kwargs)
 
-    def critical(self, msg, *args):
-        self.log(CRITICAL, msg, *args)
+    def critical(self, msg, *args, **kwargs):
+        self.log(CRITICAL, msg, *args, **kwargs)
 
-    def exception(self, msg, *args, exc_info=True):
-        self.log(ERROR, msg, *args)
+    def exception(self, msg, *args, exc_info=True, **kwargs):
+        self.log(ERROR, msg, *args, **kwargs)
         tb = None
         if isinstance(exc_info, BaseException):
             tb = exc_info
@@ -178,32 +182,32 @@ def getLogger(name=None):
     return _loggers[name]
 
 
-def log(level, msg, *args):
-    getLogger().log(level, msg, *args)
+def log(level, msg, *args, **kwargs):
+    getLogger().log(level, msg, *args, **kwarg)
 
 
-def debug(msg, *args):
-    getLogger().debug(msg, *args)
+def debug(msg, *args, **kwargs):
+    getLogger().debug(msg, *args, **kwargs)
 
 
-def info(msg, *args):
-    getLogger().info(msg, *args)
+def info(msg, *args, **kwargs):
+    getLogger().info(msg, *args, **kwargs)
 
 
-def warning(msg, *args):
-    getLogger().warning(msg, *args)
+def warning(msg, *args, **kwargs):
+    getLogger().warning(msg, *args, **kwargs)
 
 
-def error(msg, *args):
-    getLogger().error(msg, *args)
+def error(msg, *args, **kwargs):
+    getLogger().error(msg, *args, **kwargs)
 
 
-def critical(msg, *args):
-    getLogger().critical(msg, *args)
+def critical(msg, *args, **kwargs):
+    getLogger().critical(msg, *args, **kwargs)
 
 
-def exception(msg, *args, exc_info=True):
-    getLogger().exception(msg, *args, exc_info=exc_info)
+def exception(msg, *args, exc_info=True, **kwargs):
+    getLogger().exception(msg, *args, exc_info=exc_info, **kwargs)
 
 
 def shutdown():

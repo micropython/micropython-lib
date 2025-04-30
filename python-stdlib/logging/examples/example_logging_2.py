@@ -42,7 +42,10 @@ except:
 class MyHandler(logging.Handler):
     def emit(self, record):
         print("levelname=%(levelname)s name=%(name)s message=%(message)s" % record.__dict__)
+        print("extra1=%s" % record.__dict__.get("extra1"))
 
 
 logging.getLogger().addHandler(MyHandler())
+logging.getLogger().setLevel(logging.INFO)
 logging.info("Test message7")
+logging.info("Test message8", extra={"extra1": 99})
