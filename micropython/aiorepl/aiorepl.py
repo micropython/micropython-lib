@@ -161,7 +161,7 @@ async def task(g=None, prompt="--> "):
                                 cmd = cmd[:-1]
                                 sys.stdout.write("\x08 \x08")
                     elif c == CHAR_CTRL_A:
-                        await raw_repl(s, g)
+                        raw_repl(sys.stdin, g)
                         break
                     elif c == CHAR_CTRL_B:
                         continue
@@ -239,7 +239,7 @@ async def task(g=None, prompt="--> "):
         micropython.kbd_intr(3)
 
 
-async def raw_paste(s, g, window=512):
+def raw_paste(s, window=512):
     sys.stdout.write("R\x01")  # supported
     sys.stdout.write(bytearray([window & 0xFF, window >> 8, 0x01]).decode())
     eof = False
@@ -248,7 +248,7 @@ async def raw_paste(s, g, window=512):
     file = b""
     while not eof:
         for idx in range(window):
-            b = await s.read(1)
+            b = s.read(1)
             c = ord(b)
             if c == CHAR_CTRL_C or c == CHAR_CTRL_D:
                 # end of file
@@ -267,7 +267,12 @@ async def raw_paste(s, g, window=512):
     return file
 
 
-async def raw_repl(s: asyncio.StreamReader, g: dict):
+def raw_repl(s, g: dict):
+    """
+    This function is blocking to prevent other
+    async tasks from writing to the stdio stream and
+    breaking the raw repl session.
+    """
     heading = "raw REPL; CTRL-B to exit\n"
     line = ""
     sys.stdout.write(heading)
@@ -276,7 +281,7 @@ async def raw_repl(s: asyncio.StreamReader, g: dict):
         line = ""
         sys.stdout.write(">")
         while True:
-            b = await s.read(1)
+            b = s.read(1)
             c = ord(b)
             if c == CHAR_CTRL_A:
                 rline = line
@@ -284,7 +289,7 @@ async def raw_repl(s: asyncio.StreamReader, g: dict):
 
                 if len(rline) == 2 and ord(rline[0]) == CHAR_CTRL_E:
                     if rline[1] == "A":
-                        line = await raw_paste(s, g)
+                        line = raw_paste(s)
                         break
                 else:
                     # reset raw REPL
