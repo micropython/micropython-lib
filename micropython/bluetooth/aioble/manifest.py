@@ -3,7 +3,7 @@
 # code. This allows (for development purposes) all the files to live in the
 # one directory.
 
-metadata(version="0.6.0")
+metadata(version="0.6.1")
 
 # Default installation gives you everything. Install the individual
 # components (or a combination of them) if you want a more minimal install.
