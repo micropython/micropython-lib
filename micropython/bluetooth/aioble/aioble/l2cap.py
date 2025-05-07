@@ -141,6 +141,7 @@ class L2CAPChannel:
             if self._stalled:
                 await self.flush(timeout_ms)
             # l2cap_send returns True if you can send immediately.
+            self._assert_connected()
             self._stalled = not ble.l2cap_send(
                 self._connection._conn_handle,
                 self._cid,
