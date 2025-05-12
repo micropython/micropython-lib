@@ -1,3 +1,4 @@
+import micropython
 import time
 
 try:
@@ -71,6 +72,12 @@ def top(update_interval_ms=1000, timeout_ms=None, thread_names={}):
         else:
             print("INFO: Platform does not support listing active tasks.\x1b[K")
             line_count += 1
+
+        print("\x1b[K")
+        line_count += 1
+        print("MicroPython ", end="")
+        micropython.mem_info()
+        line_count += 3
 
         if previous_line_count > line_count:
             for _ in range(previous_line_count - line_count):
