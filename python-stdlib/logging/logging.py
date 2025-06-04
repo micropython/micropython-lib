@@ -202,8 +202,8 @@ def critical(msg, *args):
     getLogger().critical(msg, *args)
 
 
-def exception(msg, *args):
-    getLogger().exception(msg, *args)
+def exception(msg, *args, exc_info=True):
+    getLogger().exception(msg, *args, exc_info=exc_info)
 
 
 def shutdown():
