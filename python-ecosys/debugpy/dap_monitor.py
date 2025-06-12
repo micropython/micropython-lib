@@ -9,6 +9,7 @@ import sys
 
 class DAPMonitor:
     def __init__(self, listen_port=5679, target_host='127.0.0.1', target_port=5678):
+        self.disconnect = False
         self.listen_port = listen_port
         self.target_host = target_host
         self.target_port = target_port
@@ -44,9 +45,9 @@ class DAPMonitor:
             threading.Thread(target=self.forward_server_to_client, daemon=True).start()
             
             print("DAP Monitor active - press Ctrl+C to stop")
-            while True:
+            while not self.disconnect:
                 time.sleep(1)
-                
+
         except KeyboardInterrupt:
             print("\nStopping DAP Monitor...")
         except Exception as e:
@@ -106,43 +107,55 @@ class DAPMonitor:
                     return None
                 content += chunk
                 
-            # Log the message
-            try:
-                message = json.loads(content.decode('utf-8'))
-                msg_type = message.get('type', 'unknown')
-                command = message.get('command', message.get('event', 'unknown'))
-                seq = message.get('seq', 0)
-                
-                print(f"\n[{source}] {msg_type.upper()}: {command} (seq={seq})")
-                
-                if msg_type == 'request':
-                    args = message.get('arguments', {})
-                    if args:
-                        print(f"  Arguments: {json.dumps(args, indent=2)}")
-                elif msg_type == 'response':
-                    success = message.get('success', False)
-                    req_seq = message.get('request_seq', 0)
-                    print(f"  Success: {success}, Request Seq: {req_seq}")
-                    body = message.get('body')
-                    if body:
-                        print(f"  Body: {json.dumps(body, indent=2)}")
-                    msg = message.get('message')
-                    if msg:
-                        print(f"  Message: {msg}")
-                elif msg_type == 'event':
-                    body = message.get('body', {})
-                    if body:
-                        print(f"  Body: {json.dumps(body, indent=2)}")
-                        
-            except json.JSONDecodeError:
-                print(f"\n[{source}] Invalid JSON: {content}")
-                
+            # Parse and Log the message
+            message = self.parse_dap(source, content)
+            self.log_dap_message(source, message)
+            # Check for disconnect command
+            if message:
+                if "disconnect" == message.get('command', message.get('event', 'unknown')):
+                    print(f"\n[{source}] Disconnect command received, stopping monitor.")
+                    self.disconnect = True
             return header + content
-            
         except Exception as e:
             print(f"Error receiving from {source}: {e}")
             return None
-            
+
+    def parse_dap(self, source, content):
+        """Parse DAP message and log it."""
+        try:
+            message = json.loads(content.decode('utf-8'))
+            return message
+        except json.JSONDecodeError:
+            print(f"\n[{source}] Invalid JSON: {content}")
+            return None
+
+    def log_dap_message(self, source, message):
+        """Log DAP message details."""
+        msg_type = message.get('type', 'unknown')
+        command = message.get('command', message.get('event', 'unknown'))
+        seq = message.get('seq', 0)
+
+        print(f"\n[{source}] {msg_type.upper()}: {command} (seq={seq})")
+
+        if msg_type == 'request':
+            args = message.get('arguments', {})
+            if args:
+                print(f"  Arguments: {json.dumps(args, indent=2)}")
+        elif msg_type == 'response':
+            success = message.get('success', False)
+            req_seq = message.get('request_seq', 0)
+            print(f"  Success: {success}, Request Seq: {req_seq}")
+            body = message.get('body')
+            if body:
+                print(f"  Body: {json.dumps(body, indent=2)}")
+            msg = message.get('message')
+            if msg:
+                print(f"  Message: {msg}")
+        elif msg_type == 'event':
+            body = message.get('body', {})
+            if body:
+                print(f"  Body: {json.dumps(body, indent=2)}")
+
     def send_raw_data(self, sock, data):
         """Send raw data to socket."""
         try:
