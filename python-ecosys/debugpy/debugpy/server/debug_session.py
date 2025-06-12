@@ -328,7 +328,10 @@ class DebugSession:
         expression = args.get("expression", "")
         frame_id = args.get("frameId")
         context = args.get("context", "watch")
-        
+        if not expression:
+            self.channel.send_response(CMD_EVALUATE, seq, success=False, 
+                                     message="No expression provided")
+            return
         try:
             result = self.pdb.evaluate_expression(expression, frame_id)
             self.channel.send_response(CMD_EVALUATE, seq, body={
