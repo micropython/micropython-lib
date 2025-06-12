@@ -2,9 +2,13 @@
 """Test script for VS Code debugging with MicroPython debugpy."""
 
 import sys
+
 sys.path.insert(0, '.')
 
 import debugpy
+
+foo = 42
+bar = "Hello, MicroPython!"
 
 def fibonacci(n):
     """Calculate fibonacci number (iterative for efficiency)."""
@@ -17,6 +21,7 @@ def fibonacci(n):
 
 def debuggable_code():
     """The actual code we want to debug - wrapped in a function so sys.settrace will trace it."""
+    global foo
     print("Starting debuggable code...")
     
     # Test data - set breakpoint here (using smaller numbers to avoid slow fibonacci)
@@ -24,6 +29,7 @@ def debuggable_code():
     for i, num in enumerate(numbers):
         print(f"Calculating fibonacci({num})...")
         result = fibonacci(num)  # <-- SET BREAKPOINT HERE (line 26)
+        foo += result  # Modify foo to see if it gets traced
         print(f"fibonacci({num}) = {result}")
         print(sys.implementation)
         import machine
