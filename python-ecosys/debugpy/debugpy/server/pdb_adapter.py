@@ -235,7 +235,7 @@ class PdbAdapter:
                 continue
                 
             try:
-                value_str = str(value)
+                value_str = repr(value)
                 type_str = type(value).__name__
                 
                 variables.append({
