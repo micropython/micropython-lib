@@ -2,6 +2,7 @@
 
 import sys
 import time
+import os
 from ..common.constants import (
     TRACE_CALL, TRACE_LINE, TRACE_RETURN, TRACE_EXCEPTION,
     SCOPE_LOCALS, SCOPE_GLOBALS
@@ -21,11 +22,27 @@ class PdbAdapter:
         self.continue_event = False
         self.variables_cache = {}  # frameId -> variables
         self.frame_id_counter = 1
+        self.path_mapping = {}  # runtime_path -> vscode_path mapping
         
     def _debug_print(self, message):
         """Print debug message only if debug logging is enabled."""
         if hasattr(self, '_debug_session') and self._debug_session.debug_logging:
             print(message)
+    
+    def _normalize_path(self, path):
+        """Normalize a file path for consistent comparisons."""
+        # Convert to absolute path if possible
+        try:
+            if hasattr(os.path, 'abspath'):
+                path = os.path.abspath(path)
+            elif hasattr(os.path, 'realpath'):
+                path = os.path.realpath(path)
+        except:
+            pass
+        
+        # Ensure consistent separators
+        path = path.replace('\\', '/')
+        return path
         
     def set_trace_function(self, trace_func):
         """Install the trace function."""
@@ -38,6 +55,9 @@ class PdbAdapter:
         """Set breakpoints for a file."""
         self.breakpoints[filename] = {}
         actual_breakpoints = []
+        
+        # Debug log the breakpoint path
+        self._debug_print(f"[PDB] Setting breakpoints for file: {filename}")
         
         for bp in breakpoints:
             line = bp.get("line")
@@ -73,12 +93,23 @@ class PdbAdapter:
         if filename in self.breakpoints:
             if lineno in self.breakpoints[filename]:
                 self._debug_print(f"[PDB] HIT BREAKPOINT (exact match) at {filename}:{lineno}")
+                # Record the path mapping (in this case, they're already the same)
+                self.path_mapping[filename] = filename
                 self.hit_breakpoint = True
                 return True
         
         # Also try checking by basename for path mismatches
         def basename(path):
             return path.split('/')[-1] if '/' in path else path
+        
+        # Check if this might be a relative path match
+        def ends_with_path(full_path, relative_path):
+            """Check if full_path ends with relative_path components."""
+            full_parts = full_path.replace('\\', '/').split('/')
+            rel_parts = relative_path.replace('\\', '/').split('/')
+            if len(rel_parts) > len(full_parts):
+                return False
+            return full_parts[-len(rel_parts):] == rel_parts
 
         file_basename = basename(filename)
         self._debug_print(f"[PDB] Fallback basename match: '{file_basename}' vs available files")
@@ -89,6 +120,18 @@ class PdbAdapter:
                 self._debug_print(f"[PDB]   Basename match found! Checking line {lineno} in {list(self.breakpoints[bp_file].keys())}")
                 if lineno in self.breakpoints[bp_file]:
                     self._debug_print(f"[PDB] HIT BREAKPOINT (fallback basename match) at {filename}:{lineno} -> {bp_file}")
+                    # Record the path mapping so we can report the correct path in stack traces
+                    self.path_mapping[filename] = bp_file
+                    self.hit_breakpoint = True
+                    return True
+            
+            # Also check if the runtime path might be relative and the breakpoint path absolute
+            if ends_with_path(bp_file, filename):
+                self._debug_print(f"[PDB]   Relative path match: {bp_file} ends with {filename}")
+                if lineno in self.breakpoints[bp_file]:
+                    self._debug_print(f"[PDB] HIT BREAKPOINT (relative path match) at {filename}:{lineno} -> {bp_file}")
+                    # Record the path mapping so we can report the correct path in stack traces
+                    self.path_mapping[filename] = bp_file
                     self.hit_breakpoint = True
                     return True
                 
@@ -171,11 +214,16 @@ class PdbAdapter:
             name = frame.f_code.co_name
             line = frame.f_lineno
             
+            # Use the VS Code path if we have a mapping, otherwise use the original path
+            display_path = self.path_mapping.get(filename, filename)
+            if filename != display_path:
+                self._debug_print(f"[PDB] Stack trace path mapping: {filename} -> {display_path}")
+            
             # Create frame info
             frames.append({
                 "id": frame_id,
                 "name": name,
-                "source": {"path": filename},
+                "source": {"path": display_path},
                 "line": line,
                 "column": 1,
                 "endLine": line,
