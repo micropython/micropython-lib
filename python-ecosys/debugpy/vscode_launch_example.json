@@ -2,8 +2,8 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Micropython Attach",
-            "type": "debugpy",
+            "name": "Attach to MicroPython",
+            "type": "python",
             "request": "attach",
             "connect": {
                 "host": "localhost",
@@ -11,11 +11,11 @@
             },
             "pathMappings": [
                 {
-                    "localRoot": "${workspaceFolder}/lib/micropython-lib/python-ecosys/debugpy",
+                    "localRoot": "${workspaceFolder}",
                     "remoteRoot": "."
                 }
             ],
-            // "logToFile": true,
+            "logToFile": true,
             "justMyCode": false
         }
     ]

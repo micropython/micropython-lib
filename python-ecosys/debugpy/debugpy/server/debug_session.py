@@ -263,6 +263,9 @@ class DebugSession:
         filename = source.get("path", "<unknown>")
         breakpoints = args.get("breakpoints", [])
         
+        # Debug log the source information
+        self._debug_print(f"[DAP] setBreakpoints source info: {source}")
+        
         # Set breakpoints in pdb adapter
         actual_breakpoints = self.pdb.set_breakpoints(filename, breakpoints)
         
