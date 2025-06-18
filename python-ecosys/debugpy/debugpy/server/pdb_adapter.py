@@ -3,10 +3,15 @@
 import sys
 import time
 import os
+import json
 from ..common.constants import (
     TRACE_CALL, TRACE_LINE, TRACE_RETURN, TRACE_EXCEPTION,
     SCOPE_LOCALS, SCOPE_GLOBALS
 )
+VARREF_LOCALS = 1
+VARREF_GLOBALS = 2
+VARREF_LOCALS_SPECIAL = 3
+VARREF_GLOBALS_SPECIAL = 4
 
 
 class PdbAdapter:
@@ -26,7 +31,7 @@ class PdbAdapter:
         
     def _debug_print(self, message):
         """Print debug message only if debug logging is enabled."""
-        if hasattr(self, '_debug_session') and self._debug_session.debug_logging:
+        if hasattr(self, '_debug_session') and self._debug_session.debug_logging: # type: ignore
             print(message)
     
     def _normalize_path(self, path):
@@ -197,7 +202,7 @@ class PdbAdapter:
         while not self.continue_event:
             # Process any pending DAP messages (scopes, variables, etc.)
             if hasattr(self, '_debug_session'):
-                self._debug_session.process_pending_messages()
+                self._debug_session.process_pending_messages() # type: ignore
             time.sleep(0.01)
             
     def get_stack_trace(self):
@@ -213,21 +218,25 @@ class PdbAdapter:
             filename = frame.f_code.co_filename
             name = frame.f_code.co_name
             line = frame.f_lineno
-            
+            if "<stdin>" in filename or filename.endswith("debugpy.py") :
+                hint = 'subtle'
+            else :
+                hint = 'normal'
+
             # Use the VS Code path if we have a mapping, otherwise use the original path
             display_path = self.path_mapping.get(filename, filename)
             if filename != display_path:
                 self._debug_print(f"[PDB] Stack trace path mapping: {filename} -> {display_path}")
-            
-            # Create frame info
+            # Create StackFrame info
             frames.append({
                 "id": frame_id,
-                "name": name,
+                "name": name + f" {type(frame.f_code.co_filename).__name__}",
                 "source": {"path": display_path},
                 "line": line,
                 "column": 1,
                 "endLine": line,
-                "endColumn": 1
+                "endColumn": 1,
+                "presentationHint": hint
             })
             
             # Cache frame for variable access
@@ -248,17 +257,63 @@ class PdbAdapter:
         scopes = [
             {
                 "name": "Locals",
-                "variablesReference": frame_id * 1000 + 1,
+                "variablesReference": frame_id * 1000 + VARREF_LOCALS,
                 "expensive": False
             },
             {
                 "name": "Globals", 
-                "variablesReference": frame_id * 1000 + 2,
+                "variablesReference": frame_id * 1000 + VARREF_GLOBALS ,
                 "expensive": False
             }
         ]
         return scopes
         
+    def _process_special_variables(self, var_dict):
+        """Process special variables (those starting and ending with __)."""
+        variables = []
+        for name, value in var_dict.items():
+            if name.startswith('__') and name.endswith('__'):
+                try:
+                    value_str = json.dumps(value)
+                    type_str = type(value).__name__
+                    variables.append({
+                        "name": name,
+                        "value": value_str,
+                        "type": type_str,
+                        "variablesReference": 0
+                    })
+                except Exception:
+                    variables.append(self._var_error(name))
+        return variables
+
+    def _process_regular_variables(self, var_dict):
+        """Process regular variables (excluding special ones)."""
+        variables = []
+        for name, value in var_dict.items():
+            # Skip private/internal variables
+            if name.startswith('__') and name.endswith('__'):
+                continue
+            try:
+                value_str = json.dumps(value)
+                type_str = type(value).__name__
+                variables.append({
+                    "name": name,
+                    "value": value_str,
+                    "type": type_str,
+                    "variablesReference": 0
+                })
+            except Exception:
+                variables.append(self._var_error(name))
+        return variables
+
+    @staticmethod
+    def _var_error(name:str):
+        return {"name": name, "value": "<error>", "type": "unknown", "variablesReference": 0 }
+    
+    @staticmethod
+    def _special_vars(varref:int):
+        return {"name": "Special", "value": "", "variablesReference": varref}
+
     def get_variables(self, variables_ref):
         """Get variables for a scope."""
         frame_id = variables_ref // 1000
@@ -268,40 +323,31 @@ class PdbAdapter:
             return []
             
         frame = self.variables_cache[frame_id]
-        variables = []
         
-        if scope_type == 1:  # Locals
+        # Handle special scope types first
+        if scope_type == VARREF_LOCALS_SPECIAL:
             var_dict = frame.f_locals if hasattr(frame, 'f_locals') else {}
-        elif scope_type == 2:  # Globals
+            return self._process_special_variables(var_dict)
+        elif scope_type == VARREF_GLOBALS_SPECIAL:
             var_dict = frame.f_globals if hasattr(frame, 'f_globals') else {}
-        else:
-            return []
-            
-        for name, value in var_dict.items():
-            # Skip private/internal variables
-            if name.startswith('__') and name.endswith('__'):
-                continue
-                
-            try:
-                value_str = repr(value)
-                type_str = type(value).__name__
-                
-                variables.append({
-                    "name": name,
-                    "value": value_str,
-                    "type": type_str,
-                    "variablesReference": 0  # Simple implementation - no nested objects
-                })
-            except Exception:
-                variables.append({
-                    "name": name,
-                    "value": "<error>",
-                    "type": "unknown",
-                    "variablesReference": 0
-                })
-                
-        return variables
+            return self._process_special_variables(var_dict)
         
+        # Handle regular scope types with special folder
+        variables = []
+        if scope_type == VARREF_LOCALS:
+            var_dict = frame.f_locals if hasattr(frame, 'f_locals') else {}
+            variables.append(self._special_vars( VARREF_LOCALS_SPECIAL))
+        elif scope_type == VARREF_GLOBALS:
+            var_dict = frame.f_globals if hasattr(frame, 'f_globals') else {}
+            variables.append(self._special_vars( VARREF_GLOBALS_SPECIAL))
+        else:
+            # Invalid reference, return empty
+            return []
+        
+        # Add regular variables
+        variables.extend(self._process_regular_variables(var_dict))
+        return variables
+
     def evaluate_expression(self, expression, frame_id=None):
         """Evaluate an expression in the context of a frame."""
         if frame_id is not None and frame_id in self.variables_cache:
@@ -317,14 +363,13 @@ class PdbAdapter:
             else:
                 globals_dict = globals()
                 locals_dict = {}
-                
         try:
             # Evaluate the expression
             result = eval(expression, globals_dict, locals_dict)
             return result
         except Exception as e:
             raise Exception(f"Evaluation error: {e}")
-            
+
     def cleanup(self):
         """Clean up resources."""
         self.variables_cache.clear()
