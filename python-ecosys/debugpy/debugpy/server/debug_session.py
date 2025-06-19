@@ -31,6 +31,10 @@ class DebugSession:
         """Print debug message only if debug logging is enabled."""
         if self.debug_logging:
             print(message)
+
+    @property
+    def _baremetal(self) -> bool:
+        return sys.platform not in ("linux") # to be expanded 
         
     def start(self):
         """Start the debug session message loop."""
@@ -369,15 +373,23 @@ class DebugSession:
         """Handle source request."""
         source = args.get("source", {})
         source_path = source.get("path", "")
-        
+        if self._baremetal or not source_path:
+            # BUGBUG: unable to read the source on ESP32 
+            # Possible an effect of the import / inialization sequence ?
+            # Nothe that other source files ( other.py) do not seem to get requested in the same way
+            self.channel.send_response(CMD_SOURCE, seq, success=False)
+            return
+        self._debug_print(f"[DAP] Processing source request for path: {source}")
         try:
             # Try to read the source file
-            with open(source_path, 'r') as f:
+            with open(source_path) as f:
                 content = f.read()
             self.channel.send_response(CMD_SOURCE, seq, body={"content": content})
         except Exception as e:
             self.channel.send_response(CMD_SOURCE, seq, success=False, 
-                                     message=f"Could not read source: {e}")
+                                    message="cancelled"
+                                    #  message=f"Could not read source: {e}"
+                                     )
         
     def _trace_function(self, frame, event, arg):
         """Trace function called by sys.settrace."""
