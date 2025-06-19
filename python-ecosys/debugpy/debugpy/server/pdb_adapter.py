@@ -230,7 +230,7 @@ class PdbAdapter:
             # Create StackFrame info
             frames.append({
                 "id": frame_id,
-                "name": name + f" {type(frame.f_code.co_filename).__name__}",
+                "name": name,
                 "source": {"path": display_path},
                 "line": line,
                 "column": 1,
