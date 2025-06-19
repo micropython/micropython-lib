@@ -6,6 +6,7 @@ import threading
 import json
 import time
 import sys
+import argparse
 
 class DAPMonitor:
     def __init__(self, listen_port=5679, target_host='127.0.0.1', target_port=5678):
@@ -171,5 +172,16 @@ class DAPMonitor:
             self.server_sock.close()
 
 if __name__ == "__main__":
-    monitor = DAPMonitor()
+
+    parser = argparse.ArgumentParser(description="DAP protocol monitor proxy")
+    parser.add_argument("--target-host", "--th", default="127.0.0.1", help="Target debugpy host (default: 127.0.0.1)")
+    parser.add_argument("--target-port", "--tp", type=int, default=5678, help="Target debugpy port (default: 5678)")
+    parser.add_argument("--listen-port", "--lp", type=int, default=5679, help="Port to listen for VS Code (default: 5679)")
+    args = parser.parse_args()
+
+    monitor = DAPMonitor(
+        listen_port=args.listen_port,
+        target_host=args.target_host,
+        target_port=args.target_port
+    )
     monitor.start()
