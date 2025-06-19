@@ -16,7 +16,7 @@ VARREF_GLOBALS_SPECIAL = 4
 
 class PdbAdapter:
     """Adapter between DAP protocol and MicroPython's sys.settrace functionality."""
-    
+
     def __init__(self):
         self.breakpoints = {}  # filename -> {line_no: breakpoint_info}
         self.current_frame = None
@@ -28,12 +28,12 @@ class PdbAdapter:
         self.variables_cache = {}  # frameId -> variables
         self.frame_id_counter = 1
         self.path_mapping = {}  # runtime_path -> vscode_path mapping
-        
+
     def _debug_print(self, message):
         """Print debug message only if debug logging is enabled."""
         if hasattr(self, '_debug_session') and self._debug_session.debug_logging: # type: ignore
             print(message)
-    
+
     def _normalize_path(self, path):
         """Normalize a file path for consistent comparisons."""
         # Convert to absolute path if possible
@@ -44,26 +44,26 @@ class PdbAdapter:
                 path = os.path.realpath(path)
         except:
             pass
-        
+
         # Ensure consistent separators
         path = path.replace('\\', '/')
         return path
-        
+
     def set_trace_function(self, trace_func):
         """Install the trace function."""
         if hasattr(sys, 'settrace'):
             sys.settrace(trace_func)
         else:
             raise RuntimeError("sys.settrace not available")
-            
+
     def set_breakpoints(self, filename, breakpoints):
         """Set breakpoints for a file."""
         self.breakpoints[filename] = {}
         actual_breakpoints = []
-        
+
         # Debug log the breakpoint path
         self._debug_print(f"[PDB] Setting breakpoints for file: {filename}")
-        
+
         for bp in breakpoints:
             line = bp.get("line")
             if line:
@@ -77,23 +77,23 @@ class PdbAdapter:
                     "verified": True,
                     "source": {"path": filename}
                 })
-                
+
         return actual_breakpoints
-        
+
     def should_stop(self, frame, event, arg):
         """Determine if execution should stop at this point."""
         self.current_frame = frame
         self.hit_breakpoint = False
-        
+
         # Get frame information
         filename = frame.f_code.co_filename
         lineno = frame.f_lineno
-        
+
         # Debug: print filename and line for debugging
         if event == TRACE_LINE and lineno in [20, 21, 22, 23, 24]:  # Only log lines near our breakpoints
             self._debug_print(f"[PDB] Checking {filename}:{lineno} (event={event})")
             self._debug_print(f"[PDB] Available breakpoint files: {list(self.breakpoints.keys())}")
-        
+
         # Check for exact filename match first
         if filename in self.breakpoints:
             if lineno in self.breakpoints[filename]:
@@ -102,11 +102,11 @@ class PdbAdapter:
                 self.path_mapping[filename] = filename
                 self.hit_breakpoint = True
                 return True
-        
+
         # Also try checking by basename for path mismatches
         def basename(path):
             return path.split('/')[-1] if '/' in path else path
-        
+
         # Check if this might be a relative path match
         def ends_with_path(full_path, relative_path):
             """Check if full_path ends with relative_path components."""
@@ -129,7 +129,7 @@ class PdbAdapter:
                     self.path_mapping[filename] = bp_file
                     self.hit_breakpoint = True
                     return True
-            
+
             # Also check if the runtime path might be relative and the breakpoint path absolute
             if ends_with_path(bp_file, filename):
                 self._debug_print(f"[PDB]   Relative path match: {bp_file} ends with {filename}")
@@ -139,13 +139,13 @@ class PdbAdapter:
                     self.path_mapping[filename] = bp_file
                     self.hit_breakpoint = True
                     return True
-                
+
         # Check stepping
         if self.step_mode == 'into':
             if event in (TRACE_CALL, TRACE_LINE):
                 self.step_mode = None
                 return True
-                
+
         elif self.step_mode == 'over':
             if event == TRACE_LINE and frame == self.step_frame:
                 self.step_mode = None
@@ -156,47 +156,46 @@ class PdbAdapter:
                     self.step_frame = frame.f_back
                 else:
                     self.step_mode = None
-                    
+
         elif self.step_mode == 'out':
             if event == TRACE_RETURN and frame == self.step_frame:
                 self.step_mode = None
                 return True
-                
+
         return False
-        
+
     def continue_execution(self):
         """Continue execution."""
         self.step_mode = None
         self.continue_event = True
-        
+
     def step_over(self):
         """Step over (next line)."""
         self.step_mode = 'over'
         self.step_frame = self.current_frame
         self.continue_event = True
-        
+
     def step_into(self):
         """Step into function calls."""
         self.step_mode = 'into'
         self.continue_event = True
-        
+
     def step_out(self):
         """Step out of current function."""
         self.step_mode = 'out'
         self.step_frame = self.current_frame
         self.continue_event = True
-        
+
     def pause(self):
         """Pause execution at next opportunity."""
         # This is handled by the debug session
-        pass
-        
+
     def wait_for_continue(self):
         """Wait for continue command (simplified implementation)."""
         # In a real implementation, this would block until continue
         # For MicroPython, we'll use a simple polling approach
         self.continue_event = False
-        
+
         # Process DAP messages while waiting for continue
         self._debug_print("[PDB] Waiting for continue command...")
         while not self.continue_event:
@@ -204,16 +203,16 @@ class PdbAdapter:
             if hasattr(self, '_debug_session'):
                 self._debug_session.process_pending_messages() # type: ignore
             time.sleep(0.01)
-            
+
     def get_stack_trace(self):
         """Get the current stack trace."""
         if not self.current_frame:
             return []
-            
+
         frames = []
         frame = self.current_frame
         frame_id = 0
-        
+
         while frame:
             filename = frame.f_code.co_filename
             name = frame.f_code.co_name
@@ -238,10 +237,10 @@ class PdbAdapter:
                 "endColumn": 1,
                 "presentationHint": hint
             })
-            
+
             # Cache frame for variable access
             self.variables_cache[frame_id] = frame
-            
+
             # MicroPython doesn't have f_back attribute
             if hasattr(frame, 'f_back'):
                 frame = frame.f_back
@@ -249,9 +248,9 @@ class PdbAdapter:
                 # Only return the current frame for MicroPython
                 break
             frame_id += 1
-            
+
         return frames
-        
+
     def get_scopes(self, frame_id):
         """Get variable scopes for a frame."""
         scopes = [
@@ -261,13 +260,13 @@ class PdbAdapter:
                 "expensive": False
             },
             {
-                "name": "Globals", 
+                "name": "Globals",
                 "variablesReference": frame_id * 1000 + VARREF_GLOBALS ,
                 "expensive": False
             }
         ]
         return scopes
-        
+
     def _process_special_variables(self, var_dict):
         """Process special variables (those starting and ending with __)."""
         variables = []
@@ -309,7 +308,7 @@ class PdbAdapter:
     @staticmethod
     def _var_error(name:str):
         return {"name": name, "value": "<error>", "type": "unknown", "variablesReference": 0 }
-    
+
     @staticmethod
     def _special_vars(varref:int):
         return {"name": "Special", "value": "", "variablesReference": varref}
@@ -318,12 +317,12 @@ class PdbAdapter:
         """Get variables for a scope."""
         frame_id = variables_ref // 1000
         scope_type = variables_ref % 1000
-        
+
         if frame_id not in self.variables_cache:
             return []
-            
+
         frame = self.variables_cache[frame_id]
-        
+
         # Handle special scope types first
         if scope_type == VARREF_LOCALS_SPECIAL:
             var_dict = frame.f_locals if hasattr(frame, 'f_locals') else {}
@@ -331,7 +330,7 @@ class PdbAdapter:
         elif scope_type == VARREF_GLOBALS_SPECIAL:
             var_dict = frame.f_globals if hasattr(frame, 'f_globals') else {}
             return self._process_special_variables(var_dict)
-        
+
         # Handle regular scope types with special folder
         variables = []
         if scope_type == VARREF_LOCALS:
@@ -343,7 +342,7 @@ class PdbAdapter:
         else:
             # Invalid reference, return empty
             return []
-        
+
         # Add regular variables
         variables.extend(self._process_regular_variables(var_dict))
         return variables

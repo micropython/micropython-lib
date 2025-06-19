@@ -23,7 +23,7 @@ def debuggable_code():
     """The actual code we want to debug - wrapped in a function so sys.settrace will trace it."""
     global foo
     print("Starting debuggable code...")
-    
+
     # Test data - set breakpoint here (using smaller numbers to avoid slow fibonacci)
     numbers = [3, 4, 5]
     for i, num in enumerate(numbers):
@@ -34,18 +34,18 @@ def debuggable_code():
         print(sys.implementation)
         import machine
         print(dir(machine))
-    
+
     # Test manual breakpoint
     print("\nTriggering manual breakpoint...")
     debugpy.breakpoint()
     print("Manual breakpoint triggered!")
-    
+
     print("Test completed successfully!")
 
 def main():
     print("MicroPython VS Code Debugging Test")
     print("==================================")
-    
+
     # Start debug server
     try:
         debugpy.listen()
@@ -57,18 +57,18 @@ def main():
         #     input()
         # except:
         #     pass
-        
+
         # Enable debugging for this thread
         debugpy.debug_this_thread()
-        
+
         # Give VS Code a moment to set breakpoints after attach
         print("\nGiving VS Code time to set breakpoints...")
         import time
         time.sleep(2)
-        
+
         # Call the debuggable code function so it gets traced
         debuggable_code()
-        
+
     except KeyboardInterrupt:
         print("\nTest interrupted by user")
     except Exception as e:

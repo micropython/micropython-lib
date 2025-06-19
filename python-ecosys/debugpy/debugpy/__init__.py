@@ -11,10 +11,10 @@ from .public_api import listen, wait_for_client, breakpoint, debug_this_thread
 from .common.constants import DEFAULT_HOST, DEFAULT_PORT
 
 __all__ = [
-    "listen",
-    "wait_for_client", 
-    "breakpoint",
-    "debug_this_thread",
     "DEFAULT_HOST",
     "DEFAULT_PORT",
+    "breakpoint",
+    "debug_this_thread",
+    "listen",
+    "wait_for_client",
 ]
