@@ -1,6 +1,7 @@
 """Public API for debugpy."""
 
 import socket
+import struct
 import sys
 from .common.constants import DEFAULT_HOST, DEFAULT_PORT
 from .server.debug_session import DebugSession
@@ -43,7 +44,7 @@ def listen(port=DEFAULT_PORT, host=DEFAULT_HOST):
     client_sock = None
     try:
         client_sock, client_addr = listener.accept()
-        print(f"Debugger connected from {client_addr}")
+        print(f"Debugger connected from {format_client_addr(client_addr)}")
 
         # Create debug session
         _debug_session = DebugSession(client_sock)
@@ -73,6 +74,26 @@ def listen(port=DEFAULT_PORT, host=DEFAULT_HOST):
 
     return (host, port)
 
+def format_client_addr(client_addr):
+    """Format client address using socket module methods"""
+    if isinstance(client_addr, (tuple, list)):
+        # Already in (ip, port) format
+        return f"{client_addr[0]}:{client_addr[1]}"
+    elif isinstance(client_addr, bytes) and len(client_addr) >= 8:
+        # Extract port (bytes 2-4, network byte order)
+        port = struct.unpack('!H', client_addr[2:4])[0]
+        # Extract IP address (bytes 4-8) using inet_ntoa
+        ip_packed = client_addr[4:8]
+        try:
+            # inet_ntoa expects 4-byte string in network byte order
+            ip_addr = socket.inet_ntoa(ip_packed)
+            return f"{ip_addr}:{port}"
+        except:
+            # Fallback if inet_ntoa not available (MicroPython)
+            ip_addr = '.'.join(str(b) for b in ip_packed)
+            return f"{ip_addr}:{port}"
+    else:
+        return str(client_addr)
 
 def wait_for_client():
     """Wait for the debugger client to connect and initialize."""
