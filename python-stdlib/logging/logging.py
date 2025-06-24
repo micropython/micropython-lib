@@ -223,6 +223,7 @@ def basicConfig(
     format=None,
     datefmt=None,
     level=WARNING,
+    handler=None,
     stream=None,
     encoding="UTF-8",
     force=False,
@@ -237,10 +238,14 @@ def basicConfig(
             h.close()
         logger.handlers = []
 
-        if filename is None:
-            handler = StreamHandler(stream)
-        else:
-            handler = FileHandler(filename, filemode, encoding)
+        if handler is not None:
+            if filename is None:
+                handler = StreamHandler(stream)
+            else:
+                handler = FileHandler(filename, filemode, encoding)
+        elif stream or filename:
+            raise ValueError("'stream' or 'filename' should not be "
+                             "specified together with 'handler'")
 
         handler.setLevel(level)
         handler.setFormatter(Formatter(format, datefmt))
