@@ -40,7 +40,8 @@ class PdbAdapter:
         self.continue_event = False
         self.variables_cache = {}  # frameId -> variables
         self.frame_id_counter = 1
-        self.path_mappings : dict[str,str] = {}  # runtime_path -> vscode_path mapping
+        self.path_mappings : list[tuple[str,str]] = []  # runtime_path -> vscode_path mapping
+        self.file_mappings : dict[str,str] = {}  # runtime_path -> vscode_path mapping
 
     def _debug_print(self, message):
         """Print debug message only if debug logging is enabled."""
@@ -68,7 +69,7 @@ class PdbAdapter:
         else:
             raise RuntimeError("sys.settrace not available")
 
-    def set_breakpoints(self, filename, breakpoints):
+    def set_breakpoints(self, filename, breakpoints:list[dict]):
         """Set breakpoints for a file."""
         self.breakpoints[filename] = {}
         actual_breakpoints = []
@@ -105,7 +106,7 @@ class PdbAdapter:
             if lineno in self.breakpoints[filename]:
                 self._debug_print(f"[PDB] HIT BREAKPOINT (exact match) at {filename}:{lineno}")
                 # Record the path mapping (in this case, they're already the same)
-                self.path_mappings[filename] = filename
+                self.file_mappings[filename] = filename
                 self.hit_breakpoint = True
                 return True
 
@@ -119,7 +120,7 @@ class PdbAdapter:
                 if lineno in self.breakpoints[bp_file]:
                     self._debug_print(f"[PDB] HIT BREAKPOINT (fallback basename match) at {filename}:{lineno} -> {bp_file}")
                     # Record the path mapping so we can report the correct path in stack traces
-                    self.path_mappings[filename] = bp_file
+                    self.file_mappings[filename] = bp_file
                     self.hit_breakpoint = True
                     return True
 
@@ -129,7 +130,7 @@ class PdbAdapter:
                 if lineno in self.breakpoints[bp_file]:
                     self._debug_print(f"[PDB] HIT BREAKPOINT (relative path match) at {filename}:{lineno} -> {bp_file}")
                     # Record the path mapping so we can report the correct path in stack traces
-                    self.path_mappings[filename] = bp_file
+                    self.file_mappings[filename] = bp_file
                     self.hit_breakpoint = True
                     return True
 
@@ -216,7 +217,7 @@ class PdbAdapter:
                 hint = 'normal'
 
             # Use the VS Code path if we have a mapping, otherwise use the original path
-            display_path = self.path_mappings.get(filename, filename)
+            display_path = self.file_mappings.get(filename, filename)
             if filename != display_path:
                 self._debug_print(f"[PDB] Stack trace path mapping: {filename} -> {display_path}")
             # Create StackFrame info

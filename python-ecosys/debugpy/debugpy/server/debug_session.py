@@ -252,6 +252,15 @@ class DebugSession:
 
         self._debug_print(f"[DAP] Processing attach request with args: {args}")
         print(f"[DAP] Debug logging {'enabled' if self.debug_logging else 'disabled'} (logToFile={self.debug_logging})")
+        
+        # get debugger root and debugee root from pathMappings
+        for pm in args.get("pathMappings",[]):
+            # debugee - debugger
+            self.pdb.path_mappings.append(
+                (pm.get("remoteRoot", "./"),
+                 pm.get("localRoot", "./"))
+            )
+        # # TODO: justMyCode, debugOptions  , 
 
         # Enable trace function
         self.pdb.set_trace_function(self._trace_function)
