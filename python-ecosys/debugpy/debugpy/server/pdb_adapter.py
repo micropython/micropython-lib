@@ -14,6 +14,19 @@ VARREF_LOCALS_SPECIAL = 3
 VARREF_GLOBALS_SPECIAL = 4
 
 
+# Also try checking by basename for path mismatches
+def basename(path:str):
+    return path.split('/')[-1] if '/' in path else path
+
+# Check if this might be a relative path match
+def ends_with_path(full_path:str, relative_path:str):
+    """Check if full_path ends with relative_path components."""
+    full_parts = full_path.replace('\\', '/').split('/')
+    rel_parts = relative_path.replace('\\', '/').split('/')
+    if len(rel_parts) > len(full_parts):
+        return False
+    return full_parts[-len(rel_parts):] == rel_parts
+
 class PdbAdapter:
     """Adapter between DAP protocol and MicroPython's sys.settrace functionality."""
 
@@ -27,14 +40,14 @@ class PdbAdapter:
         self.continue_event = False
         self.variables_cache = {}  # frameId -> variables
         self.frame_id_counter = 1
-        self.path_mapping = {}  # runtime_path -> vscode_path mapping
+        self.path_mappings : dict[str,str] = {}  # runtime_path -> vscode_path mapping
 
     def _debug_print(self, message):
         """Print debug message only if debug logging is enabled."""
         if hasattr(self, '_debug_session') and self._debug_session.debug_logging: # type: ignore
             print(message)
 
-    def _normalize_path(self, path):
+    def _normalize_path(self, path:str):
         """Normalize a file path for consistent comparisons."""
         # Convert to absolute path if possible
         try:
@@ -44,7 +57,6 @@ class PdbAdapter:
                 path = os.path.realpath(path)
         except:
             pass
-
         # Ensure consistent separators
         path = path.replace('\\', '/')
         return path
@@ -80,7 +92,7 @@ class PdbAdapter:
 
         return actual_breakpoints
 
-    def should_stop(self, frame, event, arg):
+    def should_stop(self, frame, event:str, arg):
         """Determine if execution should stop at this point."""
         self.current_frame = frame
         self.hit_breakpoint = False
@@ -88,33 +100,14 @@ class PdbAdapter:
         # Get frame information
         filename = frame.f_code.co_filename
         lineno = frame.f_lineno
-
-        # Debug: print filename and line for debugging
-        if event == TRACE_LINE and lineno in [20, 21, 22, 23, 24]:  # Only log lines near our breakpoints
-            self._debug_print(f"[PDB] Checking {filename}:{lineno} (event={event})")
-            self._debug_print(f"[PDB] Available breakpoint files: {list(self.breakpoints.keys())}")
-
         # Check for exact filename match first
         if filename in self.breakpoints:
             if lineno in self.breakpoints[filename]:
                 self._debug_print(f"[PDB] HIT BREAKPOINT (exact match) at {filename}:{lineno}")
                 # Record the path mapping (in this case, they're already the same)
-                self.path_mapping[filename] = filename
+                self.path_mappings[filename] = filename
                 self.hit_breakpoint = True
                 return True
-
-        # Also try checking by basename for path mismatches
-        def basename(path):
-            return path.split('/')[-1] if '/' in path else path
-
-        # Check if this might be a relative path match
-        def ends_with_path(full_path, relative_path):
-            """Check if full_path ends with relative_path components."""
-            full_parts = full_path.replace('\\', '/').split('/')
-            rel_parts = relative_path.replace('\\', '/').split('/')
-            if len(rel_parts) > len(full_parts):
-                return False
-            return full_parts[-len(rel_parts):] == rel_parts
 
         file_basename = basename(filename)
         self._debug_print(f"[PDB] Fallback basename match: '{file_basename}' vs available files")
@@ -126,7 +119,7 @@ class PdbAdapter:
                 if lineno in self.breakpoints[bp_file]:
                     self._debug_print(f"[PDB] HIT BREAKPOINT (fallback basename match) at {filename}:{lineno} -> {bp_file}")
                     # Record the path mapping so we can report the correct path in stack traces
-                    self.path_mapping[filename] = bp_file
+                    self.path_mappings[filename] = bp_file
                     self.hit_breakpoint = True
                     return True
 
@@ -136,7 +129,7 @@ class PdbAdapter:
                 if lineno in self.breakpoints[bp_file]:
                     self._debug_print(f"[PDB] HIT BREAKPOINT (relative path match) at {filename}:{lineno} -> {bp_file}")
                     # Record the path mapping so we can report the correct path in stack traces
-                    self.path_mapping[filename] = bp_file
+                    self.path_mappings[filename] = bp_file
                     self.hit_breakpoint = True
                     return True
 
@@ -223,7 +216,7 @@ class PdbAdapter:
                 hint = 'normal'
 
             # Use the VS Code path if we have a mapping, otherwise use the original path
-            display_path = self.path_mapping.get(filename, filename)
+            display_path = self.path_mappings.get(filename, filename)
             if filename != display_path:
                 self._debug_print(f"[PDB] Stack trace path mapping: {filename} -> {display_path}")
             # Create StackFrame info
