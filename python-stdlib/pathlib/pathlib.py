@@ -126,7 +126,7 @@ class Path:
         for name, mode, *_ in os.ilistdir(path):
             full_path = path + _SEP + name
             if name.startswith(prefix) and name.endswith(suffix):
-                yield full_path
+                yield Path(full_path)
             if recursive and mode & 0x4000:  # is_dir
                 yield from self._glob(full_path, pattern, recursive=recursive)
 
