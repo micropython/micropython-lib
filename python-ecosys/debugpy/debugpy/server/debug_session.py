@@ -3,12 +3,34 @@
 import sys
 from ..common.messaging import JsonMessageChannel
 from ..common.constants import (
-    CMD_INITIALIZE, CMD_LAUNCH, CMD_ATTACH, CMD_SET_BREAKPOINTS,
-    CMD_CONTINUE, CMD_NEXT, CMD_STEP_IN, CMD_STEP_OUT, CMD_PAUSE,
-    CMD_STACK_TRACE, CMD_SCOPES, CMD_VARIABLES, CMD_EVALUATE, CMD_DISCONNECT,
-    CMD_CONFIGURATION_DONE, CMD_THREADS, CMD_SOURCE, EVENT_INITIALIZED, EVENT_STOPPED, EVENT_CONTINUED, EVENT_TERMINATED,
-    STOP_REASON_BREAKPOINT, STOP_REASON_STEP, STOP_REASON_PAUSE,
-    TRACE_CALL, TRACE_LINE, TRACE_RETURN, TRACE_EXCEPTION
+    CMD_INITIALIZE,
+    CMD_LAUNCH,
+    CMD_ATTACH,
+    CMD_SET_BREAKPOINTS,
+    CMD_CONTINUE,
+    CMD_NEXT,
+    CMD_STEP_IN,
+    CMD_STEP_OUT,
+    CMD_PAUSE,
+    CMD_STACK_TRACE,
+    CMD_SCOPES,
+    CMD_VARIABLES,
+    CMD_EVALUATE,
+    CMD_DISCONNECT,
+    CMD_CONFIGURATION_DONE,
+    CMD_THREADS,
+    CMD_SOURCE,
+    EVENT_INITIALIZED,
+    EVENT_STOPPED,
+    EVENT_CONTINUED,
+    EVENT_TERMINATED,
+    STOP_REASON_BREAKPOINT,
+    STOP_REASON_STEP,
+    STOP_REASON_PAUSE,
+    TRACE_CALL,
+    TRACE_LINE,
+    TRACE_RETURN,
+    TRACE_EXCEPTION,
 )
 from .pdb_adapter import PdbAdapter
 
@@ -34,7 +56,7 @@ class DebugSession:
 
     @property
     def _baremetal(self) -> bool:
-        return sys.platform not in ("linux") # to be expanded
+        return sys.platform not in ("linux")  # to be expanded
 
     def start(self):
         """Start the debug session message loop."""
@@ -77,7 +99,7 @@ class DebugSession:
                     message_count += 1
 
                     # Just wait for attach, then we can return control
-                    if message.get('command') == 'attach':
+                    if message.get("command") == "attach":
                         attached = True
                         print("[DAP] ✅ Attach received - returning control to main thread")
                         break
@@ -191,12 +213,12 @@ class DebugSession:
             elif command == CMD_SOURCE:
                 self._handle_source(seq, args)
             else:
-                self.channel.send_response(command, seq, success=False,
-                                         message=f"Unknown command: {command}")
+                self.channel.send_response(
+                    command, seq, success=False, message=f"Unknown command: {command}"
+                )
 
         except Exception as e:
-            self.channel.send_response(command, seq, success=False,
-                                     message=str(e))
+            self.channel.send_response(command, seq, success=False, message=str(e))
 
     def _handle_initialize(self, seq, args):
         """Handle initialize request."""
@@ -251,16 +273,15 @@ class DebugSession:
         self.debug_logging = args.get("logToFile", False)
 
         self._debug_print(f"[DAP] Processing attach request with args: {args}")
-        print(f"[DAP] Debug logging {'enabled' if self.debug_logging else 'disabled'} (logToFile={self.debug_logging})")
-        
+        print(
+            f"[DAP] Debug logging {'enabled' if self.debug_logging else 'disabled'} (logToFile={self.debug_logging})"
+        )
+
         # get debugger root and debugee root from pathMappings
-        for pm in args.get("pathMappings",[]):
+        for pm in args.get("pathMappings", []):
             # debugee - debugger
-            self.pdb.path_mappings.append(
-                (pm.get("remoteRoot", "./"),
-                 pm.get("localRoot", "./"))
-            )
-        # # TODO: justMyCode, debugOptions  , 
+            self.pdb.path_mappings.append((pm.get("remoteRoot", "./"), pm.get("localRoot", "./")))
+        # # TODO: justMyCode, debugOptions  ,
 
         # Enable trace function
         self.pdb.set_trace_function(self._trace_function)
@@ -282,8 +303,9 @@ class DebugSession:
         # Set breakpoints in pdb adapter
         actual_breakpoints = self.pdb.set_breakpoints(filename, breakpoints)
 
-        self.channel.send_response(CMD_SET_BREAKPOINTS, seq,
-                                 body={"breakpoints": actual_breakpoints})
+        self.channel.send_response(
+            CMD_SET_BREAKPOINTS, seq, body={"breakpoints": actual_breakpoints}
+        )
 
     def _handle_continue(self, seq, args):
         """Handle continue request."""
@@ -322,8 +344,11 @@ class DebugSession:
     def _handle_stack_trace(self, seq, args):
         """Handle stackTrace request."""
         stack_frames = self.pdb.get_stack_trace()
-        self.channel.send_response(CMD_STACK_TRACE, seq,
-                                 body={"stackFrames": stack_frames, "totalFrames": len(stack_frames)})
+        self.channel.send_response(
+            CMD_STACK_TRACE,
+            seq,
+            body={"stackFrames": stack_frames, "totalFrames": len(stack_frames)},
+        )
 
     def _handle_scopes(self, seq, args):
         """Handle scopes request."""
@@ -345,18 +370,17 @@ class DebugSession:
         frame_id = args.get("frameId")
         context = args.get("context", "watch")
         if not expression:
-            self.channel.send_response(CMD_EVALUATE, seq, success=False,
-                                     message="No expression provided")
+            self.channel.send_response(
+                CMD_EVALUATE, seq, success=False, message="No expression provided"
+            )
             return
         try:
             result = self.pdb.evaluate_expression(expression, frame_id)
-            self.channel.send_response(CMD_EVALUATE, seq, body={
-                "result": str(result),
-                "variablesReference": 0
-            })
+            self.channel.send_response(
+                CMD_EVALUATE, seq, body={"result": str(result), "variablesReference": 0}
+            )
         except Exception as e:
-            self.channel.send_response(CMD_EVALUATE, seq, success=False,
-                                     message=str(e))
+            self.channel.send_response(CMD_EVALUATE, seq, success=False, message=str(e))
 
     def _handle_disconnect(self, seq, args):
         """Handle disconnect request."""
@@ -372,10 +396,7 @@ class DebugSession:
     def _handle_threads(self, seq, args):
         """Handle threads request."""
         # MicroPython is single-threaded, so return one thread
-        threads = [{
-            "id": self.thread_id,
-            "name": "main"
-        }]
+        threads = [{"id": self.thread_id, "name": "main"}]
         self.channel.send_response(CMD_THREADS, seq, body={"threads": threads})
 
     def _handle_source(self, seq, args):
@@ -395,10 +416,13 @@ class DebugSession:
                 content = f.read()
             self.channel.send_response(CMD_SOURCE, seq, body={"content": content})
         except Exception:
-            self.channel.send_response(CMD_SOURCE, seq, success=False,
-                                    message="cancelled"
-                                    #  message=f"Could not read source: {e}"
-                                     )
+            self.channel.send_response(
+                CMD_SOURCE,
+                seq,
+                success=False,
+                message="cancelled",
+                #  message=f"Could not read source: {e}"
+            )
 
     def _trace_function(self, frame, event, arg):
         """Trace function called by sys.settrace."""
@@ -407,8 +431,13 @@ class DebugSession:
 
         # Handle breakpoints and stepping
         if self.pdb.should_stop(frame, event, arg):
-            self._send_stopped_event(STOP_REASON_BREAKPOINT if self.pdb.hit_breakpoint else
-                                   STOP_REASON_STEP if self.stepping else STOP_REASON_PAUSE)
+            self._send_stopped_event(
+                STOP_REASON_BREAKPOINT
+                if self.pdb.hit_breakpoint
+                else STOP_REASON_STEP
+                if self.stepping
+                else STOP_REASON_PAUSE
+            )
             # Wait for continue command
             self.pdb.wait_for_continue()
 
@@ -416,10 +445,9 @@ class DebugSession:
 
     def _send_stopped_event(self, reason):
         """Send stopped event to client."""
-        self.channel.send_event(EVENT_STOPPED,
-                              reason=reason,
-                              threadId=self.thread_id,
-                              allThreadsStopped=True)
+        self.channel.send_event(
+            EVENT_STOPPED, reason=reason, threadId=self.thread_id, allThreadsStopped=True
+        )
 
     def wait_for_client(self):
         """Wait for client to initialize."""
@@ -433,7 +461,7 @@ class DebugSession:
 
     def debug_this_thread(self):
         """Enable debugging for current thread."""
-        if hasattr(sys, 'settrace'):
+        if hasattr(sys, "settrace"):
             sys.settrace(self._trace_function)
 
     def is_connected(self):
@@ -443,7 +471,7 @@ class DebugSession:
     def disconnect(self):
         """Disconnect from client."""
         self.connected = False
-        if hasattr(sys, 'settrace'):
+        if hasattr(sys, "settrace"):
             sys.settrace(None)
         self.pdb.cleanup()
         self.channel.close()
