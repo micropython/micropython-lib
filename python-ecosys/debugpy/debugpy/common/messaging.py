@@ -64,7 +64,9 @@ class JsonMessageChannel:
         if message is not None:
             kwargs["message"] = message
 
-        self._debug_print(f"[DAP] SEND: response {command} (req_seq={request_seq}, success={success})")
+        self._debug_print(
+            f"[DAP] SEND: response {command} (req_seq={request_seq}, success={success})"
+        )
         if body:
             self._debug_print(f"[DAP]   body: {body}")
         if message:
@@ -95,14 +97,14 @@ class JsonMessageChannel:
                     self._recv_buffer += data
                 except OSError as e:
                     # Handle timeout and other socket errors
-                    if hasattr(e, 'errno') and e.errno in (11, 35):  # EAGAIN, EWOULDBLOCK
+                    if hasattr(e, "errno") and e.errno in (11, 35):  # EAGAIN, EWOULDBLOCK
                         return None  # No data available
                     self.closed = True
                     return None
 
             header_end = self._recv_buffer.find(b"\r\n\r\n")
             header_str = self._recv_buffer[:header_end].decode("utf-8")
-            self._recv_buffer = self._recv_buffer[header_end + 4:]
+            self._recv_buffer = self._recv_buffer[header_end + 4 :]
 
             # Parse Content-Length
             content_length = 0
@@ -123,7 +125,7 @@ class JsonMessageChannel:
                         return None
                     self._recv_buffer += data
                 except OSError as e:
-                    if hasattr(e, 'errno') and e.errno in (11, 35):  # EAGAIN, EWOULDBLOCK
+                    if hasattr(e, "errno") and e.errno in (11, 35):  # EAGAIN, EWOULDBLOCK
                         return None
                     self.closed = True
                     return None
@@ -134,7 +136,9 @@ class JsonMessageChannel:
             # Parse JSON
             try:
                 message = json.loads(body.decode("utf-8"))
-                self._debug_print(f"[DAP] Successfully received message: {message.get('type')} {message.get('command', message.get('event', 'unknown'))}")
+                self._debug_print(
+                    f"[DAP] Successfully received message: {message.get('type')} {message.get('command', message.get('event', 'unknown'))}"
+                )
                 return message
             except (ValueError, UnicodeDecodeError) as e:
                 print(f"[DAP] JSON parse error: {e}")

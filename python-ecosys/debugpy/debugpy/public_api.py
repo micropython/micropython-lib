@@ -11,11 +11,11 @@ _debug_session = None
 
 def listen(port=DEFAULT_PORT, host=DEFAULT_HOST):
     """Start listening for debugger connections.
-    
+
     Args:
         port: Port number to listen on (default: 5678)
         host: Host address to bind to (default: "127.0.0.1")
-        
+
     Returns:
         (host, port) tuple of the actual listening address
     """
@@ -52,7 +52,7 @@ def listen(port=DEFAULT_PORT, host=DEFAULT_HOST):
         # Handle just the initialize request, then return immediately
         print("[DAP] Waiting for initialize request...")
         init_message = _debug_session.channel.recv_message()
-        if init_message and init_message.get('command') == 'initialize':
+        if init_message and init_message.get("command") == "initialize":
             _debug_session._handle_message(init_message)
             print("[DAP] Initialize request handled - returning control immediately")
         else:
@@ -74,6 +74,7 @@ def listen(port=DEFAULT_PORT, host=DEFAULT_HOST):
 
     return (host, port)
 
+
 def format_client_addr(client_addr):
     """Format client address using socket module methods"""
     if isinstance(client_addr, (tuple, list)):
@@ -81,7 +82,7 @@ def format_client_addr(client_addr):
         return f"{client_addr[0]}:{client_addr[1]}"
     elif isinstance(client_addr, bytes) and len(client_addr) >= 8:
         # Extract port (bytes 2-4, network byte order)
-        port = struct.unpack('!H', client_addr[2:4])[0]
+        port = struct.unpack("!H", client_addr[2:4])[0]
         # Extract IP address (bytes 4-8) using inet_ntoa
         ip_packed = client_addr[4:8]
         try:
@@ -90,10 +91,11 @@ def format_client_addr(client_addr):
             return f"{ip_addr}:{port}"
         except:
             # Fallback if inet_ntoa not available (MicroPython)
-            ip_addr = '.'.join(str(b) for b in ip_packed)
+            ip_addr = ".".join(str(b) for b in ip_packed)
             return f"{ip_addr}:{port}"
     else:
         return str(client_addr)
+
 
 def wait_for_client():
     """Wait for the debugger client to connect and initialize."""
@@ -109,7 +111,7 @@ def breakpoint():
         _debug_session.trigger_breakpoint()
     else:
         # Fallback to built-in breakpoint if available
-        if hasattr(__builtins__, 'breakpoint'):
+        if hasattr(__builtins__, "breakpoint"):
             __builtins__.breakpoint()
 
 
@@ -120,7 +122,7 @@ def debug_this_thread():
         _debug_session.debug_this_thread()
     else:
         # Install trace function even if no session yet
-        if hasattr(sys, 'settrace'):
+        if hasattr(sys, "settrace"):
             sys.settrace(_default_trace_func)
         else:
             raise RuntimeError("MICROPY_PY_SYS_SETTRACE required")
@@ -130,7 +132,6 @@ def _default_trace_func(frame, event, arg):
     """Default trace function when no debug session is active."""
     # Just return None to continue execution
     return None
-
 
 
 def is_client_connected():
