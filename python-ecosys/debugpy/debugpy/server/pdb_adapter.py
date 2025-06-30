@@ -51,16 +51,22 @@ class VariableReferenceCache:
         return self.cache.get(ref_id)
 
     def _cleanup_oldest(self) -> None:
-        """Remove oldest entries to free memory."""
-        if self.cache and self.insertion_order:
-            # Remove first quarter of entries (true FIFO based on insertion order)
-            to_remove = max(1, len(self.cache) // 4)  # Remove at least 1 entry
-            keys_to_remove = self.insertion_order[:to_remove]
-            for key in keys_to_remove:
-                if key in self.cache:
-                    del self.cache[key]
-            # Update insertion order
-            self.insertion_order = self.insertion_order[to_remove:]
+        """Remove oldest entries to free memory - optimized for MicroPython."""
+        if not self.cache or not self.insertion_order:
+            return
+            
+        # More aggressive cleanup for memory-constrained environments
+        to_remove = max(1, len(self.cache) // 3)  # Remove 1/3 instead of 1/4
+        
+        # Direct list slicing is more memory efficient than iteration
+        keys_to_remove = self.insertion_order[:to_remove]
+        
+        # Batch delete for efficiency
+        for key in keys_to_remove:
+            self.cache.pop(key, None)  # Use pop with default to avoid KeyError
+        
+        # Update insertion order in one operation
+        self.insertion_order = self.insertion_order[to_remove:]
 
     def clear(self) -> None:
         """Clear all cached variables."""
@@ -368,7 +374,8 @@ class PdbAdapter:
         for name, value in var_dict.items():
             if name.startswith("__") and name.endswith("__"):
                 try:
-                    value_str = json.dumps(value)
+                    # Use lightweight serialization instead of json.dumps
+                    value_str = self._lightweight_serialize(value)
                     type_str = type(value).__name__
                     variables.append(
                         {
@@ -383,13 +390,14 @@ class PdbAdapter:
         return variables
 
     def _process_regular_variables(self, var_dict):
-        """Process regular variables (excluding special ones)."""
+        """Process regular variables (excluding special ones) - optimized."""
         variables = []
         for name, value in var_dict.items():
             # Skip private/internal variables
             if name.startswith("__") and name.endswith("__"):
                 continue
-            variables.append(self._get_variable_info(name, value))
+            # Use fast path for variable info generation
+            variables.append(self._get_variable_info_fast(name, value))
         return variables
 
     def _is_expandable(self, value: Any) -> bool:
@@ -397,28 +405,100 @@ class PdbAdapter:
         return isinstance(value, (dict, list, tuple, set))
 
     def _get_preview(self, value: Any, fallback_text: str = "") -> str:
-        """Get a truncated preview of a variable value."""
+        """Get a truncated preview of a variable value - optimized for MicroPython."""
         try:
             if value is None:
                 return "None"
 
-            # Try to get a meaningful representation
-            preview_repr = repr(value)
-            if len(preview_repr) > 30:
-                return preview_repr[:30] + "..."
-            else:
-                return preview_repr
-        except (TypeError, ValueError):
-            # If repr fails, try str
-            try:
-                preview_str = str(value)
-                if len(preview_str) > 30:
-                    return preview_str[:30] + "..."
+            # Fast path for common types to avoid repr() overhead
+            if isinstance(value, bool):
+                return "True" if value else "False"
+            elif isinstance(value, int):
+                return str(value)
+            elif isinstance(value, float):
+                # Limit float precision to reduce string length
+                return f"{value:.6g}"
+            elif isinstance(value, str):
+                if len(value) > 30:
+                    return value[:30] + "..."
                 else:
-                    return preview_str
+                    return repr(value)  # Only use repr for short strings
+            
+            # For collections, show actual content if small, otherwise use lightweight approach
+            elif isinstance(value, dict):
+                if len(value) == 0:
+                    return "{}"
+                elif len(value) <= 3:
+                    # Show actual content for small dictionaries
+                    try:
+                        repr_val = repr(value)
+                        if len(repr_val) <= 60:
+                            return repr_val
+                        else:
+                            # Fallback to key list if repr is too long
+                            keys = list(value.keys())[:3]
+                            key_str = ", ".join(repr(k) for k in keys)
+                            return f"{{{key_str}}}"
+                    except:
+                        return f"dict({len(value)} items)"
+                else:
+                    return f"dict({len(value)} items)"
+            elif isinstance(value, (list, tuple)):
+                if len(value) == 0:
+                    return "[]" if isinstance(value, list) else "()"
+                elif len(value) <= 4:
+                    # Show actual content for small lists/tuples
+                    try:
+                        repr_val = repr(value)
+                        if len(repr_val) <= 60:
+                            return repr_val
+                        else:
+                            # Fallback to item preview if repr is too long
+                            items = [str(item)[:10] for item in value[:3]]
+                            bracket = "[]" if isinstance(value, list) else "()"
+                            return f"{bracket[0]}{', '.join(items)}...{bracket[1]}"
+                    except:
+                        type_name = type(value).__name__
+                        return f"{type_name}({len(value)} items)"
+                else:
+                    type_name = type(value).__name__
+                    return f"{type_name}({len(value)} items)"
+            elif isinstance(value, set):
+                if len(value) == 0:
+                    return "set()"
+                elif len(value) <= 4:
+                    # Show actual content for small sets
+                    try:
+                        repr_val = repr(value)
+                        if len(repr_val) <= 60:
+                            return repr_val
+                        else:
+                            # Fallback to item preview
+                            items = [str(item)[:10] for item in list(value)[:3]]
+                            return f"{{{', '.join(items)}...}}"
+                    except:
+                        return f"set({len(value)} items)"
+                else:
+                    return f"set({len(value)} items)"
+            
+            # For other complex types, use lightweight approach
+            type_name = type(value).__name__
+            try:
+                if hasattr(value, '__len__'):
+                    length = len(value)  # type: ignore
+                    if length == 0:
+                        return f"{type_name}(empty)"
+                    else:
+                        return f"{type_name}({length} items)"
             except:
-                # Final fallback
-                return fallback_text or f"<{type(value).__name__} object>"
+                pass
+            
+            # Final fallback - avoid expensive repr() for complex objects
+            return f"<{type_name} object>"
+            
+        except (TypeError, ValueError, MemoryError):
+            # Memory-safe fallback
+            return fallback_text or f"<{type(value).__name__} object>"
 
     def _get_variable_info(self, name: str, value: Any) -> dict[str, str | int]:
         """Get DAP-compliant variable information with proper type handling."""
@@ -428,11 +508,15 @@ class PdbAdapter:
                 var_ref = self.var_cache.add_variable(value)
 
                 if isinstance(value, dict):
-                    preview = (
-                        self._get_preview(value, f"dict({len(value)} items)")
-                        if value
-                        else "dict(empty)"
-                    )
+                    # Show actual content for small dicts, generic preview for large ones
+                    if len(value) == 0:
+                        preview = "dict(empty)"
+                    elif len(value) <= 3:
+                        # Show actual keys for small dictionaries
+                        preview = self._get_preview(value)
+                    else:
+                        preview = f"dict({len(value)} items)"
+                    
                     return {
                         "name": name,
                         "value": preview,
@@ -442,11 +526,15 @@ class PdbAdapter:
                         "indexedVariables": 0,
                     }
                 elif isinstance(value, list):
-                    preview = (
-                        self._get_preview(value, f"list({len(value)} items)")
-                        if value
-                        else "list(empty)"
-                    )
+                    # Show actual content for small lists, generic preview for large ones
+                    if len(value) == 0:
+                        preview = "list(empty)"
+                    elif len(value) <= 4:
+                        # Show actual items for small lists
+                        preview = self._get_preview(value)
+                    else:
+                        preview = f"list({len(value)} items)"
+                    
                     return {
                         "name": name,
                         "value": preview,
@@ -456,11 +544,14 @@ class PdbAdapter:
                         "namedVariables": 0,
                     }
                 elif isinstance(value, tuple):
-                    preview = (
-                        self._get_preview(value, f"tuple({len(value)} items)")
-                        if value
-                        else "tuple(empty)"
-                    )
+                    # Show actual content for small tuples
+                    if len(value) == 0:
+                        preview = "tuple(empty)"
+                    elif len(value) <= 4:
+                        preview = self._get_preview(value)
+                    else:
+                        preview = f"tuple({len(value)} items)"
+                    
                     return {
                         "name": name,
                         "value": preview,
@@ -470,11 +561,14 @@ class PdbAdapter:
                         "namedVariables": 0,
                     }
                 elif isinstance(value, set):
-                    preview = (
-                        self._get_preview(value, f"set({len(value)} items)")
-                        if value
-                        else "set(empty)"
-                    )
+                    # Show actual content for small sets
+                    if len(value) == 0:
+                        preview = "set(empty)"
+                    elif len(value) <= 4:
+                        preview = self._get_preview(value)
+                    else:
+                        preview = f"set({len(value)} items)"
+                    
                     return {
                         "name": name,
                         "value": preview,
@@ -496,8 +590,72 @@ class PdbAdapter:
         except Exception:
             return self._var_error(name)
 
+    def _get_variable_info_fast(self, name: str, value: Any) -> dict[str, str | int]:
+        """Fast path for variable info generation with reduced allocations."""
+        try:
+            # Handle expandable types
+            if self._is_expandable(value):
+                var_ref = self.var_cache.add_variable(value)
+                type_name = type(value).__name__
+                
+                # Use pre-calculated length for better performance
+                length = 0
+                try:
+                    length = len(value)  # type: ignore
+                    if length == 0:
+                        preview = f"{type_name}(empty)"
+                    else:
+                        preview = f"{type_name}({length} items)"
+                except:
+                    preview = f"<{type_name} object>"
+
+                # Return optimized structure based on type
+                if isinstance(value, dict):
+                    return {
+                        "name": name,
+                        "value": preview,
+                        "type": "dict",
+                        "variablesReference": var_ref,
+                        "namedVariables": length if length < 1000 else 1000,  # Cap for performance
+                        "indexedVariables": 0,
+                    }
+                elif isinstance(value, list):
+                    return {
+                        "name": name,
+                        "value": preview,
+                        "type": "list",
+                        "variablesReference": var_ref,
+                        "indexedVariables": min(length, 1000),  # Cap for performance
+                        "namedVariables": 0,
+                    }
+                else:  # tuple, set, other
+                    return {
+                        "name": name,
+                        "value": preview,
+                        "type": type_name,
+                        "variablesReference": var_ref,
+                        "indexedVariables": min(length, 1000),
+                        "namedVariables": 0,
+                    }
+
+            # Simple types - optimized path
+            preview = self._get_preview(value)
+            return {
+                "name": name,
+                "value": preview,
+                "type": type(value).__name__,
+                "variablesReference": 0,
+            }
+        except Exception:
+            return {
+                "name": name,
+                "value": "<error>",
+                "type": "unknown",
+                "variablesReference": 0
+            }
+
     def _expand_complex_variable(self, ref_id: int) -> list[dict[str, str | int]]:
-        """Expand a complex variable into its child elements."""
+        """Expand a complex variable into its child elements - optimized for memory."""
         value = self.var_cache.get_variable(ref_id)
         if value is None:
             return []
@@ -505,28 +663,53 @@ class PdbAdapter:
         variables = []
         try:
             if isinstance(value, dict):
-                # Handle dictionary keys and values
-                for key, val in value.items():
-                    key_str = str(key)
+                # Limit dictionary expansion to prevent memory exhaustion
+                items = list(value.items())
+                max_items = min(len(items), 50)  # Limit to 50 items max
+                for i in range(max_items):
+                    key, val = items[i]
+                    key_str = str(key)[:50]  # Limit key string length
                     variables.append(self._get_variable_info(key_str, val))
+                if len(items) > max_items:
+                    variables.append({
+                        "name": f"<{len(items) - max_items} more items>",
+                        "value": "...",
+                        "type": "info",
+                        "variablesReference": 0,
+                    })
             elif isinstance(value, (list, tuple)):
-                # Handle list/tuple elements
-                for i, val in enumerate(value):
-                    variables.append(self._get_variable_info(f"[{i}]", val))
+                # Limit list/tuple expansion
+                max_items = min(len(value), 100)  # Limit to 100 items max
+                for i in range(max_items):
+                    variables.append(self._get_variable_info(f"[{i}]", value[i]))
+                if len(value) > max_items:
+                    variables.append({
+                        "name": f"<{len(value) - max_items} more items>",
+                        "value": "...",
+                        "type": "info", 
+                        "variablesReference": 0,
+                    })
             elif isinstance(value, set):
-                # Handle set elements (sorted for consistent display)
-                for i, val in enumerate(sorted(value, key=lambda x: str(x))):
-                    variables.append(self._get_variable_info(f"<{i}>", val))
+                # Handle set elements with size limit
+                items = list(value)  # Convert once
+                max_items = min(len(items), 50)
+                for i in range(max_items):
+                    variables.append(self._get_variable_info(f"<{i}>", items[i]))
+                if len(items) > max_items:
+                    variables.append({
+                        "name": f"<{len(items) - max_items} more items>",
+                        "value": "...",
+                        "type": "info",
+                        "variablesReference": 0,
+                    })
         except Exception as e:
             # Return error info for debugging
-            variables.append(
-                {
-                    "name": "error",
-                    "value": f"Failed to expand: {e}",
-                    "type": "error",
-                    "variablesReference": 0,
-                }
-            )
+            variables.append({
+                "name": "error",
+                "value": f"Failed to expand: {str(e)[:50]}",  # Limit error message length
+                "type": "error",
+                "variablesReference": 0,
+            })
 
         return variables
 
@@ -605,3 +788,56 @@ class PdbAdapter:
         self.breakpoints.clear()
         if hasattr(sys, "settrace"):
             sys.settrace(None)
+
+    def _lightweight_serialize(self, value):
+        """Lightweight serialization optimized for MicroPython memory constraints."""
+        if value is None:
+            return "None"
+        elif isinstance(value, bool):
+            return "true" if value else "false"
+        elif isinstance(value, (int, float)):
+            return str(value)
+        elif isinstance(value, str):
+            # Simple escaping for strings - avoid full JSON complexity
+            if len(value) > 30:
+                escaped = value[:27].replace('"', '\\"').replace('\n', '\\n')
+                return f'"{escaped}..."'
+            else:
+                escaped = value.replace('"', '\\"').replace('\n', '\\n')
+                return f'"{escaped}"'
+        elif isinstance(value, (list, tuple)):
+            if len(value) == 0:
+                return "[]" if isinstance(value, list) else "()"
+            elif len(value) <= 3:
+                # Show small collections in full
+                items = [self._lightweight_serialize(item) for item in value]
+                brackets = "[]" if isinstance(value, list) else "()"
+                return f"{brackets[0]}{', '.join(items)}{brackets[1]}"
+            else:
+                # Show preview for large collections
+                preview = f"{type(value).__name__}({len(value)} items)"
+                return preview
+        elif isinstance(value, dict):
+            if len(value) == 0:
+                return "{}"
+            elif len(value) <= 2:
+                # Show small dicts in preview form
+                items = []
+                for k, v in value.items():
+                    key_str = self._lightweight_serialize(k)
+                    val_str = self._lightweight_serialize(v)
+                    items.append(f"{key_str}: {val_str}")
+                return "{" + ", ".join(items) + "}"
+            else:
+                return f"dict({len(value)} items)"
+        else:
+            # Fallback for other types
+            type_name = type(value).__name__
+            try:
+                repr_val = repr(value)
+                if len(repr_val) > 30:
+                    return f"<{type_name} object>"
+                else:
+                    return repr_val
+            except:
+                return f"<{type_name} object>"
