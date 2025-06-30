@@ -31,7 +31,7 @@ class PdbAdapter:
     """Adapter between DAP protocol and MicroPython's sys.settrace functionality."""
 
     def __init__(self):
-        self.breakpoints = {}  # filename -> {line_no: breakpoint_info}
+        self.breakpoints : dict[str,dict[int,dict]] = {}  # filename -> {line_no: breakpoint_info}      # todo - simplify - reduce info stored 
         self.current_frame = None
         self.step_mode = None  # None, 'over', 'into', 'out'
         self.step_frame = None
@@ -40,8 +40,8 @@ class PdbAdapter:
         self.continue_event = False
         self.variables_cache = {}  # frameId -> variables
         self.frame_id_counter = 1
-        self.path_mappings : list[tuple[str,str]] = []  # runtime_path -> vscode_path mapping
-        self.file_mappings : dict[str,str] = {}  # runtime_path -> vscode_path mapping
+        self.path_mappings : list[tuple[str,str]] = []  # runtime_path -> vscode_path mapping           # todo: move to session level 
+        self.file_mappings : dict[str,str] = {}  # runtime_path -> vscode_path mapping                  # todo : merge with .breakpoints
 
     def _debug_print(self, message):
         """Print debug message only if debug logging is enabled."""
@@ -69,17 +69,61 @@ class PdbAdapter:
         else:
             raise RuntimeError("sys.settrace not available")
 
-    def set_breakpoints(self, filename, breakpoints:list[dict]):
+    def _filename_as_debugee(self, path:str):
+        # check if we have a 1:1 file mapping for this path
+        if self.file_mappings.get(path):
+            return self.file_mappings[path]
+        # Check if we have a folder mapping for this path
+        for runtime_path, vscode_path in self.path_mappings:
+            if path.startswith(vscode_path):
+                path = path.replace(vscode_path, runtime_path, 1)
+                if path.startswith('//'):
+                    path = path[1:]
+        # If no mapping found, return the original path
+        return path
+    
+    def _filename_as_debugger(self, path:str):
+        """Convert a file path to the debugger's expected format."""
+        path = path or ""
+        if not path:
+            return path
+        if path.startswith('<'):
+            # Special case for <stdin> or similar
+            return path
+        # Check if we have a 1:1 file mapping for this path
+        for runtime_path, vscode_path in self.path_mappings:
+            if path.startswith(runtime_path):
+                path = path.replace(runtime_path, vscode_path, 1)
+                return path
+
+        # Check if we have a folder mapping for this path
+        for runtime_path, vscode_path in self.path_mappings:
+            if path.startswith(runtime_path):
+                path = path.replace(runtime_path, vscode_path, 1)
+                if path.startswith('//'):
+                    path = path[1:]
+        # If no mapping found, return the original path
+        return path
+
+    def set_breakpoints(self, filename:str, breakpoints:list[dict]):
         """Set breakpoints for a file."""
         self.breakpoints[filename] = {}
+        local_name = self._filename_as_debugee(filename)
+        self.file_mappings[local_name] = filename
         actual_breakpoints = []
-
-        # Debug log the breakpoint path
         self._debug_print(f"[PDB] Setting breakpoints for file: {filename}")
 
         for bp in breakpoints:
             line = bp.get("line")
             if line:
+                if local_name != filename:
+                    self.breakpoints[local_name] = {}
+                    self._debug_print(f"[>>>] Setting breakpoints for local: {local_name}:{line}")
+                    self.breakpoints[local_name][line] = {
+                        "line": line,
+                        "verified": True,
+                        "source": {"path": filename}
+                    }
                 self.breakpoints[filename][line] = {
                     "line": line,
                     "verified": True,
@@ -90,6 +134,8 @@ class PdbAdapter:
                     "verified": True,
                     "source": {"path": filename}
                 })
+
+        self._debug_print(f"[PDB] Breakpoints set : {self.breakpoints}")
 
         return actual_breakpoints
 
@@ -106,33 +152,18 @@ class PdbAdapter:
             if lineno in self.breakpoints[filename]:
                 self._debug_print(f"[PDB] HIT BREAKPOINT (exact match) at {filename}:{lineno}")
                 # Record the path mapping (in this case, they're already the same)
-                self.file_mappings[filename] = filename
+                self.file_mappings[filename] = self._filename_as_debugger(filename)
                 self.hit_breakpoint = True
                 return True
-
-        file_basename = basename(filename)
-        self._debug_print(f"[PDB] Fallback basename match: '{file_basename}' vs available files")
-        for bp_file in self.breakpoints:
-            bp_basename = basename(bp_file)
-            self._debug_print(f"[PDB]   Comparing '{file_basename}' == '{bp_basename}' ?")
-            if bp_basename == file_basename:
-                self._debug_print(f"[PDB]   Basename match found! Checking line {lineno} in {list(self.breakpoints[bp_file].keys())}")
-                if lineno in self.breakpoints[bp_file]:
-                    self._debug_print(f"[PDB] HIT BREAKPOINT (fallback basename match) at {filename}:{lineno} -> {bp_file}")
-                    # Record the path mapping so we can report the correct path in stack traces
-                    self.file_mappings[filename] = bp_file
-                    self.hit_breakpoint = True
-                    return True
-
-            # Also check if the runtime path might be relative and the breakpoint path absolute
-            if ends_with_path(bp_file, filename):
-                self._debug_print(f"[PDB]   Relative path match: {bp_file} ends with {filename}")
-                if lineno in self.breakpoints[bp_file]:
-                    self._debug_print(f"[PDB] HIT BREAKPOINT (relative path match) at {filename}:{lineno} -> {bp_file}")
-                    # Record the path mapping so we can report the correct path in stack traces
-                    self.file_mappings[filename] = bp_file
-                    self.hit_breakpoint = True
-                    return True
+            # path/file.py matched - but not the line number - keep running
+        else:
+            # file not (yet) matched - this is slow so we do not want to do this often.
+            # TODO: use builins - sys.path method to find the file
+            # if we have a path match , but no breakpoints - add it to the file_mappings dict avoid this check
+            self.breakpoints[filename] = {}  # Ensure the filename is in the breakpoints dict
+            if not filename in self.file_mappings:
+                self.file_mappings[filename] = self._filename_as_debugger(filename)
+                self._debug_print(f"[PDB] add mapping for :'{filename}' -> '{self.file_mappings[filename]}'")
 
         # Check stepping
         if self.step_mode == 'into':
@@ -216,15 +247,20 @@ class PdbAdapter:
             else :
                 hint = 'normal'
 
+            # self._debug_print("=" * 40 )
+            # self._debug_print(f"[PDB] file mappings: {repr(self.file_mappings)} " )
+            # self._debug_print(f"[PDB] path mappings: {repr(self.path_mappings)}" )
+            # self._debug_print("=" * 40 )
+
             # Use the VS Code path if we have a mapping, otherwise use the original path
-            display_path = self.file_mappings.get(filename, filename)
-            if filename != display_path:
-                self._debug_print(f"[PDB] Stack trace path mapping: {filename} -> {display_path}")
+            debugger_path = self._filename_as_debugger(filename)
+            if filename != debugger_path:
+                self._debug_print(f"[PDB] Stack trace path mapping: {filename} -> {debugger_path}")
             # Create StackFrame info
             frames.append({
                 "id": frame_id,
                 "name": name,
-                "source": {"path": display_path},
+                "source": {"path": debugger_path},
                 "line": line,
                 "column": 1,
                 "endLine": line,
