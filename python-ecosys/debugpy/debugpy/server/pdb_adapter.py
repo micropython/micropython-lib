@@ -13,6 +13,7 @@ VARREF_GLOBALS = 2
 VARREF_LOCALS_SPECIAL = 3
 VARREF_GLOBALS_SPECIAL = 4
 
+DEBUG = False
 
 # Also try checking by basename for path mismatches
 def basename(path:str):
@@ -31,7 +32,7 @@ class PdbAdapter:
     """Adapter between DAP protocol and MicroPython's sys.settrace functionality."""
 
     def __init__(self):
-        self.breakpoints : dict[str,dict[int,dict]] = {}  # filename -> {line_no: breakpoint_info}      # todo - simplify - reduce info stored 
+        self.breakpoints : dict[str,set[int]] = {}  # .breakpoints[filename] -> set of line numbers
         self.current_frame = None
         self.step_mode = None  # None, 'over', 'into', 'out'
         self.step_frame = None
@@ -40,8 +41,8 @@ class PdbAdapter:
         self.continue_event = False
         self.variables_cache = {}  # frameId -> variables
         self.frame_id_counter = 1
-        self.path_mappings : list[tuple[str,str]] = []  # runtime_path -> vscode_path mapping           # todo: move to session level 
-        self.file_mappings : dict[str,str] = {}  # runtime_path -> vscode_path mapping                  # todo : merge with .breakpoints
+        self.path_mappings : list[tuple[str,str]] = []  # runtime_path -> vscode_path mapping
+        self.file_mappings : dict[str,str] = {}  # runtime_path -> vscode_path mapping            # todo : ? merge with .breakpoints
 
     def _debug_print(self, message):
         """Print debug message only if debug logging is enabled."""
@@ -107,7 +108,7 @@ class PdbAdapter:
 
     def set_breakpoints(self, filename:str, breakpoints:list[dict]):
         """Set breakpoints for a file."""
-        self.breakpoints[filename] = {}
+        self.breakpoints[filename] = set()
         local_name = self._filename_as_debugee(filename)
         self.file_mappings[local_name] = filename
         actual_breakpoints = []
@@ -117,18 +118,11 @@ class PdbAdapter:
             line = bp.get("line")
             if line:
                 if local_name != filename:
-                    self.breakpoints[local_name] = {}
+                    self.breakpoints[local_name] = set()
                     self._debug_print(f"[>>>] Setting breakpoints for local: {local_name}:{line}")
-                    self.breakpoints[local_name][line] = {
-                        "line": line,
-                        "verified": True,
-                        "source": {"path": filename}
-                    }
-                self.breakpoints[filename][line] = {
-                    "line": line,
-                    "verified": True,
-                    "source": {"path": filename}
-                }
+                    self.breakpoints[local_name].add(line)
+                
+                self.breakpoints[filename].add(line)
                 actual_breakpoints.append({
                     "line": line,
                     "verified": True,
@@ -148,19 +142,19 @@ class PdbAdapter:
         filename = frame.f_code.co_filename
         lineno = frame.f_lineno
         # Check for exact filename match first
-        if filename in self.breakpoints:
-            if lineno in self.breakpoints[filename]:
+        if filename in self.breakpoints and lineno in self.breakpoints[filename]:
                 self._debug_print(f"[PDB] HIT BREAKPOINT (exact match) at {filename}:{lineno}")
                 # Record the path mapping (in this case, they're already the same)
-                self.file_mappings[filename] = self._filename_as_debugger(filename)
+                # self.file_mappings[filename] = self._filename_as_debugger(filename)
                 self.hit_breakpoint = True
                 return True
             # path/file.py matched - but not the line number - keep running
         else:
             # file not (yet) matched - this is slow so we do not want to do this often.
             # TODO: use builins - sys.path method to find the file
-            # if we have a path match , but no breakpoints - add it to the file_mappings dict avoid this check
-            self.breakpoints[filename] = {}  # Ensure the filename is in the breakpoints dict
+            # if we have a path match , but no breakpoints - add it to the file_mappings dict simplify this check
+            if not filename in self.breakpoints:
+                self.breakpoints[filename] = set()  # Ensure the filename is in the breakpoints dict
             if not filename in self.file_mappings:
                 self.file_mappings[filename] = self._filename_as_debugger(filename)
                 self._debug_print(f"[PDB] add mapping for :'{filename}' -> '{self.file_mappings[filename]}'")
@@ -238,6 +232,12 @@ class PdbAdapter:
         frame = self.current_frame
         frame_id = 0
 
+        self._debug_print("=" * 40 )
+        self._debug_print(f"[PDB] file mappings: {repr(self.file_mappings)} " )
+        self._debug_print(f"[PDB] path mappings: {repr(self.path_mappings)}" )
+        self._debug_print(f"[PDB] breakpoints: {repr(self.breakpoints)}" )
+        self._debug_print("=" * 40 )
+
         while frame:
             filename = frame.f_code.co_filename
             name = frame.f_code.co_name
@@ -247,15 +247,9 @@ class PdbAdapter:
             else :
                 hint = 'normal'
 
-            # self._debug_print("=" * 40 )
-            # self._debug_print(f"[PDB] file mappings: {repr(self.file_mappings)} " )
-            # self._debug_print(f"[PDB] path mappings: {repr(self.path_mappings)}" )
-            # self._debug_print("=" * 40 )
 
             # Use the VS Code path if we have a mapping, otherwise use the original path
             debugger_path = self._filename_as_debugger(filename)
-            if filename != debugger_path:
-                self._debug_print(f"[PDB] Stack trace path mapping: {filename} -> {debugger_path}")
             # Create StackFrame info
             frames.append({
                 "id": frame_id,
