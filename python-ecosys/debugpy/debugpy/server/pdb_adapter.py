@@ -405,100 +405,17 @@ class PdbAdapter:
         return isinstance(value, (dict, list, tuple, set))
 
     def _get_preview(self, value: Any, fallback_text: str = "") -> str:
-        """Get a truncated preview of a variable value - optimized for MicroPython."""
+        """Get a 30-char preview of a variable value with '...' if truncated - optimized for MicroPython."""
         try:
-            if value is None:
-                return "None"
-
-            # Fast path for common types to avoid repr() overhead
-            if isinstance(value, bool):
-                return "True" if value else "False"
-            elif isinstance(value, int):
-                return str(value)
-            elif isinstance(value, float):
-                # Limit float precision to reduce string length
-                return f"{value:.6g}"
-            elif isinstance(value, str):
-                if len(value) > 30:
-                    return value[:30] + "..."
-                else:
-                    return repr(value)  # Only use repr for short strings
-            
-            # For collections, show actual content if small, otherwise use lightweight approach
-            elif isinstance(value, dict):
-                if len(value) == 0:
-                    return "{}"
-                elif len(value) <= 3:
-                    # Show actual content for small dictionaries
-                    try:
-                        repr_val = repr(value)
-                        if len(repr_val) <= 60:
-                            return repr_val
-                        else:
-                            # Fallback to key list if repr is too long
-                            keys = list(value.keys())[:3]
-                            key_str = ", ".join(repr(k) for k in keys)
-                            return f"{{{key_str}}}"
-                    except:
-                        return f"dict({len(value)} items)"
-                else:
-                    return f"dict({len(value)} items)"
-            elif isinstance(value, (list, tuple)):
-                if len(value) == 0:
-                    return "[]" if isinstance(value, list) else "()"
-                elif len(value) <= 4:
-                    # Show actual content for small lists/tuples
-                    try:
-                        repr_val = repr(value)
-                        if len(repr_val) <= 60:
-                            return repr_val
-                        else:
-                            # Fallback to item preview if repr is too long
-                            items = [str(item)[:10] for item in value[:3]]
-                            bracket = "[]" if isinstance(value, list) else "()"
-                            return f"{bracket[0]}{', '.join(items)}...{bracket[1]}"
-                    except:
-                        type_name = type(value).__name__
-                        return f"{type_name}({len(value)} items)"
-                else:
-                    type_name = type(value).__name__
-                    return f"{type_name}({len(value)} items)"
-            elif isinstance(value, set):
-                if len(value) == 0:
-                    return "set()"
-                elif len(value) <= 4:
-                    # Show actual content for small sets
-                    try:
-                        repr_val = repr(value)
-                        if len(repr_val) <= 60:
-                            return repr_val
-                        else:
-                            # Fallback to item preview
-                            items = [str(item)[:10] for item in list(value)[:3]]
-                            return f"{{{', '.join(items)}...}}"
-                    except:
-                        return f"set({len(value)} items)"
-                else:
-                    return f"set({len(value)} items)"
-            
-            # For other complex types, use lightweight approach
-            type_name = type(value).__name__
-            try:
-                if hasattr(value, '__len__'):
-                    length = len(value)  # type: ignore
-                    if length == 0:
-                        return f"{type_name}(empty)"
-                    else:
-                        return f"{type_name}({length} items)"
-            except:
-                pass
-            
-            # Final fallback - avoid expensive repr() for complex objects
-            return f"<{type_name} object>"
-            
+            # Get repr and truncate to exactly 30 chars with "..." if needed
+            repr_val = repr(value)
+            if len(repr_val) <= 30:
+                return repr_val
+            else:
+                return repr_val[:30] + "..."
         except (TypeError, ValueError, MemoryError):
             # Memory-safe fallback
-            return fallback_text or f"<{type(value).__name__} object>"
+            return fallback_text or f"<{type(value).__name__} object>"[:30]
 
     def _get_variable_info(self, name: str, value: Any) -> dict[str, str | int]:
         """Get DAP-compliant variable information with proper type handling."""
@@ -506,17 +423,9 @@ class PdbAdapter:
             # Handle expandable types
             if self._is_expandable(value):
                 var_ref = self.var_cache.add_variable(value)
+                preview = self._get_preview(value)  # Always use consistent preview
 
                 if isinstance(value, dict):
-                    # Show actual content for small dicts, generic preview for large ones
-                    if len(value) == 0:
-                        preview = "dict(empty)"
-                    elif len(value) <= 3:
-                        # Show actual keys for small dictionaries
-                        preview = self._get_preview(value)
-                    else:
-                        preview = f"dict({len(value)} items)"
-                    
                     return {
                         "name": name,
                         "value": preview,
@@ -526,15 +435,6 @@ class PdbAdapter:
                         "indexedVariables": 0,
                     }
                 elif isinstance(value, list):
-                    # Show actual content for small lists, generic preview for large ones
-                    if len(value) == 0:
-                        preview = "list(empty)"
-                    elif len(value) <= 4:
-                        # Show actual items for small lists
-                        preview = self._get_preview(value)
-                    else:
-                        preview = f"list({len(value)} items)"
-                    
                     return {
                         "name": name,
                         "value": preview,
@@ -544,14 +444,6 @@ class PdbAdapter:
                         "namedVariables": 0,
                     }
                 elif isinstance(value, tuple):
-                    # Show actual content for small tuples
-                    if len(value) == 0:
-                        preview = "tuple(empty)"
-                    elif len(value) <= 4:
-                        preview = self._get_preview(value)
-                    else:
-                        preview = f"tuple({len(value)} items)"
-                    
                     return {
                         "name": name,
                         "value": preview,
@@ -561,14 +453,6 @@ class PdbAdapter:
                         "namedVariables": 0,
                     }
                 elif isinstance(value, set):
-                    # Show actual content for small sets
-                    if len(value) == 0:
-                        preview = "set(empty)"
-                    elif len(value) <= 4:
-                        preview = self._get_preview(value)
-                    else:
-                        preview = f"set({len(value)} items)"
-                    
                     return {
                         "name": name,
                         "value": preview,
@@ -596,18 +480,14 @@ class PdbAdapter:
             # Handle expandable types
             if self._is_expandable(value):
                 var_ref = self.var_cache.add_variable(value)
-                type_name = type(value).__name__
+                preview = self._get_preview(value)  # Always use consistent preview
                 
                 # Use pre-calculated length for better performance
                 length = 0
                 try:
                     length = len(value)  # type: ignore
-                    if length == 0:
-                        preview = f"{type_name}(empty)"
-                    else:
-                        preview = f"{type_name}({length} items)"
                 except:
-                    preview = f"<{type_name} object>"
+                    pass
 
                 # Return optimized structure based on type
                 if isinstance(value, dict):
@@ -632,7 +512,7 @@ class PdbAdapter:
                     return {
                         "name": name,
                         "value": preview,
-                        "type": type_name,
+                        "type": type(value).__name__,
                         "variablesReference": var_ref,
                         "indexedVariables": min(length, 1000),
                         "namedVariables": 0,
@@ -719,7 +599,7 @@ class PdbAdapter:
 
     @staticmethod
     def _special_vars(varref: int):
-        return {"name": "Special", "value": "", "variablesReference": varref}
+        return {"name": "special", "value": "", "variablesReference": varref}
 
     def get_variables(self, variables_ref):
         """Get variables for a scope with enhanced complex variable support."""
