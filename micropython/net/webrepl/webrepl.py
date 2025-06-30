@@ -102,10 +102,25 @@ def setup_conn(port, accept_handler):
     listen_s.listen(1)
     if accept_handler:
         listen_s.setsockopt(socket.SOL_SOCKET, 20, accept_handler)
+    started = False
     for i in (network.WLAN.IF_AP, network.WLAN.IF_STA):
-        iface = network.WLAN(i)
-        if iface.active():
-            print("WebREPL server started on http://%s:%d/" % (iface.ifconfig()[0], port))
+        try:
+            iface = network.WLAN(i)
+            if iface.active():
+                print("WebREPL server started on http://%s:%d/" % (iface.ifconfig()[0], port))
+                started = True
+        except AttributeError:
+            pass
+    for i in (0, 1):
+        try:
+            iface = network.LAN(i)
+            if iface.active():
+                print("WebREPL server started on http://%s:%d/" % (iface.ifconfig()[0], port))
+                started = True
+        except (AttributeError, ValueError):
+            pass
+    if not started:
+        print("WebREPL no active interface")
     return listen_s
 
 
