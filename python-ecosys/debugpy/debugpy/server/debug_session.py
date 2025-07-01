@@ -15,6 +15,7 @@ from ..common.constants import (
     CMD_STACK_TRACE,
     CMD_SCOPES,
     CMD_VARIABLES,
+    CMD_SET_VARIABLE,
     CMD_EVALUATE,
     CMD_DISCONNECT,
     CMD_CONFIGURATION_DONE,
@@ -202,6 +203,8 @@ class DebugSession:
                 self._handle_scopes(seq, args)
             elif command == CMD_VARIABLES:
                 self._handle_variables(seq, args)
+            elif command == CMD_SET_VARIABLE:
+                self._handle_set_variable(seq, args)
             elif command == CMD_EVALUATE:
                 self._handle_evaluate(seq, args)
             elif command == CMD_DISCONNECT:
@@ -224,38 +227,39 @@ class DebugSession:
         """Handle initialize request."""
         capabilities = {
             "supportsConfigurationDoneRequest": True,
-            "supportsFunctionBreakpoints": False,
-            "supportsConditionalBreakpoints": False,
-            "supportsHitConditionalBreakpoints": False,
             "supportsEvaluateForHovers": True,
-            "supportsStepBack": False,
-            "supportsSetVariable": False,
-            "supportsRestartFrame": False,
-            "supportsGotoTargetsRequest": False,
-            "supportsStepInTargetsRequest": False,
-            "supportsCompletionsRequest": False,
-            "supportsModulesRequest": False,
-            "additionalModuleColumns": [],
-            "supportedChecksumAlgorithms": [],
-            "supportsRestartRequest": False,
-            "supportsExceptionOptions": False,
-            "supportsValueFormattingOptions": False,
-            "supportsExceptionInfoRequest": False,
             "supportTerminateDebuggee": True,
             "supportSuspendDebuggee": True,
-            "supportsDelayedStackTraceLoading": False,
-            "supportsLoadedSourcesRequest": False,
-            "supportsLogPoints": False,
-            "supportsTerminateThreadsRequest": False,
-            "supportsSetExpression": False,
             "supportsTerminateRequest": True,
-            "supportsDataBreakpoints": False,
-            "supportsReadMemoryRequest": False,
-            "supportsWriteMemoryRequest": False,
-            "supportsDisassembleRequest": False,
-            "supportsCancelRequest": False,
-            "supportsBreakpointLocationsRequest": False,
-            "supportsClipboardContext": False,
+            "supportsSetVariable": True,
+
+            # "supportsFunctionBreakpoints": False,
+            # "supportsConditionalBreakpoints": False,
+            # "supportsHitConditionalBreakpoints": False,
+            # "supportsStepBack": False,
+            # "supportsRestartFrame": False,
+            # "supportsGotoTargetsRequest": False,
+            # "supportsStepInTargetsRequest": False,
+            # "supportsCompletionsRequest": False,
+            # "supportsModulesRequest": False,
+            # "additionalModuleColumns": [],
+            # "supportedChecksumAlgorithms": [],
+            # "supportsRestartRequest": False,
+            # "supportsExceptionOptions": False,
+            # "supportsValueFormattingOptions": False,
+            # "supportsExceptionInfoRequest": False,
+            # "supportsDelayedStackTraceLoading": False,
+            # "supportsLoadedSourcesRequest": False,
+            # "supportsLogPoints": False,
+            # "supportsTerminateThreadsRequest": False,
+            # "supportsSetExpression": False,
+            # "supportsDataBreakpoints": False,
+            # "supportsReadMemoryRequest": False,
+            # "supportsWriteMemoryRequest": False,
+            # "supportsDisassembleRequest": False,
+            # "supportsCancelRequest": False,
+            # "supportsBreakpointLocationsRequest": False,
+            # "supportsClipboardContext": False,
         }
 
         self.channel.send_response(CMD_INITIALIZE, seq, body=capabilities)
@@ -363,6 +367,28 @@ class DebugSession:
         variables_ref = args.get("variablesReference", 0)
         variables = self.pdb.get_variables(variables_ref)
         self.channel.send_response(CMD_VARIABLES, seq, body={"variables": variables})
+
+    def _handle_set_variable(self, seq, args):
+        """Handle setVariable request."""
+        variables_ref = args.get("variablesReference", 0)
+        name = args.get("name", "")
+        value = args.get("value", "")
+        
+        if not name:
+            self.channel.send_response(
+                CMD_SET_VARIABLE, seq, success=False, message="No variable name provided"
+            )
+            return
+            
+        self._debug_print(f"[DAP] Processing setVariable request: name={name}, value={value}, ref={variables_ref}")
+        
+        try:
+            updated_variable = self.pdb.set_variable(variables_ref, name, value)
+            self.channel.send_response(CMD_SET_VARIABLE, seq, body=updated_variable)
+        except Exception as e:
+            self.channel.send_response(
+                CMD_SET_VARIABLE, seq, success=False, message=str(e)
+            )
 
     def _handle_evaluate(self, seq, args):
         """Handle evaluate request."""
