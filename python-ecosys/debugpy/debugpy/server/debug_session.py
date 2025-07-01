@@ -1,38 +1,39 @@
 """Main debug session handling DAP protocol communication."""
 
 import sys
-from ..common.messaging import JsonMessageChannel
+
 from ..common.constants import (
+    CMD_ATTACH,
+    CMD_CONFIGURATION_DONE,
+    CMD_CONTINUE,
+    CMD_DISCONNECT,
+    CMD_EVALUATE,
     CMD_INITIALIZE,
     CMD_LAUNCH,
-    CMD_ATTACH,
-    CMD_SET_BREAKPOINTS,
-    CMD_CONTINUE,
     CMD_NEXT,
+    CMD_PAUSE,
+    CMD_SCOPES,
+    CMD_SET_BREAKPOINTS,
+    CMD_SET_VARIABLE,
+    CMD_SOURCE,
+    CMD_STACK_TRACE,
     CMD_STEP_IN,
     CMD_STEP_OUT,
-    CMD_PAUSE,
-    CMD_STACK_TRACE,
-    CMD_SCOPES,
-    CMD_VARIABLES,
-    CMD_SET_VARIABLE,
-    CMD_EVALUATE,
-    CMD_DISCONNECT,
-    CMD_CONFIGURATION_DONE,
     CMD_THREADS,
-    CMD_SOURCE,
+    CMD_VARIABLES,
+    EVENT_CONTINUED,
     EVENT_INITIALIZED,
     EVENT_STOPPED,
-    EVENT_CONTINUED,
     EVENT_TERMINATED,
     STOP_REASON_BREAKPOINT,
-    STOP_REASON_STEP,
     STOP_REASON_PAUSE,
+    STOP_REASON_STEP,
     TRACE_CALL,
+    TRACE_EXCEPTION,
     TRACE_LINE,
     TRACE_RETURN,
-    TRACE_EXCEPTION,
 )
+from ..common.messaging import JsonMessageChannel
 from .pdb_adapter import PdbAdapter
 
 
@@ -43,7 +44,7 @@ class DebugSession:
         self.debug_logging = False  # Initialize first
         self.channel = JsonMessageChannel(client_socket, self._debug_print)
         self.pdb = PdbAdapter()
-        self.pdb._debug_session = self  # Allow PDB to process messages during wait # type: ignore
+        self.pdb._debug_session = self  # Allow PDB to process messages during wait # type: ignore[assignment]
         self.initialized = False
         self.connected = True
         self.thread_id = 1  # Simple single-thread model
@@ -393,7 +394,7 @@ class DebugSession:
         """Handle evaluate request."""
         expression = args.get("expression", "")
         frame_id = args.get("frameId")
-        context = args.get("context", "watch")
+        # context = args.get("context", "watch")
         if not expression:
             self.channel.send_response(
                 CMD_EVALUATE, seq, success=False, message="No expression provided"
@@ -429,7 +430,7 @@ class DebugSession:
         source = args.get("source", {})
         source_path = source.get("path", "")
         if self._baremetal or not source_path:
-            # BUGBUG: unable to read the source on ESP32
+            # BUG: unable to read the source on ESP32
             # Possible an effect of the import / inialization sequence ?
             # Nothe that other source files ( other.py) do not seem to get requested in the same way
             self.channel.send_response(CMD_SOURCE, seq, success=False)
@@ -470,7 +471,7 @@ class DebugSession:
 
         # The trace function is invoked (with event set to 'call') whenever a new local scope is entered;
         # it should return a reference to a local trace function to be used for the new scope,
-        # or None if the scope shouldn’t be traced.
+        # or None if the scope shouldn't be traced.
 
         return self._trace_function
 
