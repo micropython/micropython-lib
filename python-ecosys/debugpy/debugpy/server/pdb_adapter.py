@@ -203,33 +203,32 @@ class PdbAdapter:
         self.hit_breakpoint = False
 
         # Cache frame attributes to reduce lookup overhead
-        frame_code = frame.f_code
-        filename = frame_code.co_filename
-        lineno = frame.f_lineno
+        _frame_code = frame.f_code
+        _filename = _frame_code.co_filename
+        _lineno = frame.f_lineno
         
-        # Check for exact filename match first
-        if filename in self.breakpoints and lineno in self.breakpoints[filename]:
+        # Optimize dictionary lookups - use .get() to avoid double lookup
+        file_breakpoints = self.breakpoints.get(_filename)
+        if file_breakpoints and _lineno in file_breakpoints:
             self.hit_breakpoint = True
             return True
         else:
             # file not (yet) matched - this is slow so we do not want to do this often.
             # TODO: use builins - sys.path method to find the file
             # if we have a path match , but no breakpoints - add it to the file_mappings dict simplify this check
-            if not filename in self.breakpoints:
-                self.breakpoints[filename] = set()  # Ensure the filename is in the breakpoints dict
-            if not filename in self.file_mappings:
-                self.file_mappings[filename] = self._filename_as_debugger(filename)
-                # self._debug_print(
-                #     f"[PDB] add mapping for :'{filename}' -> '{self.file_mappings[filename]}'"
-                # )
+            if file_breakpoints is None:
+                self.breakpoints[_filename] = {}  # Ensure the filename is in the breakpoints dict
+            if _filename not in self.file_mappings:
+                self.file_mappings[_filename] = self._filename_as_debugger(_filename)
 
         # Check stepping
-        if self.step_mode == STEP_INTO:
+        _step_mode = self.step_mode
+        if _step_mode == STEP_INTO:
             if event in (TRACE_CALL, TRACE_LINE):
                 self.step_mode = None
                 return True
 
-        elif self.step_mode == STEP_OVER:
+        elif _step_mode == STEP_OVER:
             if event == TRACE_LINE and frame == self.step_frame:
                 self.step_mode = None
                 return True
@@ -240,7 +239,7 @@ class PdbAdapter:
                 else:
                     self.step_mode = None
 
-        elif self.step_mode == STEP_OUT:
+        elif _step_mode == STEP_OUT:
             if event == TRACE_RETURN and frame == self.step_frame:
                 self.step_mode = None
                 return True
