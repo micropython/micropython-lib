@@ -98,6 +98,7 @@ class PdbAdapter:
         self.step_mode = None  # None, 'over', 'into', 'out'
         self.step_frame = None
         self.step_depth = 0
+        self.paused = False
         self.hit_breakpoint = False
         self.continue_event = False
         self.variables_cache = {}  # frameId -> variables
@@ -202,6 +203,14 @@ class PdbAdapter:
         self.current_frame = frame
         self.hit_breakpoint = False
 
+        # Get frame information
+        filename = frame.f_code.co_filename
+        lineno = frame.f_lineno
+        # Check for exact filename match first
+        if self.paused or filename in self.breakpoints and lineno in self.breakpoints[filename]:
+            self._debug_print(f"[PDB] HIT BREAKPOINT (exact match) at {filename}:{lineno}")
+            # Record the path mapping (in this case, they're already the same)
+            # self.file_mappings[filename] = self._filename_as_debugger(filename)
         # Cache frame attributes to reduce lookup overhead
         _frame_code = frame.f_code
         _filename = _frame_code.co_filename
@@ -271,6 +280,7 @@ class PdbAdapter:
     def pause(self):
         """Pause execution at next opportunity."""
         # This is handled by the debug session
+        self.paused = True
 
     def wait_for_continue(self):
         """Wait for continue command (simplified implementation)."""
