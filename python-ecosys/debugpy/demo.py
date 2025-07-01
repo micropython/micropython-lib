@@ -2,15 +2,18 @@
 """Simple demo of MicroPython debugpy functionality."""
 
 import sys
-sys.path.insert(0, '.')
+
+sys.path.insert(0, ".")
 
 import debugpy
+
 
 def simple_function(a, b):
     """A simple function to demonstrate debugging."""
     result = a + b
     print(f"Computing {a} + {b} = {result}")
     return result
+
 
 def main():
     print("MicroPython debugpy Demo")
@@ -21,11 +24,11 @@ def main():
     print("1. Testing trace functionality:")
 
     def trace_function(frame, event, arg):
-        if event == 'call':
+        if event == "call":
             print(f"  -> Entering function: {frame.f_code.co_name}")
-        elif event == 'line':
+        elif event == "line":
             print(f"  -> Executing line {frame.f_lineno} in {frame.f_code.co_name}")
-        elif event == 'return':
+        elif event == "return":
             print(f"  -> Returning from {frame.f_code.co_name} with value: {arg}")
         return trace_function
 
@@ -46,6 +49,7 @@ def main():
 
     # Test PDB adapter
     from debugpy.server.pdb_adapter import PdbAdapter
+
     pdb = PdbAdapter()
 
     # Set some mock breakpoints
@@ -54,6 +58,7 @@ def main():
 
     # Test messaging
     from debugpy.common.messaging import JsonMessageChannel
+
     print("  JsonMessageChannel available")
 
     print()
@@ -63,6 +68,7 @@ def main():
     print("   - Call debugpy.listen() to start the debug server")
     print("   - Connect VS Code using the 'Attach to MicroPython' configuration")
     print("   - Set breakpoints and debug normally")
+
 
 if __name__ == "__main__":
     main()
