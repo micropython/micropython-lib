@@ -1,4 +1,5 @@
 """Constants used throughout debugpy."""
+
 from micropython import const
 
 # Default networking settings

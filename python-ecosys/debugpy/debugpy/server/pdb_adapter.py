@@ -3,9 +3,8 @@
 import sys
 import time
 import os
-from micropython import const
+from micropython import const  # type: ignore[import-untyped]
 
-Any = object
 from ..common.constants import (
     STEP_INTO,
     STEP_OUT,
@@ -17,6 +16,8 @@ from ..common.constants import (
     SCOPE_LOCALS,
     SCOPE_GLOBALS,
 )
+
+Any = object
 
 VARREF_LOCALS = const(1)
 VARREF_GLOBALS = const(2)
@@ -57,7 +58,7 @@ class VariableReferenceCache:
         """Remove oldest entries to free memory - optimized for MicroPython."""
         if not self.cache or not self.insertion_order:
             return
-        to_remove = max(1, len(self.cache) // 3)  
+        to_remove = max(1, len(self.cache) // 3)
         # Direct list slicing is more memory efficient than iteration
         keys_to_remove = self.insertion_order[:to_remove]
         # Batch delete for efficiency
@@ -215,7 +216,7 @@ class PdbAdapter:
         _frame_code = frame.f_code
         _filename = _frame_code.co_filename
         _lineno = frame.f_lineno
-        
+
         # Optimize dictionary lookups - use .get() to avoid double lookup
         file_breakpoints = self.breakpoints.get(_filename)
         if file_breakpoints and _lineno in file_breakpoints:
@@ -305,11 +306,11 @@ class PdbAdapter:
         frame = self.current_frame
         frame_id = 0
 
-        self._debug_print("=" * 40 )
-        self._debug_print(f"[PDB] file mappings: {repr(self.file_mappings)} " )
-        self._debug_print(f"[PDB] path mappings: {repr(self.path_mappings)}" )
-        self._debug_print(f"[PDB] breakpoints: {repr(self.breakpoints)}" )
-        self._debug_print("=" * 40 )
+        self._debug_print("=" * 40)
+        self._debug_print(f"[PDB] file mappings: {repr(self.file_mappings)} ")
+        self._debug_print(f"[PDB] path mappings: {repr(self.path_mappings)}")
+        self._debug_print(f"[PDB] breakpoints: {repr(self.breakpoints)}")
+        self._debug_print("=" * 40)
 
         while frame:
             filename = frame.f_code.co_filename
@@ -319,7 +320,6 @@ class PdbAdapter:
                 hint = "subtle"
             else:
                 hint = "normal"
-
 
             # Use the VS Code path if we have a mapping, otherwise use the original path
             debugger_path = self._filename_as_debugger(filename)
@@ -479,7 +479,7 @@ class PdbAdapter:
             if self._is_expandable(value):
                 var_ref = self.var_cache.add_variable(value)
                 preview = self._get_preview(value)  # Always use consistent preview
-                
+
                 # Use pre-calculated length for better performance
                 length = 0
                 try:
@@ -525,12 +525,7 @@ class PdbAdapter:
                 "variablesReference": 0,
             }
         except Exception:
-            return {
-                "name": name,
-                "value": "<error>",
-                "type": "unknown",
-                "variablesReference": 0
-            }
+            return {"name": name, "value": "<error>", "type": "unknown", "variablesReference": 0}
 
     def _expand_complex_variable(self, ref_id: int) -> list[dict[str, str | int]]:
         """Expand a complex variable into its child elements - optimized for memory."""
@@ -549,24 +544,28 @@ class PdbAdapter:
                     key_str = str(key)[:50]  # Limit key string length
                     variables.append(self._get_variable_info(key_str, val))
                 if len(items) > max_items:
-                    variables.append({
-                        "name": f"<{len(items) - max_items} more items>",
-                        "value": "...",
-                        "type": "info",
-                        "variablesReference": 0,
-                    })
+                    variables.append(
+                        {
+                            "name": f"<{len(items) - max_items} more items>",
+                            "value": "...",
+                            "type": "info",
+                            "variablesReference": 0,
+                        }
+                    )
             elif isinstance(value, (list, tuple)):
                 # Limit list/tuple expansion
                 max_items = min(len(value), 100)  # Limit to 100 items max
                 for i in range(max_items):
                     variables.append(self._get_variable_info(f"[{i}]", value[i]))
                 if len(value) > max_items:
-                    variables.append({
-                        "name": f"<{len(value) - max_items} more items>",
-                        "value": "...",
-                        "type": "info", 
-                        "variablesReference": 0,
-                    })
+                    variables.append(
+                        {
+                            "name": f"<{len(value) - max_items} more items>",
+                            "value": "...",
+                            "type": "info",
+                            "variablesReference": 0,
+                        }
+                    )
             elif isinstance(value, set):
                 # Handle set elements with size limit
                 items = list(value)  # Convert once
@@ -574,20 +573,24 @@ class PdbAdapter:
                 for i in range(max_items):
                     variables.append(self._get_variable_info(f"<{i}>", items[i]))
                 if len(items) > max_items:
-                    variables.append({
-                        "name": f"<{len(items) - max_items} more items>",
-                        "value": "...",
-                        "type": "info",
-                        "variablesReference": 0,
-                    })
+                    variables.append(
+                        {
+                            "name": f"<{len(items) - max_items} more items>",
+                            "value": "...",
+                            "type": "info",
+                            "variablesReference": 0,
+                        }
+                    )
         except Exception as e:
             # Return error info for debugging
-            variables.append({
-                "name": "error",
-                "value": f"Failed to expand: {str(e)[:50]}",  # Limit error message length
-                "type": "error",
-                "variablesReference": 0,
-            })
+            variables.append(
+                {
+                    "name": "error",
+                    "value": f"Failed to expand: {str(e)[:50]}",  # Limit error message length
+                    "type": "error",
+                    "variablesReference": 0,
+                }
+            )
 
         return variables
 
@@ -678,10 +681,10 @@ class PdbAdapter:
         elif isinstance(value, str):
             # Simple escaping for strings - avoid full JSON complexity
             if len(value) > 30:
-                escaped = value[:27].replace('"', '\\"').replace('\n', '\\n')
+                escaped = value[:27].replace('"', '\\"').replace("\n", "\\n")
                 return f'"{escaped}..."'
             else:
-                escaped = value.replace('"', '\\"').replace('\n', '\\n')
+                escaped = value.replace('"', '\\"').replace("\n", "\\n")
                 return f'"{escaped}"'
         elif isinstance(value, (list, tuple)):
             if len(value) == 0:
@@ -722,10 +725,10 @@ class PdbAdapter:
 
     def set_variable(self, variables_ref: int, name: str, value: str) -> dict[str, str | int]:
         """Set a variable to a new value and return the updated variable info.
-        
+
         This function can modify both global and local variables when using a MicroPython
         build with settrace and local variable modification support (sys._set_local_var).
-        
+
         For global variables: Works reliably on all MicroPython builds.
         For local variables: Requires MicroPython build with C-level local variable support.
         """
@@ -761,22 +764,24 @@ class PdbAdapter:
                 # Check if variable exists in globals
                 if name not in globals_dict:
                     raise Exception(f"Global variable '{name}' not found")
-                
+
                 # For global variables, direct assignment works reliably
                 globals_dict[name] = new_value
                 self._debug_print(f"[PDB] Successfully set global variable '{name}' = {new_value}")
-                
+
             elif scope_type == VARREF_LOCALS or scope_type == VARREF_LOCALS_SPECIAL:
                 # Check if variable exists in locals
                 if name not in locals_dict:
                     raise Exception(f"Local variable '{name}' not found")
-                
+
                 # Try to use the frame._set_local method to set local variables
                 try:
-                    if hasattr(frame, '_set_local'):
+                    if hasattr(frame, "_set_local"):
                         # Use the frame._set_local method (CPython-compatible API)
                         frame._set_local(name, new_value)
-                        self._debug_print(f"[PDB] Successfully set local variable '{name}' = {new_value}")
+                        self._debug_print(
+                            f"[PDB] Successfully set local variable '{name}' = {new_value}"
+                        )
                     else:
                         # Fallback error if the method is not available
                         raise Exception(
@@ -791,7 +796,7 @@ class PdbAdapter:
                         f"Local variables in MicroPython are stored in internal code_state->state[] slots. "
                         f"Consider using global variables for reliable modification during debugging."
                     )
-                    
+
             else:
                 raise Exception("Invalid scope reference")
 

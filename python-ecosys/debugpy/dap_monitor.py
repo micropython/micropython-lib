@@ -8,8 +8,9 @@ import time
 import sys
 import argparse
 
+
 class DAPMonitor:
-    def __init__(self, listen_port=5679, target_host='127.0.0.1', target_port=5678):
+    def __init__(self, listen_port=5679, target_host="127.0.0.1", target_port=5678):
         self.disconnect = False
         self.listen_port = listen_port
         self.target_host = target_host
@@ -26,7 +27,7 @@ class DAPMonitor:
         # Create listening socket
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        listener.bind(('127.0.0.1', self.listen_port))
+        listener.bind(("127.0.0.1", self.listen_port))
         listener.listen(1)
 
         print(f"Listening for VS Code connection on port {self.listen_port}...")
@@ -90,11 +91,11 @@ class DAPMonitor:
                 header += byte
 
             # Parse content length
-            header_str = header.decode('utf-8')
+            header_str = header.decode("utf-8")
             content_length = 0
-            for line in header_str.split('\r\n'):
-                if line.startswith('Content-Length:'):
-                    content_length = int(line.split(':', 1)[1].strip())
+            for line in header_str.split("\r\n"):
+                if line.startswith("Content-Length:"):
+                    content_length = int(line.split(":", 1)[1].strip())
                     break
 
             if content_length == 0:
@@ -113,7 +114,7 @@ class DAPMonitor:
             self.log_dap_message(source, message)
             # Check for disconnect command
             if message:
-                if "disconnect" == message.get('command', message.get('event', 'unknown')):
+                if "disconnect" == message.get("command", message.get("event", "unknown")):
                     print(f"\n[{source}] Disconnect command received, stopping monitor.")
                     self.disconnect = True
             return header + content
@@ -124,7 +125,7 @@ class DAPMonitor:
     def parse_dap(self, source, content):
         """Parse DAP message and log it."""
         try:
-            message = json.loads(content.decode('utf-8'))
+            message = json.loads(content.decode("utf-8"))
             return message
         except json.JSONDecodeError:
             print(f"\n[{source}] Invalid JSON: {content}")
@@ -132,28 +133,28 @@ class DAPMonitor:
 
     def log_dap_message(self, source, message):
         """Log DAP message details."""
-        msg_type = message.get('type', 'unknown')
-        command = message.get('command', message.get('event', 'unknown'))
-        seq = message.get('seq', 0)
+        msg_type = message.get("type", "unknown")
+        command = message.get("command", message.get("event", "unknown"))
+        seq = message.get("seq", 0)
 
         print(f"\n[{source}] {msg_type.upper()}: {command} (seq={seq})")
 
-        if msg_type == 'request':
-            args = message.get('arguments', {})
+        if msg_type == "request":
+            args = message.get("arguments", {})
             if args:
                 print(f"  Arguments: {json.dumps(args, indent=2)}")
-        elif msg_type == 'response':
-            success = message.get('success', False)
-            req_seq = message.get('request_seq', 0)
+        elif msg_type == "response":
+            success = message.get("success", False)
+            req_seq = message.get("request_seq", 0)
             print(f"  Success: {success}, Request Seq: {req_seq}")
-            body = message.get('body')
+            body = message.get("body")
             if body:
                 print(f"  Body: {json.dumps(body, indent=2)}")
-            msg = message.get('message')
+            msg = message.get("message")
             if msg:
                 print(f"  Message: {msg}")
-        elif msg_type == 'event':
-            body = message.get('body', {})
+        elif msg_type == "event":
+            body = message.get("body", {})
             if body:
                 print(f"  Body: {json.dumps(body, indent=2)}")
 
@@ -171,17 +172,28 @@ class DAPMonitor:
         if self.server_sock:
             self.server_sock.close()
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="DAP protocol monitor proxy")
-    parser.add_argument("--target-host", "--th", default="127.0.0.1", help="Target debugpy host (default: 127.0.0.1)")
-    parser.add_argument("--target-port", "--tp", type=int, default=5678, help="Target debugpy port (default: 5678)")
-    parser.add_argument("--listen-port", "--lp", type=int, default=5679, help="Port to listen for VS Code (default: 5679)")
+    parser.add_argument(
+        "--target-host",
+        "--th",
+        default="127.0.0.1",
+        help="Target debugpy host (default: 127.0.0.1)",
+    )
+    parser.add_argument(
+        "--target-port", "--tp", type=int, default=5678, help="Target debugpy port (default: 5678)"
+    )
+    parser.add_argument(
+        "--listen-port",
+        "--lp",
+        type=int,
+        default=5679,
+        help="Port to listen for VS Code (default: 5679)",
+    )
     args = parser.parse_args()
 
     monitor = DAPMonitor(
-        listen_port=args.listen_port,
-        target_host=args.target_host,
-        target_port=args.target_port
+        listen_port=args.listen_port, target_host=args.target_host, target_port=args.target_port
     )
     monitor.start()

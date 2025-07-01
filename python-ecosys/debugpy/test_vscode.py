@@ -3,12 +3,13 @@
 
 import sys
 
-sys.path.insert(0, '.')
+sys.path.insert(0, ".")
 
 import debugpy
 
 foo = 42
 bar = "Hello, MicroPython!"
+
 
 def fibonacci(n):
     """Calculate fibonacci number (iterative for efficiency)."""
@@ -18,6 +19,7 @@ def fibonacci(n):
     for _ in range(2, n + 1):
         a, b = b, a + b
     return b
+
 
 def debuggable_code():
     """The actual code we want to debug - wrapped in a function so sys.settrace will trace it."""
@@ -33,6 +35,7 @@ def debuggable_code():
         print(f"fibonacci({num}) = {result}")
         print(sys.implementation)
         import machine
+
         print(dir(machine))
 
     # Test manual breakpoint
@@ -41,6 +44,7 @@ def debuggable_code():
     print("Manual breakpoint triggered!")
 
     print("Test completed successfully!")
+
 
 def main():
     print("MicroPython VS Code Debugging Test")
@@ -64,6 +68,7 @@ def main():
         # Give VS Code a moment to set breakpoints after attach
         print("\nGiving VS Code time to set breakpoints...")
         import time
+
         time.sleep(2)
 
         # Call the debuggable code function so it gets traced
@@ -73,6 +78,7 @@ def main():
         print("\nTest interrupted by user")
     except Exception as e:
         print(f"Error: {e}")
+
 
 if __name__ == "__main__":
     main()

@@ -232,7 +232,6 @@ class DebugSession:
             "supportSuspendDebuggee": True,
             "supportsTerminateRequest": True,
             "supportsSetVariable": True,
-
             # "supportsFunctionBreakpoints": False,
             # "supportsConditionalBreakpoints": False,
             # "supportsHitConditionalBreakpoints": False,
@@ -373,22 +372,22 @@ class DebugSession:
         variables_ref = args.get("variablesReference", 0)
         name = args.get("name", "")
         value = args.get("value", "")
-        
+
         if not name:
             self.channel.send_response(
                 CMD_SET_VARIABLE, seq, success=False, message="No variable name provided"
             )
             return
-            
-        self._debug_print(f"[DAP] Processing setVariable request: name={name}, value={value}, ref={variables_ref}")
-        
+
+        self._debug_print(
+            f"[DAP] Processing setVariable request: name={name}, value={value}, ref={variables_ref}"
+        )
+
         try:
             updated_variable = self.pdb.set_variable(variables_ref, name, value)
             self.channel.send_response(CMD_SET_VARIABLE, seq, body=updated_variable)
         except Exception as e:
-            self.channel.send_response(
-                CMD_SET_VARIABLE, seq, success=False, message=str(e)
-            )
+            self.channel.send_response(CMD_SET_VARIABLE, seq, success=False, message=str(e))
 
     def _handle_evaluate(self, seq, args):
         """Handle evaluate request."""
@@ -450,12 +449,12 @@ class DebugSession:
                 #  message=f"Could not read source: {e}"
             )
 
-    def _trace_function(self, frame, event:str, arg):
+    def _trace_function(self, frame, event: str, arg):
         """Trace function called by sys.settrace."""
         # https://docs.python.org/3/library/sys.html#sys.settrace
         global _twiddel
         # Process any pending DAP messages frequently
-      
+
         self.process_pending_messages()
         # Handle breakpoints and stepping
         if self.pdb.should_stop(frame, event, arg):
@@ -469,8 +468,8 @@ class DebugSession:
             # Wait for continue command
             self.pdb.wait_for_continue()
 
-        # The trace function is invoked (with event set to 'call') whenever a new local scope is entered; 
-        # it should return a reference to a local trace function to be used for the new scope, 
+        # The trace function is invoked (with event set to 'call') whenever a new local scope is entered;
+        # it should return a reference to a local trace function to be used for the new scope,
         # or None if the scope shouldn’t be traced.
 
         return self._trace_function
