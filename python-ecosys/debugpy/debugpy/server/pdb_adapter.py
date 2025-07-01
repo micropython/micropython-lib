@@ -721,7 +721,14 @@ class PdbAdapter:
                 return f"<{type_name} object>"
 
     def set_variable(self, variables_ref: int, name: str, value: str) -> dict[str, str | int]:
-        """Set a variable to a new value and return the updated variable info."""
+        """Set a variable to a new value and return the updated variable info.
+        
+        This function can modify both global and local variables when using a MicroPython
+        build with settrace and local variable modification support (sys._set_local_var).
+        
+        For global variables: Works reliably on all MicroPython builds.
+        For local variables: Requires MicroPython build with C-level local variable support.
+        """
         # Handle complex variable references (not supported for setting)
         if variables_ref >= VARREF_COMPLEX_BASE:
             raise Exception("Cannot set variables in complex object expansions")
@@ -729,37 +736,64 @@ class PdbAdapter:
         frame_id = variables_ref // 1000
         scope_type = variables_ref % 1000
 
-        if frame_id not in self.variables_cache:
-            raise Exception("Invalid frame reference")
+        # Only allow setting variables in the topmost frame (frame_id = 0)
+        if frame_id != 0:
+            raise Exception("Variable modification is only allowed in the topmost frame")
 
-        frame = self.variables_cache[frame_id]
+        # Use the current frame for modification
+        frame = self.current_frame
+        if frame is None:
+            raise Exception("No current frame available")
 
-        # Determine the variable dictionary to modify
-        if scope_type == VARREF_LOCALS or scope_type == VARREF_LOCALS_SPECIAL:
-            var_dict = frame.f_locals if hasattr(frame, "f_locals") else {}
-        elif scope_type == VARREF_GLOBALS or scope_type == VARREF_GLOBALS_SPECIAL:
-            var_dict = frame.f_globals if hasattr(frame, "f_globals") else {}
-        else:
-            raise Exception("Invalid scope reference")
-
-        # Check if variable exists
-        if name not in var_dict:
-            raise Exception(f"Variable '{name}' not found in the specified scope")
+        # Get the appropriate variable contexts
+        globals_dict = frame.f_globals if hasattr(frame, "f_globals") else {}
+        locals_dict = frame.f_locals if hasattr(frame, "f_locals") else {}
 
         try:
-            # Evaluate the new value in the context of the frame
-            globals_dict = frame.f_globals if hasattr(frame, "f_globals") else {}
-            locals_dict = frame.f_locals if hasattr(frame, "f_locals") else {}
-            
-            # Try to evaluate the value as a Python expression
+            # Try to evaluate the new value as a Python expression
             try:
                 new_value = eval(value, globals_dict, locals_dict)
             except:
                 # If evaluation fails, treat as string literal
                 new_value = value
 
-            # Set the variable
-            var_dict[name] = new_value
+            if scope_type == VARREF_GLOBALS or scope_type == VARREF_GLOBALS_SPECIAL:
+                # Check if variable exists in globals
+                if name not in globals_dict:
+                    raise Exception(f"Global variable '{name}' not found")
+                
+                # For global variables, direct assignment works reliably
+                globals_dict[name] = new_value
+                self._debug_print(f"[PDB] Successfully set global variable '{name}' = {new_value}")
+                
+            elif scope_type == VARREF_LOCALS or scope_type == VARREF_LOCALS_SPECIAL:
+                # Check if variable exists in locals
+                if name not in locals_dict:
+                    raise Exception(f"Local variable '{name}' not found")
+                
+                # Try to use the frame._set_local method to set local variables
+                try:
+                    if hasattr(frame, '_set_local'):
+                        # Use the frame._set_local method (CPython-compatible API)
+                        frame._set_local(name, new_value)
+                        self._debug_print(f"[PDB] Successfully set local variable '{name}' = {new_value}")
+                    else:
+                        # Fallback error if the method is not available
+                        raise Exception(
+                            f"Cannot modify local variable '{name}'. "
+                            f"This MicroPython build doesn't support local variable modification. "
+                            f"Please use a MicroPython build with settrace and local variable support."
+                        )
+                except Exception as inner_e:
+                    # If frame.set_local fails, provide detailed error
+                    raise Exception(
+                        f"Failed to modify local variable '{name}': {str(inner_e)}. "
+                        f"Local variables in MicroPython are stored in internal code_state->state[] slots. "
+                        f"Consider using global variables for reliable modification during debugging."
+                    )
+                    
+            else:
+                raise Exception("Invalid scope reference")
 
             # Return the updated variable info
             return self._get_variable_info(name, new_value)
