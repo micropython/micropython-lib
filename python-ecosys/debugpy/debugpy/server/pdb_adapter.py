@@ -1,20 +1,21 @@
 """PDB adapter for integrating with MicroPython's trace system."""
 
+import os
 import sys
 import time
-import os
+
 from micropython import const  # type: ignore[import-untyped]
 
 from ..common.constants import (
+    SCOPE_GLOBALS,
+    SCOPE_LOCALS,
     STEP_INTO,
     STEP_OUT,
     STEP_OVER,
     TRACE_CALL,
+    TRACE_EXCEPTION,
     TRACE_LINE,
     TRACE_RETURN,
-    TRACE_EXCEPTION,
-    SCOPE_LOCALS,
-    SCOPE_GLOBALS,
 )
 
 Any = object
@@ -92,9 +93,8 @@ class PdbAdapter:
     """Adapter between DAP protocol and MicroPython's sys.settrace functionality."""
 
     def __init__(self):
-        self.breakpoints: dict[
-            str, dict[int, dict]
-        ] = {}  # filename -> {line_no: breakpoint_info}      # todo - simplify - reduce info stored
+        self.breakpoints: dict[str, dict[int, dict]] = {}
+        # filename -> {line_no: breakpoint_info}                # todo - simplify
         self.current_frame = None
         self.step_mode = None  # None, 'over', 'into', 'out'
         self.step_frame = None
@@ -105,16 +105,14 @@ class PdbAdapter:
         self.variables_cache = {}  # frameId -> variables
         self.var_cache = VariableReferenceCache()  # Enhanced variable reference cache
         self.frame_id_counter = 1
-        self.path_mappings: list[
-            tuple[str, str]
-        ] = []  # runtime_path -> vscode_path mapping           # todo: move to session level
-        self.file_mappings: dict[
-            str, str
-        ] = {}  # runtime_path -> vscode_path mapping                  # todo : merge with .breakpoints
+        self.path_mappings: list[tuple[str, str]] = []
+        # list of [runtime_path -> vscode_path mapping]
+        self.file_mappings: dict[str, str] = {}
+        # runtime_path -> vscode_path mapping                   # todo : merge with .breakpoints
 
     def _debug_print(self, message):
         """Print debug message only if debug logging is enabled."""
-        if hasattr(self, "_debug_session") and self._debug_session.debug_logging:  # type: ignore
+        if hasattr(self, "_debug_session") and self._debug_session.debug_logging:  # type: ignore[attr-defined]
             print(message)
 
     def _normalize_path(self, path: str):
@@ -208,7 +206,7 @@ class PdbAdapter:
         filename = frame.f_code.co_filename
         lineno = frame.f_lineno
         # Check for exact filename match first
-        if self.paused or filename in self.breakpoints and lineno in self.breakpoints[filename]:
+        if self.paused or (filename in self.breakpoints and lineno in self.breakpoints[filename]):
             self._debug_print(f"[PDB] HIT BREAKPOINT (exact match) at {filename}:{lineno}")
             # Record the path mapping (in this case, they're already the same)
             # self.file_mappings[filename] = self._filename_as_debugger(filename)
@@ -224,7 +222,7 @@ class PdbAdapter:
             return True
         else:
             # file not (yet) matched - this is slow so we do not want to do this often.
-            # TODO: use builins - sys.path method to find the file
+            # TODO: use sys.path[] method to find the file, does not work for frozen ....
             # if we have a path match , but no breakpoints - add it to the file_mappings dict simplify this check
             if file_breakpoints is None:
                 self.breakpoints[_filename] = {}  # Ensure the filename is in the breakpoints dict
@@ -294,7 +292,7 @@ class PdbAdapter:
         while not self.continue_event:
             # Process any pending DAP messages (scopes, variables, etc.)
             if hasattr(self, "_debug_session"):
-                self._debug_session.process_pending_messages()  # type: ignore
+                self._debug_session.process_pending_messages()  # type: ignore[arg-type]
             time.sleep(0.01)
 
     def get_stack_trace(self):
@@ -305,12 +303,6 @@ class PdbAdapter:
         frames = []
         frame = self.current_frame
         frame_id = 0
-
-        self._debug_print("=" * 40)
-        self._debug_print(f"[PDB] file mappings: {repr(self.file_mappings)} ")
-        self._debug_print(f"[PDB] path mappings: {repr(self.path_mappings)}")
-        self._debug_print(f"[PDB] breakpoints: {repr(self.breakpoints)}")
-        self._debug_print("=" * 40)
 
         while frame:
             filename = frame.f_code.co_filename
@@ -483,7 +475,7 @@ class PdbAdapter:
                 # Use pre-calculated length for better performance
                 length = 0
                 try:
-                    length = len(value)  # type: ignore
+                    length = len(value)  # type: ignore[arg-type]
                 except:
                     pass
 
@@ -670,7 +662,7 @@ class PdbAdapter:
         if hasattr(sys, "settrace"):
             sys.settrace(None)
 
-    def _lightweight_serialize(self, value):
+    def _lightweight_serialize(self, value):  # noqa: PLR0911
         """Lightweight serialization optimized for MicroPython memory constraints."""
         if value is None:
             return "None"
@@ -792,7 +784,7 @@ class PdbAdapter:
                 except Exception as inner_e:
                     # If frame.set_local fails, provide detailed error
                     raise Exception(
-                        f"Failed to modify local variable '{name}': {str(inner_e)}. "
+                        f"Failed to modify local variable '{name}': {inner_e}. "
                         f"Local variables in MicroPython are stored in internal code_state->state[] slots. "
                         f"Consider using global variables for reliable modification during debugging."
                     )
@@ -804,4 +796,4 @@ class PdbAdapter:
             return self._get_variable_info(name, new_value)
 
         except Exception as e:
-            raise Exception(f"Failed to set variable '{name}': {str(e)}")
+            raise Exception(f"Failed to set variable '{name}': {e}")
