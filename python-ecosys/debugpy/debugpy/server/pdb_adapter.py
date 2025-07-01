@@ -3,10 +3,13 @@
 import sys
 import time
 import os
-import json
+from micropython import const
 
 Any = object
 from ..common.constants import (
+    STEP_INTO,
+    STEP_OUT,
+    STEP_OVER,
     TRACE_CALL,
     TRACE_LINE,
     TRACE_RETURN,
@@ -15,14 +18,14 @@ from ..common.constants import (
     SCOPE_GLOBALS,
 )
 
-VARREF_LOCALS = 1
-VARREF_GLOBALS = 2
-VARREF_LOCALS_SPECIAL = 3
-VARREF_GLOBALS_SPECIAL = 4
+VARREF_LOCALS = const(1)
+VARREF_GLOBALS = const(2)
+VARREF_LOCALS_SPECIAL = const(3)
+VARREF_GLOBALS_SPECIAL = const(4)
 
 # New constants for complex variable references
-VARREF_COMPLEX_BASE = 10000  # Base for complex variable references
-MAX_CACHE_SIZE = 50  # Limit cache size for memory constraints
+VARREF_COMPLEX_BASE = const(10000)  # Base for complex variable references
+MAX_CACHE_SIZE = const(50)  # Limit cache size for memory constraints
 
 
 class VariableReferenceCache:
@@ -54,17 +57,12 @@ class VariableReferenceCache:
         """Remove oldest entries to free memory - optimized for MicroPython."""
         if not self.cache or not self.insertion_order:
             return
-            
-        # More aggressive cleanup for memory-constrained environments
-        to_remove = max(1, len(self.cache) // 3)  # Remove 1/3 instead of 1/4
-        
+        to_remove = max(1, len(self.cache) // 3)  
         # Direct list slicing is more memory efficient than iteration
         keys_to_remove = self.insertion_order[:to_remove]
-        
         # Batch delete for efficiency
         for key in keys_to_remove:
             self.cache.pop(key, None)  # Use pop with default to avoid KeyError
-        
         # Update insertion order in one operation
         self.insertion_order = self.insertion_order[to_remove:]
 
@@ -188,16 +186,8 @@ class PdbAdapter:
                 if local_name != filename:
                     self.breakpoints[local_name] = {}
                     self._debug_print(f"[>>>] Setting breakpoints for local: {local_name}:{line}")
-                    self.breakpoints[local_name][line] = {
-                        "line": line,
-                        "verified": True,
-                        "source": {"path": filename},
-                    }
-                self.breakpoints[filename][line] = {
-                    "line": line,
-                    "verified": True,
-                    "source": {"path": filename},
-                }
+                    self.breakpoints[local_name][line] = {}
+                self.breakpoints[filename][line] = {}
                 actual_breakpoints.append(
                     {"line": line, "verified": True, "source": {"path": filename}}
                 )
@@ -208,20 +198,19 @@ class PdbAdapter:
 
     def should_stop(self, frame, event: str, arg):
         """Determine if execution should stop at this point."""
+        # HOT path - no debug printing here
         self.current_frame = frame
         self.hit_breakpoint = False
 
-        # Get frame information
-        filename = frame.f_code.co_filename
+        # Cache frame attributes to reduce lookup overhead
+        frame_code = frame.f_code
+        filename = frame_code.co_filename
         lineno = frame.f_lineno
+        
         # Check for exact filename match first
         if filename in self.breakpoints and lineno in self.breakpoints[filename]:
-                self._debug_print(f"[PDB] HIT BREAKPOINT (exact match) at {filename}:{lineno}")
-                # Record the path mapping (in this case, they're already the same)
-                # self.file_mappings[filename] = self._filename_as_debugger(filename)
-                self.hit_breakpoint = True
-                return True
-            # path/file.py matched - but not the line number - keep running
+            self.hit_breakpoint = True
+            return True
         else:
             # file not (yet) matched - this is slow so we do not want to do this often.
             # TODO: use builins - sys.path method to find the file
@@ -230,17 +219,17 @@ class PdbAdapter:
                 self.breakpoints[filename] = set()  # Ensure the filename is in the breakpoints dict
             if not filename in self.file_mappings:
                 self.file_mappings[filename] = self._filename_as_debugger(filename)
-                self._debug_print(
-                    f"[PDB] add mapping for :'{filename}' -> '{self.file_mappings[filename]}'"
-                )
+                # self._debug_print(
+                #     f"[PDB] add mapping for :'{filename}' -> '{self.file_mappings[filename]}'"
+                # )
 
         # Check stepping
-        if self.step_mode == "into":
+        if self.step_mode == STEP_INTO:
             if event in (TRACE_CALL, TRACE_LINE):
                 self.step_mode = None
                 return True
 
-        elif self.step_mode == "over":
+        elif self.step_mode == STEP_OVER:
             if event == TRACE_LINE and frame == self.step_frame:
                 self.step_mode = None
                 return True
@@ -251,7 +240,7 @@ class PdbAdapter:
                 else:
                     self.step_mode = None
 
-        elif self.step_mode == "out":
+        elif self.step_mode == STEP_OUT:
             if event == TRACE_RETURN and frame == self.step_frame:
                 self.step_mode = None
                 return True
