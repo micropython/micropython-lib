@@ -719,3 +719,50 @@ class PdbAdapter:
                     return repr_val
             except:
                 return f"<{type_name} object>"
+
+    def set_variable(self, variables_ref: int, name: str, value: str) -> dict[str, str | int]:
+        """Set a variable to a new value and return the updated variable info."""
+        # Handle complex variable references (not supported for setting)
+        if variables_ref >= VARREF_COMPLEX_BASE:
+            raise Exception("Cannot set variables in complex object expansions")
+
+        frame_id = variables_ref // 1000
+        scope_type = variables_ref % 1000
+
+        if frame_id not in self.variables_cache:
+            raise Exception("Invalid frame reference")
+
+        frame = self.variables_cache[frame_id]
+
+        # Determine the variable dictionary to modify
+        if scope_type == VARREF_LOCALS or scope_type == VARREF_LOCALS_SPECIAL:
+            var_dict = frame.f_locals if hasattr(frame, "f_locals") else {}
+        elif scope_type == VARREF_GLOBALS or scope_type == VARREF_GLOBALS_SPECIAL:
+            var_dict = frame.f_globals if hasattr(frame, "f_globals") else {}
+        else:
+            raise Exception("Invalid scope reference")
+
+        # Check if variable exists
+        if name not in var_dict:
+            raise Exception(f"Variable '{name}' not found in the specified scope")
+
+        try:
+            # Evaluate the new value in the context of the frame
+            globals_dict = frame.f_globals if hasattr(frame, "f_globals") else {}
+            locals_dict = frame.f_locals if hasattr(frame, "f_locals") else {}
+            
+            # Try to evaluate the value as a Python expression
+            try:
+                new_value = eval(value, globals_dict, locals_dict)
+            except:
+                # If evaluation fails, treat as string literal
+                new_value = value
+
+            # Set the variable
+            var_dict[name] = new_value
+
+            # Return the updated variable info
+            return self._get_variable_info(name, new_value)
+
+        except Exception as e:
+            raise Exception(f"Failed to set variable '{name}': {str(e)}")
