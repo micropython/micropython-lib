@@ -86,15 +86,36 @@ class JsonMessageChannel:
         if self.closed:
             return None
 
+        # Quick bail-out: if buffer is empty, do a non-blocking peek to see if data is available
+        if not self._recv_buffer:
+            try:
+                # Try to read a small amount non-blocking to see if anything is available
+                peek_data = self.sock.recv(1)
+                if not peek_data:
+                    return None  # No data available
+                # Put the peeked data back into buffer
+                self._recv_buffer = peek_data
+            except OSError as e:
+                # Handle non-blocking socket errors (no data available)
+                if hasattr(e, "errno") and e.errno in (11, 35):  # EAGAIN, EWOULDBLOCK
+                    return None  # No data available, quick exit
+                # Other errors
+                self.closed = True
+                return None
+
+        # Cache frequently accessed attributes
+        recv_buffer = self._recv_buffer
+        sock_recv = self.sock.recv
+
         try:
             # Read headers
-            while b"\r\n\r\n" not in self._recv_buffer:
+            while b"\r\n\r\n" not in recv_buffer:
                 try:
-                    data = self.sock.recv(1024)
+                    data = sock_recv(1024)
                     if not data:
                         self.closed = True
                         return None
-                    self._recv_buffer += data
+                    recv_buffer += data
                 except OSError as e:
                     # Handle timeout and other socket errors
                     if hasattr(e, "errno") and e.errno in (11, 35):  # EAGAIN, EWOULDBLOCK
@@ -102,9 +123,9 @@ class JsonMessageChannel:
                     self.closed = True
                     return None
 
-            header_end = self._recv_buffer.find(b"\r\n\r\n")
-            header_str = self._recv_buffer[:header_end].decode("utf-8")
-            self._recv_buffer = self._recv_buffer[header_end + 4 :]
+            header_end = recv_buffer.find(b"\r\n\r\n")
+            header_str = recv_buffer[:header_end].decode("utf-8")
+            recv_buffer = recv_buffer[header_end + 4 :]
 
             # Parse Content-Length
             content_length = 0
@@ -114,24 +135,26 @@ class JsonMessageChannel:
                     break
 
             if content_length == 0:
+                self._recv_buffer = recv_buffer
                 return None
 
             # Read body
-            while len(self._recv_buffer) < content_length:
+            while len(recv_buffer) < content_length:
                 try:
-                    data = self.sock.recv(content_length - len(self._recv_buffer))
+                    data = sock_recv(content_length - len(recv_buffer))
                     if not data:
                         self.closed = True
                         return None
-                    self._recv_buffer += data
+                    recv_buffer += data
                 except OSError as e:
                     if hasattr(e, "errno") and e.errno in (11, 35):  # EAGAIN, EWOULDBLOCK
+                        self._recv_buffer = recv_buffer
                         return None
                     self.closed = True
                     return None
 
-            body = self._recv_buffer[:content_length]
-            self._recv_buffer = self._recv_buffer[content_length:]
+            body = recv_buffer[:content_length]
+            self._recv_buffer = recv_buffer[content_length:]
 
             # Parse JSON
             try:

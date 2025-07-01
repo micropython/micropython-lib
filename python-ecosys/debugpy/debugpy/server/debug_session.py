@@ -424,11 +424,13 @@ class DebugSession:
                 #  message=f"Could not read source: {e}"
             )
 
-    def _trace_function(self, frame, event, arg):
+    def _trace_function(self, frame, event:str, arg):
         """Trace function called by sys.settrace."""
+        # https://docs.python.org/3/library/sys.html#sys.settrace
+        global _twiddel
         # Process any pending DAP messages frequently
+      
         self.process_pending_messages()
-
         # Handle breakpoints and stepping
         if self.pdb.should_stop(frame, event, arg):
             self._send_stopped_event(
@@ -440,6 +442,10 @@ class DebugSession:
             )
             # Wait for continue command
             self.pdb.wait_for_continue()
+
+        # The trace function is invoked (with event set to 'call') whenever a new local scope is entered; 
+        # it should return a reference to a local trace function to be used for the new scope, 
+        # or None if the scope shouldn’t be traced.
 
         return self._trace_function
 
