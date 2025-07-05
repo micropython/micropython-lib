@@ -830,8 +830,8 @@ class Buffer:
         # Called by the producer to indicate it wrote nbytes into the buffer.
         ist = machine.disable_irq()
         try:
-            assert nbytes <= self._l - (_w := self._w)  # can't say we wrote more than was pended
-            if self._n == _w:
+            assert nbytes <= self._l - self._w  # can't say we wrote more than was pended
+            if self._n == self._w:
                 # no data was read while the write was happening, so the buffer is already in place
                 # (this is the fast path)
                 self._n += nbytes
