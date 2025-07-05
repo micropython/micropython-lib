@@ -166,7 +166,9 @@ class _Device:
         # Keep track of the interface and endpoint indexes
         itf_num = builtin_driver.itf_max
         ep_num = max(builtin_driver.ep_max, 1)  # Endpoint 0 always reserved for control
-        while len(strs) < builtin_driver.str_max - 1: # This is possibly unnecessary or wrong because
+        while (
+            len(strs) < builtin_driver.str_max - 1
+        ):  # This is possibly unnecessary or wrong because
             # https://docs.micropython.org/en/latest/library/machine.USBDevice.html
             # states all string values except index 0 should be plain ASCII
             strs.append(None)  # Reserve other string indexes used by builtin drivers
@@ -822,7 +824,7 @@ class Buffer:
         # (No critical section needed as self._w is only updated by the producer.)
         self._w = (_w := self._n)
         end = (_w + wmax) if wmax else self._l
-        return self._b[_w : end]
+        return self._b[_w:end]
 
     def finish_write(self, nbytes):
         # Called by the producer to indicate it wrote nbytes into the buffer.
