@@ -592,7 +592,7 @@ class PdbAdapter:
 
     @staticmethod
     def _special_vars(varref: int):
-        return {"name": "special", "value": "", "variablesReference": varref}
+        return {"name": "Special", "value": "", "variablesReference": varref}
 
     def get_variables(self, variables_ref):
         """Get variables for a scope with enhanced complex variable support."""
