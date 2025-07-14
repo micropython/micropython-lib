@@ -41,11 +41,13 @@ class FileSection:
         self.content_len -= sz
         return data
 
-    def readinto(self, buf):
+    def readinto(self, buf, size=None):
         if self.content_len == 0:
             return 0
         if len(buf) > self.content_len:
             buf = memoryview(buf)[: self.content_len]
+        if size is not None and len(buf) > size:
+            buf = memoryview(buf)[:size]
         sz = self.f.readinto(buf)
         self.content_len -= sz
         return sz
