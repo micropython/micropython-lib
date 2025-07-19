@@ -42,7 +42,13 @@ class ClientResponse:
         return data
 
     async def read(self, sz=-1):
-        return self._decode(await self.content.read(sz))
+        if sz == -1:
+            return self._decode(await self.content.read(sz))
+        data = bytearray()
+        while sz > 0:
+            data.extend(await self.content.read(sz))
+            sz -= len(data)
+        return self._decode(data)
 
     async def text(self, encoding="utf-8"):
         return (await self.read(int(self._get_header("content-length", -1)))).decode(encoding)

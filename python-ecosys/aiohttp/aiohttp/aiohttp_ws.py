@@ -203,7 +203,10 @@ class WebSocketClient:
 
         if has_mask:  # pragma: no cover
             mask = await self.reader.read(4)
-        payload = await self.reader.read(length)
+        payload = bytearray()
+        while length > 0:
+            payload.extend(await self.reader.read(length))
+            length -= len(payload)
         if has_mask:  # pragma: no cover
             payload = bytes(x ^ mask[i % 4] for i, x in enumerate(payload))
         return opcode, payload
