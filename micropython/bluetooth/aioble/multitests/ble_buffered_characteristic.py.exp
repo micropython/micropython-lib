@@ -1,0 +1,21 @@
+--- instance0 ---
+advertise
+connected
+written b'central1-bbbbbbbbbbb'
+written b'central2a-bbbbbbbbbb'
+written b'central2b-bbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+written b'central3-aaaaaaaaaaaaaaaaaaaaaaaaaaaaacentral3-bbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+disconnected
+--- instance1 ---
+connect
+service UUID('a5a5a5a5-ffff-9999-1111-5a5a5a5a5a5a')
+characteristic1 UUID('00000000-1111-2222-3333-444444444444')
+characteristic2 UUID('00000000-1111-2222-3333-555555555555')
+characteristic3 UUID('00000000-1111-2222-3333-666666666666')
+write1
+write2a
+exchange mtu
+write2b
+write3
+disconnect
+disconnected

@@ -1,0 +1,15 @@
+repos:
+  - repo: local
+    hooks:
+      - id: verifygitlog
+        name: MicroPython git commit message format checker
+        entry: tools/verifygitlog.py --check-file --ignore-rebase
+        language: python
+        verbose: true
+        stages: [commit-msg]
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    # Version should be kept in sync with .github/workflows/ruff.yml & also micropython
+    rev: v0.11.6
+    hooks:
+      - id: ruff
+        id: ruff-format

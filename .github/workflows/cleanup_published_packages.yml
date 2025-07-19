@@ -1,0 +1,12 @@
+name: Cleanup published packages
+
+on: delete
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    if: vars.MICROPY_PUBLISH_MIP_INDEX
+    steps:
+    - uses: actions/checkout@v3
+    - name: Clean up published files
+      run: source tools/ci.sh && ci_cleanup_package_index ${{ github.event.ref }}
