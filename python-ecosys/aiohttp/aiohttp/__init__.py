@@ -42,7 +42,9 @@ class ClientResponse:
         return data
 
     async def read(self, sz=-1):
-        return self._decode(await self.content.read(sz))
+        return self._decode(
+            await (self.content.read(sz) if sz == -1 else self.content.readexactly(sz))
+        )
 
     async def text(self, encoding="utf-8"):
         return (await self.read(int(self._get_header("content-length", -1)))).decode(encoding)
@@ -66,13 +68,13 @@ class ChunkedClientResponse(ClientResponse):
             self.chunk_size = int(l, 16)
             if self.chunk_size == 0:
                 # End of message
-                sep = await self.content.read(2)
+                sep = await self.content.readexactly(2)
                 assert sep == b"\r\n"
                 return b""
-        data = await self.content.read(min(sz, self.chunk_size))
+        data = await self.content.readexactly(min(sz, self.chunk_size))
         self.chunk_size -= len(data)
         if self.chunk_size == 0:
-            sep = await self.content.read(2)
+            sep = await self.content.readexactly(2)
             assert sep == b"\r\n"
         return self._decode(data)
 

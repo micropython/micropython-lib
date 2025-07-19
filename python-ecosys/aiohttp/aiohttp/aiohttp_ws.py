@@ -189,7 +189,7 @@ class WebSocketClient:
             await self.send(b"", self.CLOSE)
 
     async def _read_frame(self):
-        header = await self.reader.read(2)
+        header = await self.reader.readexactly(2)
         if len(header) != 2:  # pragma: no cover
             # raise OSError(32, "Websocket connection closed")
             opcode = self.CLOSE
@@ -197,13 +197,13 @@ class WebSocketClient:
             return opcode, payload
         fin, opcode, has_mask, length = self._parse_frame_header(header)
         if length == 126:  # Magic number, length header is 2 bytes
-            (length,) = struct.unpack("!H", await self.reader.read(2))
+            (length,) = struct.unpack("!H", await self.reader.readexactly(2))
         elif length == 127:  # Magic number, length header is 8 bytes
-            (length,) = struct.unpack("!Q", await self.reader.read(8))
+            (length,) = struct.unpack("!Q", await self.reader.readexactly(8))
 
         if has_mask:  # pragma: no cover
-            mask = await self.reader.read(4)
-        payload = await self.reader.read(length)
+            mask = await self.reader.readexactly(4)
+        payload = await self.reader.readexactly(length)
         if has_mask:  # pragma: no cover
             payload = bytes(x ^ mask[i % 4] for i, x in enumerate(payload))
         return opcode, payload
