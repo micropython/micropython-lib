@@ -34,6 +34,8 @@ _INTERFACE_CLASS = const(0x03)
 _INTERFACE_SUBCLASS_NONE = const(0x00)
 _INTERFACE_SUBCLASS_BOOT = const(0x01)
 
+# These values will only make sense when interface subclass
+# is 0x01, which indicates boot protocol support.
 _INTERFACE_PROTOCOL_NONE = const(0x00)
 _INTERFACE_PROTOCOL_KEYBOARD = const(0x01)
 _INTERFACE_PROTOCOL_MOUSE = const(0x02)
@@ -131,7 +133,9 @@ class HIDInterface(Interface):
             itf_num,
             1,
             _INTERFACE_CLASS,
-            _INTERFACE_SUBCLASS_NONE,
+            _INTERFACE_SUBCLASS_NONE
+            if self.protocol == _INTERFACE_PROTOCOL_NONE
+            else _INTERFACE_SUBCLASS_BOOT,
             self.protocol,
             len(strs) if self.interface_str else 0,
         )
@@ -149,7 +153,12 @@ class HIDInterface(Interface):
         desc.endpoint(self._int_ep, "interrupt", 8, 8)
 
         self.idle_rate = 0
-        self.protocol = 0
+
+        # This variable is reused to track boot protocol status.
+        # 0 for boot protocol, 1 for report protocol
+        # According to Device Class Definition for Human Interface Devices (HID) v1.11
+        # Appendix F.5, the device comes up in non-boot mode by default.
+        self.protocol = 1
 
     def num_eps(self):
         return 1
