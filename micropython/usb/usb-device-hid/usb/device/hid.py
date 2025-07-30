@@ -207,6 +207,8 @@ class HIDInterface(Interface):
                     if desc_type == _DESC_HID_TYPE:
                         return self.get_hid_descriptor()
                     if desc_type == _DESC_REPORT_TYPE:
+                        # Reset to report protocol when report descriptor is requested
+                        self.protocol = 1
                         return self.report_descriptor
             elif req_type == _REQ_TYPE_CLASS:
                 # HID Spec p50: 7.2 Class-Specific Requests
