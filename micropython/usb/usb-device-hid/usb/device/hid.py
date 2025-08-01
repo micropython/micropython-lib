@@ -123,6 +123,7 @@ class HIDInterface(Interface):
         if not self.is_open():
             return False
         self.submit_xfer(self._int_ep, report_data)
+        return True
 
     def desc_cfg(self, desc, itf_num, ep_num, strs):
         # Add the standard interface descriptor
