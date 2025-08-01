@@ -600,7 +600,8 @@ class Interface:
         # function has returned to the caller.
         if not self._open:
             raise RuntimeError("Not open")
-        _dev._submit_xfer(ep_addr, data, done_cb)
+        if not _dev._submit_xfer(ep_addr, data, done_cb):
+            raise RuntimeError("DCD error")
 
     def stall(self, ep_addr, *args):
         # Set or get the endpoint STALL state.
