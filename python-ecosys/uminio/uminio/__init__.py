@@ -12,18 +12,6 @@ import ubinascii
 import utime
 import ntptime
 
-# --- MinIO Configuration ---
-# IMPORTANT: Fill in these details for your MinIO server.
-MINIO_ENDPOINT = "192.168.1.100:9000"  # Your MinIO server IP address and port
-MINIO_ACCESS_KEY = "YOUR_ACCESS_KEY"  # Your MinIO access key
-MINIO_SECRET_KEY = "YOUR_SECRET_KEY"  # Your MinIO secret key
-MINIO_BUCKET = "micropython-uploads"  # The bucket you want to upload to
-MINIO_USE_HTTPS = False  # Set to True if your MinIO server uses HTTPS
-
-# MinIO is S3-compatible, but the signing process still requires a region.
-# 'us-east-1' is a safe default that works for most MinIO setups.
-MINIO_REGION = "us-east-1"
-
 
 class MinioClient:
     """A client for interacting with MinIO object storage.
@@ -87,13 +75,9 @@ class MinioClient:
         Derives the signing key from the secret key.
         """
         k_secret_bytes = ("AWS4" + self.secret_key).encode("utf-8")
-        k_date_bytes = self._hmac_sha256(
-            k_secret_bytes, date_stamp_string.encode("utf-8")
-        )
+        k_date_bytes = self._hmac_sha256(k_secret_bytes, date_stamp_string.encode("utf-8"))
         k_region_bytes = self._hmac_sha256(k_date_bytes, self.region.encode("utf-8"))
-        k_service_bytes = self._hmac_sha256(
-            k_region_bytes, service_name_string.encode("utf-8")
-        )
+        k_service_bytes = self._hmac_sha256(k_region_bytes, service_name_string.encode("utf-8"))
         k_signing_bytes = self._hmac_sha256(k_service_bytes, b"aws4_request")
         return k_signing_bytes
 
@@ -192,22 +176,15 @@ class MinioClient:
         hashed_canonical_request_bytes = uhashlib.sha256(
             canonical_request.encode("utf-8")
         ).digest()
-        hashed_canonical_request_hex = ubinascii.hexlify(
-            hashed_canonical_request_bytes
-        ).decode()
+        hashed_canonical_request_hex = ubinascii.hexlify(hashed_canonical_request_bytes).decode()
 
         string_to_sign = (
-            f"{algorithm}\n"
-            f"{amz_date}\n"
-            f"{credential_scope}\n"
-            f"{hashed_canonical_request_hex}"
+            f"{algorithm}\n{amz_date}\n{credential_scope}\n{hashed_canonical_request_hex}"
         )
 
         # ---- Task 3: Calculate Signature ----
         signing_key_bytes = self._get_signature_key(datestamp, service)
-        signature_bytes = self._hmac_sha256(
-            signing_key_bytes, string_to_sign.encode("utf-8")
-        )
+        signature_bytes = self._hmac_sha256(signing_key_bytes, string_to_sign.encode("utf-8"))
         signature_hex = ubinascii.hexlify(signature_bytes).decode()
 
         # ---- Task 4: Add Signing Information to the Request ----
