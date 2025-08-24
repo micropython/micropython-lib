@@ -175,6 +175,19 @@ class MQTTClient:
                     raise MQTTException(resp[3])
                 return
 
+    def unsubscribe(self, topic):
+        pkt = bytearray(b"\xa2\0\0\0")
+        self.pid += 1
+        struct.pack_into("!BH", pkt, 1, 2 + 2 + len(topic), self.pid)
+        self.sock.write(pkt)
+        self._send_str(topic)
+        while 1:
+            op = self.wait_msg()
+            if op == 0xB0:
+                resp = self.sock.read(3)
+                assert resp[1] == pkt[2] and resp[2] == pkt[3]
+                return
+
     # Wait for a single incoming MQTT message and process it.
     # Subscribed messages are delivered to a callback previously
     # set by .set_callback() method. Other (internal) MQTT
