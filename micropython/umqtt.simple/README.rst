@@ -53,6 +53,7 @@ follows MQTT control operations, and maps them to class methods:
 * ``ping()`` - Ping server (response is processed automatically by wait_msg()).
 * ``publish()`` - Publish a message.
 * ``subscribe()`` - Subscribe to a topic.
+* ``unsubscribe()`` - Unsubscribe to a topic.
 * ``set_callback()`` - Set callback for received subscription messages.
 * ``set_last_will()`` - Set MQTT "last will" message. Should be called
   *before* connect().
