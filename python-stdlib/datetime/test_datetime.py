@@ -68,14 +68,6 @@ from datetime import MAXYEAR, MINYEAR, datetime, date, time, timedelta, timezone
 import unittest
 
 
-# See localtz.patch
-try:
-    datetime.fromtimestamp(0)
-    LOCALTZ = True
-except NotImplementedError:
-    LOCALTZ = False
-
-
 if hasattr(datetime, "EPOCH"):
     EPOCH = datetime.EPOCH
 else:
@@ -1619,11 +1611,8 @@ class Test5DateTime(unittest.TestCase):
     def test_fromtimestamp00(self):
         with LocalTz("Europe/Rome"):
             ts = 1012499103.001234
-            if LOCALTZ:
-                dt = datetime.fromtimestamp(ts)
-                self.assertEqual(dt, d1t1)
-            else:
-                self.assertRaises(NotImplementedError, datetime.fromtimestamp, ts)
+            dt = datetime.fromtimestamp(ts)
+            self.assertEqual(dt, d1t1)
 
     def test_fromtimestamp01(self):
         ts = 1012506303.001234
@@ -1642,48 +1631,35 @@ class Test5DateTime(unittest.TestCase):
             dt = datetime(2010, 10, 31, 0, 30, tzinfo=timezone.utc)
             ts = (dt - EPOCH).total_seconds()
             dt = dt.replace(tzinfo=None) + 2 * td1h
-            if LOCALTZ:
-                ds = datetime.fromtimestamp(ts)
-                self.assertEqual(ds, dt)
-                self.assertFalse(ds.fold)
-            else:
-                self.assertRaises(NotImplementedError, datetime.fromtimestamp, ts)
+            ds = datetime.fromtimestamp(ts)
+            self.assertEqual(ds, dt)
+            self.assertFalse(ds.fold)
 
     def test_fromtimestamp05(self):
         with LocalTz("Europe/Rome"):
             dt = datetime(2010, 10, 31, 1, 30, tzinfo=timezone.utc)
             ts = (dt - EPOCH).total_seconds()
             dt = dt.replace(tzinfo=None) + 1 * td1h
-            if LOCALTZ:
-                ds = datetime.fromtimestamp(ts)
-                self.assertEqual(ds, dt)
-                self.assertTrue(ds.fold)
-            else:
-                self.assertRaises(NotImplementedError, datetime.fromtimestamp, ts)
+            ds = datetime.fromtimestamp(ts)
+            self.assertEqual(ds, dt)
+            self.assertTrue(ds.fold)
 
     def test_fromtimestamp06(self):
         with LocalTz("US/Eastern"):
             dt = datetime(2020, 11, 1, 5, 30, tzinfo=timezone.utc)
             ts = (dt - EPOCH).total_seconds()
             dt = dt.replace(tzinfo=None) - 4 * td1h
-            if LOCALTZ:
-                ds = datetime.fromtimestamp(ts)
-                self.assertEqual(ds, dt)
-            else:
-                self.assertRaises(NotImplementedError, datetime.fromtimestamp, ts)
+            ds = datetime.fromtimestamp(ts)
+            self.assertEqual(ds, dt)
 
     def test_fromtimestamp07(self):
         with LocalTz("US/Eastern"):
             dt = datetime(2020, 11, 1, 7, 30, tzinfo=timezone.utc)
             ts = (dt - EPOCH).total_seconds()
             dt = dt.replace(tzinfo=None) - 5 * td1h
-            if LOCALTZ:
-                ds = datetime.fromtimestamp(ts)
-                self.assertEqual(ds, dt)
-            else:
-                self.assertRaises(NotImplementedError, datetime.fromtimestamp, ts)
+            ds = datetime.fromtimestamp(ts)
+            self.assertEqual(ds, dt)
 
-    @unittest.skipIf(not LOCALTZ, "naive datetime not supported")
     def test_now00(self):
         tm = datetime(*mod_time.localtime()[:6])
         dt = datetime.now()
@@ -2004,46 +1980,31 @@ class Test5DateTime(unittest.TestCase):
         with LocalTz("Europe/Rome"):
             dt1 = dt27tz2
             dt2 = dt1.replace(tzinfo=None)
-            if LOCALTZ:
-                self.assertEqual(dt1, dt2.astimezone(tz2))
-            else:
-                self.assertRaises(NotImplementedError, dt2.astimezone, tz2)
+            self.assertEqual(dt1, dt2.astimezone(tz2))
 
     def test_astimezone05(self):
         with LocalTz("Europe/Rome"):
             dt1 = dt28tz2
             dt2 = dt1.replace(tzinfo=None)
-            if LOCALTZ:
-                self.assertEqual(dt1, dt2.astimezone(tz2))
-            else:
-                self.assertRaises(NotImplementedError, dt2.astimezone, tz2)
+            self.assertEqual(dt1, dt2.astimezone(tz2))
 
     def test_astimezone06(self):
         with LocalTz("Europe/Rome"):
             dt1 = dt30tz2
             dt2 = dt1.replace(tzinfo=None)
-            if LOCALTZ:
-                self.assertEqual(dt1, dt2.astimezone(tz2))
-            else:
-                self.assertRaises(NotImplementedError, dt2.astimezone, tz2)
+            self.assertEqual(dt1, dt2.astimezone(tz2))
 
     def test_astimezone07(self):
         with LocalTz("Europe/Rome"):
             dt1 = dt31tz2
             dt2 = dt1.replace(tzinfo=None)
-            if LOCALTZ:
-                self.assertEqual(dt1, dt2.astimezone(tz2))
-            else:
-                self.assertRaises(NotImplementedError, dt2.astimezone, tz2)
+            self.assertEqual(dt1, dt2.astimezone(tz2))
 
     def test_astimezone08(self):
         with LocalTz("Europe/Rome"):
             dt1 = dt3
             dt2 = dt1.replace(tzinfo=None)
-            if LOCALTZ:
-                self.assertEqual(dt1, dt2.astimezone(tz2))
-            else:
-                self.assertRaises(NotImplementedError, dt2.astimezone, tz2)
+            self.assertEqual(dt1, dt2.astimezone(tz2))
 
     def test_utcoffset00(self):
         self.assertEqual(dt1.utcoffset(), None)
@@ -2123,10 +2084,7 @@ class Test5DateTime(unittest.TestCase):
 
     def test_timestamp00(self):
         with LocalTz("Europe/Rome"):
-            if LOCALTZ:
-                self.assertEqual(d1t1.timestamp(), 1012499103.001234)
-            else:
-                self.assertRaises(NotImplementedError, d1t1.timestamp)
+            self.assertEqual(d1t1.timestamp(), 1012499103.001234)
 
     def test_timestamp01(self):
         self.assertEqual(d1t1z.timestamp(), 1012506303.001234)
@@ -2134,66 +2092,42 @@ class Test5DateTime(unittest.TestCase):
     def test_timestamp02(self):
         with LocalTz("Europe/Rome"):
             dt = datetime(2010, 3, 28, 2, 30)  # doens't exist
-            if LOCALTZ:
-                self.assertEqual(dt.timestamp(), 1269739800.0)
-            else:
-                self.assertRaises(NotImplementedError, dt.timestamp)
+            self.assertEqual(dt.timestamp(), 1269739800.0)
 
     def test_timestamp03(self):
         with LocalTz("Europe/Rome"):
             dt = datetime(2010, 8, 10, 2, 30)
-            if LOCALTZ:
-                self.assertEqual(dt.timestamp(), 1281400200.0)
-            else:
-                self.assertRaises(NotImplementedError, dt.timestamp)
+            self.assertEqual(dt.timestamp(), 1281400200.0)
 
     def test_timestamp04(self):
         with LocalTz("Europe/Rome"):
             dt = datetime(2010, 10, 31, 2, 30, fold=0)
-            if LOCALTZ:
-                self.assertEqual(dt.timestamp(), 1288485000.0)
-            else:
-                self.assertRaises(NotImplementedError, dt.timestamp)
+            self.assertEqual(dt.timestamp(), 1288485000.0)
 
     def test_timestamp05(self):
         with LocalTz("Europe/Rome"):
             dt = datetime(2010, 10, 31, 2, 30, fold=1)
-            if LOCALTZ:
-                self.assertEqual(dt.timestamp(), 1288488600.0)
-            else:
-                self.assertRaises(NotImplementedError, dt.timestamp)
+            self.assertEqual(dt.timestamp(), 1288488600.0)
 
     def test_timestamp06(self):
         with LocalTz("US/Eastern"):
             dt = datetime(2020, 3, 8, 2, 30)  # doens't exist
-            if LOCALTZ:
-                self.assertEqual(dt.timestamp(), 1583652600.0)
-            else:
-                self.assertRaises(NotImplementedError, dt.timestamp)
+            self.assertEqual(dt.timestamp(), 1583652600.0)
 
     def test_timestamp07(self):
         with LocalTz("US/Eastern"):
             dt = datetime(2020, 8, 10, 2, 30)
-            if LOCALTZ:
-                self.assertEqual(dt.timestamp(), 1597041000.0)
-            else:
-                self.assertRaises(NotImplementedError, dt.timestamp)
+            self.assertEqual(dt.timestamp(), 1597041000.0)
 
     def test_timestamp08(self):
         with LocalTz("US/Eastern"):
             dt = datetime(2020, 11, 1, 2, 30, fold=0)
-            if LOCALTZ:
-                self.assertEqual(dt.timestamp(), 1604215800.0)
-            else:
-                self.assertRaises(NotImplementedError, dt.timestamp)
+            self.assertEqual(dt.timestamp(), 1604215800.0)
 
     def test_timestamp09(self):
         with LocalTz("US/Eastern"):
             dt = datetime(2020, 11, 1, 2, 30, fold=1)
-            if LOCALTZ:
-                self.assertEqual(dt.timestamp(), 1604215800.0)
-            else:
-                self.assertRaises(NotImplementedError, dt.timestamp)
+            self.assertEqual(dt.timestamp(), 1604215800.0)
 
     def test_isoweekday00(self):
         self.assertEqual(dt1.isoweekday(), d1.isoweekday())
