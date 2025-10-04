@@ -47,8 +47,19 @@ async def request_raw(method, url):
         proto, dummy, host = url.split("/", 2)
         path = ""
 
+    # Although we use HTTP protocol version 1.0, we still explicitly
+    # set the header "Connection: close", even though this should be
+    # default for 1.0, but some servers misbehave w/o it.
+    hdrs = {'Connection': "close", 'User-Agent': "compat"}
+    if "@" in host:
+        # split off potential login creds from host
+        auth, host = host.split("@", 1)
+        from binascii import b2a_base64
+        #usr, pwd = auth.split(":", 1)
+        hdrs['Authorization'] = "Basic " + b2a_base64(auth).decode()
+
     if ":" in host:
-        host, port = host.split(":")
+        host, port = host.rsplit(":", 1)
         port = int(port)
     else:
         port = 80
@@ -56,15 +67,8 @@ async def request_raw(method, url):
     if proto != "http:":
         raise ValueError("Unsupported protocol: " + proto)
     reader, writer = await asyncio.open_connection(host, port)
-    # Use protocol 1.0, because 1.1 always allows to use chunked
-    # transfer-encoding But explicitly set Connection: close, even
-    # though this should be default for 1.0, because some servers
-    # misbehave w/o it.
-    query = "%s /%s HTTP/1.0\r\nHost: %s\r\nConnection: close\r\nUser-Agent: compat\r\n\r\n" % (
-        method,
-        path,
-        host,
-    )
+    # Use protocol 1.0, because 1.1 always allows to use chunked transfer-encoding
+    query = "%s /%s HTTP/1.0\r\nHost: %s\r\n%s\r\n\r\n" % (method, path, host, "\r\n".join("%s: %s" % (k,v) for k,v in hdrs.items()))
     await writer.awrite(query.encode("latin-1"))
     return reader
 
