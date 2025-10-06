@@ -1,7 +1,10 @@
 import sys
 
+# Generator function.
 _g = lambda: (yield)
 
+# Closure type.
+_ct = type((lambda x: (lambda: x))(None))
 
 def getmembers(obj, pred=None):
     res = []
@@ -111,9 +114,16 @@ def signature(f):
     elif t is type(setattr):
         # A three-parameter built-in.
         num_args = 3
-    elif t is type(signature):
+    elif t is type(signature) or t is type(_g) or t is _ct:
         # A bytecode function, work out the number of arguments by inspecting the bytecode data.
-        fun_obj = uctypes.struct(id(f), (uctypes.ARRAY | 0, uctypes.LONG | 4))
+        fun_ptr = id(f)
+        num_closed_over = 0
+        if t is _ct:
+            # A closure, the function is the second word.
+            clo_ptr = uctypes.struct(fun_ptr, (uctypes.ARRAY | 0, uctypes.LONG | 3))
+            fun_ptr = clo_ptr[1]
+            num_closed_over = clo_ptr[2]
+        fun_obj = uctypes.struct(fun_ptr, (uctypes.ARRAY | 0, uctypes.LONG | 4))
         bytecode = uctypes.bytearray_at(fun_obj[3], 8)
         # See py/bc.h:MP_BC_PRELUDE_SIG_DECODE_INTO macro.
         i = 0
@@ -127,7 +137,7 @@ def signature(f):
             i += 1
             A |= (z & 0x4) << n
             K |= ((z & 0x08) >> 3) << n
-        num_args = A + K
+        num_args = A + K - num_closed_over
     else:
         raise NotImplementedError("unsupported function type")
 
