@@ -11,6 +11,22 @@ def gen():
     yield 1
 
 
+def make_closure():
+    a = 1
+    b = 2
+    def closure(x):
+        return a + b + x
+    return closure
+
+
+def make_gen_closure():
+    a = 1
+    b = 2
+    def gen_closure(x):
+        yield a + b + x
+    return gen_closure
+
+
 class Class:
     def meth(self):
         pass
@@ -71,3 +87,6 @@ class TestInspect(unittest.TestCase):
         self.assertEqual(len(inspect.signature(lambda x, y: 0).parameters), 2)
         self.assertEqual(len(inspect.signature(lambda x, y, z: 0).parameters), 3)
         self.assertEqual(len(inspect.signature(lambda x, y, *, z: 0).parameters), 3)
+        self.assertEqual(len(inspect.signature(gen).parameters), 0)
+        self.assertEqual(len(inspect.signature(make_closure()).parameters), 1)
+        self.assertEqual(len(inspect.signature(make_gen_closure()).parameters), 1)
