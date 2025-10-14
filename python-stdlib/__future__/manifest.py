@@ -1,3 +1,5 @@
-metadata(version="0.1.0")
+metadata(version="1.26.1")
 
-module("__future__.py")
+options.defaults(opt_level=3)
+
+module("__future__.py", opt=options.opt_level)
