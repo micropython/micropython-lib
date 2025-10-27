@@ -23,10 +23,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-
 from senml import *
 import time
-from cbor2 import decoder
+import cbor2
 
 pack = SenmlPack("device_name")
 
@@ -38,5 +37,5 @@ while True:
         cbor_val = pack.to_cbor()
         print(cbor_val)
         print(cbor_val.hex())
-        print(decoder.loads(cbor_val))  # convert to string again so we can print it.
+        print(cbor2.loads(cbor_val))  # convert to string again so we can print it.
     time.sleep(1)

@@ -1,3 +1,3 @@
-metadata(version="0.1.0")
+metadata(version="0.2.1")
 
-module("ssl.py")
+module("ssl.py", opt=3)

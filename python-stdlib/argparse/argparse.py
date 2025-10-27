@@ -3,7 +3,7 @@ Minimal and functional version of CPython's argparse module.
 """
 
 import sys
-from ucollections import namedtuple
+from collections import namedtuple
 
 
 class _ArgError(BaseException):

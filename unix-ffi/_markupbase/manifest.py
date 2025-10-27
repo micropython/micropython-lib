@@ -1,5 +1,5 @@
 metadata(version="3.3.4")
 
-require("re", unix_ffi=True)
+require("re")
 
 module("_markupbase.py")

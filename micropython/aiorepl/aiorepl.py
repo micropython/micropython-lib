@@ -5,7 +5,7 @@ from micropython import const
 import re
 import sys
 import time
-import uasyncio as asyncio
+import asyncio
 
 # Import statement (needs to be global, and does not return).
 _RE_IMPORT = re.compile("^import ([^ ]+)( as ([^ ]+))?")
@@ -17,6 +17,13 @@ _RE_ASSIGN = re.compile("[^=]=[^=]")
 
 # Command hist (One reserved slot for the current command).
 _HISTORY_LIMIT = const(5 + 1)
+
+
+CHAR_CTRL_A = const(1)
+CHAR_CTRL_B = const(2)
+CHAR_CTRL_C = const(3)
+CHAR_CTRL_D = const(4)
+CHAR_CTRL_E = const(5)
 
 
 async def execute(code, g, s):
@@ -34,18 +41,16 @@ async def execute(code, g, s):
                 code = "return {}".format(code)
 
             code = """
-import uasyncio as asyncio
+import asyncio
 async def __code():
     {}
 
 __exec_task = asyncio.create_task(__code())
-""".format(
-                code
-            )
+""".format(code)
 
             async def kbd_intr_task(exec_task, s):
                 while True:
-                    if ord(await s.read(1)) == 0x03:
+                    if ord(await s.read(1)) == CHAR_CTRL_C:
                         exec_task.cancel()
                         return
 
@@ -104,9 +109,13 @@ async def task(g=None, prompt="--> "):
         while True:
             hist_b = 0  # How far back in the history are we currently.
             sys.stdout.write(prompt)
-            cmd = ""
+            cmd: str = ""
+            paste = False
+            curs = 0  # cursor offset from end of cmd buffer
             while True:
                 b = await s.read(1)
+                if not b:  # Handle EOF/empty read
+                    break
                 pc = c  # save previous character
                 c = ord(b)
                 pt = t  # save previous time
@@ -114,11 +123,19 @@ async def task(g=None, prompt="--> "):
                 if c < 0x20 or c > 0x7E:
                     if c == 0x0A:
                         # LF
+                        if paste:
+                            sys.stdout.write(b)
+                            cmd += b
+                            continue
                         # If the previous character was also LF, and was less
                         # than 20 ms ago, this was likely due to CRLF->LFLF
                         # conversion, so ignore this linefeed.
                         if pc == 0x0A and time.ticks_diff(t, pt) < 20:
                             continue
+                        if curs:
+                            # move cursor to end of the line
+                            sys.stdout.write("\x1b[{}C".format(curs))
+                            curs = 0
                         sys.stdout.write("\n")
                         if cmd:
                             # Push current command.
@@ -135,31 +152,45 @@ async def task(g=None, prompt="--> "):
                     elif c == 0x08 or c == 0x7F:
                         # Backspace.
                         if cmd:
-                            cmd = cmd[:-1]
-                            sys.stdout.write("\x08 \x08")
-                    elif c == 0x02:
-                        # Ctrl-B
+                            if curs:
+                                cmd = "".join((cmd[: -curs - 1], cmd[-curs:]))
+                                sys.stdout.write(
+                                    "\x08\x1b[K"
+                                )  # move cursor back, erase to end of line
+                                sys.stdout.write(cmd[-curs:])  # redraw line
+                                sys.stdout.write("\x1b[{}D".format(curs))  # reset cursor location
+                            else:
+                                cmd = cmd[:-1]
+                                sys.stdout.write("\x08 \x08")
+                    elif c == CHAR_CTRL_A:
+                        raw_repl(sys.stdin, g)
+                        break
+                    elif c == CHAR_CTRL_B:
                         continue
-                    elif c == 0x03:
-                        # Ctrl-C
-                        if pc == 0x03 and time.ticks_diff(t, pt) < 20:
-                            # Two very quick Ctrl-C (faster than a human
-                            # typing) likely means mpremote trying to
-                            # escape.
-                            asyncio.new_event_loop()
-                            return
+                    elif c == CHAR_CTRL_C:
+                        if paste:
+                            break
                         sys.stdout.write("\n")
                         break
-                    elif c == 0x04:
-                        # Ctrl-D
+                    elif c == CHAR_CTRL_D:
+                        if paste:
+                            result = await execute(cmd, g, s)
+                            if result is not None:
+                                sys.stdout.write(repr(result))
+                                sys.stdout.write("\n")
+                            break
+
                         sys.stdout.write("\n")
                         # Shutdown asyncio.
                         asyncio.new_event_loop()
                         return
+                    elif c == CHAR_CTRL_E:
+                        sys.stdout.write("paste mode; Ctrl-C to cancel, Ctrl-D to finish\n===\n")
+                        paste = True
                     elif c == 0x1B:
                         # Start of escape sequence.
                         key = await s.read(2)
-                        if key in ("[A", "[B"):
+                        if key in ("[A", "[B"):  # up, down
                             # Stash the current command.
                             hist[(hist_i - hist_b) % _HISTORY_LIMIT] = cmd
                             # Clear current command.
@@ -175,12 +206,127 @@ async def task(g=None, prompt="--> "):
                             # Update current command.
                             cmd = hist[(hist_i - hist_b) % _HISTORY_LIMIT]
                             sys.stdout.write(cmd)
+                        elif key == "[D":  # left
+                            if curs < len(cmd) - 1:
+                                curs += 1
+                                sys.stdout.write("\x1b")
+                                sys.stdout.write(key)
+                        elif key == "[C":  # right
+                            if curs:
+                                curs -= 1
+                                sys.stdout.write("\x1b")
+                                sys.stdout.write(key)
+                        elif key == "[H":  # home
+                            pcurs = curs
+                            curs = len(cmd)
+                            sys.stdout.write("\x1b[{}D".format(curs - pcurs))  # move cursor left
+                        elif key == "[F":  # end
+                            pcurs = curs
+                            curs = 0
+                            sys.stdout.write("\x1b[{}C".format(pcurs))  # move cursor right
                     else:
                         # sys.stdout.write("\\x")
                         # sys.stdout.write(hex(c))
                         pass
                 else:
-                    sys.stdout.write(b)
-                    cmd += b
+                    if curs:
+                        # inserting into middle of line
+                        cmd = "".join((cmd[:-curs], b, cmd[-curs:]))
+                        sys.stdout.write(cmd[-curs - 1 :])  # redraw line to end
+                        sys.stdout.write("\x1b[{}D".format(curs))  # reset cursor location
+                    else:
+                        sys.stdout.write(b)
+                        cmd += b
     finally:
         micropython.kbd_intr(3)
+
+
+def raw_paste(s, window=512):
+    sys.stdout.write("R\x01")  # supported
+    sys.stdout.write(bytearray([window & 0xFF, window >> 8, 0x01]).decode())
+    eof = False
+    idx = 0
+    buff = bytearray(window)
+    file = b""
+    while not eof:
+        for idx in range(window):
+            b = s.read(1)
+            c = ord(b)
+            if c == CHAR_CTRL_C or c == CHAR_CTRL_D:
+                # end of file
+                sys.stdout.write(chr(CHAR_CTRL_D))
+                if c == CHAR_CTRL_C:
+                    raise KeyboardInterrupt
+                file += buff[:idx]
+                eof = True
+                break
+            buff[idx] = c
+
+        if not eof:
+            file += buff
+            sys.stdout.write("\x01")  # indicate window available to host
+
+    return file
+
+
+def raw_repl(s, g: dict):
+    """
+    This function is blocking to prevent other
+    async tasks from writing to the stdio stream and
+    breaking the raw repl session.
+    """
+    heading = "raw REPL; CTRL-B to exit\n"
+    line = ""
+    sys.stdout.write(heading)
+
+    while True:
+        line = ""
+        sys.stdout.write(">")
+        while True:
+            b = s.read(1)
+            c = ord(b)
+            if c == CHAR_CTRL_A:
+                rline = line
+                line = ""
+
+                if len(rline) == 2 and ord(rline[0]) == CHAR_CTRL_E:
+                    if rline[1] == "A":
+                        line = raw_paste(s)
+                        break
+                else:
+                    # reset raw REPL
+                    sys.stdout.write(heading)
+                    sys.stdout.write(">")
+                continue
+            elif c == CHAR_CTRL_B:
+                # exit raw REPL
+                sys.stdout.write("\n")
+                return 0
+            elif c == CHAR_CTRL_C:
+                # clear line
+                line = ""
+            elif c == CHAR_CTRL_D:
+                # entry finished
+                # indicate reception of command
+                sys.stdout.write("OK")
+                break
+            else:
+                # let through any other raw 8-bit value
+                line += b
+
+        if len(line) == 0:
+            # Normally used to trigger soft-reset but stay in raw mode.
+            # Fake it for aiorepl / mpremote.
+            sys.stdout.write("Ignored: soft reboot\n")
+            sys.stdout.write(heading)
+
+        try:
+            result = exec(line, g)
+            if result is not None:
+                sys.stdout.write(repr(result))
+            sys.stdout.write(chr(CHAR_CTRL_D))
+        except Exception as ex:
+            print(line)
+            sys.stdout.write(chr(CHAR_CTRL_D))
+            sys.print_exception(ex, sys.stdout)
+        sys.stdout.write(chr(CHAR_CTRL_D))

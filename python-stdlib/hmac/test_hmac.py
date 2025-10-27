@@ -8,7 +8,7 @@ import hashlib
 
 msg = b"zlutoucky kun upel dabelske ody"
 
-dig = hmac.new(b"1234567890", msg=msg, digestmod=hashlib.sha256).hexdigest()
+dig = hmac.new(b"1234567890", msg=msg, digestmod="sha256").hexdigest()
 
 print("c735e751e36b08fb01e25794bdb15e7289b82aecdb652c8f4f72f307b39dad39")
 print(dig)

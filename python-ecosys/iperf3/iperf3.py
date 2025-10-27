@@ -12,9 +12,12 @@ Usage:
     iperf3.client('192.168.1.5', udp=True, reverse=True)
 """
 
-import sys, struct
-import time, select, socket
 import json
+import select
+import socket
+import struct
+import sys
+import time
 
 # Provide a urandom() function, supporting devices without os.urandom().
 try:

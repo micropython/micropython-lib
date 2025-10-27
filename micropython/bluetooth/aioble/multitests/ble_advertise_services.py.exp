@@ -1,0 +1,8 @@
+--- instance0 ---
+advertise
+connected
+disconnected
+--- instance1 ---
+[UUID(0x180f), UUID(0x181a), UUID(0x32314241), UUID(0x34334443)]
+connect
+disconnect

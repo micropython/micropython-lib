@@ -3,7 +3,7 @@
 
 from micropython import const
 
-import uasyncio as asyncio
+import asyncio
 import binascii
 
 from .core import ble, register_irq_handler, log_error
@@ -132,14 +132,26 @@ class Device:
     def addr_hex(self):
         return binascii.hexlify(self.addr, ":").decode()
 
-    async def connect(self, timeout_ms=10000):
+    async def connect(
+        self,
+        timeout_ms=10000,
+        scan_duration_ms=None,
+        min_conn_interval_us=None,
+        max_conn_interval_us=None,
+    ):
         if self._connection:
             return self._connection
 
         # Forward to implementation in central.py.
         from .central import _connect
 
-        await _connect(DeviceConnection(self), timeout_ms)
+        await _connect(
+            DeviceConnection(self),
+            timeout_ms,
+            scan_duration_ms,
+            min_conn_interval_us,
+            max_conn_interval_us,
+        )
 
         # Start the device task that will clean up after disconnection.
         self._connection._run_task()
@@ -164,7 +176,7 @@ class DeviceConnection:
 
         # This event is fired by the IRQ both for connection and disconnection
         # and controls the device_task.
-        self._event = None
+        self._event = asyncio.ThreadSafeFlag()
 
         # If we're waiting for a pending MTU exchange.
         self._mtu_event = None
@@ -207,15 +219,12 @@ class DeviceConnection:
             t._task.cancel()
 
     def _run_task(self):
-        # Event will be already created this if we initiated connection.
-        self._event = self._event or asyncio.ThreadSafeFlag()
-
         self._task = asyncio.create_task(self.device_task())
 
     async def disconnect(self, timeout_ms=2000):
         await self.disconnected(timeout_ms, disconnect=True)
 
-    async def disconnected(self, timeout_ms=60000, disconnect=False):
+    async def disconnected(self, timeout_ms=None, disconnect=False):
         if not self.is_connected():
             return
 

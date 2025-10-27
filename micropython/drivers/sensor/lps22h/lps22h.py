@@ -37,6 +37,7 @@ while (True):
     print("Pressure: %.2f hPa Temperature: %.2f C"%(lps.pressure(), lps.temperature()))
     time.sleep_ms(10)
 """
+
 import machine
 from micropython import const
 

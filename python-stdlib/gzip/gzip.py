@@ -3,15 +3,15 @@
 
 _WBITS = const(15)
 
-import io, deflate
+import builtins, io, deflate
 
 
 def GzipFile(fileobj):
     return deflate.DeflateIO(fileobj, deflate.GZIP, _WBITS)
 
 
-def open(filename, mode):
-    return deflate.DeflateIO(open(filename, mode), deflate.GZIP, _WBITS, True)
+def open(filename, mode="rb"):
+    return deflate.DeflateIO(builtins.open(filename, mode), deflate.GZIP, _WBITS, True)
 
 
 if hasattr(deflate.DeflateIO, "write"):

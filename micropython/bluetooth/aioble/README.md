@@ -70,7 +70,7 @@ Alternatively, install the `aioble` package, which will install everything.
 Usage
 -----
 
-Passive scan for nearby devices for 5 seconds: (Observer)
+#### Passive scan for nearby devices for 5 seconds: (Observer)
 
 ```py
 async with aioble.scan(duration_ms=5000) as scanner:
@@ -87,7 +87,7 @@ async with aioble.scan(duration_ms=5000, interval_us=30000, window_us=30000, act
         print(result, result.name(), result.rssi, result.services())
 ```
 
-Connect to a peripheral device: (Central)
+#### Connect to a peripheral device: (Central)
 
 ```py
 # Either from scan result
@@ -101,14 +101,14 @@ except asyncio.TimeoutError:
     print('Timeout')
 ```
 
-Register services and wait for connection: (Peripheral, Server)
+#### Register services and wait for connection: (Peripheral, Server)
 
 ```py
 _ENV_SENSE_UUID = bluetooth.UUID(0x181A)
 _ENV_SENSE_TEMP_UUID = bluetooth.UUID(0x2A6E)
 _GENERIC_THERMOMETER = const(768)
 
-_ADV_INTERVAL_MS = const(250000)
+_ADV_INTERVAL_US = const(250000)
 
 temp_service = aioble.Service(_ENV_SENSE_UUID)
 temp_char = aioble.Characteristic(temp_service, _ENV_SENSE_TEMP_UUID, read=True, notify=True)
@@ -117,7 +117,7 @@ aioble.register_services(temp_service)
 
 while True:
     connection = await aioble.advertise(
-            _ADV_INTERVAL_MS,
+            _ADV_INTERVAL_US,
             name="temp-sense",
             services=[_ENV_SENSE_UUID],
             appearance=_GENERIC_THERMOMETER,
@@ -126,30 +126,95 @@ while True:
     print("Connection from", device)
 ```
 
-Update characteristic value: (Server)
+#### Update characteristic value: (Server)
 
 ```py
+# Write the local value.
 temp_char.write(b'data')
-
-temp_char.notify(b'optional data')
-
-await temp_char.indicate(timeout_ms=2000)
 ```
 
-Query the value of a characteristic: (Client)
+```py
+# Write the local value and notify/indicate subscribers.
+temp_char.write(b'data', send_update=True)
+```
+
+#### Send notifications: (Server)
+
+```py
+# Notify with the current value.
+temp_char.notify(connection)
+```
+
+```py
+# Notify with a custom value.
+temp_char.notify(connection, b'optional data')
+```
+
+#### Send indications: (Server)
+
+```py
+# Indicate with current value.
+await temp_char.indicate(connection, timeout_ms=2000)
+```
+
+```py
+# Indicate with custom value.
+await temp_char.indicate(connection, b'optional data', timeout_ms=2000)
+```
+
+This will raise `GattError` if the indication is not acknowledged.
+
+#### Wait for a write from the client: (Server)
+
+```py
+# Normal characteristic, returns the connection that did the write.
+connection = await char.written(timeout_ms=2000)
+```
+
+```py
+# Characteristic with capture enabled, also returns the value.
+char = Characteristic(..., capture=True)
+connection, data = await char.written(timeout_ms=2000)
+```
+
+#### Query the value of a characteristic: (Client)
 
 ```py
 temp_service = await connection.service(_ENV_SENSE_UUID)
 temp_char = await temp_service.characteristic(_ENV_SENSE_TEMP_UUID)
 
 data = await temp_char.read(timeout_ms=1000)
+```
 
+#### Wait for a notification/indication: (Client)
+
+```py
+# Notification
+data = await temp_char.notified(timeout_ms=1000)
+```
+
+```py
+# Indication
+data = await temp_char.indicated(timeout_ms=1000)
+```
+
+#### Subscribe to a characteristic: (Client)
+
+```py
+# Subscribe for notification.
 await temp_char.subscribe(notify=True)
 while True:
     data = await temp_char.notified()
 ```
 
-Open L2CAP channels: (Listener)
+```py
+# Subscribe for indication.
+await temp_char.subscribe(indicate=True)
+while True:
+    data = await temp_char.indicated()
+```
+
+#### Open L2CAP channels: (Listener)
 
 ```py
 channel = await connection.l2cap_accept(_L2CAP_PSN, _L2CAP_MTU)
@@ -158,7 +223,7 @@ n = channel.recvinto(buf)
 channel.send(b'response')
 ```
 
-Open L2CAP channels: (Initiator)
+#### Open L2CAP channels: (Initiator)
 
 ```py
 channel = await connection.l2cap_connect(_L2CAP_PSN, _L2CAP_MTU)

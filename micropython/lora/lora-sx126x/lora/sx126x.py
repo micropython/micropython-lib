@@ -152,7 +152,7 @@ class _SX126x(BaseModem):
             dio3_tcxo_start_time_us if dio3_tcxo_millivolts else 0
         )
 
-        self._buf = bytearray(9)  # shared buffer for commands
+        self._buf_view = memoryview(bytearray(9))  # shared buffer for commands
 
         # These settings are kept in the object (as can't read them back from the modem)
         self._output_power = 14
@@ -162,6 +162,9 @@ class _SX126x(BaseModem):
         # RampTime register value
         # 0x02 is 40us, default value appears undocumented but this is the SX1276 default
         self._ramp_val = 0x02
+
+        # Configure the SX126x at least once after reset
+        self._configured = False
 
         if reset:
             # If the caller supplies a reset pin argument, reset the radio
@@ -360,11 +363,11 @@ class _SX126x(BaseModem):
         if "preamble_len" in lora_cfg:
             self._preamble_len = lora_cfg["preamble_len"]
 
-        self._invert_iq = (
+        self._invert_iq = [
             lora_cfg.get("invert_iq_rx", self._invert_iq[0]),
             lora_cfg.get("invert_iq_tx", self._invert_iq[1]),
             self._invert_iq[2],
-        )
+        ]
 
         if "freq_khz" in lora_cfg:
             self._rf_freq_hz = int(lora_cfg["freq_khz"] * 1000)
@@ -383,24 +386,24 @@ class _SX126x(BaseModem):
                 # see
                 # https://www.thethingsnetwork.org/forum/t/should-private-lorawan-networks-use-a-different-sync-word/34496/15
                 syncword = 0x0404 + ((syncword & 0x0F) << 4) + ((syncword & 0xF0) << 8)
-            self._cmd(">BBH", _CMD_WRITE_REGISTER, _REG_LSYNCRH, syncword)
+            self._cmd(">BHH", _CMD_WRITE_REGISTER, _REG_LSYNCRH, syncword)
 
-        if "output_power" in lora_cfg:
+        if not self._configured or any(
+            key in lora_cfg for key in ("output_power", "pa_ramp_us", "tx_ant")
+        ):
             pa_config_args, self._output_power = self._get_pa_tx_params(
-                lora_cfg["output_power"], lora_cfg.get("tx_ant", None)
+                lora_cfg.get("output_power", self._output_power), lora_cfg.get("tx_ant", None)
             )
             self._cmd("BBBBB", _CMD_SET_PA_CONFIG, *pa_config_args)
 
-        if "pa_ramp_us" in lora_cfg:
-            self._ramp_val = self._get_pa_ramp_val(
-                lora_cfg, [10, 20, 40, 80, 200, 800, 1700, 3400]
-            )
+            if "pa_ramp_us" in lora_cfg:
+                self._ramp_val = self._get_pa_ramp_val(
+                    lora_cfg, [10, 20, 40, 80, 200, 800, 1700, 3400]
+                )
 
-        if "output_power" in lora_cfg or "pa_ramp_us" in lora_cfg:
-            # Only send the SetTxParams command if power level or PA ramp time have changed
             self._cmd("BBB", _CMD_SET_TX_PARAMS, self._output_power, self._ramp_val)
 
-        if any(key in lora_cfg for key in ("sf", "bw", "coding_rate")):
+        if not self._configured or any(key in lora_cfg for key in ("sf", "bw", "coding_rate")):
             if "sf" in lora_cfg:
                 self._sf = lora_cfg["sf"]
                 if self._sf < _CFG_SF_MIN or self._sf > _CFG_SF_MAX:
@@ -441,11 +444,12 @@ class _SX126x(BaseModem):
             self._reg_write(_REG_RX_GAIN, 0x96 if lora_cfg["rx_boost"] else 0x94)
 
         self._check_error()
+        self._configured = True
 
     def _invert_workaround(self, enable):
         # Apply workaround for DS 15.4 Optimizing the Inverted IQ Operation
         if self._invert_iq[2] != enable:
-            val = self._read_read(_REG_IQ_POLARITY_SETUP)
+            val = self._reg_read(_REG_IQ_POLARITY_SETUP)
             val = (val & ~4) | _flag(4, enable)
             self._reg_write(_REG_IQ_POLARITY_SETUP, val)
             self._invert_iq[2] = enable
@@ -465,7 +469,7 @@ class _SX126x(BaseModem):
         # See DS 13.1.12 Calibrate Function
 
         # calibParam 0xFE means to calibrate all blocks.
-        self._cmd("<BB", _CMD_CALIBRATE, 0xFE)
+        self._cmd("BB", _CMD_CALIBRATE, 0xFE)
 
         time.sleep_us(_CALIBRATE_TYPICAL_TIME_US)
 
@@ -541,7 +545,7 @@ class _SX126x(BaseModem):
         else:
             timeout = 0  # Single receive mode, no timeout
 
-        self._cmd(">BBH", _CMD_SET_RX, timeout >> 16, timeout)
+        self._cmd(">BBH", _CMD_SET_RX, timeout >> 16, timeout)  # 24 bits
 
         return self._dio1
 
@@ -592,8 +596,9 @@ class _SX126x(BaseModem):
         pkt_status = self._cmd("B", _CMD_GET_PACKET_STATUS, n_read=4)
 
         rx_packet.ticks_ms = ticks_ms
-        rx_packet.snr = pkt_status[2]  # SNR, units: dB *4
-        rx_packet.rssi = 0 - pkt_status[1] // 2  # RSSI, units: dBm
+        # SNR units are dB * 4 (signed)
+        rx_packet.rssi, rx_packet.snr = struct.unpack("xBbx", pkt_status)
+        rx_packet.rssi //= -2  # RSSI, units: dBm
         rx_packet.crc_error = (flags & _IRQ_CRC_ERR) != 0
 
         return rx_packet
@@ -700,11 +705,11 @@ class _SX126x(BaseModem):
         # have happened well before _cmd() is called again.
         self._wait_not_busy(self._busy_timeout)
 
-        # Pack write_args into _buf and wrap a memoryview of the correct length around it
+        # Pack write_args into slice of _buf_view memoryview of correct length
         wrlen = struct.calcsize(fmt)
-        assert n_read + wrlen <= len(self._buf)  # if this fails, make _buf bigger!
-        struct.pack_into(fmt, self._buf, 0, *write_args)
-        buf = memoryview(self._buf)[: (wrlen + n_read)]
+        assert n_read + wrlen <= len(self._buf_view)  # if this fails, make _buf bigger!
+        struct.pack_into(fmt, self._buf_view, 0, *write_args)
+        buf = self._buf_view[: (wrlen + n_read)]
 
         if _DEBUG:
             print(">>> {}".format(buf[:wrlen].hex()))
@@ -719,16 +724,16 @@ class _SX126x(BaseModem):
         self._cs(1)
 
         if n_read > 0:
-            res = memoryview(buf)[wrlen : (wrlen + n_read)]  # noqa: E203
+            res = self._buf_view[wrlen : (wrlen + n_read)]  # noqa: E203
             if _DEBUG:
                 print("<<< {}".format(res.hex()))
             return res
 
     def _reg_read(self, addr):
-        return self._cmd("BBBB", _CMD_READ_REGISTER, addr >> 8, addr & 0xFF, n_read=1)[0]
+        return self._cmd(">BHB", _CMD_READ_REGISTER, addr, 0, n_read=1)[0]
 
     def _reg_write(self, addr, val):
-        return self._cmd("BBBB", _CMD_WRITE_REGISTER, addr >> 8, addr & 0xFF, val & 0xFF)
+        return self._cmd(">BHB", _CMD_WRITE_REGISTER, addr, val & 0xFF)
 
 
 class _SX1262(_SX126x):

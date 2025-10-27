@@ -16,11 +16,12 @@
 
 import sys
 
+# ruff: noqa: E402
 sys.path.append("")
 
 from micropython import const
 
-import uasyncio as asyncio
+import asyncio
 import aioble
 import bluetooth
 
@@ -82,7 +83,7 @@ async def l2cap_task(connection):
 
             if send_file:
                 print("Sending:", send_file)
-                with open(send_file, "rb") as f:  # noqa: ASYNC101
+                with open(send_file, "rb") as f:  # noqa: ASYNC230
                     buf = bytearray(channel.peer_mtu)
                     mv = memoryview(buf)
                     while n := f.readinto(buf):
@@ -132,15 +133,12 @@ async def control_task(connection):
                 file = msg[2:].decode()
 
                 if command == _COMMAND_SEND:
-                    op_seq = seq
                     send_file = file
                     l2cap_event.set()
                 elif command == _COMMAND_RECV:
-                    op_seq = seq
                     recv_file = file
                     l2cap_event.set()
                 elif command == _COMMAND_LIST:
-                    op_seq = seq
                     list_path = file
                     l2cap_event.set()
                 elif command == _COMMAND_SIZE:
@@ -148,7 +146,7 @@ async def control_task(connection):
                         stat = os.stat(file)
                         size = stat[6]
                         status = 0
-                    except OSError as e:
+                    except OSError:
                         size = 0
                         status = _STATUS_NOT_FOUND
                     control_characteristic.notify(

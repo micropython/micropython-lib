@@ -1,3 +1,3 @@
-metadata(version="0.6.0")
+metadata(version="0.6.2")
 
 module("logging.py")

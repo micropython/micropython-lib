@@ -1,6 +1,6 @@
 from utime import *
-from ucollections import namedtuple
-import ustruct
+from collections import namedtuple
+import struct
 import uctypes
 import ffi
 import ffilib
@@ -34,13 +34,13 @@ _struct_time = namedtuple(
 
 
 def _tuple_to_c_tm(t):
-    return ustruct.pack(
+    return struct.pack(
         "@iiiiiiiii", t[5], t[4], t[3], t[2], t[1] - 1, t[0] - 1900, (t[6] + 1) % 7, t[7] - 1, t[8]
     )
 
 
 def _c_tm_to_tuple(tm):
-    t = ustruct.unpack("@iiiiiiiii", tm)
+    t = struct.unpack("@iiiiiiiii", tm)
     return _struct_time(
         t[5] + 1900, t[4] + 1, t[3], t[2], t[1], t[0], (t[6] - 1) % 7, t[7] + 1, t[8]
     )
@@ -64,7 +64,7 @@ def localtime(t=None):
         t = time()
 
     t = int(t)
-    a = ustruct.pack("l", t)
+    a = struct.pack("l", t)
     tm_p = localtime_(a)
     return _c_tm_to_tuple(uctypes.bytearray_at(tm_p, 36))
 
@@ -74,7 +74,7 @@ def gmtime(t=None):
         t = time()
 
     t = int(t)
-    a = ustruct.pack("l", t)
+    a = struct.pack("l", t)
     tm_p = gmtime_(a)
     return _c_tm_to_tuple(uctypes.bytearray_at(tm_p, 36))
 

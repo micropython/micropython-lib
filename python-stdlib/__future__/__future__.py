@@ -5,3 +5,4 @@ absolute_import = True
 with_statement = True
 print_function = True
 unicode_literals = True
+annotations = True

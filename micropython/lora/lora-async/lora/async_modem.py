@@ -109,7 +109,7 @@ class AsyncModem:
             await asyncio.sleep_ms(timeout_ms)
 
         if _DEBUG:
-            print(f"wait complete")
+            print("wait complete")
 
     def _callback(self):
         # IRQ callback from BaseModem._radio_isr. May be in Hard IRQ context.

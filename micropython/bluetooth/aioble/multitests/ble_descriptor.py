@@ -2,12 +2,14 @@
 
 import sys
 
+# ruff: noqa: E402
 sys.path.append("")
 
 from micropython import const
-import time, machine
+import machine
+import time
 
-import uasyncio as asyncio
+import asyncio
 import aioble
 import bluetooth
 
@@ -32,9 +34,7 @@ async def instance0_task():
     char1_desc1.write("char1_desc1")
     char1_desc2 = aioble.Descriptor(char1, CHAR1_DESC2_UUID, read=True, write=True)
     char1_desc2.write("char1_desc2")
-    char2 = aioble.Characteristic(
-        service, CHAR2_UUID, read=True, write=True, notify=True, indicate=True
-    )
+    aioble.Characteristic(service, CHAR2_UUID, read=True, write=True, notify=True, indicate=True)
     char3 = aioble.Characteristic(
         service, CHAR3_UUID, read=True, write=True, notify=True, indicate=True
     )

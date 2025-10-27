@@ -1,5 +1,5 @@
 import time
-import ubinascii
+import binascii
 import machine
 from umqtt.simple import MQTTClient
 from machine import Pin
@@ -10,7 +10,7 @@ button = Pin(0, Pin.IN)
 
 # Default MQTT server to connect to
 SERVER = "192.168.1.35"
-CLIENT_ID = ubinascii.hexlify(machine.unique_id())
+CLIENT_ID = binascii.hexlify(machine.unique_id())
 TOPIC = b"led"
 
 

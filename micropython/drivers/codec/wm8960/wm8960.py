@@ -331,8 +331,7 @@ class WM8960:
                 sysclk = 11289600
             else:
                 sysclk = 12288000
-            if sysclk < sample_rate * 256:
-                sysclk = sample_rate * 256
+            sysclk = max(sysclk, sample_rate * 256)
             if mclk_freq is None:
                 mclk_freq = sysclk
         else:  # sysclk_source == SYSCLK_MCLK
@@ -691,10 +690,8 @@ class WM8960:
     def alc_gain(self, target=-12, max_gain=30, min_gain=-17.25, noise_gate=-78):
         def limit(value, minval, maxval):
             value = int(value)
-            if value < minval:
-                value = minval
-            if value > maxval:
-                value = maxval
+            value = max(value, minval)
+            value = min(value, maxval)
             return value
 
         target = limit((16 + (target * 2) // 3), 0, 15)
@@ -718,8 +715,7 @@ class WM8960:
             while value > 1:
                 value >>= 1
                 lb += 1
-            if lb > limit:
-                lb = limit
+            lb = min(lb, limit)
             return lb
 
         attack = logb(attack / 6, 7)

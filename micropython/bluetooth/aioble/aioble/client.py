@@ -3,7 +3,7 @@
 
 from micropython import const
 from collections import deque
-import uasyncio as asyncio
+import asyncio
 import struct
 
 import bluetooth

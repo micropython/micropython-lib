@@ -5,11 +5,12 @@
 
 import sys
 
+# ruff: noqa: E402
 sys.path.append("")
 
 from micropython import const
 
-import uasyncio as asyncio
+import asyncio
 import aioble
 import bluetooth
 
@@ -85,9 +86,9 @@ class FileClient:
     async def download(self, path, dest):
         size = await self.size(path)
 
-        send_seq = await self._command(_COMMAND_SEND, path.encode())
+        await self._command(_COMMAND_SEND, path.encode())
 
-        with open(dest, "wb") as f:  # noqa: ASYNC101
+        with open(dest, "wb") as f:  # noqa: ASYNC230
             total = 0
             buf = bytearray(self._channel.our_mtu)
             mv = memoryview(buf)
@@ -97,7 +98,7 @@ class FileClient:
                 total += n
 
     async def list(self, path):
-        send_seq = await self._command(_COMMAND_LIST, path.encode())
+        await self._command(_COMMAND_LIST, path.encode())
         results = bytearray()
         buf = bytearray(self._channel.our_mtu)
         mv = memoryview(buf)

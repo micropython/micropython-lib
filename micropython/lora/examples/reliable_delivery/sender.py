@@ -149,7 +149,7 @@ class Sender:
                 delta = time.ticks_diff(maybe_ack.ticks_ms, sent_at)
                 print(
                     f"ACKed with RSSI {rssi}, {delta}ms after sent "
-                    + f"(skew {delta-ACK_DELAY_MS-ack_packet_ms}ms)"
+                    + f"(skew {delta - ACK_DELAY_MS - ack_packet_ms}ms)"
                 )
 
                 if adjust_output_power:

@@ -185,9 +185,7 @@ urls = {{ Homepage = "https://github.com/micropython/micropython-lib" }}
             """
 [tool.hatch.build]
 packages = ["{}"]
-""".format(
-                top_level_package
-            ),
+""".format(top_level_package),
             file=toml_file,
         )
 

@@ -1,15 +1,15 @@
-import uio
-import usocket
+import io
+import socket
 
 import udnspkt
 
 
-s = usocket.socket(usocket.AF_INET, usocket.SOCK_DGRAM)
-dns_addr = usocket.getaddrinfo("127.0.0.1", 53)[0][-1]
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+dns_addr = socket.getaddrinfo("127.0.0.1", 53)[0][-1]
 
 
 def resolve(domain, is_ipv6):
-    buf = uio.BytesIO(48)
+    buf = io.BytesIO(48)
     udnspkt.make_req(buf, "google.com", is_ipv6)
     v = buf.getvalue()
     print("query: ", v)
@@ -17,11 +17,11 @@ def resolve(domain, is_ipv6):
 
     resp = s.recv(1024)
     print("resp:", resp)
-    buf = uio.BytesIO(resp)
+    buf = io.BytesIO(resp)
 
     addr = udnspkt.parse_resp(buf, is_ipv6)
     print("bin addr:", addr)
-    print("addr:", usocket.inet_ntop(usocket.AF_INET6 if is_ipv6 else usocket.AF_INET, addr))
+    print("addr:", socket.inet_ntop(socket.AF_INET6 if is_ipv6 else socket.AF_INET, addr))
 
 
 resolve("google.com", False)

@@ -23,7 +23,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-
 from .senml_base import SenmlBase
 from .senml_pack import SenmlPack
 from .senml_record import SenmlRecord

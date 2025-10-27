@@ -1,6 +1,6 @@
-import usocket as socket
-import ustruct as struct
-from ubinascii import hexlify
+import socket
+import struct
+from binascii import hexlify
 
 
 class MQTTException(Exception):
@@ -16,7 +16,7 @@ class MQTTClient:
         user=None,
         password=None,
         keepalive=0,
-        ssl=False,
+        ssl=None,
         ssl_params={},
     ):
         if port == 0:
@@ -62,20 +62,24 @@ class MQTTClient:
         self.lw_qos = qos
         self.lw_retain = retain
 
-    def connect(self, clean_session=True):
+    def connect(self, clean_session=True, timeout=None):
         self.sock = socket.socket()
+        self.sock.settimeout(timeout)
         addr = socket.getaddrinfo(self.server, self.port)[0][-1]
         self.sock.connect(addr)
-        if self.ssl:
-            import ussl
+        if self.ssl is True:
+            # Legacy support for ssl=True and ssl_params arguments.
+            import ssl
 
-            self.sock = ussl.wrap_socket(self.sock, **self.ssl_params)
+            self.sock = ssl.wrap_socket(self.sock, **self.ssl_params)
+        elif self.ssl:
+            self.sock = self.ssl.wrap_socket(self.sock, server_hostname=self.server)
         premsg = bytearray(b"\x10\0\0\0\0\0")
         msg = bytearray(b"\x04MQTT\x04\x02\0\0")
 
         sz = 10 + 2 + len(self.client_id)
         msg[6] = clean_session << 1
-        if self.user is not None:
+        if self.user:
             sz += 2 + len(self.user) + 2 + len(self.pswd)
             msg[6] |= 0xC0
         if self.keepalive:
@@ -101,7 +105,7 @@ class MQTTClient:
         if self.lw_topic:
             self._send_str(self.lw_topic)
             self._send_str(self.lw_msg)
-        if self.user is not None:
+        if self.user:
             self._send_str(self.user)
             self._send_str(self.pswd)
         resp = self.sock.read(4)

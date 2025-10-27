@@ -52,7 +52,7 @@ class HTS221:
 
         # Set configuration register
         # Humidity and temperature average configuration
-        self.bus.writeto_mem(self.slv_addr, 0x10, b"\x1B")
+        self.bus.writeto_mem(self.slv_addr, 0x10, b"\x1b")
 
         # Set control register
         # PD | BDU | ODR

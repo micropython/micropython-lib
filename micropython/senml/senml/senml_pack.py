@@ -23,12 +23,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 
-
 from senml.senml_record import SenmlRecord
 from senml.senml_base import SenmlBase
 import json
-from cbor2 import encoder
-from cbor2 import decoder
+import cbor2
 
 
 class SenmlPackIterator:
@@ -278,7 +276,7 @@ class SenmlPack(SenmlBase):
         :param data: a byte array.
         :return: None
         """
-        records = decoder.loads(data)  # load the raw senml data
+        records = cbor2.loads(data)  # load the raw senml data
         naming_map = {
             "bn": -2,
             "bt": -3,
@@ -320,7 +318,7 @@ class SenmlPack(SenmlBase):
         }
         converted = []
         self._build_rec_dict(naming_map, converted)
-        return encoder.dumps(converted)
+        return cbor2.dumps(converted)
 
     def add(self, item):
         """

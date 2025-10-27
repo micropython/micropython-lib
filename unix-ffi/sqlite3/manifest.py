@@ -1,7 +1,7 @@
-metadata(version="0.2.4")
+metadata(version="0.3.0")
 
 # Originally written by Paul Sokolovsky.
 
-require("ffilib", unix_ffi=True)
+require("ffilib")
 
 module("sqlite3.py")

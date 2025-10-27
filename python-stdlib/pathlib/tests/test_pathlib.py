@@ -330,3 +330,14 @@ class TestPathlib(unittest.TestCase):
 
         with self.assertRaises(RuntimeError):
             Path("~foo").expanduser()
+
+    def test_rtruediv(self):
+        """Works as of micropython ea7031f"""
+        res = "foo" / Path("bar")
+        self.assertTrue(res == Path("foo/bar"))
+
+    def test_rtruediv_inplace(self):
+        """Works as of micropython ea7031f"""
+        res = "foo"
+        res /= Path("bar")
+        self.assertTrue(res == Path("foo/bar"))

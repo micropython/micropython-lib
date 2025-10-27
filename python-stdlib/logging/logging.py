@@ -58,6 +58,7 @@ class Handler:
 
 class StreamHandler(Handler):
     def __init__(self, stream=None):
+        super().__init__()
         self.stream = _stream if stream is None else stream
         self.terminator = "\n"
 
@@ -201,8 +202,8 @@ def critical(msg, *args):
     getLogger().critical(msg, *args)
 
 
-def exception(msg, *args):
-    getLogger().exception(msg, *args)
+def exception(msg, *args, exc_info=True):
+    getLogger().exception(msg, *args, exc_info=exc_info)
 
 
 def shutdown():

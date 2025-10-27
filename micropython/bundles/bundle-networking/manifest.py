@@ -1,10 +1,11 @@
 metadata(
-    version="0.1.0",
+    version="0.2.0",
     description="Common networking packages for all network-capable deployments of MicroPython.",
 )
 
 require("mip")
 require("ntptime")
+require("ssl")
 require("requests")
 require("webrepl")
 

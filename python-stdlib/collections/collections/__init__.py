@@ -6,10 +6,6 @@ try:
     from .defaultdict import defaultdict
 except ImportError:
     pass
-try:
-    from .deque import deque
-except ImportError:
-    pass
 
 
 class MutableMapping:

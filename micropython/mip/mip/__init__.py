@@ -9,6 +9,8 @@ import sys
 _PACKAGE_INDEX = const("https://micropython.org/pi/v2")
 _CHUNK_SIZE = 128
 
+allowed_mip_url_prefixes = ("http://", "https://", "github:", "gitlab:")
+
 
 # This implements os.makedirs(os.dirname(path))
 def _ensure_path_exists(path):
@@ -73,6 +75,18 @@ def _rewrite_url(url, branch=None):
             + "/"
             + "/".join(url[2:])
         )
+    elif url.startswith("gitlab:"):
+        url = url[7:].split("/")
+        url = (
+            "https://gitlab.com/"
+            + url[0]
+            + "/"
+            + url[1]
+            + "/-/raw/"
+            + branch
+            + "/"
+            + "/".join(url[2:])
+        )
     return url
 
 
@@ -112,8 +126,12 @@ def _install_json(package_json_url, index, target, version, mpy):
             if not _download_file(file_url, fs_target_path):
                 print("File not found: {} {}".format(target_path, short_hash))
                 return False
+    base_url = package_json_url.rpartition("/")[0]
     for target_path, url in package_json.get("urls", ()):
         fs_target_path = target + "/" + target_path
+        is_full_url = any(url.startswith(p) for p in allowed_mip_url_prefixes)
+        if base_url and not is_full_url:
+            url = f"{base_url}/{url}"  # Relative URLs
         if not _download_file(_rewrite_url(url, version), fs_target_path):
             print("File not found: {} {}".format(target_path, url))
             return False
@@ -124,11 +142,7 @@ def _install_json(package_json_url, index, target, version, mpy):
 
 
 def _install_package(package, index, target, version, mpy):
-    if (
-        package.startswith("http://")
-        or package.startswith("https://")
-        or package.startswith("github:")
-    ):
+    if any(package.startswith(p) for p in allowed_mip_url_prefixes):
         if package.endswith(".py") or package.endswith(".mpy"):
             print("Downloading {} to {}".format(package, target))
             return _download_file(
@@ -157,7 +171,7 @@ def _install_package(package, index, target, version, mpy):
 def install(package, index=None, target=None, version=None, mpy=True):
     if not target:
         for p in sys.path:
-            if p.endswith("/lib"):
+            if not p.startswith("/rom") and p.endswith("/lib"):
                 target = p
                 break
         else:

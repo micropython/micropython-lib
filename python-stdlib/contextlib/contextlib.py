@@ -85,13 +85,13 @@ class ExitStack(object):
     """
 
     def __init__(self):
-        self._exit_callbacks = deque()
+        self._exit_callbacks = []
 
     def pop_all(self):
         """Preserve the context stack by transferring it to a new instance"""
         new_stack = type(self)()
         new_stack._exit_callbacks = self._exit_callbacks
-        self._exit_callbacks = deque()
+        self._exit_callbacks = []
         return new_stack
 
     def _push_cm_exit(self, cm, cm_exit):

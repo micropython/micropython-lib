@@ -2,9 +2,10 @@
 # MIT license; Copyright (c) 2017 Damien P. George
 
 from micropython import const
+import machine
 from utime import sleep_ms
 from ustruct import calcsize, pack_into
-import uerrno, machine
+import errno
 
 # for set_orient
 PORTRAIT = const(0)
@@ -109,7 +110,7 @@ class LCD160CR:
                 return
             t -= 1
             sleep_ms(1)
-        raise OSError(uerrno.ETIMEDOUT)
+        raise OSError(errno.ETIMEDOUT)
 
     def oflush(self, n=255):
         t = 5000
@@ -120,7 +121,7 @@ class LCD160CR:
                 return
             t -= 1
             machine.idle()
-        raise OSError(uerrno.ETIMEDOUT)
+        raise OSError(errno.ETIMEDOUT)
 
     def iflush(self):
         t = 5000
@@ -130,7 +131,7 @@ class LCD160CR:
                 return
             t -= 1
             sleep_ms(1)
-        raise OSError(uerrno.ETIMEDOUT)
+        raise OSError(errno.ETIMEDOUT)
 
     #### MISC METHODS ####
 
@@ -188,10 +189,8 @@ class LCD160CR:
                         c[3] = h - 1
                 else:
                     if c[0] == c[2]:
-                        if c[1] < 0:
-                            c[1] = 0
-                        if c[3] < 0:
-                            c[3] = 0
+                        c[1] = max(c[1], 0)
+                        c[3] = max(c[3], 0)
                     else:
                         if c[3] < c[1]:
                             c[0], c[2] = c[2], c[0]
@@ -253,7 +252,7 @@ class LCD160CR:
                 return self.buf[3][1] | self.buf[3][2] << 8
             t -= 1
             sleep_ms(1)
-        raise OSError(uerrno.ETIMEDOUT)
+        raise OSError(errno.ETIMEDOUT)
 
     def get_line(self, x, y, buf):
         l = len(buf) // 2
@@ -267,7 +266,7 @@ class LCD160CR:
                 return
             t -= 1
             sleep_ms(1)
-        raise OSError(uerrno.ETIMEDOUT)
+        raise OSError(errno.ETIMEDOUT)
 
     def screen_dump(self, buf, x=0, y=0, w=None, h=None):
         if w is None:

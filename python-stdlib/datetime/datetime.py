@@ -1,37 +1,22 @@
 # datetime.py
 
-import time as _tmod
-
-_DBM = (0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334)
-_DIM = (0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
-_TIME_SPEC = ("auto", "hours", "minutes", "seconds", "milliseconds", "microseconds")
+import time as _t
 
 
 def _leap(y):
     return y % 4 == 0 and (y % 100 != 0 or y % 400 == 0)
 
 
-def _dby(y):
-    # year -> number of days before January 1st of year.
-    Y = y - 1
-    return Y * 365 + Y // 4 - Y // 100 + Y // 400
-
-
 def _dim(y, m):
     # year, month -> number of days in that month in that year.
     if m == 2 and _leap(y):
         return 29
-    return _DIM[m]
+    return (0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)[m]
 
 
 def _dbm(y, m):
     # year, month -> number of days in year preceding first day of month.
-    return _DBM[m] + (m > 2 and _leap(y))
-
-
-def _ymd2o(y, m, d):
-    # y, month, day -> ordinal, considering 01-Jan-0001 as day 1.
-    return _dby(y) + _dbm(y, m) + d
+    return (0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334)[m] + (m > 2 and _leap(y))
 
 
 def _o2ymd(n):
@@ -73,7 +58,7 @@ class timedelta:
 
     @property
     def days(self):
-        return self._tuple(2)[0]
+        return self._tuple(1)
 
     @property
     def seconds(self):
@@ -145,7 +130,7 @@ class timedelta:
         return self._us != 0
 
     def __str__(self):
-        return self._format(0x40)
+        return self._fmt(0x40)
 
     def __hash__(self):
         if not hasattr(self, "_hash"):
@@ -153,9 +138,9 @@ class timedelta:
         return self._hash
 
     def isoformat(self):
-        return self._format(0)
+        return self._fmt(0)
 
-    def _format(self, spec=0):
+    def _fmt(self, spec=0):
         if self._us >= 0:
             td = self
             g = ""
@@ -201,8 +186,8 @@ class timedelta:
 
     def _tuple(self, n):
         d, us = divmod(self._us, 86_400_000_000)
-        if n == 2:
-            return d, us
+        if n == 1:
+            return d
         s, us = divmod(us, 1_000_000)
         if n == 3:
             return d, s, us
@@ -241,7 +226,7 @@ class tzinfo:
         return dt + dtdst
 
     def isoformat(self, dt):
-        return self.utcoffset(dt)._format(0x12)
+        return self.utcoffset(dt)._fmt(0x12)
 
 
 class timezone(tzinfo):
@@ -276,7 +261,7 @@ class timezone(tzinfo):
     def tzname(self, dt):
         if self._name:
             return self._name
-        return self._offset._format(0x22)
+        return self._offset._fmt(0x22)
 
     def fromutc(self, dt):
         return dt + self._offset
@@ -287,7 +272,11 @@ timezone.utc = timezone(timedelta(0))
 
 def _date(y, m, d):
     if MINYEAR <= y <= MAXYEAR and 1 <= m <= 12 and 1 <= d <= _dim(y, m):
-        return _ymd2o(y, m, d)
+        # year -> number of days before January 1st of year.
+        Y = y - 1
+        _dby = Y * 365 + Y // 4 - Y // 100 + Y // 400
+        # y, month, day -> ordinal, considering 01-Jan-0001 as day 1.
+        return _dby + _dbm(y, m) + d
     elif y == 0 and m == 0 and 1 <= d <= 3_652_059:
         return d
     else:
@@ -310,11 +299,11 @@ class date:
 
     @classmethod
     def fromtimestamp(cls, ts):
-        return cls(*_tmod.localtime(ts)[:3])
+        return cls(*_t.localtime(ts)[:3])
 
     @classmethod
     def today(cls):
-        return cls(*_tmod.localtime()[:3])
+        return cls(*_t.localtime()[:3])
 
     @classmethod
     def fromordinal(cls, n):
@@ -490,7 +479,9 @@ def _iso2t(s):
 
 
 def _t2iso(td, timespec, dt, tz):
-    s = td._format(_TIME_SPEC.index(timespec))
+    s = td._fmt(
+        ("auto", "hours", "minutes", "seconds", "milliseconds", "microseconds").index(timespec)
+    )
     if tz is not None:
         s += tz.isoformat(dt)
     return s
@@ -633,15 +624,18 @@ class datetime:
         else:
             us = 0
         if tz is None:
-            raise NotImplementedError
+            dt = cls(*_t.localtime(ts)[:6], microsecond=us, tzinfo=tz)
+            s = (dt - datetime(*_t.localtime(ts - 86400)[:6]))._us // 1_000_000 - 86400
+            if s < 0 and dt == datetime(*_t.localtime(ts + s)[:6]):
+                dt._fd = 1
         else:
-            dt = cls(*_tmod.gmtime(ts)[:6], microsecond=us, tzinfo=tz)
+            dt = cls(*_t.gmtime(ts)[:6], microsecond=us, tzinfo=tz)
             dt = tz.fromutc(dt)
         return dt
 
     @classmethod
     def now(cls, tz=None):
-        return cls.fromtimestamp(_tmod.time(), tz)
+        return cls.fromtimestamp(_t.time(), tz)
 
     @classmethod
     def fromordinal(cls, n):
@@ -810,12 +804,44 @@ class datetime:
             return self
         _tz = self._tz
         if _tz is None:
-            raise NotImplementedError
+            ts = int(self._mktime())
+            os = datetime(*_t.localtime(ts)[:6]) - datetime(*_t.gmtime(ts)[:6])
         else:
             os = _tz.utcoffset(self)
         utc = self - os
         utc = utc.replace(tzinfo=tz)
         return tz.fromutc(utc)
+
+    def _mktime(self):
+        def local(u):
+            return (datetime(*_t.localtime(u)[:6]) - epoch)._us // 1_000_000
+
+        epoch = datetime.EPOCH.replace(tzinfo=None)
+        t, us = divmod((self - epoch)._us, 1_000_000)
+        ts = None
+
+        a = local(t) - t
+        u1 = t - a
+        t1 = local(u1)
+        if t1 == t:
+            u2 = u1 + (86400 if self.fold else -86400)
+            b = local(u2) - u2
+            if a == b:
+                ts = u1
+        else:
+            b = t1 - u1
+        if ts is None:
+            u2 = t - b
+            t2 = local(u2)
+            if t2 == t:
+                ts = u2
+            elif t1 == t:
+                ts = u1
+            elif self.fold:
+                ts = min(u1, u2)
+            else:
+                ts = max(u1, u2)
+        return ts + us / 1_000_000
 
     def utcoffset(self):
         return None if self._tz is None else self._tz.utcoffset(self)
@@ -828,10 +854,10 @@ class datetime:
 
     def timetuple(self):
         if self._tz is None:
-            conv = _tmod.gmtime
+            conv = _t.gmtime
             epoch = datetime.EPOCH.replace(tzinfo=None)
         else:
-            conv = _tmod.localtime
+            conv = _t.localtime
             epoch = datetime.EPOCH
         return conv(round((self - epoch).total_seconds()))
 
@@ -840,7 +866,7 @@ class datetime:
 
     def timestamp(self):
         if self._tz is None:
-            raise NotImplementedError
+            return self._mktime()
         else:
             return (self - datetime.EPOCH).total_seconds()
 
@@ -874,4 +900,4 @@ class datetime:
         return d + t + (self._tz, self._fd)
 
 
-datetime.EPOCH = datetime(*_tmod.gmtime(0)[:6], tzinfo=timezone.utc)
+datetime.EPOCH = datetime(*_t.gmtime(0)[:6], tzinfo=timezone.utc)

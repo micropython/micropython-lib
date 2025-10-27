@@ -54,19 +54,17 @@ select = [
   # "UP",   # pyupgrade
 ]
 ignore = [
-  "E401",
-  "E402",
   "E722",
-  "E741",
+  "E741",  # 'l' is currently widely used
   "F401",
   "F403",
   "F405",
-  "F541",
-  "F841",
+  "E501",  # line length, recommended to disable
+  "ISC001",
   "ISC003",  # micropython does not support implicit concatenation of f-strings
   "PIE810",  # micropython does not support passing tuples to .startswith or .endswith
   "PLC1901",
-  "PLR1701",
+  "PLR1704",  # sometimes desirable to redefine an argument to save code size
   "PLR1714",
   "PLR5501",
   "PLW0602",
@@ -74,8 +72,10 @@ ignore = [
   "PLW2901",
   "RUF012",
   "RUF100",
+  "SIM101",
+  "W191",  # tab-indent, redundant when using formatter
 ]
-line-length = 260
+line-length = 99
 target-version = "py37"
 
 [tool.ruff.mccabe]
@@ -97,3 +97,5 @@ max-statements = 166
 
 # ble multitests are evaluated with some names pre-defined
 "micropython/bluetooth/aioble/multitests/*" = ["F821"]
+
+[tool.ruff.format]

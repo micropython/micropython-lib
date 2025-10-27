@@ -64,7 +64,7 @@
 
 # index.json is:
 # {
-#   "v": 1,                      <-- file format version
+#   "v": 2,                      <-- file format version
 #   "updated": <utc-seconds-since-1970>,
 #   "packages": {
 #     {
@@ -78,7 +78,9 @@
 #         "7": ["0.2", "0.3", "0.4"],
 #         ...                    <-- Other bytecode versions
 #         "py": ["0.1", "0.2", "0.3", "0.4"]
-#       }
+#       },
+#       // The following entries were added in file format version 2.
+#       path: "micropython/bluetooth/aioble",
 #     },
 #     ...
 #   }
@@ -122,7 +124,7 @@ import tempfile
 import time
 
 
-_JSON_VERSION_INDEX = 1
+_JSON_VERSION_INDEX = 2
 _JSON_VERSION_PACKAGE = 1
 
 
@@ -268,7 +270,7 @@ def _copy_as_py(
 
 # Update to the latest metadata, and add any new versions to the package in
 # the index json.
-def _update_index_package_metadata(index_package_json, metadata, mpy_version):
+def _update_index_package_metadata(index_package_json, metadata, mpy_version, package_path):
     index_package_json["version"] = metadata.version or ""
     index_package_json["author"] = ""  # TODO: Make manifestfile.py capture this.
     index_package_json["description"] = metadata.description or ""
@@ -282,6 +284,9 @@ def _update_index_package_metadata(index_package_json, metadata, mpy_version):
             if metadata.version not in index_package_json["versions"][v]:
                 print("  New version {}={}".format(v, metadata.version))
                 index_package_json["versions"][v].append(metadata.version)
+
+    # The following entries were added in file format version 2.
+    index_package_json["path"] = package_path
 
 
 def build(output_path, hash_prefix_len, mpy_cross_path):
@@ -318,7 +323,8 @@ def build(output_path, hash_prefix_len, mpy_cross_path):
 
     for lib_dir in lib_dirs:
         for manifest_path in glob.glob(os.path.join(lib_dir, "**", "manifest.py"), recursive=True):
-            print("{}".format(os.path.dirname(manifest_path)))
+            package_path = os.path.dirname(manifest_path)
+            print("{}".format(package_path))
             # .../foo/manifest.py -> foo
             package_name = os.path.basename(os.path.dirname(manifest_path))
 
@@ -342,7 +348,9 @@ def build(output_path, hash_prefix_len, mpy_cross_path):
                 }
                 index_json["packages"].append(index_package_json)
 
-            _update_index_package_metadata(index_package_json, manifest.metadata(), mpy_version)
+            _update_index_package_metadata(
+                index_package_json, manifest.metadata(), mpy_version, package_path
+            )
 
             # This is the package json that mip/mpremote downloads.
             mpy_package_json = {

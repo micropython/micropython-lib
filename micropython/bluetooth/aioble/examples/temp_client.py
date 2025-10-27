@@ -1,10 +1,11 @@
 import sys
 
+# ruff: noqa: E402
 sys.path.append("")
 
 from micropython import const
 
-import uasyncio as asyncio
+import asyncio
 import aioble
 import bluetooth
 
@@ -54,7 +55,7 @@ async def main():
             print("Timeout discovering services/characteristics")
             return
 
-        while True:
+        while connection.is_connected():
             temp_deg_c = _decode_temperature(await temp_characteristic.read())
             print("Temperature: {:.2f}".format(temp_deg_c))
             await asyncio.sleep_ms(1000)

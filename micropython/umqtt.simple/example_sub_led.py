@@ -1,6 +1,6 @@
 from umqtt.simple import MQTTClient
 from machine import Pin
-import ubinascii
+import binascii
 import machine
 import micropython
 
@@ -11,7 +11,7 @@ led = Pin(2, Pin.OUT, value=1)
 
 # Default MQTT server to connect to
 SERVER = "192.168.1.35"
-CLIENT_ID = ubinascii.hexlify(machine.unique_id())
+CLIENT_ID = binascii.hexlify(machine.unique_id())
 TOPIC = b"led"
 
 

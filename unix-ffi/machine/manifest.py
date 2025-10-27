@@ -1,9 +1,9 @@
-metadata(version="0.2.1")
+metadata(version="0.2.2")
 
 # Originally written by Paul Sokolovsky.
 
-require("ffilib", unix_ffi=True)
-require("os", unix_ffi=True)
-require("signal", unix_ffi=True)
+require("ffilib")
+require("os")
+require("signal")
 
 package("machine")

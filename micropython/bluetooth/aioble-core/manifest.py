@@ -1,4 +1,4 @@
-metadata(version="0.2.0")
+metadata(version="0.4.0")
 
 package(
     "aioble",

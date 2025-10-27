@@ -6,7 +6,7 @@ from micropython import const
 import bluetooth
 import struct
 
-import uasyncio as asyncio
+import asyncio
 
 from .core import (
     ensure_active,
@@ -104,7 +104,9 @@ async def _cancel_pending():
 
 # Start connecting to a peripheral.
 # Call device.connect() rather than using method directly.
-async def _connect(connection, timeout_ms):
+async def _connect(
+    connection, timeout_ms, scan_duration_ms, min_conn_interval_us, max_conn_interval_us
+):
     device = connection.device
     if device in _connecting:
         return
@@ -122,7 +124,13 @@ async def _connect(connection, timeout_ms):
 
     try:
         with DeviceTimeout(None, timeout_ms):
-            ble.gap_connect(device.addr_type, device.addr)
+            ble.gap_connect(
+                device.addr_type,
+                device.addr,
+                scan_duration_ms,
+                min_conn_interval_us,
+                max_conn_interval_us,
+            )
 
             # Wait for the connected IRQ.
             await connection._event.wait()
@@ -195,12 +203,14 @@ class ScanResult:
 
     # Generator that enumerates the service UUIDs that are advertised.
     def services(self):
-        for u in self._decode_field(_ADV_TYPE_UUID16_INCOMPLETE, _ADV_TYPE_UUID16_COMPLETE):
-            yield bluetooth.UUID(struct.unpack("<H", u)[0])
-        for u in self._decode_field(_ADV_TYPE_UUID32_INCOMPLETE, _ADV_TYPE_UUID32_COMPLETE):
-            yield bluetooth.UUID(struct.unpack("<I", u)[0])
-        for u in self._decode_field(_ADV_TYPE_UUID128_INCOMPLETE, _ADV_TYPE_UUID128_COMPLETE):
-            yield bluetooth.UUID(u)
+        for uuid_len, codes in (
+            (2, (_ADV_TYPE_UUID16_INCOMPLETE, _ADV_TYPE_UUID16_COMPLETE)),
+            (4, (_ADV_TYPE_UUID32_INCOMPLETE, _ADV_TYPE_UUID32_COMPLETE)),
+            (16, (_ADV_TYPE_UUID128_INCOMPLETE, _ADV_TYPE_UUID128_COMPLETE)),
+        ):
+            for u in self._decode_field(*codes):
+                for i in range(0, len(u), uuid_len):
+                    yield bluetooth.UUID(u[i : i + uuid_len])
 
     # Generator that returns (manufacturer_id, data) tuples.
     def manufacturer(self, filter=None):

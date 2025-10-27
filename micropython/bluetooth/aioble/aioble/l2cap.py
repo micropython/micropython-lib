@@ -3,7 +3,7 @@
 
 from micropython import const
 
-import uasyncio as asyncio
+import asyncio
 
 from .core import ble, log_error, register_irq_handler
 from .device import DeviceConnection
@@ -133,7 +133,6 @@ class L2CAPChannel:
     # Waits until the channel is free and then sends buf.
     # If the buffer is larger than the MTU it will be sent in chunks.
     async def send(self, buf, timeout_ms=None, chunk_size=None):
-        self._assert_connected()
         offset = 0
         chunk_size = min(self.our_mtu * 2, self.peer_mtu, chunk_size or self.peer_mtu)
         mv = memoryview(buf)
@@ -141,6 +140,7 @@ class L2CAPChannel:
             if self._stalled:
                 await self.flush(timeout_ms)
             # l2cap_send returns True if you can send immediately.
+            self._assert_connected()
             self._stalled = not ble.l2cap_send(
                 self._connection._conn_handle,
                 self._cid,

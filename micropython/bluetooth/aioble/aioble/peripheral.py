@@ -6,7 +6,7 @@ from micropython import const
 import bluetooth
 import struct
 
-import uasyncio as asyncio
+import asyncio
 
 from .core import (
     ensure_active,
@@ -129,14 +129,13 @@ async def advertise(
         # Services are prioritised to go in the advertising data because iOS supports
         # filtering scan results by service only, so services must come first.
         if services:
-            for uuid in services:
-                b = bytes(uuid)
-                if len(b) == 2:
-                    resp_data = _append(adv_data, resp_data, _ADV_TYPE_UUID16_COMPLETE, b)
-                elif len(b) == 4:
-                    resp_data = _append(adv_data, resp_data, _ADV_TYPE_UUID32_COMPLETE, b)
-                elif len(b) == 16:
-                    resp_data = _append(adv_data, resp_data, _ADV_TYPE_UUID128_COMPLETE, b)
+            for uuid_len, code in (
+                (2, _ADV_TYPE_UUID16_COMPLETE),
+                (4, _ADV_TYPE_UUID32_COMPLETE),
+                (16, _ADV_TYPE_UUID128_COMPLETE),
+            ):
+                if uuids := [bytes(uuid) for uuid in services if len(bytes(uuid)) == uuid_len]:
+                    resp_data = _append(adv_data, resp_data, code, b"".join(uuids))
 
         if name:
             resp_data = _append(adv_data, resp_data, _ADV_TYPE_NAME, name)

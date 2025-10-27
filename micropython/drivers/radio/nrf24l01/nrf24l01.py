@@ -1,5 +1,4 @@
-"""NRF24L01 driver for MicroPython
-"""
+"""NRF24L01 driver for MicroPython"""
 
 from micropython import const
 import utime
@@ -130,6 +129,13 @@ class NRF24L01:
         self.cs(1)
         return ret
 
+    def read_status(self):
+        self.cs(0)
+        # STATUS register is always shifted during command transmit
+        self.spi.readinto(self.buf, NOP)
+        self.cs(1)
+        return self.buf[0]
+
     def flush_rx(self):
         self.cs(0)
         self.spi.readinto(self.buf, FLUSH_RX)
@@ -220,6 +226,13 @@ class NRF24L01:
         result = None
         while result is None and utime.ticks_diff(utime.ticks_ms(), start) < timeout:
             result = self.send_done()  # 1 == success, 2 == fail
+
+        if result is None:
+            # timed out, cancel sending and power down the module
+            self.flush_tx()
+            self.reg_write(CONFIG, self.reg_read(CONFIG) & ~PWR_UP)
+            raise OSError("timed out")
+
         if result == 2:
             raise OSError("send failed")
 
@@ -227,7 +240,7 @@ class NRF24L01:
     def send_start(self, buf):
         # power up
         self.reg_write(CONFIG, (self.reg_read(CONFIG) | PWR_UP) & ~PRIM_RX)
-        utime.sleep_us(150)
+        utime.sleep_us(1500)  # needs to be 1.5ms
         # send the data
         self.cs(0)
         self.spi.readinto(self.buf, W_TX_PAYLOAD)
@@ -243,7 +256,8 @@ class NRF24L01:
 
     # returns None if send still in progress, 1 for success, 2 for fail
     def send_done(self):
-        if not (self.reg_read(STATUS) & (TX_DS | MAX_RT)):
+        status = self.read_status()
+        if not (status & (TX_DS | MAX_RT)):
             return None  # tx not finished
 
         # either finished or failed: get and clear status flags, power down

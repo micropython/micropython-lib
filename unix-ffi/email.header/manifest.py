@@ -1,9 +1,9 @@
 metadata(version="0.5.2")
 
-require("re", unix_ffi=True)
+require("re")
 require("binascii")
-require("email.encoders", unix_ffi=True)
-require("email.errors", unix_ffi=True)
-require("email.charset", unix_ffi=True)
+require("email.encoders")
+require("email.errors")
+require("email.charset")
 
 package("email")

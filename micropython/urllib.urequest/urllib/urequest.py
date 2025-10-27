@@ -1,7 +1,7 @@
-import usocket
+import socket
 
 
-def urlopen(url, data=None, method="GET"):
+def urlopen(url, data=None, method="GET", headers={}):
     if data is not None and method == "GET":
         method = "POST"
     try:
@@ -12,7 +12,7 @@ def urlopen(url, data=None, method="GET"):
     if proto == "http:":
         port = 80
     elif proto == "https:":
-        import ussl
+        import tls
 
         port = 443
     else:
@@ -22,14 +22,16 @@ def urlopen(url, data=None, method="GET"):
         host, port = host.split(":", 1)
         port = int(port)
 
-    ai = usocket.getaddrinfo(host, port, 0, usocket.SOCK_STREAM)
+    ai = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)
     ai = ai[0]
 
-    s = usocket.socket(ai[0], ai[1], ai[2])
+    s = socket.socket(ai[0], ai[1], ai[2])
     try:
         s.connect(ai[-1])
         if proto == "https:":
-            s = ussl.wrap_socket(s, server_hostname=host)
+            context = tls.SSLContext(tls.PROTOCOL_TLS_CLIENT)
+            context.verify_mode = tls.CERT_NONE
+            s = context.wrap_socket(s, server_hostname=host)
 
         s.write(method)
         s.write(b" /")
@@ -37,6 +39,12 @@ def urlopen(url, data=None, method="GET"):
         s.write(b" HTTP/1.0\r\nHost: ")
         s.write(host)
         s.write(b"\r\n")
+
+        for k in headers:
+            s.write(k)
+            s.write(b": ")
+            s.write(headers[k])
+            s.write(b"\r\n")
 
         if data:
             s.write(b"Content-Length: ")
@@ -46,10 +54,10 @@ def urlopen(url, data=None, method="GET"):
         if data:
             s.write(data)
 
-        l = s.readline()
-        l = l.split(None, 2)
+        l = s.readline()  # Status-Line
+        # l = l.split(None, 2)
         # print(l)
-        status = int(l[1])
+        # status = int(l[1])  # FIXME: Status-Code element is not currently checked
         while True:
             l = s.readline()
             if not l or l == b"\r\n":

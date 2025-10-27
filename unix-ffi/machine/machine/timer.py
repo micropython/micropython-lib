@@ -1,13 +1,14 @@
 import ffilib
 import uctypes
 import array
-import uos
 import os
-import utime
 from signal import *
 
 libc = ffilib.libc()
-librt = ffilib.open("librt")
+try:
+    librt = ffilib.open("librt")
+except OSError as e:
+    librt = libc
 
 CLOCK_REALTIME = 0
 CLOCK_MONOTONIC = 1
