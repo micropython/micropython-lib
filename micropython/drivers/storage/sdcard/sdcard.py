@@ -97,7 +97,7 @@ class SDCard:
         csd = bytearray(16)
         self.readinto(csd)
         if csd[0] & 0xC0 == 0x40:  # CSD version 2.0
-            self.sectors = ((csd[8] << 8 | csd[9]) + 1) * 1024
+            self.sectors = ((csd[7] << 16 | csd[8] << 8 | csd[9]) + 1) * 1024
         elif csd[0] & 0xC0 == 0x00:  # CSD version 1.0 (old, <=2GB)
             c_size = (csd[6] & 0b11) << 10 | csd[7] << 2 | csd[8] >> 6
             c_size_mult = (csd[9] & 0b11) << 1 | csd[10] >> 7
