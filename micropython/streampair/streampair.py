@@ -1,7 +1,6 @@
 import io
 
-from collections import deque
-from micropython import ringbuffer, const
+from micropython import RingIO, const
 
 try:
     from typing import Union, Tuple
@@ -28,14 +27,14 @@ def streampair(buffer_size: Union[int, Tuple[int, int]]=256):
     except TypeError:
         size_a = size_b = buffer_size
 
-    a = ringbuffer(size_a)
-    b = ringbuffer(size_b)
+    a = RingIO(size_a)
+    b = RingIO(size_b)
     return StreamPair(a, b), StreamPair(b, a)
 
 
 class StreamPair(io.IOBase):
 
-    def __init__(self, own: ringbuffer, other: ringbuffer):
+    def __init__(self, own: RingIO, other: RingIO):
         self.own = own
         self.other = other
         super().__init__()
