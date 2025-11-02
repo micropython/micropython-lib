@@ -9,6 +9,19 @@ octdigits = "01234567"
 punctuation = """!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~"""
 printable = digits + ascii_letters + punctuation + whitespace
 
+__all__ = [
+    "whitespace",
+    "ascii_lowercase",
+    "ascii_uppercase",
+    "ascii_letters",
+    "digits",
+    "hexdigits",
+    "octdigits",
+    "punctuation",
+    "printable",
+    "translate",
+]
+
 
 def translate(s, map):
     import io
@@ -25,3 +38,11 @@ def translate(s, map):
         else:
             sb.write(c)
     return sb.getvalue()
+
+try:
+    from . import templatelib as _templatelib
+except ImportError:
+    pass
+else:
+    templatelib = _templatelib
+    __all__.append("templatelib")
