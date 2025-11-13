@@ -1,13 +1,14 @@
 # MicroPython package installer
 # MIT license; Copyright (c) 2022 Jim Mussared
 
-from micropython import const
-import requests
 import sys
 
+import requests
+
+from micropython import const
 
 _PACKAGE_INDEX = const("https://micropython.org/pi/v2")
-_CHUNK_SIZE = 128
+_CHUNK_SIZE = const(128)
 
 allowed_mip_url_prefixes = ("http://", "https://", "github:", "gitlab:")
 
