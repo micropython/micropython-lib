@@ -191,7 +191,7 @@ def deepcopy(x, memo=None, _nil=[]):
             if copier:
                 y = copier(memo)
             else:
-                reductor = dispatch_table.get(cls)
+                reductor = _deepcopy_dispatch.get(cls)
                 if reductor:
                     rv = reductor(x)
                 else:
