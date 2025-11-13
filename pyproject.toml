@@ -1,10 +1,14 @@
 [tool.ruff]
-exclude = [
+extend-exclude = [
   "python-stdlib",
   "unix-ffi",
 ]
+line-length = 99
+target-version = "py38" # enable use of walrus operator
+
+[tool.ruff.lint]
 select = [
-  "ASYNC",  # flake8-comprehensions
+  "ASYNC",  # flake8-async
   "C4",     # flake8-comprehensions
   "C90",    # McCabe cyclomatic complexity
   "DTZ",    # flake8-datetimez
@@ -53,42 +57,40 @@ select = [
   # "TRY",  # tryceratops
   # "UP",   # pyupgrade
 ]
-ignore = [
+extend-ignore = [
   "E722",
-  "E741",  # 'l' is currently widely used
+  "E741",    # 'l' is currently widely used
   "F401",
   "F403",
   "F405",
-  "E501",  # line length, recommended to disable
+  "E501",    # line length, recommended to disable
   "ISC001",
-  "ISC003",  # micropython does not support implicit concatenation of f-strings
-  "PIE810",  # micropython does not support passing tuples to .startswith or .endswith
+  "ISC003",  # MicroPython does not support implicit concatenation of f-strings
+  "PIE810",  # MicroPython does not support passing tuples to .startswith or .endswith
+  "PLC0415", # conditional imports are common in MicroPython
   "PLC1901",
-  "PLR1704",  # sometimes desirable to redefine an argument to save code size
+  "PLR1704", # sometimes desirable to redefine an argument to save code size
   "PLR1714",
   "PLR5501",
   "PLW0602",
   "PLW0603",
   "PLW2901",
-  "RUF012",
-  "RUF100",
+  "RUF012",  # mutable default values in class attributes.
+  "RUF059",  # Unpacked variable `foo` is never used
+  "RUF100",  # duplicate noqa directives.
   "SIM101",
-  "W191",  # tab-indent, redundant when using formatter
+  "W191",    # tab-indent, redundant when using formatter
 ]
-line-length = 99
-target-version = "py37"
+mccabe.max-complexity = 61
 
-[tool.ruff.mccabe]
-max-complexity = 61
-
-[tool.ruff.pylint]
+[tool.ruff.lint.pylint]
 allow-magic-value-types = ["bytes", "int", "str"]
 max-args = 14
 max-branches = 58
 max-returns = 13
 max-statements = 166
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "micropython/aiorepl/aiorepl.py" = ["PGH001"]
 
 # manifest.py files are evaluated with some global names pre-defined
@@ -97,5 +99,3 @@ max-statements = 166
 
 # ble multitests are evaluated with some names pre-defined
 "micropython/bluetooth/aioble/multitests/*" = ["F821"]
-
-[tool.ruff.format]
