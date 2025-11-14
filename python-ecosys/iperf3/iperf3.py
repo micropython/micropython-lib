@@ -260,13 +260,21 @@ def server_once():
         s_data, addr = s_listen.accept()
         print("Accepted connection:", addr)
         recvn(s_data, COOKIE_SIZE)
+        udp = False
+        udp_packet_id = 0
+        udp_interval = None
+        udp_last_send = None
     elif param.get("udp", False):
         # Close TCP connection and open UDP "connection"
         s_listen.close()
         s_data = socket.socket(ai[0], socket.SOCK_DGRAM)
         s_data.bind(ai[-1])
         data, addr = s_data.recvfrom(4)
-        s_data.sendto(b"\x12\x34\x56\x78", addr)
+        s_data.sendto(struct.pack("<I", 987654321), addr)
+        udp_interval = 1000000 * 8 * param["len"] // param["bandwidth"]
+        udp = True
+        udp_packet_id = 0
+        udp_last_send = ticks_us() - udp_interval
     else:
         assert False
 
@@ -296,16 +304,21 @@ def server_once():
                 if cmd == TEST_END:
                     running = False
             elif pollable_is_sock(pollable, s_data):
-                if reverse:
-                    n = s_data.send(data_buf)
-                    stats.add_bytes(n)
-                else:
-                    recvninto(s_data, data_buf)
-                    stats.add_bytes(len(data_buf))
+                udp_last_send, udp_packet_id = _transfer(
+                    udp,
+                    not reverse,
+                    addr,
+                    s_data,
+                    data_buf,
+                    udp_last_send,
+                    udp_packet_id,
+                    udp_interval,
+                    stats,
+                )
         stats.update()
 
     # Need to continue writing so other side doesn't get blocked waiting for data
-    if reverse:
+    if reverse and not udp:
         while True:
             for pollable in poll.poll(0):
                 if pollable_is_sock(pollable, s_data):
