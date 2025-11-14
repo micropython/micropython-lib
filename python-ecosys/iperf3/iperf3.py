@@ -198,6 +198,33 @@ def make_cookie():
     return cookie
 
 
+def _transfer(udp, reverse, addr, s_data, buf, udp_last_send, udp_packet_id, udp_interval, stats):
+    if udp:
+        if reverse:
+            recvninto(s_data, buf)
+            udp_in_sec, udp_in_usec, udp_in_id = struct.unpack_from(">III", buf, 0)
+            if udp_in_id != udp_packet_id + 1:
+                stats.add_lost_packets(udp_in_id - (udp_packet_id + 1))
+            udp_packet_id = udp_in_id
+            stats.add_bytes(len(buf))
+        else:
+            t = ticks_us()
+            if t - udp_last_send > udp_interval:
+                udp_last_send += udp_interval
+                udp_packet_id += 1
+                struct.pack_into(">III", buf, 0, t // 1000000, t % 1000000, udp_packet_id)
+                n = s_data.sendto(buf, addr)
+                stats.add_bytes(n)
+    else:
+        if reverse:
+            recvninto(s_data, buf)
+            n = len(buf)
+        else:
+            n = s_data.send(buf)
+        stats.add_bytes(n)
+    return udp_last_send, udp_packet_id
+
+
 def server_once():
     # Listen for a connection
     ai = socket.getaddrinfo("0.0.0.0", 5201)
@@ -360,6 +387,7 @@ def client(host, udp=False, reverse=False, bandwidth=10 * 1024 * 1024):
     else:
         param["tcp"] = True
         param["len"] = 3000
+        udp_interval = None
 
     if reverse:
         param["reverse"] = True
@@ -403,33 +431,17 @@ def client(host, udp=False, reverse=False, bandwidth=10 * 1024 * 1024):
                         stats.stop()
                 else:
                     # Send/receiver data
-                    if udp:
-                        if reverse:
-                            recvninto(s_data, buf)
-                            udp_in_sec, udp_in_usec, udp_in_id = struct.unpack_from(">III", buf, 0)
-                            # print(udp_in_sec, udp_in_usec, udp_in_id)
-                            if udp_in_id != udp_packet_id + 1:
-                                stats.add_lost_packets(udp_in_id - (udp_packet_id + 1))
-                            udp_packet_id = udp_in_id
-                            stats.add_bytes(len(buf))
-                        else:
-                            # print('UDP send', udp_last_send, t, udp_interval)
-                            if t - udp_last_send > udp_interval:
-                                udp_last_send += udp_interval
-                                udp_packet_id += 1
-                                struct.pack_into(
-                                    ">III", buf, 0, t // 1000000, t % 1000000, udp_packet_id
-                                )
-                                n = s_data.sendto(buf, ai[-1])
-                                stats.add_bytes(n)
-                    else:
-                        if reverse:
-                            recvninto(s_data, buf)
-                            n = len(buf)
-                        else:
-                            # print('TCP send', len(buf))
-                            n = s_data.send(buf)
-                        stats.add_bytes(n)
+                    udp_last_send, udp_packet_id = _transfer(
+                        udp,
+                        reverse,
+                        ai[-1],
+                        s_data,
+                        buf,
+                        udp_last_send,
+                        udp_packet_id,
+                        udp_interval,
+                        stats,
+                    )
 
             elif pollable_is_sock(pollable, s_ctrl):
                 # Receive command
