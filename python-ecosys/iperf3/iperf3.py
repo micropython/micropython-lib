@@ -534,7 +534,7 @@ def main():
         client(opt_host, opt_udp, opt_reverse)
 
 
-if sys.platform == "linux":
+if sys.implementation.name != "micropython":
 
     def pollable_is_sock(pollable, sock):
         return sock is not None and pollable[0] == sock.fileno()
@@ -544,12 +544,12 @@ if sys.platform == "linux":
 
     def ticks_diff(a, b):
         return a - b
-
-    if __name__ == "__main__":
-        main()
 else:
 
     def pollable_is_sock(pollable, sock):
         return pollable[0] == sock
 
     from time import ticks_us, ticks_diff
+
+if sys.platform == "linux" and __name__ == "__main__":
+    main()
