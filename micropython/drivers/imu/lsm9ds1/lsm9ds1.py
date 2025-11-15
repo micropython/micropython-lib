@@ -27,21 +27,21 @@ LSM9DS1 - 9DOF inertial sensor of STMicro driver for MicroPython.
 The sensor contains an accelerometer / gyroscope / magnetometer
 Uses the internal FIFO to store up to 16 gyro/accel data, use the iter_accel_gyro generator to access it.
 
-Example usage:
+Example usage::
 
-import time
-from lsm9ds1 import LSM9DS1
-from machine import Pin, I2C
+    import time
+    from lsm9ds1 import LSM9DS1
+    from machine import Pin, I2C
 
-imu = LSM9DS1(I2C(1, scl=Pin(15), sda=Pin(14)))
+    imu = LSM9DS1(I2C(1, scl=Pin(15), sda=Pin(14)))
 
-while (True):
-    #for g,a in imu.iter_accel_gyro(): print(g,a)    # using fifo
-    print('Accelerometer: x:{:>8.3f} y:{:>8.3f} z:{:>8.3f}'.format(*imu.accel()))
-    print('Magnetometer:  x:{:>8.3f} y:{:>8.3f} z:{:>8.3f}'.format(*imu.magnet()))
-    print('Gyroscope:     x:{:>8.3f} y:{:>8.3f} z:{:>8.3f}'.format(*imu.gyro()))
-    print("")
-    time.sleep_ms(100)
+    while (True):
+        #for g,a in imu.iter_accel_gyro(): print(g,a)    # using fifo
+        print('Accelerometer: x:{:>8.3f} y:{:>8.3f} z:{:>8.3f}'.format(*imu.accel()))
+        print('Magnetometer:  x:{:>8.3f} y:{:>8.3f} z:{:>8.3f}'.format(*imu.magnet()))
+        print('Gyroscope:     x:{:>8.3f} y:{:>8.3f} z:{:>8.3f}'.format(*imu.gyro()))
+        print("")
+        time.sleep_ms(100)
 """
 
 import array
