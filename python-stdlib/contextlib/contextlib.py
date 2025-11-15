@@ -15,12 +15,12 @@ from ucontextlib import *
 class closing(object):
     """Context to automatically close something at the end of a block.
 
-    Code like this:
+    Code like this::
 
         with closing(<module>.open(<arguments>)) as f:
             <block>
 
-    is equivalent to this:
+    is equivalent to this::
 
         f = <module>.open(<arguments>)
         try:

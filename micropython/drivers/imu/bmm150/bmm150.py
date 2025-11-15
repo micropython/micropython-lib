@@ -21,22 +21,22 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-Basic example usage:
+Basic example usage::
 
-import time
-from bmm150 import BMM150
-from machine import Pin, SPI, I2C
+    import time
+    from bmm150 import BMM150
+    from machine import Pin, SPI, I2C
 
-# Init in I2C mode.
-imu = BMM150(I2C(1, scl=Pin(15), sda=Pin(14)))
+    # Init in I2C mode.
+    imu = BMM150(I2C(1, scl=Pin(15), sda=Pin(14)))
 
-# Or init in SPI mode.
-# TODO: Not supported yet.
-# imu = BMM150(SPI(5), cs=Pin(10))
+    # Or init in SPI mode.
+    # TODO: Not supported yet.
+    # imu = BMM150(SPI(5), cs=Pin(10))
 
-while (True):
-    print('magnetometer: x:{:>8.3f} y:{:>8.3f} z:{:>8.3f}'.format(*imu.magnet()))
-    time.sleep_ms(100)
+    while (True):
+        print('magnetometer: x:{:>8.3f} y:{:>8.3f} z:{:>8.3f}'.format(*imu.magnet()))
+        time.sleep_ms(100)
 """
 
 import array
