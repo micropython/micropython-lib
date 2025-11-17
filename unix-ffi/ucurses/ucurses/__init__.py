@@ -311,7 +311,7 @@ def meta(yes):
 
 
 def mousemask(mask):
-    # Mouse reporting - X10 compatbility mode
+    # Mouse reporting - X10 compatibility mode
     _wr(b"\x1b[?9h")
 
 

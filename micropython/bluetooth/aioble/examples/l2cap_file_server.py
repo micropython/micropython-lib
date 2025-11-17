@@ -1,7 +1,7 @@
 # MIT license; Copyright (c) 2021 Jim Mussared
 
 # This is a BLE file server, based very loosely on the Object Transfer Service
-# specification. It demonstrated transfering data over an L2CAP channel, as
+# specification. It demonstrated transferring data over an L2CAP channel, as
 # well as using notifications and GATT writes on a characteristic.
 
 # The server supports downloading and uploading files, as well as querying

@@ -77,7 +77,7 @@ _MOUSE_REPORT_DESC = (
         b'\xA1\x00'  # Collection (Physical)
             b'\x05\x09'  # Usage Page (Buttons)
                 b'\x19\x01'  # Usage Minimum (01),
-                b'\x29\x03'  # Usage Maximun (03),
+                b'\x29\x03'  # Usage Maximum (03),
                 b'\x15\x00'  # Logical Minimum (0),
                 b'\x25\x01'  # Logical Maximum (1),
                 b'\x95\x03'  # Report Count (3),

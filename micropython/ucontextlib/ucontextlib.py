@@ -6,7 +6,7 @@ Not implemented:
  - redirect_stdout;
  - ExitStack.
  - closing
- - supress
+ - suppress
 """
 
 

@@ -234,7 +234,7 @@ class TestPathlib(unittest.TestCase):
         self.assertExists(target)
 
         # Technically should be FileExistsError,
-        # but thats not builtin to micropython
+        # but that's not builtin to micropython
         with self.assertRaises(OSError):
             path.touch(exist_ok=False)
 

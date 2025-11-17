@@ -56,7 +56,7 @@ class LCD160CR:
             pwr(1)
             sleep_ms(10)
         # else:
-        # alread have power
+        # already have power
         # lets be optimistic...
 
         # set connections

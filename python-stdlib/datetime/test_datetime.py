@@ -2091,7 +2091,7 @@ class Test5DateTime(unittest.TestCase):
 
     def test_timestamp02(self):
         with LocalTz("Europe/Rome"):
-            dt = datetime(2010, 3, 28, 2, 30)  # doens't exist
+            dt = datetime(2010, 3, 28, 2, 30)  # doesn't exist
             self.assertEqual(dt.timestamp(), 1269739800.0)
 
     def test_timestamp03(self):
@@ -2111,7 +2111,7 @@ class Test5DateTime(unittest.TestCase):
 
     def test_timestamp06(self):
         with LocalTz("US/Eastern"):
-            dt = datetime(2020, 3, 8, 2, 30)  # doens't exist
+            dt = datetime(2020, 3, 8, 2, 30)  # doesn't exist
             self.assertEqual(dt.timestamp(), 1583652600.0)
 
     def test_timestamp07(self):

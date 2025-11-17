@@ -501,7 +501,7 @@ class _SX126x(BaseModem):
 
         self._cmd(">BH", _CMD_CALIBRATE_IMAGE, args)
 
-        # Can't find anythign in Datasheet about how long image calibration
+        # Can't find anything in Datasheet about how long image calibration
         # takes or exactly how it signals completion. Assuming it will be
         # similar to _CMD_CALIBRATE.
         self._wait_not_busy(_CALIBRATE_TIMEOUT_US)

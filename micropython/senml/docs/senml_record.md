@@ -42,11 +42,11 @@ _parameters:_
 - `kwargs:`  optional parameters:
     - value: the value to store in the record
     - time: the timestamp to use (when was the value measured)
-    - name: the name of hte record
+    - name: the name of the record
     - unit: unit value
     - sum: sum value
     - update_time: max time before sensor will provide an updated reading
-    - callback: a callback function taht will be called when actuator data has been found. Expects no params 
+    - callback: a callback function that will be called when actuator data has been found. Expects no params 
 
 ### do_actuate 
 

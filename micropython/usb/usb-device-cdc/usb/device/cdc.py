@@ -228,7 +228,7 @@ class CDCInterface(io.IOBase, Interface):
             5,  # bFunctionLength
             _CS_DESC_TYPE,  # bDescriptorType
             _CDC_FUNC_DESC_CALL_MANAGEMENT,  # bDescriptorSubtype
-            0,  # bmCapabilities - XXX no call managment so far
+            0,  # bmCapabilities - XXX no call management so far
             itf_num + 1,  # bDataInterface - interface 1
         )
 

@@ -81,7 +81,7 @@ class LSM9DS1:
         magnet_odr=80,
         magnet_scale=4,
     ):
-        """Initalizes Gyro, Accelerometer and Magnetometer.
+        """Initializes Gyro, Accelerometer and Magnetometer.
         bus: IMU bus
         address_imu: IMU I2C address.
         address_magnet: Magnetometer I2C address.
@@ -134,14 +134,14 @@ class LSM9DS1:
         mv[5] = 0x2  # ctrl9 - FIFO enabled
         self.bus.writeto_mem(self.address_imu, _CTRL_REG4_G, mv)
 
-        # fifo: use continous mode (overwrite old data if overflow)
+        # fifo: use continuous mode (overwrite old data if overflow)
         self.bus.writeto_mem(self.address_imu, _FIFO_CTRL_REG, b"\x00")
         self.bus.writeto_mem(self.address_imu, _FIFO_CTRL_REG, b"\xc0")
 
         # Configure Magnetometer
         mv[0] = 0x40 | (magnet_odr << 2)  # ctrl1: high performance mode
         mv[1] = _MAGNET_SCALE.index(magnet_scale) << 5  # ctrl2: scale, normal mode, no reset
-        mv[2] = 0x00  # ctrl3: continous conversion, no low power, I2C
+        mv[2] = 0x00  # ctrl3: continuous conversion, no low power, I2C
         mv[3] = 0x08  # ctrl4: high performance z-axis
         mv[4] = 0x00  # ctr5: no fast read, no block update
         self.bus.writeto_mem(self.address_magnet, _CTRL_REG1_M, mv[:5])

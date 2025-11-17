@@ -66,7 +66,7 @@ class BMM150:
         address=_DEFAULT_ADDR,
         magnet_odr=30,
     ):
-        """Initalizes the Magnetometer.
+        """Initializes the Magnetometer.
         bus: IMU bus
         address: I2C address (in I2C mode).
         cs: SPI CS pin (in SPI mode).

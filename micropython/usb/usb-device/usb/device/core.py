@@ -446,7 +446,7 @@ class Interface:
         # Return the number of actual USB Interfaces represented by this object
         # (as set in desc_cfg().)
         #
-        # Only needs to be overriden if implementing a Interface class that
+        # Only needs to be overridden if implementing a Interface class that
         # represents more than one USB Interface descriptor (i.e. MIDI), or an
         # Interface Association Descriptor (i.e. USB-CDC).
         return 1

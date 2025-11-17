@@ -47,7 +47,7 @@ class BaseModem:
         self._bw_hz = 125000  # Reset value
         self._coding_rate = 5
         self._crc_en = True  # use packet CRCs
-        self._implicit_header = False  # implict vs explicit header mode
+        self._implicit_header = False  # implicit vs explicit header mode
         self._preamble_len = 12
         self._coding_rate = 5
 

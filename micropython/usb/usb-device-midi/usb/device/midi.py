@@ -61,7 +61,7 @@ _EXT_OUT_JACK_ID = const(4)
 class MIDIInterface(Interface):
     # Base class to implement a USB MIDI device in Python.
     #
-    # To be compliant this also regisers a dummy USB Audio interface, but that
+    # To be compliant this also registers a dummy USB Audio interface, but that
     # interface isn't otherwise used.
 
     def __init__(self, rxlen=16, txlen=16):
