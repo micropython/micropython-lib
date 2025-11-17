@@ -21,29 +21,31 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-Basic example usage:
+Basic example usage::
 
-import time
-from bmi270 import BMI270
-from machine import Pin, SPI, I2C
+    import time
+    from bmi270 import BMI270
+    from machine import Pin, SPI, I2C
 
-# Init in I2C mode.
-imu = BMI270(I2C(1, scl=Pin(15), sda=Pin(14)))
+    # Init in I2C mode.
+    imu = BMI270(I2C(1, scl=Pin(15), sda=Pin(14)))
 
-# Or init in SPI mode.
-# TODO: Not supported yet.
-# imu = BMI270(SPI(5), cs=Pin(10))
+    # Or init in SPI mode.
+    # TODO: Not supported yet.
+    # imu = BMI270(SPI(5), cs=Pin(10))
 
-while (True):
-    print('Accelerometer: x:{:>6.3f}  y:{:>6.3f}  z:{:>6.3f}'.format(*imu.accel()))
-    print('Gyroscope:     x:{:>6.3f}  y:{:>6.3f}  z:{:>6.3f}'.format(*imu.gyro()))
-    print('Magnetometer:  x:{:>8.3f}  y:{:>8.3f}  z:{:>8.3f}'.format(*imu.magnet()))
-    print("")
-    time.sleep_ms(100)
+    while (True):
+        print('Accelerometer: x:{:>6.3f}  y:{:>6.3f}  z:{:>6.3f}'.format(*imu.accel()))
+        print('Gyroscope:     x:{:>6.3f}  y:{:>6.3f}  z:{:>6.3f}'.format(*imu.gyro()))
+        print('Magnetometer:  x:{:>8.3f}  y:{:>8.3f}  z:{:>8.3f}'.format(*imu.magnet()))
+        print("")
+        time.sleep_ms(100)
+
 """
 
 import array
 import time
+
 from micropython import const
 
 _DEFAULT_ADDR = const(0x68)
