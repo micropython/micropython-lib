@@ -13,3 +13,11 @@ repos:
     hooks:
       - id: ruff
         id: ruff-format
+
+  - repo: https://github.com/codespell-project/codespell
+    # version should be kept in sync with .github/workflows/codespell.yml & micropython repo
+    rev: v2.4.1
+    hooks:
+    - id: codespell
+      additional_dependencies:
+        - tomli

@@ -1,0 +1,12 @@
+# non-words to be ignored by codespell
+# shared with micropython/micropython
+asend
+ure
+
+# Specific to micropython/micropython-lib
+bu
+curch
+ist
+clen
+shttp
+ody
