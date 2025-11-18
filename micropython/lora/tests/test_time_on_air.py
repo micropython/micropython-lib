@@ -5,7 +5,7 @@
 #
 # ## What is this?
 #
-# Host tests for the BaseModem.get_time_on_air_us() function. Theses against
+# Host tests for the BaseModem.get_time_on_air_us() function. These test against
 # dummy test values produced by the Semtech "SX1261 LoRa Calculator" software,
 # as downloaded from
 # https://lora-developers.semtech.com/documentation/product-documents/
