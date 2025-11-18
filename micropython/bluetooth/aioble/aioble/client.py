@@ -244,7 +244,7 @@ class BaseClientCharacteristic:
         self._register_with_connection()
         # This will be set by the done IRQ.
         self._read_status = None
-        # This will be set by the result and done IRQs. Re-use if possible.
+        # This will be set by the result and done IRQs. Reuse if possible.
         self._read_event = self._read_event or asyncio.ThreadSafeFlag()
 
         # Issue the read.

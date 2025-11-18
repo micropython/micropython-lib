@@ -188,7 +188,7 @@ class SenmlRecord(SenmlBase):
         elif isinstance(self._value, bytearray):
             if (
                 naming_map["vd"] == "vd"
-            ):  # neeed to make a distinction between json (needs base64) and cbor (needs binary)
+            ):  # need to make a distinction between json (needs base64) and cbor (needs binary)
                 result[naming_map["vd"]] = binascii.b2a_base64(self._value, newline=False).decode(
                     "utf8"
                 )
