@@ -10,8 +10,12 @@ class _ArgError(BaseException):
     pass
 
 
+class ArgumentTypeError(BaseException):
+    pass
+
+
 class _Arg:
-    def __init__(self, names, dest, action, nargs, const, default, help):
+    def __init__(self, names, dest, action, nargs, const, default, help, type):
         self.names = names
         self.dest = dest
         self.action = action
@@ -19,20 +23,26 @@ class _Arg:
         self.const = const
         self.default = default
         self.help = help
+        self.type = type
+
+    def _apply(self, optname, arg):
+        if self.type:
+            try:
+                return self.type(arg)
+            except (ArgumentTypeError, TypeError, ValueError) as e:
+                raise _ArgError("invalid value for %s: %s (%s)" % (optname, arg, str(e)))
+        return arg
 
     def parse(self, optname, args):
         # parse args for this arg
         if self.action == "store":
             if self.nargs is None:
                 if args:
-                    return args.pop(0)
+                    return self._apply(optname, args.pop(0))
                 else:
                     raise _ArgError("expecting value for %s" % optname)
             elif self.nargs == "?":
-                if args:
-                    return args.pop(0)
-                else:
-                    return self.default
+                return self._apply(optname, args.pop(0) if args else self.default)
             else:
                 if self.nargs == "*":
                     n = -1
@@ -52,7 +62,7 @@ class _Arg:
                         else:
                             break
                     else:
-                        ret.append(args.pop(0))
+                        ret.append(self._apply(optname, args.pop(0)))
                         n -= 1
                 if n > 0:
                     raise _ArgError("expecting value for %s" % optname)
@@ -103,6 +113,10 @@ class ArgumentParser:
                 dest = args[0]
             if not args:
                 args = [dest]
+        arg_type = kwargs.get("type", None)
+        if arg_type is not None:
+            if not callable(arg_type):
+                raise ValueError("type is not callable")
         list.append(
             _Arg(
                 args,
@@ -112,6 +126,7 @@ class ArgumentParser:
                 const,
                 default,
                 kwargs.get("help", ""),
+                arg_type,
             )
         )
 
@@ -176,7 +191,9 @@ class ArgumentParser:
         arg_vals = []
         for opt in self.opt:
             arg_dest.append(opt.dest)
-            arg_vals.append(opt.default)
+            arg_vals.append(
+                opt._apply(opt.dest, opt.default) if isinstance(opt.default, str) else opt.default
+            )
 
         # deal with unknown arguments, if needed
         unknown = []

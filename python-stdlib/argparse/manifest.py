@@ -1,4 +1,4 @@
-metadata(version="0.4.0")
+metadata(version="0.5.0")
 
 # Originally written by Damien George.
 
