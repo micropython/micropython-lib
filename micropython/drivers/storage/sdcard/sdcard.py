@@ -92,10 +92,23 @@ class SDCard:
 
         # get the number of sectors
         # CMD9: response R2 (R1 byte + 16-byte block read)
+        csd = self.get_csd()
+        self.parse_csd(csd)
+
+        # CMD16: set block length to 512 bytes
+        if self.cmd(16, 512, 0) != 0:
+            raise OSError("can't set 512 block size")
+
+        # set to high data rate now that it's initialised
+        self.init_spi(baudrate)
+
+    def get_csd(self):
         if self.cmd(9, 0, 0, 0, False) != 0:
             raise OSError("no response from SD card")
         csd = bytearray(16)
         self.readinto(csd)
+
+    def parse_csd(self, csd):
         if csd[0] & 0xC0 == 0x40:  # CSD version 2.0
             self.sectors = ((csd[7] << 16 | csd[8] << 8 | csd[9]) + 1) * 1024
         elif csd[0] & 0xC0 == 0x00:  # CSD version 1.0 (old, <=2GB)
@@ -106,14 +119,6 @@ class SDCard:
             self.sectors = capacity // 512
         else:
             raise OSError("SD card CSD format not supported")
-        # print('sectors', self.sectors)
-
-        # CMD16: set block length to 512 bytes
-        if self.cmd(16, 512, 0) != 0:
-            raise OSError("can't set 512 block size")
-
-        # set to high data rate now that it's initialised
-        self.init_spi(baudrate)
 
     def init_card_v1(self):
         for i in range(_CMD_TIMEOUT):
