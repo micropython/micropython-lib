@@ -34,7 +34,7 @@ class CBORDecodeError(Exception):
 break_marker = object()
 
 
-class CBORSimpleValue(object):
+class CBORSimpleValue(object):  # noqa: PLW1641
     """
     Represents a CBOR "simple value".
     :param int value: the value (0-255)
