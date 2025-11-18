@@ -611,7 +611,7 @@ class Interface:
         # argument to set or clear.
         #
         # Generally endpoint STALL is handled automatically, but there are some
-        # device classes that need to explicitly stall or unstall an endpoint
+        # device classes that need to explicitly stall or un-stall an endpoint
         # under certain conditions.
         if not self._open or ep_addr not in self._eps:
             raise RuntimeError

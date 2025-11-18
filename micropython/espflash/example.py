@@ -13,7 +13,7 @@ if __name__ == "__main__":
     esp = espflash.ESPFlash(reset, gpio0, uart)
     # Enter bootloader download mode, at 115200
     esp.bootloader()
-    # Can now chage to higher/lower baudrate
+    # Can now change to higher/lower baudrate
     esp.set_baudrate(921600)
     # Must call this first before any flash functions.
     esp.flash_attach()

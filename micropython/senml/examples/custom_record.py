@@ -32,7 +32,7 @@ class Coordinates(SenmlRecord):
     def __init__(self, name, **kwargs):
         """overriding the init function so we can initiate the 3 senml records that will represent lat,lon, alt"""
         self._lat = SenmlRecord(
-            "lattitude", unit=SenmlUnits.SENML_UNIT_DEGREES_LATITUDE
+            "latitude", unit=SenmlUnits.SENML_UNIT_DEGREES_LATITUDE
         )  # create these before calling base constructor so that all can be init correctly from constructor
         self._lon = SenmlRecord("longitude", unit=SenmlUnits.SENML_UNIT_DEGREES_LONGITUDE)
         self._alt = SenmlRecord("altitude", unit=SenmlUnits.SENML_UNIT_METER)
