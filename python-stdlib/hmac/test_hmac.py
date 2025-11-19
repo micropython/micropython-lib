@@ -1,3 +1,4 @@
+# codespell:ignore
 import hmac
 
 # Uncomment to use micropython-lib hashlib (supports sha512)

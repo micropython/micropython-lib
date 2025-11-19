@@ -119,7 +119,7 @@ async def _connect(
     _connecting.add(device)
 
     # Event will be set in the connected IRQ, and then later
-    # re-used to notify disconnection.
+    # reused to notify disconnection.
     connection._event = connection._event or asyncio.ThreadSafeFlag()
 
     try:

@@ -56,9 +56,9 @@ def request(
         import binascii
 
         username, password = auth
-        formated = b"{}:{}".format(username, password)
-        formated = str(binascii.b2a_base64(formated)[:-1], "ascii")
-        headers["Authorization"] = "Basic {}".format(formated)
+        formatted = b"{}:{}".format(username, password)
+        formatted = str(binascii.b2a_base64(formatted)[:-1], "ascii")
+        headers["Authorization"] = "Basic {}".format(formatted)
 
     try:
         proto, dummy, host, path = url.split("/", 3)
