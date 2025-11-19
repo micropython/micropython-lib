@@ -284,10 +284,11 @@ class Characteristic(BaseCharacteristic):
                     # Timeout.
                     return
                 # See TODO in __init__ to support multiple concurrent indications.
-                assert connection == characteristic._indicate_connection
-                characteristic._indicate_status = status
-                characteristic._indicate_event.set()
-
+                if connection == characteristic._indicate_connection:
+                    characteristic._indicate_status = status
+                    characteristic._indicate_event.set()
+                else:
+                    log_warn("Received indication for unexpected connection")
 
 class BufferedCharacteristic(Characteristic):
     def __init__(self, *args, max_len=20, append=False, **kwargs):
