@@ -1,4 +1,4 @@
-metadata(description="Lightweight MQTT client for MicroPython.", version="1.6.0")
+metadata(description="Lightweight MQTT client for MicroPython.", version="1.7.0")
 
 # Originally written by Paul Sokolovsky.
 
