@@ -121,16 +121,22 @@ async def task(g=None, prompt="--> "):
                 pt = t  # save previous time
                 t = time.ticks_ms()
                 if c < 0x20 or c > 0x7E:
-                    if c == 0x0A:
-                        # LF
+                    if c == 0x0A or c == 0x0D:
+                        # LF or CR (handle both for raw terminal mode compatibility)
                         if paste:
+                            # In paste mode, preserve the actual character
                             sys.stdout.write(b)
                             cmd += b
                             continue
-                        # If the previous character was also LF, and was less
-                        # than 20 ms ago, this was likely due to CRLF->LFLF
-                        # conversion, so ignore this linefeed.
-                        if pc == 0x0A and time.ticks_diff(t, pt) < 20:
+                        # Handle various newline sequences to avoid double-execution:
+                        # - CR+LF (Windows style): ignore LF if it follows CR quickly
+                        # - LF+LF (PTY double-newline): ignore second LF if it follows quickly
+                        # - CR+CR (potential double-CR): ignore second CR if it follows quickly
+                        if (
+                            (c == 0x0A and pc == 0x0D)  # LF after CR (CRLF)
+                            or (c == 0x0A and pc == 0x0A)  # LF after LF (double LF)
+                            or (c == 0x0D and pc == 0x0D)
+                        ) and time.ticks_diff(t, pt) < 20:  # CR after CR
                             continue
                         if curs:
                             # move cursor to end of the line
