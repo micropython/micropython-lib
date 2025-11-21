@@ -66,3 +66,47 @@ assert rest == ["-", "x", "y"]
 args, rest = parser.parse_known_args(["a", "b", "c", "-b", "2", "--x", "5", "1"])
 assert args.a == ["a", "b"] and args.b == "2"
 assert rest == ["c", "--x", "5", "1"]
+
+
+class CustomArgType:
+    def __init__(self, add):
+        self.add = add
+
+    def __call__(self, value):
+        return int(value) + self.add
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-a", type=int)
+args = parser.parse_args(["-a", "123"])
+assert args.a == 123
+parser.add_argument("-b", type=str)
+args = parser.parse_args(["-b", "string"])
+assert args.b == "string"
+parser.add_argument("-c", type=CustomArgType(1))
+args = parser.parse_args(["-c", "123"])
+assert args.c == 124
+try:
+    parser.add_argument("-d", type=())
+    assert False
+except ValueError as e:
+    assert "not callable" in str(e)
+parser.add_argument("-d", type=int, nargs="+")
+args = parser.parse_args(["-d", "123", "124", "125"])
+assert args.d == [123, 124, 125]
+parser.add_argument("-e", type=CustomArgType(1), nargs="+")
+args = parser.parse_args(["-e", "123", "124", "125"])
+assert args.e == [124, 125, 126]
+parser.add_argument("-f", type=CustomArgType(1), nargs="?")
+args = parser.parse_args(["-f", "123"])
+assert args.f == 124
+parser.add_argument("-g", type=CustomArgType(1), default=1)
+parser.add_argument("-i", type=CustomArgType(1), default="1")
+args = parser.parse_args([])
+assert args.g == 1
+assert args.i == 2
+parser.add_argument("-j", type=CustomArgType(1), default=1)
+args = parser.parse_args(["-j", "3"])
+assert args.g == 1
+assert args.i == 2
+assert args.j == 4
