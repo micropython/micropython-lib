@@ -4,8 +4,6 @@ import usocket as _socket
 
 _GLOBAL_DEFAULT_TIMEOUT = 30
 IPPROTO_IP = 0
-IP_ADD_MEMBERSHIP = 35
-IP_DROP_MEMBERSHIP = 36
 INADDR_ANY = 0
 
 error = OSError

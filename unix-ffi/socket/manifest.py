@@ -1,4 +1,4 @@
-metadata(version="0.5.2")
+metadata(version="0.5.3")
 
 # Originally written by Paul Sokolovsky.
 
