@@ -1,3 +1,5 @@
-metadata(version="0.1.0")
+metadata(version="0.2.0")
 
-module("abc.py")
+options.defaults(opt_level=3)
+
+module("abc.py", opt=options.opt_level)
