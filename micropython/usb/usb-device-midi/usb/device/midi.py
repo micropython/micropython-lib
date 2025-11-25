@@ -108,6 +108,65 @@ class MIDIInterface(Interface):
     def control_change(self, channel, controller, value):
         self.send_event(_CIN_CONTROL_CHANGE, _MIDI_CONTROL_CHANGE | channel, controller, value)
 
+    def send_sysex(self, p):
+        if len(p) > 3:
+            w = self._tx.pend_write()
+            if len(w) < 4:
+                return False  # TX buffer is full. TODO: block here?
+
+            w[0] = _CIN_SYSEX_START
+            w[1] = p[0]
+            w[2] = p[1]
+            w[3] = p[2]
+            self._tx.finish_write(4)
+            self._tx_xfer()
+
+            p = p[3:]
+
+        # play out til end
+        while p:
+            if len(p) > 2:
+                w = self._tx.pend_write()
+                if len(w) < 4:
+                    return False  # TX buffer is full. TODO: block here?
+
+                w[0] = _CIN_SYSEX_END_3BYTE
+                w[1] = p[0]
+                w[2] = p[1]
+                w[3] = p[2]
+                self._tx.finish_write(4)
+                self._tx_xfer()
+
+                p = p[3:]
+            elif len(p) > 1:
+                w = self._tx.pend_write()
+                if len(w) < 4:
+                    return False  # TX buffer is full. TODO: block here?
+
+                w[0] = _CIN_SYSEX_END_2BYTE
+                w[1] = p[0]
+                w[2] = p[1]
+                w[3] = 0
+                self._tx.finish_write(4)
+                self._tx_xfer()
+
+                p = p[2:]
+            else:
+                w = self._tx.pend_write()
+                if len(w) < 4:
+                    return False  # TX buffer is full. TODO: block here?
+
+                w[0] = _CIN_SYSEX_END_1BYTE
+                w[1] = p[0]
+                w[2] = 0
+                w[3] = 0
+                self._tx.finish_write(4)
+                self._tx_xfer()
+
+                p = p[1:]
+
+        return True
+
     def send_event(self, cin, midi0, midi1=0, midi2=0):
         # Queue a MIDI Event Packet to send to the host.
         #
