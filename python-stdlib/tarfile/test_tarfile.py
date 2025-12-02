@@ -35,3 +35,11 @@ class TestTarFile(unittest.TestCase):
     def test_contents(self):
         tf = tarfile.TarFile("test.tar")
         self.check_contents(test_tar_contents, tf)
+
+    def test_nested_tar(self):
+        tf = tarfile.TarFile("test.tar")
+        for file in tf:
+            if file.name == "tar.tar":
+                subf = tf.extractfile(file)
+                subtf = tarfile.TarFile(fileobj=subf)
+                self.check_contents(test_sub_tar_contents, subtf)
