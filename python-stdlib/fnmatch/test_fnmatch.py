@@ -58,8 +58,8 @@ class FnmatchTestCase(unittest.TestCase):
 
     @unittest.skip("unsupported on MicroPython")
     def test_bytes(self):
-        self.check_match(b"test", b"te*")
-        self.check_match(b"test\xff", b"te*\xff")
+        self.check_match(b"test", b"te*") # codespell:ignore
+        self.check_match(b"test\xff", b"te*\xff") # codespell:ignore
         self.check_match(b"foo\nbar", b"foo*")
 
 

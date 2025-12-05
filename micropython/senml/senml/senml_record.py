@@ -188,7 +188,7 @@ class SenmlRecord(SenmlBase):
         elif isinstance(self._value, bytearray):
             if (
                 naming_map["vd"] == "vd"
-            ):  # neeed to make a distinction between json (needs base64) and cbor (needs binary)
+            ):  # need to make a distinction between json (needs base64) and cbor (needs binary)
                 result[naming_map["vd"]] = binascii.b2a_base64(self._value, newline=False).decode(
                     "utf8"
                 )
@@ -216,7 +216,7 @@ class SenmlRecord(SenmlBase):
 
     def _from_raw(self, raw, naming_map):
         """
-        extracts te data from the raw record. Used during parsing of incoming data.
+        extracts the data from the raw record. Used during parsing of incoming data.
         :param raw: a raw senml record which still contains the original field names
         :param naming_map: used to map cbor names to json field names
         :return:

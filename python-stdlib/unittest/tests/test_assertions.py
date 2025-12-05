@@ -92,7 +92,7 @@ class TestUnittestAssertions(unittest.TestCase):
         with self.assertRaises(AssertionError):
             self.assertFalse(True)
 
-    def testIn(self):
+    def testIn(self): # codespell:ignore
         self.assertIn("t", "cat")
         with self.assertRaises(AssertionError):
             self.assertIn("x", "cat")

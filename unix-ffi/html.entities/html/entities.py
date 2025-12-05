@@ -1,6 +1,7 @@
 """HTML character entity references."""
 
 # maps the HTML entity name to the Unicode codepoint
+# codespell:ignore-begin
 name2codepoint = {
     "AElig": 0x00C6,  # latin capital letter AE = latin capital ligature AE, U+00C6 ISOlat1
     "Aacute": 0x00C1,  # latin capital letter A with acute, U+00C1 ISOlat1
@@ -255,9 +256,10 @@ name2codepoint = {
     "zwj": 0x200D,  # zero width joiner, U+200D NEW RFC 2070
     "zwnj": 0x200C,  # zero width non-joiner, U+200C NEW RFC 2070
 }
-
+# codespell:ignore-end
 
 # maps the HTML5 named character references to the equivalent Unicode character(s)
+# codespell:ignore-begin
 html5 = {
     "Aacute": "\xc1",
     "aacute": "\xe1",
@@ -2491,6 +2493,7 @@ html5 = {
     "zwj;": "\u200d",
     "zwnj;": "\u200c",
 }
+# codespell:ignore-end
 
 # maps the Unicode codepoint to the HTML entity name
 codepoint2name = {}

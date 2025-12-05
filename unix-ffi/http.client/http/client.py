@@ -1038,10 +1038,10 @@ class HTTPConnection:
                 self.putheader("Accept-Encoding", "identity")
 
             # we can accept "chunked" Transfer-Encodings, but no others
-            # NOTE: no TE header implies *only* "chunked"
+            # NOTE: no 'TE' header implies *only* "chunked"
             # self.putheader('TE', 'chunked')
 
-            # if TE is supplied in the header, then it must appear in a
+            # if 'TE' is supplied in the header, then it must appear in a
             # Connection header.
             # self.putheader('Connection', 'TE')
 
@@ -1093,7 +1093,7 @@ class HTTPConnection:
         thelen = None
         try:
             thelen = str(len(body))
-        except TypeError as te:
+        except TypeError as te: # codespell:ignore
             # If this is a file-like object, try to
             # fstat its file descriptor
             try:
