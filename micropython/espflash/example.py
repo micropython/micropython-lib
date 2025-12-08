@@ -7,8 +7,8 @@ if __name__ == "__main__":
     gpio0 = Pin(2, Pin.OUT)
     uart = UART(1, 115200, tx=Pin(8), rx=Pin(9), timeout=350)
 
-    md5sum = b"9a6cf1257769c9f1af08452558e4d60e"
-    path = "NINA_W102-v1.5.0-Nano-RP2040-Connect.bin"
+    md5sum = b"a7596ca0d562ddba21e0fcd41d7b798c"
+    path = "/remote/NINA_FW_V2.0.0_Arduino_W102.bin"
 
     esp = espflash.ESPFlash(reset, gpio0, uart)
     # Enter bootloader download mode, at 115200
