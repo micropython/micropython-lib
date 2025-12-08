@@ -12,6 +12,10 @@ def normpath(s):
     return s
 
 
+def realpath(s):
+    return s
+
+
 def abspath(s):
     if s[0] != "/":
         return os.getcwd() + "/" + s

@@ -1,0 +1,5 @@
+srctype = micropython-lib
+type = module
+version = 1.0
+author = Andrew Leech
+long_desc = Minimal tokenize stub supporting open() in utf8 encoding.
