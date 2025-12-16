@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+
+"""
+Copy modules from here to --prefix.
+
+Note that we do not scan for directories; instead we have a hardcoded list in all_directories.
+"""
+
+import os
+import shutil
+import sys
+
+
+prefix = os.path.expanduser('~/.micropython/lib')
+directories = []
+all_directories = ['micropython', 'python-ecosys', 'python-stdlib', 'unix-ffi']
+
+
+def usage(retval):
+    """Output a usage message."""
+    if retval == 0:
+        write = sys.stdout.write
+    else:
+        write = sys.stderr.write
+
+    write('Usage: {} --prefix ~/.micropython/lib --directories {}\n'.format(sys.argv[0], ' '.join(all_directories)))
+    write('--directories, if provided, must be the last argument specified\n')
+
+    sys.exit(retval)
+
+
+# The getopt-like module du jour would be a little more concise, but that's much harder for a static analyzer to check.
+while sys.argv[1:]:
+    if sys.argv[1] == '--prefix':
+        prefix = os.path.expanduser(sys.argv[2])
+        del sys.argv[1]
+    elif sys.argv[1] == '--directories':
+        directories = sys.argv[2:]
+        break
+    elif sys.argv[1] in ('-h', '--help'):
+        usage(0)
+    else:
+        sys.stderr.write('{}: unrecognized option: {}\n'.format(sys.argv[0], sys.argv[1]))
+        usage(1)
+    del sys.argv[1]
+
+if directories == []:
+    directories = all_directories
+
+
+class Error(OSError):
+    """An exception to raise when an error is encountered copying."""
+
+    pass
+
+
+def copytree(src, dst, symlinks=False, ignore=None, copy_function=shutil.copy2,
+             ignore_dangling_symlinks=False):
+    """
+    Recursively copy a directory tree.
+
+    This is a slightly-modified copy of copytree from CPython 3.4.  The motivation was to allow dst to preexist.
+    """
+    names = os.listdir(src)
+    if ignore is not None:
+        ignored_names = ignore(src, names)
+    else:
+        ignored_names = set()
+
+    os.makedirs(dst, exist_ok=True)
+    errors = []
+    for name in names:
+        if name in ignored_names:
+            continue
+        srcname = os.path.join(src, name)
+        dstname = os.path.join(dst, name)
+        try:
+            if os.path.islink(srcname):
+                linkto = os.readlink(srcname)
+                if symlinks:
+                    # We can't just leave it to `copy_function` because legacy
+                    # code with a custom `copy_function` may rely on copytree
+                    # doing the right thing.
+                    os.symlink(linkto, dstname)
+                    shutil.copystat(srcname, dstname, follow_symlinks=not symlinks)
+                else:
+                    # ignore dangling symlink if the flag is on
+                    if not os.path.exists(linkto) and ignore_dangling_symlinks:
+                        continue
+                    # otherwise let the copy occurs. copy2 will raise an error
+                    if os.path.isdir(srcname):
+                        copytree(srcname, dstname, symlinks, ignore,
+                                 copy_function)
+                    else:
+                        copy_function(srcname, dstname)
+            elif os.path.isdir(srcname):
+                copytree(srcname, dstname, symlinks, ignore, copy_function)
+            else:
+                # Will raise a SpecialFileError for unsupported file types
+                copy_function(srcname, dstname)
+        # catch the Error from the recursive copytree so that we can
+        # continue with other files
+        except Error as err:
+            errors.extend(err.args[0])
+        except OSError as why:
+            errors.append((srcname, dstname, str(why)))
+    try:
+        shutil.copystat(src, dst)
+    except OSError as why:
+        # Copying file access times may fail on Windows
+        if getattr(why, 'winerror', None) is None:
+            errors.append((src, dst, str(why)))
+    if errors:
+        raise Error(errors)
+    return dst
+
+
+def copy(source_dir, dest_dir):
+    """Copy modules to a lib location."""
+    ignore = shutil.ignore_patterns('test_*', 'setup.py', 'dist', '*.egg-info', '__pycache__')
+    copytree(source_dir, dest_dir, symlinks=True, ignore=ignore, ignore_dangling_symlinks=False)
+
+
+if __name__ == '__main__':
+    os.makedirs(prefix, exist_ok=True)
+
+    for directory in directories:
+        print('Copying directory {}'.format(directory))
+        os.chdir(directory)
+        copy('.', prefix)
+        os.chdir('..')
