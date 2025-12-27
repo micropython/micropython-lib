@@ -45,6 +45,7 @@ if libc:
     write_ = libc.func("i", "write", "iPi")
     close_ = libc.func("i", "close", "i")
     dup_ = libc.func("i", "dup", "i")
+    dup2_ = libc.func("i", "dup2", "ii")
     access_ = libc.func("i", "access", "si")
     fork_ = libc.func("i", "fork", "")
     pipe_ = libc.func("i", "pipe", "p")
@@ -207,6 +208,10 @@ def dup(fd):
     check_error(r)
     return r
 
+def dup2(oldfd, newfd):
+    r = dup2_(oldfd, newfd)
+    check_error(r)
+    return r
 
 def access(path, mode):
     return access_(path, mode) == 0
@@ -293,24 +298,53 @@ def urandom(n):
     with builtins.open("/dev/urandom", "rb") as f:
         return f.read(n)
 
+class _PopenStream:
+    def __init__(self, fd, pid, mode):
+        self._fd = open(f"/dev/fd/{fd}", mode)
+        self._pid = pid
+        self._closed = False
+        self._exitcode = None
 
-def popen(cmd, mode="r"):
-    import builtins
+    def __enter__(self):
+        return self._fd
 
-    i, o = pipe()
-    if mode[0] == "w":
-        i, o = o, i
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def close(self):
+        if not self._closed:
+            try:
+                self._fd.close()
+            finally:
+                pid, status = waitpid(self._pid, 0)
+                self._exitcode = status
+            self._closed = True
+        return self._exitcode
+
+
+def popen(cmd, mode='r'):
+    rfd, wfd = pipe()
     pid = fork()
-    if not pid:
-        if mode[0] == "r":
-            close(1)
+
+    if pid == 0:
+        # --- CHILD ---
+        if mode[0] == 'r':
+            close(rfd)
+            dup2(wfd, 1)  # connect pipe to stdout
+            close(wfd)
         else:
-            close(0)
-        close(i)
-        dup(o)
-        close(o)
-        s = system(cmd)
-        _exit(s)
+            close(wfd)
+            dup2(rfd, 0)  # connect pipe to stdin
+            close(rfd)
+
+        execvp("sh", ["sh", "-c", cmd])
+        # If execvp SUCCEEDS, the code below is NEVER executed.
+        _exit(127)
+
+    # --- PARENT ---
+    if mode[0] == 'r':
+        close(wfd)
+        return _PopenStream(rfd, pid, mode)
     else:
-        close(o)
-        return builtins.open(i, mode)
+        close(rfd)
+        return _PopenStream(wfd, pid, mode)
