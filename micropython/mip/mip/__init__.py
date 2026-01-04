@@ -169,6 +169,12 @@ def _install_package(package, index, target, version, mpy):
     return _install_json(package, index, target, version, mpy)
 
 
+class InstallError(RuntimeError):
+    """
+    Raised when an installation fails.
+    """
+
+
 def install(package, index=None, target=None, version=None, mpy=True):
     if not target:
         for p in sys.path:
@@ -176,8 +182,7 @@ def install(package, index=None, target=None, version=None, mpy=True):
                 target = p
                 break
         else:
-            print("Unable to find lib dir in sys.path")
-            return
+            raise InstallError("Unable to find lib dir in sys.path")
 
     if not index:
         index = _PACKAGE_INDEX
@@ -185,4 +190,4 @@ def install(package, index=None, target=None, version=None, mpy=True):
     if _install_package(package, index.rstrip("/"), target, version, mpy):
         print("Done")
     else:
-        print("Package may be partially installed")
+        raise InstallError("Package may be partially installed")
