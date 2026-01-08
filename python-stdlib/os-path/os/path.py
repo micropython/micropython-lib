@@ -13,28 +13,28 @@ def normpath(s):
 
 
 def abspath(s):
-    if s[0] != "/":
-        return os.getcwd() + "/" + s
+    if s[0] != sep:
+        return os.getcwd() + sep + s
     return s
 
 
 def join(*args):
     # TODO: this is non-compliant
     if type(args[0]) is bytes:
-        return b"/".join(args)
+        return bytes(sep).join(args)
     else:
-        return "/".join(args)
+        return sep.join(args)
 
 
 def split(path):
     if path == "":
         return ("", "")
-    r = path.rsplit("/", 1)
+    r = path.rsplit(sep, 1)
     if len(r) == 1:
         return ("", path)
     head = r[0]  # .rstrip("/")
     if not head:
-        head = "/"
+        head = sep
     return (head, r[1])
 
 
@@ -74,7 +74,7 @@ def isfile(path):
 
 
 def expanduser(s):
-    if s == "~" or s.startswith("~/"):
+    if s == "~" or s.startswith("~" + sep):
         h = os.getenv("HOME")
         return h + s[1:]
     if s[0] == "~":
