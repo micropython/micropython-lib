@@ -78,6 +78,7 @@ def send_html(cl):
     cl.send(
         b"""\
 HTTP/1.0 200 OK\r
+Content-Type: text/html\r
 \r
 <base href=\""""
     )
