@@ -154,7 +154,7 @@ class SDCard:
         buf[2] = arg >> 16
         buf[3] = arg >> 8
         buf[4] = arg
-        buf[5] = crc
+        buf[5] = crc | 0x01  # ensure stop bit is always set
         self.spi.write(buf)
 
         if skip1:
