@@ -122,7 +122,7 @@ class CDCInterface(io.IOBase, Interface):
         self.init(**kwargs)
 
     def init(
-        self, baudrate=9600, bits=8, parity="N", stop=1, timeout=None, txbuf=256, rxbuf=256, flow=0
+        self, baudrate=9600, bits=8, parity="N", stop=1, timeout=1000, txbuf=256, rxbuf=256, flow=0
     ):
         # Configure the CDC serial port. Note that many of these settings like
         # baudrate, bits, parity, stop don't change the USB-CDC device behavior
