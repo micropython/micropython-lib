@@ -106,6 +106,7 @@ async def task(g=None, prompt="--> "):
         hist_n = 0  # Number of history entries.
         c = 0  # ord of most recent character.
         t = 0  # timestamp of most recent character.
+        _autocomplete = getattr(micropython, "repl_autocomplete", None)
         while True:
             hist_b = 0  # How far back in the history are we currently.
             sys.stdout.write(prompt)
@@ -187,6 +188,31 @@ async def task(g=None, prompt="--> "):
                     elif c == CHAR_CTRL_E:
                         sys.stdout.write("paste mode; Ctrl-C to cancel, Ctrl-D to finish\n===\n")
                         paste = True
+                    elif c == 0x09 and not paste:
+                        # Tab key.
+                        cursor_pos = len(cmd) - curs
+                        if cursor_pos > 0 and cmd[cursor_pos - 1] <= " ":
+                            # Insert 4 spaces for indentation after whitespace.
+                            compl = "    "
+                        elif _autocomplete and cursor_pos > 0:
+                            compl = _autocomplete(cmd[:cursor_pos])
+                        else:
+                            compl = ""
+                        if compl:
+                            # Insert completion at cursor.
+                            if curs:
+                                cmd = "".join((cmd[:-curs], compl, cmd[-curs:]))
+                                sys.stdout.write(cmd[-curs - len(compl) :])
+                                sys.stdout.write("\x1b[{}D".format(curs))
+                            else:
+                                sys.stdout.write(compl)
+                                cmd += compl
+                        elif compl is None:
+                            # Multiple matches printed by autocomplete, redraw line.
+                            sys.stdout.write(prompt)
+                            sys.stdout.write(cmd)
+                            if curs:
+                                sys.stdout.write("\x1b[{}D".format(curs))
                     elif c == 0x1B:
                         # Start of escape sequence.
                         key = await s.read(2)

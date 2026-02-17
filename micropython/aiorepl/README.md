@@ -94,7 +94,7 @@ Ctrl-D at the asyncio REPL command prompt will terminate the current event loop,
 
 The following features are unsupported:
 
-* Tab completion is not supported (also unsupported in `python -m asyncio`).
+* Tab completion requires `micropython.repl_autocomplete` (available when firmware is built with `MICROPY_HELPER_REPL`, which is the default for most ports).
 * Multi-line continuation. However you can do single-line definitions of functions, see demo above.
 * Exception tracebacks. Only the exception type and message is shown, see demo above.
 * Emacs shortcuts (e.g. Ctrl-A, Ctrl-E, to move to start/end of line).
