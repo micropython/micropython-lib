@@ -391,6 +391,8 @@ def loads(
     The ``encoding`` argument is ignored and deprecated.
 
     """
+    if isinstance(s, (bytes, bytearray)):
+        s = s.decode('utf-8')
     if (
         cls is None
         and object_hook is None
@@ -413,6 +415,4 @@ def loads(
         kw["parse_int"] = parse_int
     if parse_constant is not None:
         kw["parse_constant"] = parse_constant
-    if isinstance(s, (bytes, bytearray)):
-        s = s.decode('utf-8')
     return cls(**kw).decode(s)
