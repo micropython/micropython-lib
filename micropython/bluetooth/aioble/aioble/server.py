@@ -100,13 +100,21 @@ class BaseCharacteristic:
         else:
             ble.gatts_write(self._value_handle, data, send_update)
 
-    # When the a capture-enabled characteristic is created, create the
+    # When a capture-enabled characteristic is created, create the
     # necessary events (if not already created).
+    # Guard on _capture_task (not _capture_queue) to match _server_shutdown()
+    # which guards on _capture_task. This ensures partial teardown (task gone
+    # but queue remains) self-heals instead of silently no-oping.
     @staticmethod
     def _init_capture():
-        if hasattr(BaseCharacteristic, "_capture_queue"):
+        if hasattr(BaseCharacteristic, "_capture_task"):
             return
-
+        # Clean up any partial state from incomplete shutdown
+        for attr in ("_capture_queue", "_capture_write_event", "_capture_consumed_event"):
+            try:
+                delattr(BaseCharacteristic, attr)
+            except AttributeError:
+                pass
         BaseCharacteristic._capture_queue = deque((), _WRITE_CAPTURE_QUEUE_LIMIT)
         BaseCharacteristic._capture_write_event = asyncio.ThreadSafeFlag()
         BaseCharacteristic._capture_consumed_event = asyncio.ThreadSafeFlag()
