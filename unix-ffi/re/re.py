@@ -38,6 +38,10 @@ PCRE2_SIZE_TYPE = "L"
 # to -1
 PCRE2_ZERO_TERMINATED = -1
 
+# PCRE2_UNSET is used for offsets of groups that didn't participate in a match
+# It's SIZE_MAX: 0xFFFFFFFF for 32bit, 0xFFFFFFFFFFFFFFFF for 64bit
+PCRE2_UNSET = (1 << (PCRE2_SIZE_SIZE * 8)) - 1
+
 
 IGNORECASE = I = 0x8
 MULTILINE = M = 0x400
@@ -62,12 +66,11 @@ class PCREMatch:
         if not n:
             return self.s[self.offsets[0] : self.offsets[1]]
         if len(n) == 1:
-            return self.s[self.offsets[n[0] * 2] : self.offsets[n[0] * 2 + 1]]
-        return tuple(self.s[self.offsets[i * 2] : self.offsets[i * 2 + 1]] for i in n)
+            return None if self.offsets[n[0] * 2] == PCRE2_UNSET else self.s[self.offsets[n[0] * 2] : self.offsets[n[0] * 2 + 1]]
+        return tuple(None if self.offsets[i * 2] == PCRE2_UNSET else self.s[self.offsets[i * 2] : self.offsets[i * 2 + 1]] for i in n)
 
     def groups(self, default=None):
-        assert default is None
-        return tuple(self.group(i + 1) for i in range(self.num - 1))
+        return tuple(default if self.offsets[(i + 1) * 2] == PCRE2_UNSET else self.group(i + 1) for i in range(self.num - 1))
 
     def start(self, n=0):
         return self.offsets[n * 2]
