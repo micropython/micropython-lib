@@ -60,3 +60,9 @@ assert indents == ["\t", "\t"]
 text = "  \thello there\n  \t  how are you?"
 indents = _leading_whitespace_re.findall(text)
 assert indents == ["  \t", "  \t  "]
+
+m = re.match(r"(.)?", "")
+assert m.group() == ""
+assert m.group(0, 1) == ("", None)
+assert m.groups() == (None,)
+assert m.groups("default") == ("default",)
