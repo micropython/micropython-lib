@@ -2,6 +2,7 @@
 # Peter hinch 30th Jan 2016
 import machine
 import os
+import time
 import sdcard
 
 
@@ -44,6 +45,26 @@ def sdtest():
     with open(fn, "r") as f:
         result2 = f.read()
         print(len(result2), "bytes read")
+
+    fn = "/fc/speed.bin"
+    buf = bytearray(32768)  # 32 KB buffer
+
+    print()
+    print("Write speed test")
+    t = time.ticks_ms()
+    with open(fn, "wb") as f:
+        for _ in range(32):  # 1 MB total
+            f.write(buf)
+    elapsed = time.ticks_diff(time.ticks_ms(), t)
+    print("{} KB/s".format(32768 * 32 // elapsed))
+
+    print("Read speed test")
+    t = time.ticks_ms()
+    with open(fn, "rb") as f:
+        while f.readinto(buf):
+            pass
+    elapsed = time.ticks_diff(time.ticks_ms(), t)
+    print("{} KB/s".format(32768 * 32 // elapsed))
 
     os.umount("/fc")
 

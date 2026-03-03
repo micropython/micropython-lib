@@ -19,7 +19,7 @@ See [Package management](https://docs.micropython.org/en/latest/reference/packag
 
 ## Common uses
 
-`strftime()` is used when using a loggging [Formatter
+`strftime()` is used when using a logging [Formatter
 Object](https://docs.python.org/3/library/logging.html#formatter-objects) that
 employs
 [`asctime`](https://docs.python.org/3/library/logging.html#formatter-objects).

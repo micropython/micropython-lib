@@ -25,23 +25,24 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-Basic example usage:
+Basic example usage::
 
-import time
-from lsm6dsox import LSM6DSOX
+    import time
+    from lsm6dsox import LSM6DSOX
 
-from machine import Pin, SPI, I2C
-# Init in I2C mode.
-lsm = LSM6DSOX(I2C(0, scl=Pin(13), sda=Pin(12)))
+    from machine import Pin, SPI, I2C
+    # Init in I2C mode.
+    lsm = LSM6DSOX(I2C(0, scl=Pin(13), sda=Pin(12)))
 
-# Or init in SPI mode.
-#lsm = LSM6DSOX(SPI(5), cs=Pin(10))
+    # Or init in SPI mode.
+    #lsm = LSM6DSOX(SPI(5), cs=Pin(10))
 
-while (True):
-    print('Accelerometer: x:{:>8.3f} y:{:>8.3f} z:{:>8.3f}'.format(*lsm.accel()))
-    print('Gyroscope:     x:{:>8.3f} y:{:>8.3f} z:{:>8.3f}'.format(*lsm.gyro()))
-    print("")
-    time.sleep_ms(100)
+    while (True):
+        print('Accelerometer: x:{:>8.3f} y:{:>8.3f} z:{:>8.3f}'.format(*lsm.accel()))
+        print('Gyroscope:     x:{:>8.3f} y:{:>8.3f} z:{:>8.3f}'.format(*lsm.gyro()))
+        print("")
+        time.sleep_ms(100)
+
 """
 
 import array
@@ -88,7 +89,7 @@ class LSM6DSOX:
         accel_scale=4,
         ucf=None,
     ):
-        """Initalizes Gyro and Accelerator.
+        """Initializes Gyro and Accelerator.
         accel_odr: (0, 1.6Hz, 3.33Hz, 6.66Hz, 12.5Hz, 26Hz, 52Hz, 104Hz, 208Hz, 416Hz, 888Hz)
         gyro_odr:  (0, 1.6Hz, 3.33Hz, 6.66Hz, 12.5Hz, 26Hz, 52Hz, 104Hz, 208Hz, 416Hz, 888Hz)
         gyro_scale:  (245dps, 500dps, 1000dps, 2000dps)

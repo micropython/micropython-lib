@@ -90,6 +90,7 @@ function ci_package_tests_run {
         python-stdlib/pathlib \
         python-stdlib/quopri \
         python-stdlib/shutil \
+        python-stdlib/tarfile \
         python-stdlib/tempfile \
         python-stdlib/time \
         python-stdlib/unittest/tests \

@@ -1,4 +1,4 @@
-Welcome to the API documet site for the micro-python SenML library.
+Welcome to the API document site for the micro-python SenML library.
 
 The following api sections are available:
 

@@ -1,10 +1,10 @@
-"""Utilities for with-statement contexts.  See PEP 343.
+"""
+Utilities for with-statement contexts.  See PEP 343.
 
 Original source code: https://hg.python.org/cpython/file/3.4/Lib/contextlib.py
 
 Not implemented:
  - redirect_stdout;
-
 """
 
 import sys
@@ -15,12 +15,12 @@ from ucontextlib import *
 class closing(object):
     """Context to automatically close something at the end of a block.
 
-    Code like this:
+    Code like this::
 
         with closing(<module>.open(<arguments>)) as f:
             <block>
 
-    is equivalent to this:
+    is equivalent to this::
 
         f = <module>.open(<arguments>)
         try:

@@ -55,9 +55,12 @@ class FileSection:
         if sz:
             buf = bytearray(16)
             while sz:
-                s = min(sz, 16)
-                self.f.readinto(buf, s)
-                sz -= s
+                if sz >= 16:
+                    self.f.readinto(buf)
+                    sz -= 16
+                else:
+                    self.f.read(sz)
+                    sz = 0
 
 
 class TarInfo:

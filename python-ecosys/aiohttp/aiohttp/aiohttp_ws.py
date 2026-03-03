@@ -166,7 +166,11 @@ class WebSocketClient:
 
     async def receive(self):
         while True:
-            opcode, payload = await self._read_frame()
+            opcode, payload, final = await self._read_frame()
+            while not final:
+                # original opcode must be preserved
+                _, morepayload, final = await self._read_frame()
+                payload += morepayload
             send_opcode, data = self._process_websocket_frame(opcode, payload)
             if send_opcode:  # pragma: no cover
                 await self.send(data, send_opcode)
@@ -206,7 +210,7 @@ class WebSocketClient:
         payload = await self.reader.readexactly(length)
         if has_mask:  # pragma: no cover
             payload = bytes(x ^ mask[i % 4] for i, x in enumerate(payload))
-        return opcode, payload
+        return opcode, payload, fin
 
 
 class ClientWebSocketResponse:

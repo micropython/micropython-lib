@@ -1,7 +1,7 @@
 # MIT license; Copyright (c) 2021 Jim Mussared
 
 # This is a BLE file server, based very loosely on the Object Transfer Service
-# specification. It demonstrated transfering data over an L2CAP channel, as
+# specification. It demonstrated transferring data over an L2CAP channel, as
 # well as using notifications and GATT writes on a characteristic.
 
 # The server supports downloading and uploading files, as well as querying
@@ -33,7 +33,7 @@ _FILE_SERVICE_UUID = bluetooth.UUID("0492fcec-7194-11eb-9439-0242ac130002")
 _CONTROL_CHARACTERISTIC_UUID = bluetooth.UUID("0492fcec-7194-11eb-9439-0242ac130003")
 
 # How frequently to send advertising beacons.
-_ADV_INTERVAL_MS = 250_000
+_ADV_INTERVAL_US = 250_000
 
 
 _COMMAND_SEND = const(0)
@@ -162,7 +162,7 @@ async def peripheral_task():
     while True:
         print("Waiting for connection")
         connection = await aioble.advertise(
-            _ADV_INTERVAL_MS,
+            _ADV_INTERVAL_US,
             name="mpy-file",
             services=[_FILE_SERVICE_UUID],
         )

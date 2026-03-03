@@ -99,7 +99,7 @@ class TestSubtest(unittest.TestCase):
                         self.assertEqual(sorted(test["unsorted"]), test["sorted"])
 
     def test_factorial(self) -> None:
-        """Test that the factorial fuction correctly calculates factorials
+        """Test that the factorial function correctly calculates factorials
 
         Makes use of `msg` argument in subtest method to clarify which subtests had an
         error in the results
@@ -190,7 +190,7 @@ class TestSubtest(unittest.TestCase):
             self.assertFalse(bob.has_friend(alice))
 
         # Friendship is not always  commutative, so Bob is not implicitly friends with Alice
-        with self.subTest("Alice and Bob should not both be friends with eachother"):
+        with self.subTest("Alice and Bob should not both be friends with each other"):
             with self.assertRaises(AssertionError):
                 self.assertTrue(bob.has_friend(alice) and alice.has_friend(bob))
 

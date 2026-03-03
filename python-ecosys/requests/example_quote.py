@@ -1,6 +1,6 @@
 import requests
 
-r = requests.get("http://api.xively.com/")
+r = requests.get("https://dummyjson.com/quotes/1")
 print(r)
 print(r.content)
 print(r.text)

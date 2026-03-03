@@ -27,21 +27,21 @@ LSM9DS1 - 9DOF inertial sensor of STMicro driver for MicroPython.
 The sensor contains an accelerometer / gyroscope / magnetometer
 Uses the internal FIFO to store up to 16 gyro/accel data, use the iter_accel_gyro generator to access it.
 
-Example usage:
+Example usage::
 
-import time
-from lsm9ds1 import LSM9DS1
-from machine import Pin, I2C
+    import time
+    from lsm9ds1 import LSM9DS1
+    from machine import Pin, I2C
 
-imu = LSM9DS1(I2C(1, scl=Pin(15), sda=Pin(14)))
+    imu = LSM9DS1(I2C(1, scl=Pin(15), sda=Pin(14)))
 
-while (True):
-    #for g,a in imu.iter_accel_gyro(): print(g,a)    # using fifo
-    print('Accelerometer: x:{:>8.3f} y:{:>8.3f} z:{:>8.3f}'.format(*imu.accel()))
-    print('Magnetometer:  x:{:>8.3f} y:{:>8.3f} z:{:>8.3f}'.format(*imu.magnet()))
-    print('Gyroscope:     x:{:>8.3f} y:{:>8.3f} z:{:>8.3f}'.format(*imu.gyro()))
-    print("")
-    time.sleep_ms(100)
+    while (True):
+        #for g,a in imu.iter_accel_gyro(): print(g,a)    # using fifo
+        print('Accelerometer: x:{:>8.3f} y:{:>8.3f} z:{:>8.3f}'.format(*imu.accel()))
+        print('Magnetometer:  x:{:>8.3f} y:{:>8.3f} z:{:>8.3f}'.format(*imu.magnet()))
+        print('Gyroscope:     x:{:>8.3f} y:{:>8.3f} z:{:>8.3f}'.format(*imu.gyro()))
+        print("")
+        time.sleep_ms(100)
 """
 
 import array
@@ -81,7 +81,7 @@ class LSM9DS1:
         magnet_odr=80,
         magnet_scale=4,
     ):
-        """Initalizes Gyro, Accelerometer and Magnetometer.
+        """Initializes Gyro, Accelerometer and Magnetometer.
         bus: IMU bus
         address_imu: IMU I2C address.
         address_magnet: Magnetometer I2C address.
@@ -134,14 +134,14 @@ class LSM9DS1:
         mv[5] = 0x2  # ctrl9 - FIFO enabled
         self.bus.writeto_mem(self.address_imu, _CTRL_REG4_G, mv)
 
-        # fifo: use continous mode (overwrite old data if overflow)
+        # fifo: use continuous mode (overwrite old data if overflow)
         self.bus.writeto_mem(self.address_imu, _FIFO_CTRL_REG, b"\x00")
         self.bus.writeto_mem(self.address_imu, _FIFO_CTRL_REG, b"\xc0")
 
         # Configure Magnetometer
         mv[0] = 0x40 | (magnet_odr << 2)  # ctrl1: high performance mode
         mv[1] = _MAGNET_SCALE.index(magnet_scale) << 5  # ctrl2: scale, normal mode, no reset
-        mv[2] = 0x00  # ctrl3: continous conversion, no low power, I2C
+        mv[2] = 0x00  # ctrl3: continuous conversion, no low power, I2C
         mv[3] = 0x08  # ctrl4: high performance z-axis
         mv[4] = 0x00  # ctr5: no fast read, no block update
         self.bus.writeto_mem(self.address_magnet, _CTRL_REG1_M, mv[:5])

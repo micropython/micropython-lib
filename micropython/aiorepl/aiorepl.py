@@ -74,7 +74,7 @@ __exec_task = asyncio.create_task(__code())
                 except asyncio.CancelledError:
                     pass
         else:
-            # Excute code snippet directly.
+            # Execute code snippet directly.
             try:
                 try:
                     micropython.kbd_intr(3)

@@ -1,4 +1,5 @@
-"""Text wrapping and filling.
+"""
+Text wrapping and filling.
 """
 
 # Copyright (C) 1999-2001 Gregory P. Ward.
@@ -169,7 +170,8 @@ class TextWrapper:
         return chunks
 
     def _fix_sentence_endings(self, chunks):
-        """_fix_sentence_endings(chunks : [string])
+        """
+        _fix_sentence_endings(chunks : [string])
 
         Correct for sentence endings buried in 'chunks'.  Eg. when the
         original text contains "... foo.\nBar ...", munge_whitespace()
