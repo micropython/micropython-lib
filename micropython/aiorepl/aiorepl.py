@@ -97,6 +97,7 @@ async def task(g=None, prompt="--> "):
     print("Starting asyncio REPL...")
     if g is None:
         g = __import__("__main__").__dict__
+    _stdio_raw = getattr(micropython, "stdio_mode_raw", lambda _: None)
     try:
         micropython.kbd_intr(-1)
         s = asyncio.StreamReader(sys.stdin)
@@ -107,6 +108,7 @@ async def task(g=None, prompt="--> "):
         c = 0  # ord of most recent character.
         t = 0  # timestamp of most recent character.
         _autocomplete = getattr(micropython, "repl_autocomplete", None)
+        _stdio_raw(True)
         while True:
             hist_b = 0  # How far back in the history are we currently.
             sys.stdout.write(prompt)
@@ -145,10 +147,12 @@ async def task(g=None, prompt="--> "):
                             hist_n = min(_HISTORY_LIMIT - 1, hist_n + 1)
                             hist_i = (hist_i + 1) % _HISTORY_LIMIT
 
+                            _stdio_raw(False)
                             result = await execute(cmd, g, s)
                             if result is not None:
                                 sys.stdout.write(repr(result))
                                 sys.stdout.write("\n")
+                            _stdio_raw(True)
                         break
                     elif c == 0x08 or c == 0x7F:
                         # Backspace.
@@ -164,7 +168,9 @@ async def task(g=None, prompt="--> "):
                                 cmd = cmd[:-1]
                                 sys.stdout.write("\x08 \x08")
                     elif c == CHAR_CTRL_A:
+                        _stdio_raw(False)
                         raw_repl(sys.stdin, g)
+                        _stdio_raw(True)
                         break
                     elif c == CHAR_CTRL_B:
                         continue
@@ -175,10 +181,12 @@ async def task(g=None, prompt="--> "):
                         break
                     elif c == CHAR_CTRL_D:
                         if paste:
+                            _stdio_raw(False)
                             result = await execute(cmd, g, s)
                             if result is not None:
                                 sys.stdout.write(repr(result))
                                 sys.stdout.write("\n")
+                            _stdio_raw(True)
                             break
 
                         sys.stdout.write("\n")
@@ -264,6 +272,7 @@ async def task(g=None, prompt="--> "):
                         sys.stdout.write(b)
                         cmd += b
     finally:
+        _stdio_raw(False)
         micropython.kbd_intr(3)
 
 
