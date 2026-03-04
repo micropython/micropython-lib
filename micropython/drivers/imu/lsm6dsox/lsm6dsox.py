@@ -60,6 +60,13 @@ _CTRL7_G = const(0x16)
 _OUTX_L_G = const(0x22)
 _OUTX_L_XL = const(0x28)
 _MLC_STATUS = const(0x38)
+_MD1_CFG = const(0x5E)
+_MD2_CFG = const(0x5F)
+
+_PAGE_SEL = const(0x02)
+_PAGE_ADDRESS = const(0x08)
+_PAGE_VALUE = const(0x09)
+_PAGE_RW = const(0x17)
 
 _DEFAULT_ADDR = const(0x6A)
 _WHO_AM_I_REG = const(0x0F)
@@ -75,6 +82,17 @@ _TAP_CFG0 = const(0x56)
 
 _EMB_FUNC_EN_A = const(0x04)
 _EMB_FUNC_EN_B = const(0x05)
+_EMB_FUNC_INT1 = const(0x0A)
+_EMB_FUNC_INT2 = const(0x0E)
+_EMB_FUNC_SRC = const(0x64)
+_STEP_COUNTER_L = const(0x62)
+
+_PEDO_DEB_STEPS_CONF = const(0x0184)
+
+_PEDO_EN_MASK = const(0x08)
+_PEDO_RST_STEP_MASK = const(0x80)
+_PEDO_INT_MASK = const(0x08)
+_INT_EMB_FUNC_MASK = const(0x02)
 
 
 class LSM6DSOX:
@@ -108,8 +126,9 @@ class LSM6DSOX:
         if self._read_reg(_WHO_AM_I_REG) != 108:
             raise OSError("No LSM6DS device was found at address 0x%x" % (self.address))
 
-        # allocate scratch buffer for efficient conversions and memread op's
+        # allocate scratch buffers for efficient conversions and memread op's
         self.scratch_int = array.array("h", [0, 0, 0])
+        self.scratch_2b = bytearray(2)
 
         SCALE_GYRO = {250: 0, 500: 1, 1000: 2, 2000: 3}
         SCALE_ACCEL = {2: 0, 4: 2, 8: 3, 16: 1}
@@ -185,6 +204,9 @@ class LSM6DSOX:
             finally:
                 self.cs(1)
 
+    def _modify_bits(self, reg, clr_mask=0, set_mask=0):
+        self._write_reg(reg, (self._read_reg(reg) & ~clr_mask) | set_mask)
+
     def _read_reg_into(self, reg, buf):
         if self._use_i2c:
             self.bus.readfrom_mem_into(self.address, reg, buf)
@@ -196,8 +218,43 @@ class LSM6DSOX:
             finally:
                 self.cs(1)
 
+    def _select_page(self, address, value=None):
+        """
+        Selects the embedded function page and reads/writes the value at the given address.
+        If value is None, it reads the value at the address. Otherwise, it writes the value to the address.
+        """
+        msb = (address >> 8) & 0x0F  # MSB is the page number
+        lsb = address & 0xFF  # LSB is the register address within the page
+
+        self.set_mem_bank(_FUNC_CFG_BANK_EMBED)
+
+        rw_bit = 0x20 if value is None else 0x40
+        # Clear both read and write bits first, then set read (bit 5) or write (bit 6).
+        self._modify_bits(_PAGE_RW, clr_mask=0x60, set_mask=rw_bit)
+
+        # select page
+        self._write_reg(_PAGE_SEL, (msb << 4) | 0x01)
+
+        # set page addr
+        self._write_reg(_PAGE_ADDRESS, lsb)
+
+        val = None
+        if value is None:
+            # read value
+            val = self._read_reg(_PAGE_VALUE)
+        else:
+            # write value
+            self._write_reg(_PAGE_VALUE, value)
+
+        # unset page write/read and page_sel
+        self._write_reg(_PAGE_SEL, 0x01)
+        self._modify_bits(_PAGE_RW, clr_mask=rw_bit)
+
+        self.set_mem_bank(_FUNC_CFG_BANK_USER)
+        return val
+
     def reset(self):
-        self._write_reg(_CTRL3_C, self._read_reg(_CTRL3_C) | 0x1)
+        self._modify_bits(_CTRL3_C, set_mask=0x1)
         for i in range(10):
             if (self._read_reg(_CTRL3_C) & 0x01) == 0:
                 return
@@ -205,8 +262,7 @@ class LSM6DSOX:
         raise OSError("Failed to reset LSM6DS device.")
 
     def set_mem_bank(self, bank):
-        cfg = self._read_reg(_FUNC_CFG_ACCESS) & 0x3F
-        self._write_reg(_FUNC_CFG_ACCESS, cfg | (bank << 6))
+        self._modify_bits(_FUNC_CFG_ACCESS, clr_mask=0xC0, set_mask=(bank << 6))
 
     def set_embedded_functions(self, enable, emb_ab=None):
         self.set_mem_bank(_FUNC_CFG_BANK_EMBED)
@@ -234,18 +290,18 @@ class LSM6DSOX:
         emb_ab = self.set_embedded_functions(False)
 
         # Disable I3C interface
-        self._write_reg(_CTRL9_XL, self._read_reg(_CTRL9_XL) | 0x01)
+        self._modify_bits(_CTRL9_XL, set_mask=0x01)
 
         # Enable Block Data Update
-        self._write_reg(_CTRL3_C, self._read_reg(_CTRL3_C) | 0x40)
+        self._modify_bits(_CTRL3_C, set_mask=0x40)
 
         # Route signals on interrupt pin 1
         self.set_mem_bank(_FUNC_CFG_BANK_EMBED)
-        self._write_reg(_MLC_INT1, self._read_reg(_MLC_INT1) & 0x01)
+        self._modify_bits(_MLC_INT1, clr_mask=0xFE)
         self.set_mem_bank(_FUNC_CFG_BANK_USER)
 
         # Configure interrupt pin mode
-        self._write_reg(_TAP_CFG0, self._read_reg(_TAP_CFG0) | 0x41)
+        self._modify_bits(_TAP_CFG0, set_mask=0x41)
 
         self.set_embedded_functions(True, emb_ab)
 
@@ -257,6 +313,36 @@ class LSM6DSOX:
             buf = self._read_reg(_MLC0_SRC, 8)
             self.set_mem_bank(_FUNC_CFG_BANK_USER)
         return buf
+
+    def pedometer_config(self, enable=True, debounce=10, int1_enable=False, int2_enable=False):
+        """Configure the pedometer features."""
+        self._select_page(_PEDO_DEB_STEPS_CONF, debounce)
+
+        if int1_enable:
+            self._modify_bits(_MD1_CFG, set_mask=_INT_EMB_FUNC_MASK)
+        if int2_enable:
+            self._modify_bits(_MD2_CFG, set_mask=_INT_EMB_FUNC_MASK)
+
+        self.set_mem_bank(_FUNC_CFG_BANK_EMBED)
+
+        self._modify_bits(_EMB_FUNC_EN_A, _PEDO_EN_MASK, enable and _PEDO_EN_MASK)
+        self._modify_bits(_EMB_FUNC_INT1, _PEDO_INT_MASK, int1_enable and _PEDO_INT_MASK)
+        self._modify_bits(_EMB_FUNC_INT2, _PEDO_INT_MASK, int2_enable and _PEDO_INT_MASK)
+
+        self.set_mem_bank(_FUNC_CFG_BANK_USER)
+
+    def pedometer_reset(self):
+        """Reset the step counter."""
+        self.set_mem_bank(_FUNC_CFG_BANK_EMBED)
+        self._modify_bits(_EMB_FUNC_SRC, set_mask=_PEDO_RST_STEP_MASK)
+        self.set_mem_bank(_FUNC_CFG_BANK_USER)
+
+    def steps(self):
+        """Return the number of detected steps."""
+        self.set_mem_bank(_FUNC_CFG_BANK_EMBED)
+        self._read_reg_into(_STEP_COUNTER_L, self.scratch_2b)
+        self.set_mem_bank(_FUNC_CFG_BANK_USER)
+        return self.scratch_2b[0] | (self.scratch_2b[1] << 8)
 
     def gyro(self):
         """Returns gyroscope vector in degrees/sec."""

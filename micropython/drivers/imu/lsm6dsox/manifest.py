@@ -1,2 +1,2 @@
-metadata(description="ST LSM6DSOX imu driver.", version="1.0.1")
+metadata(description="ST LSM6DSOX imu driver.", version="1.1.0")
 module("lsm6dsox.py", opt=3)
