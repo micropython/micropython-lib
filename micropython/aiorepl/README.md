@@ -99,3 +99,24 @@ The following features are unsupported:
 * Exception tracebacks. Only the exception type and message is shown, see demo above.
 * Emacs shortcuts (e.g. Ctrl-A, Ctrl-E, to move to start/end of line).
 * Unicode handling for input.
+
+## Testing
+
+### Unit tests
+
+`test_autocomplete.py` tests the `micropython.repl_autocomplete` API contract
+that aiorepl depends on. Run on the unix port:
+
+    MICROPY_MICROPYTHON=ports/unix/build-standard/micropython \
+        tests/run-tests.py lib/micropython-lib/micropython/aiorepl/test_autocomplete.py
+
+Or deploy to a device with `mpremote cp` and run directly.
+
+### Integration test (PTY)
+
+`test_aiorepl_pty.py` exercises aiorepl interactively via a pseudo-terminal,
+testing tab completion, command execution, and terminal mode switching.
+Run with CPython against the unix build:
+
+    python3 lib/micropython-lib/micropython/aiorepl/test_aiorepl_pty.py \
+        ports/unix/build-standard/micropython

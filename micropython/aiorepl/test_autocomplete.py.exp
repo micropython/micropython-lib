@@ -3,6 +3,7 @@
 
 tvar_alpha      tvar_beta
 multiple: None
+attr: 'sion'
 b'x ' True
 b'x' True
 b'\n' True

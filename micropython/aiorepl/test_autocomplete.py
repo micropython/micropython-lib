@@ -1,6 +1,7 @@
 # Test tab completion logic used by aiorepl.
 import sys
 import micropython
+import __main__
 
 try:
     micropython.repl_autocomplete
@@ -20,14 +21,17 @@ print(repr(result))
 
 # Multiple matches: returns None (candidates printed to stdout by C code).
 # Create two globals sharing a prefix so autocomplete finds multiple matches.
-import __main__
-
 __main__.tvar_alpha = 1
 __main__.tvar_beta = 2
 result = micropython.repl_autocomplete("tvar_")
 del __main__.tvar_alpha
 del __main__.tvar_beta
 print("multiple:", repr(result))
+
+# Attribute completion: "sys.ver" matches sys.version and sys.version_info.
+# Common prefix is "version" so completion suffix is "sion".
+result = micropython.repl_autocomplete("sys.ver")
+print("attr:", repr(result))
 
 # Test the whitespace-before-cursor logic used for tab-as-indentation.
 # This validates the condition: cursor_pos > 0 and cmd[cursor_pos - 1] <= " "
