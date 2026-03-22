@@ -4,7 +4,7 @@ import sys
 
 _h = None
 
-names = ("libc.so", "libc.so.0", "libc.so.6", "libc.dylib")
+names = ("libc.so", "libc.so.0", "libc.so.6", "libc.so.7", "libc.dylib")
 
 
 def get():
