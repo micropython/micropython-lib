@@ -279,6 +279,9 @@ class Characteristic(BaseCharacteristic):
 
     def _indicate_done(conn_handle, value_handle, status):
         if characteristic := _registered_characteristics.get(value_handle, None):
+            if not (characteristic.flags & _FLAG_INDICATE):
+                log_warn("Received indication on unexpected characteristic:", value_handle)
+                return
             if connection := DeviceConnection._connected.get(conn_handle, None):
                 if not characteristic._indicate_connection:
                     # Timeout.
