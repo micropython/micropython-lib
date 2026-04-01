@@ -29,10 +29,10 @@ def sdtest():
         print(n, "bytes written")
         n = f.write(lines)
         print(n, "bytes written")
-
     with open(fn, "r") as f:
         result1 = f.read()
         print(len(result1), "bytes read")
+    os.remove(fn)
 
     fn = "/fc/rats1.txt"
     print()
@@ -40,10 +40,10 @@ def sdtest():
     with open(fn, "w") as f:
         n = f.write(short)  # one block
         print(n, "bytes written")
-
     with open(fn, "r") as f:
         result2 = f.read()
         print(len(result2), "bytes read")
+    os.remove(fn)
 
     fn = "/fc/speed.bin"
     buf = bytearray(32768)  # 32 KB buffer
