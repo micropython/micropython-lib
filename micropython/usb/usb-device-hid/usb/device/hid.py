@@ -64,7 +64,7 @@ class HIDInterface(Interface):
         set_report_buf=None,
         protocol=_INTERFACE_PROTOCOL_NONE,
         interface_str=None,
-        binterval=8,
+        interval_ms=8,
     ):
         # Construct a new HID interface.
         #
@@ -87,14 +87,14 @@ class HIDInterface(Interface):
         #
         # - interface_str is an optional string descriptor to associate with the HID USB interface.
         #
-        # - binterval this is the polling rate the device will request the host use in milliseconds.
+        # - interval_ms this is the polling rate the device will request the host use in milliseconds.
         super().__init__()
         self.report_descriptor = report_descriptor
         self.extra_descriptors = extra_descriptors
         self._set_report_buf = set_report_buf
         self.protocol = protocol
         self.interface_str = interface_str
-        self.binterval = binterval
+        self.interval_ms = interval_ms
 
         self._int_ep = None  # set during enumeration
 
@@ -154,7 +154,7 @@ class HIDInterface(Interface):
         # Add the typical single USB interrupt endpoint descriptor associated
         # with a HID interface.
         self._int_ep = ep_num | _EP_IN_FLAG
-        desc.endpoint(self._int_ep, "interrupt", 8, self.binterval)
+        desc.endpoint(self._int_ep, "interrupt", 8, self.interval_ms)
 
         self.idle_rate = 0
 
