@@ -1,6 +1,10 @@
 import io
-import os
 import sys
+
+try:
+    import ucontextlib as contextlib
+except ImportError:
+    import contextlib
 
 try:
     import traceback
@@ -30,46 +34,98 @@ class AssertRaisesContext:
         return False
 
 
-# These are used to provide required context to things like subTest
-__current_test__ = None
-__test_result__ = None
+class _Outcome:
+    def __init__(self, result: TestResult):
+        self.result = result
+        self.success = True
 
-
-class SubtestContext:
-    def __init__(self, msg=None, params=None):
-        self.msg = msg
-        self.params = params
-
-    def __enter__(self):
-        pass
-
-    def __exit__(self, *exc_info):
-        if exc_info[0] is not None:
-            # Exception raised
-            global __test_result__, __current_test__
-            test_details = __current_test__
-            if self.msg:
-                test_details += (f" [{self.msg}]",)
-            if self.params:
-                detail = ", ".join(f"{k}={v}" for k, v in self.params.items())
-                test_details += (f" ({detail})",)
-
-            _handle_test_exception(test_details, __test_result__, exc_info, False)
-        # Suppress the exception as we've captured it above
-        return True
-
-
-class NullContext:
-    def __enter__(self):
-        pass
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        pass
+    @contextlib.contextmanager
+    def wrap_execution(self, test_case: tuple[str, ...], is_subtest: bool = False):
+        old_success = self.success
+        self.success = True
+        try:
+            yield
+        except KeyboardInterrupt as exc:
+            # Ensure that tests are interruptible
+            raise exc
+        except SkipTest as exc:
+            self.success = False
+            reason: str = exc.args[0]
+            self.result.addSkip(test_case, reason)
+        except AssertionError as exc:
+            self.success = False
+            if is_subtest:
+                self.result.addSubTest(test_case, test_case, sys.exc_info())
+            else:
+                self.result.addFailure(test_case, exc)
+        except BaseException as exc:
+            self.success = False
+            if is_subtest:
+                self.result.addSubTest(test_case, test_case, sys.exc_info())
+            else:
+                self.result.addError(test_case, exc)
+        finally:
+            self.success = self.success and old_success
 
 
 class TestCase:
-    def __init__(self):
+    def __init__(self, methodName="runTest", *, _test_name: tuple[str, ...] = ()):
+        self._test_method_name = methodName
+        self._test_name = _test_name
+        self._outcome: _Outcome | None = None
+
+    def setUp(self):
         pass
+
+    @classmethod
+    def setUpClass(cls):
+        pass
+
+    def tearDown(self):
+        pass
+
+    @classmethod
+    def tearDownClass(cls):
+        pass
+
+    def id(self):
+        return f"{self.__class__.__qualname__}.{self._test_method_name}"
+
+    def defaultTestResult(self):
+        return TestResult()
+
+    def run(self, result: None | TestResult = None) -> TestResult:
+        if result is None:
+            result = self.defaultTestResult()
+
+        test_function = getattr(self, self._test_method_name)
+
+        result.startTest(self._test_name)
+        try:
+            self._outcome = _Outcome(result)
+            try:
+                with self._outcome.wrap_execution(self._test_name):
+                    self.setUp()
+
+                if self._outcome.success:
+                    with self._outcome.wrap_execution(self._test_name):
+                        ret = test_function()
+                        if ret is not None:
+                            raise ValueError(
+                                f"Test functions should return None, instead got {ret!r}."
+                            )
+
+                    with self._outcome.wrap_execution(self._test_name):
+                        self.tearDown()
+                self.doCleanups()
+
+                if self._outcome.success:
+                    result.addSuccess(self._test_name)
+            finally:
+                self._outcome = None
+        finally:
+            result.stopTest(self._test_name)
+        return result
 
     def addCleanup(self, func, *args, **kwargs):
         if not hasattr(self, "_cleanups"):
@@ -82,8 +138,18 @@ class TestCase:
                 func, args, kwargs = self._cleanups.pop()
                 func(*args, **kwargs)
 
+    @contextlib.contextmanager
     def subTest(self, msg=None, **params):
-        return SubtestContext(msg=msg, params=params)
+        parts = []
+        if msg:
+            parts.append(f"[{msg}]")
+        if params:
+            parts.append(f"({', '.join(f'{k}={v}' for k, v in params.items())})")
+        if not parts:
+            parts.append("(<subtest>)")
+        subtest_name = self._test_name + tuple(parts)
+        with self._outcome.wrap_execution(subtest_name, is_subtest=True):
+            yield
 
     def skipTest(self, reason):
         raise SkipTest(reason)
@@ -192,24 +258,32 @@ class TestCase:
     def assertRaises(self, exc, func=None, *args, **kwargs):
         if func is None:
             return AssertRaisesContext(exc)
-
-        try:
+        with AssertRaisesContext(exc):
             func(*args, **kwargs)
-        except Exception as e:
-            if isinstance(e, exc):
-                return
-            raise e
 
-        assert False, "%r not raised" % exc
-
+    @contextlib.contextmanager
     def assertWarns(self, warn):
-        return NullContext()
+        yield
+
+
+class _SingleFunctionTest(TestCase):
+    """Wrapper class to run simple test functions."""
+
+    def __init__(self, *, func, _test_name: tuple[str, ...]):
+        super().__init__(methodName="runTest", _test_name=_test_name)
+        self._func = func
+
+    def runTest(self):
+        return self._func()
+
+    def id(self):
+        return " ".join(self._test_name)
 
 
 def skip(msg):
     def _decor(fun):
         # We just replace original fun with _inner
-        def _inner(self):
+        def _inner(*args):
             raise SkipTest(msg)
 
         return _inner
@@ -233,8 +307,11 @@ def expectedFailure(test):
     def test_exp_fail(*args, **kwargs):
         try:
             test(*args, **kwargs)
-        except:
+        except AssertionError:
+            # Ignore failure
             pass
+        except:
+            raise
         else:
             assert False, "unexpected success"
 
@@ -243,24 +320,103 @@ def expectedFailure(test):
 
 class TestSuite:
     def __init__(self, name=""):
-        self._tests = []
+        self._tests: list["TestCase|TestSuite"] = []
         self.name = name
+        self._previous_testcase_class: type[TestCase] | None = None
+        self._setup_class_failed: bool = False
 
-    def addTest(self, cls):
-        self._tests.append(cls)
+    def addTest(self, test):
+        if isinstance(test, type) and issubclass(test, TestCase):
+            raise TypeError("TestCases must be instantiated before calling addTest()", test)
+        elif isinstance(test, (TestCase, TestSuite)):
+            self._tests.append(test)
+        else:
+            raise TypeError(
+                f"TestSuite.addTest only supports instances of TestCase subclasses.\nGot {test!r}"
+            )
 
-    def run(self, result):
-        for c in self._tests:
-            _run_suite(c, result, self.name)
+    def _handle_class_setup(self, result: TestResult, testcase: TestCase):
+        test_cls = testcase.__class__
+        if self._previous_testcase_class:
+            if self._previous_testcase_class is test_cls:
+                # We have already run the `setUpClass` method, no need to call
+                # it again.
+                return
+            # The previous test was a different class, so ensure its
+            # tearDownClass method is called
+            self._handle_class_teardown(result)
+
+        self._previous_testcase_class = test_cls
+        setUpClass = getattr(test_cls, "setUpClass", None)
+        if not setUpClass:
+            return
+        class_outcome = _Outcome(result)
+        _, suite_name = testcase._test_name
+        with class_outcome.wrap_execution(test_case=("setUpClass", suite_name)):
+            setUpClass()
+        self._setup_class_failed = not class_outcome.success
+
+    def _handle_class_teardown(self, result: TestResult):
+        should_run_teardown = not self._setup_class_failed
+        self._setup_class_failed = False
+
+        test_cls = self._previous_testcase_class
+        self._previous_testcase_class = None
+
+        if test_cls is None or not should_run_teardown:
+            return
+
+        if tearDownClass := getattr(test_cls, "tearDownClass", None):
+            test_case = ("tearDownClass", f"({self.name}.{test_cls.__qualname__})")
+            with _Outcome(result).wrap_execution(test_case=test_case):
+                tearDownClass()
+
+    def run(self, result: TestResult | None) -> TestResult | None:
+        if result is None:
+            result = TestResult()
+        for test in self._tests:
+            if isinstance(test, TestSuite):
+                test.run(result)
+            elif isinstance(test, TestCase):
+                assert test.__class__ is not TestCase, f"Wat? {test=}"
+                self._handle_class_setup(result, test)
+                if not self._setup_class_failed:
+                    test.run(result)
+            else:
+                raise TypeError(f"Unknown test type: {test=!r}")
+
+        self._handle_class_teardown(result)
         return result
 
+    def _load_testcase(self, test_cls: type[TestCase]):
+        try:
+            suite_name = f"({self.name}.{test_cls.__qualname__})"
+        except AttributeError:
+            suite_name = f"({self.name})"
+
+        test_methods: list[str] = []
+        if hasattr(test_cls, "runTest"):
+            test_methods.append("runTest")
+        else:
+            for name in dir(test_cls):
+                if not name.startswith("test"):
+                    continue
+                m = getattr(test_cls, name)
+                if not callable(m):
+                    continue
+                test_methods.append(name)
+        test_methods.sort()
+
+        for name in test_methods:
+            self.addTest(test_cls(methodName=name, _test_name=(name, suite_name)))
+
     def _load_module(self, mod):
-        for tn in dir(mod):
+        for tn in sorted(dir(mod)):
             c = getattr(mod, tn)
             if isinstance(c, object) and isinstance(c, type) and issubclass(c, TestCase):
-                self.addTest(c)
+                self._load_testcase(c)
             elif tn.startswith("test") and callable(c):
-                self.addTest(c)
+                self.addTest(_SingleFunctionTest(func=c, _test_name=(tn, f"({self.name})")))
 
 
 class TestRunner:
@@ -286,33 +442,97 @@ TextTestRunner = TestRunner
 
 
 class TestResult:
-    def __init__(self):
-        self.errorsNum = 0
-        self.failuresNum = 0
-        self.skippedNum = 0
-        self.testsRun = 0
-        self.errors = []
-        self.failures = []
-        self.skipped = []
-        self._newFailures = 0
+    def __init__(self, stream=None, descriptions=None, verbosity=None):
+        if stream is None:
+            stream = sys.stdout
+        self._stream: "typing.TextIO" = stream
+        self.testsRun: int = 0
+        # NOTE: in CPython, errors, failures, and skipped have the type
+        # `tuple[TestCase, str]`
+        self.errors: list[tuple[tuple[str, ...], str]] = []
+        self.failures: list[tuple[tuple[str, ...], str]] = []
+        self.skipped: list[tuple[tuple[str, ...], str]] = []
+        self._output_awaiting_status: bool = False
 
     def wasSuccessful(self):
-        return self.errorsNum == 0 and self.failuresNum == 0
+        return not bool(self.errors or self.failures)
+
+    def _output_test_name(self, test: tuple[str, ...]):
+        self._stream.write(f"{' '.join(test)} ... ")
+
+    def _output_status(self, status: str, test: tuple[str, ...], *, is_subtest=False):
+        if is_subtest or not self._output_awaiting_status:
+            if self._output_awaiting_status:
+                self._stream.write("\n")
+            if is_subtest:
+                self._stream.write("  ")
+            self._output_test_name(test)
+        self._stream.write(status)
+        self._stream.write("\n")
+        self._output_awaiting_status = False
+
+    def startTest(self, test: tuple[str, ...]):
+        self._output_test_name(test)
+        self._output_awaiting_status = True
+        self.testsRun += 1
+
+    def stopTest(self, test: tuple[str, ...]): ...
+
+    def addSuccess(self, test: tuple[str, ...]):
+        self._output_status("ok", test)
+
+    def addError(self, test: tuple[str, ...], err: BaseException):
+        self.errors.append((test, _capture_exc(err, None)))
+        self._output_status("ERROR", test)
+
+    def addFailure(self, test: tuple[str, ...], err: BaseException):
+        self.failures.append((test, _capture_exc(err, None)))
+        self._output_status("FAIL", test)
+
+    def addSkip(self, test: tuple[str, ...], reason: str):
+        self.skipped.append((test, reason))
+        self._output_status(f"skipped: {reason}", test)
+
+    def addExpectedFailure(self, test: tuple[str, ...], err: BaseException): ...
+    def addUnexpectedSuccess(self, test: tuple[str, ...]): ...
+
+    def addSubTest(
+        self,
+        test: tuple[str, ...],
+        subtest: tuple[str, ...],
+        err: tuple[type[BaseException], BaseException, None] | None,
+    ):
+        if err is None:
+            return
+        _exc_type, exc_value, _tb = err
+
+        if isinstance(exc_value, SkipTest):
+            self.skipped.append((subtest, exc_value.args[0]))
+            self._output_status(f"skipped: {exc_value.args[0]}", subtest, is_subtest=True)
+        elif isinstance(exc_value, AssertionError):
+            self.failures.append((subtest, _capture_exc(exc_value, None)))
+            self._output_status("FAIL", subtest, is_subtest=True)
+        else:
+            self.errors.append((subtest, _capture_exc(exc_value, None)))
+            self._output_status("ERROR", subtest, is_subtest=True)
 
     def printErrors(self):
         if self.errors or self.failures:
-            print()
+            print(file=self._stream)
             self.printErrorList(self.errors)
             self.printErrorList(self.failures)
 
-    def printErrorList(self, lst):
+    def printErrorList(self, lst: list[tuple[tuple[str, ...], str]]):
         sep = "----------------------------------------------------------------------"
-        for c, e in lst:
-            detail = " ".join((str(i) for i in c))
-            print("======================================================================")
-            print(f"FAIL: {detail}")
-            print(sep)
-            print(e)
+        for test, e in lst:
+            detail = " ".join(test)
+            print(
+                "======================================================================",
+                file=self._stream,
+            )
+            print(f"FAIL: {detail}", file=self._stream)
+            print(sep, file=self._stream)
+            print(e, file=self._stream)
 
     def __repr__(self):
         # Format is compatible with CPython.
@@ -322,10 +542,20 @@ class TestResult:
             self.failuresNum,
         )
 
-    def __add__(self, other):
-        self.errorsNum += other.errorsNum
-        self.failuresNum += other.failuresNum
-        self.skippedNum += other.skippedNum
+    # MicroPython specific
+    @property
+    def errorsNum(self):  # For compatibility with MicroPython < 1.28
+        return len(self.errors)
+
+    @property
+    def failuresNum(self):  # For compatibility with MicroPython < 1.28
+        return len(self.failures)
+
+    @property
+    def skippedNum(self):  # For compatibility with MicroPython < 1.28
+        return len(self.skipped)
+
+    def __iadd__(self, other: TestResult):
         self.testsRun += other.testsRun
         self.errors.extend(other.errors)
         self.failures.extend(other.failures)
@@ -340,104 +570,6 @@ def _capture_exc(exc, exc_traceback):
     elif traceback is not None:
         traceback.print_exception(None, exc, exc_traceback, file=buf)
     return buf.getvalue()
-
-
-def _handle_test_exception(
-    current_test: tuple, test_result: TestResult, exc_info: tuple, verbose=True
-):
-    exc = exc_info[1]
-    traceback = exc_info[2]
-    ex_str = _capture_exc(exc, traceback)
-    if isinstance(exc, SkipTest):
-        reason = exc.args[0]
-        test_result.skippedNum += 1
-        test_result.skipped.append((current_test, reason))
-        print(" skipped:", reason)
-        return
-    elif isinstance(exc, AssertionError):
-        test_result.failuresNum += 1
-        test_result.failures.append((current_test, ex_str))
-        if verbose:
-            print(" FAIL")
-    else:
-        test_result.errorsNum += 1
-        test_result.errors.append((current_test, ex_str))
-        if verbose:
-            print(" ERROR")
-    test_result._newFailures += 1
-
-
-def _run_suite(c, test_result: TestResult, suite_name=""):
-    if isinstance(c, TestSuite):
-        c.run(test_result)
-        return
-
-    if isinstance(c, type):
-        o = c()
-    else:
-        o = c
-    set_up_class = getattr(o, "setUpClass", lambda: None)
-    tear_down_class = getattr(o, "tearDownClass", lambda: None)
-    set_up = getattr(o, "setUp", lambda: None)
-    tear_down = getattr(o, "tearDown", lambda: None)
-    exceptions = []
-    try:
-        suite_name += "." + c.__qualname__
-    except AttributeError:
-        pass
-
-    def run_one(test_function):
-        global __test_result__, __current_test__
-        print("%s (%s) ..." % (name, suite_name), end="")
-        set_up()
-        __test_result__ = test_result
-        test_container = f"({suite_name})"
-        __current_test__ = (name, test_container)
-        try:
-            test_result._newFailures = 0
-            test_result.testsRun += 1
-            test_function()
-            # No exception occurred, test passed
-            if test_result._newFailures:
-                print(" FAIL")
-            else:
-                print(" ok")
-        except Exception as ex:
-            _handle_test_exception(
-                current_test=(name, c), test_result=test_result, exc_info=(type(ex), ex, None)
-            )
-            # Uncomment to investigate failure in detail
-            # raise ex
-        finally:
-            __test_result__ = None
-            __current_test__ = None
-            tear_down()
-            try:
-                o.doCleanups()
-            except AttributeError:
-                pass
-
-    set_up_class()
-    try:
-        if hasattr(o, "runTest"):
-            name = str(o)
-            run_one(o.runTest)
-            return
-
-        for name in dir(o):
-            if name.startswith("test"):
-                m = getattr(o, name)
-                if not callable(m):
-                    continue
-                run_one(m)
-
-        if callable(o):
-            name = o.__name__
-            run_one(o)
-    finally:
-        tear_down_class()
-
-    return exceptions
 
 
 # This supports either:
@@ -461,4 +593,7 @@ def main(module="__main__", testRunner=None):
         module = __import__(module)
     suite = TestSuite(module.__name__)
     suite._load_module(module)
-    return testRunner.run(suite)
+    result = testRunner.run(suite)
+    if not result.wasSuccessful():
+        sys.exit(result.failuresNum + result.errorsNum)
+    return result
