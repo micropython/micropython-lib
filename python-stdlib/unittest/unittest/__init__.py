@@ -593,4 +593,7 @@ def main(module="__main__", testRunner=None):
         module = __import__(module)
     suite = TestSuite(module.__name__)
     suite._load_module(module)
-    return testRunner.run(suite)
+    result = testRunner.run(suite)
+    if not result.wasSuccessful():
+        sys.exit(result.failuresNum + result.errorsNum)
+    return result
