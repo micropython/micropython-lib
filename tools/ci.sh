@@ -17,7 +17,9 @@ function ci_commit_formatting_run {
 ########################################################################################
 # package tests
 
-MICROPYTHON=/tmp/micropython/ports/unix/build-standard/micropython
+VIRTUAL_ENV="${VIRTUAL_ENV:-/tmp/micropython-venv}"
+MICROPYTHON="${MICROPYTHON:-${VIRTUAL_ENV}/bin/micropython}"
+MICROPYPATH="${VIRTUAL_ENV}/lib:.frozen"
 
 function ci_package_tests_setup_micropython {
     git clone https://github.com/micropython/micropython.git /tmp/micropython
@@ -26,26 +28,32 @@ function ci_package_tests_setup_micropython {
     make -C /tmp/micropython/mpy-cross -j CFLAGS_EXTRA=-O0
     make -C /tmp/micropython/ports/unix submodules
     make -C /tmp/micropython/ports/unix -j CFLAGS_EXTRA=-O0
+
+    # Create the virtual environment directory
+    mkdir -p "${VIRTUAL_ENV}/bin" "${VIRTUAL_ENV}/lib"
+    ln -s /tmp/micropython/ports/unix/build-standard/micropython "${MICROPYTHON}"
 }
 
 function ci_package_tests_setup_lib {
-    mkdir -p ~/.micropython/lib
-    $CP micropython/ucontextlib/ucontextlib.py ~/.micropython/lib/
-    $CP python-stdlib/fnmatch/fnmatch.py ~/.micropython/lib/
-    $CP -r python-stdlib/hashlib-core/hashlib ~/.micropython/lib/
-    $CP -r python-stdlib/hashlib-sha224/hashlib ~/.micropython/lib/
-    $CP -r python-stdlib/hashlib-sha256/hashlib ~/.micropython/lib/
-    $CP -r python-stdlib/hashlib-sha384/hashlib ~/.micropython/lib/
-    $CP -r python-stdlib/hashlib-sha512/hashlib ~/.micropython/lib/
-    $CP python-stdlib/shutil/shutil.py ~/.micropython/lib/
-    $CP python-stdlib/tempfile/tempfile.py ~/.micropython/lib/
-    $CP -r python-stdlib/unittest/unittest ~/.micropython/lib/
-    $CP -r python-stdlib/unittest-discover/unittest ~/.micropython/lib/
-    $CP unix-ffi/ffilib/ffilib.py ~/.micropython/lib/
-    tree ~/.micropython
+    export MICROPYPATH
+    mkdir -p ${VIRTUAL_ENV}/lib
+    $CP micropython/ucontextlib/ucontextlib.py ${VIRTUAL_ENV}/lib/
+    $CP python-stdlib/fnmatch/fnmatch.py ${VIRTUAL_ENV}/lib/
+    $CP -r python-stdlib/hashlib-core/hashlib ${VIRTUAL_ENV}/lib/
+    $CP -r python-stdlib/hashlib-sha224/hashlib ${VIRTUAL_ENV}/lib/
+    $CP -r python-stdlib/hashlib-sha256/hashlib ${VIRTUAL_ENV}/lib/
+    $CP -r python-stdlib/hashlib-sha384/hashlib ${VIRTUAL_ENV}/lib/
+    $CP -r python-stdlib/hashlib-sha512/hashlib ${VIRTUAL_ENV}/lib/
+    $CP python-stdlib/shutil/shutil.py ${VIRTUAL_ENV}/lib/
+    $CP python-stdlib/tempfile/tempfile.py ${VIRTUAL_ENV}/lib/
+    $CP -r python-stdlib/unittest/unittest ${VIRTUAL_ENV}/lib/
+    $CP -r python-stdlib/unittest-discover/unittest ${VIRTUAL_ENV}/lib/
+    $CP unix-ffi/ffilib/ffilib.py ${VIRTUAL_ENV}/lib/
+    tree ${VIRTUAL_ENV}
 }
 
 function ci_package_tests_run {
+    export MICROPYPATH
     for test in \
         micropython/drivers/storage/sdcard/sdtest.py \
         micropython/xmltok/test_xmltok.py \
