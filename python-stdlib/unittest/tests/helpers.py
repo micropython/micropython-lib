@@ -13,24 +13,19 @@ def _run_tests(suite: unittest.TestSuite) -> tuple[unittest.TestResult, str]:
         A tuple of (test_result, text_output)
     """
     stdout = io.StringIO()
-    tmp_stdout = unittest._stdout
-    tmp_current_test = unittest.__current_test__
-    tmp_test_result = unittest.__test_result__
-    try:
-        unittest._stdout = stdout
-        result = unittest.TestResult()
-        suite.run(result)
-        return result, stdout.getvalue()
-    finally:
-        unittest._stdout = tmp_stdout
-        unittest.__current_test__ = tmp_current_test
-        unittest.__test_result__ = tmp_test_result
+    result = unittest.TestResult(stream=stdout)
+    suite.run(result)
+    return result, stdout.getvalue()
 
 
 def run_tests_in_module(parent_test: unittest.TestCase, module) -> tuple[unittest.TestResult, str]:
-    test_name, parent_suite_name = unittest.__current_test__
-    parent_suite_name = f"{parent_suite_name[1:-1]}.{test_name}"
-    suite = unittest.TestSuite(name=parent_suite_name)
+    """Runs all tests in the given module-like object.
+
+    Args:
+        module: An object that can have its attributes listed with the `dir` function.
+    """
+    _, parent_suite_name = parent_test._test_name
+    suite = unittest.TestSuite(name=f"{parent_suite_name[1:-1]}.{parent_test._test_method_name}")
     suite._load_module(module)
     return _run_tests(suite)
 
@@ -64,8 +59,7 @@ class _TestResultSummary(
 
 class BaseTestCase(unittest.TestCase):
     def full_test_name(self):
-        my_name, cls_name = unittest.__current_test__
-        return f"{cls_name[1:-1]}.{my_name}"
+        return f"{self.__module__}.{self.__class__.__name__}.{self._test_method_name}"
 
     def assertTestResult(
         self,

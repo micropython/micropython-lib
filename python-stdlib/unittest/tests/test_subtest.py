@@ -21,7 +21,10 @@ class Test(helpers.BaseTestCase):
         result, output = helpers.run_tests_in_testcase(self, _Test)
         self.assertTestResult(result, testsRun=1, numFailures=2, numErrors=0, numSkipped=0)
         self.assertEqual(
-            output, "test (test_subtest.Test.test_subtest_catches_failures._Test) ... FAIL\n"
+            output,
+            "test (test_subtest.Test.test_subtest_catches_failures._Test) ... \n"
+            "  test (test_subtest.Test.test_subtest_catches_failures._Test) (inner=1) ... FAIL\n"
+            "  test (test_subtest.Test.test_subtest_catches_failures._Test) (inner=2) ... FAIL\n",
         )
 
     def test_subtest_catches_exceptions(self):
@@ -37,10 +40,11 @@ class Test(helpers.BaseTestCase):
         self.assertEqual(result.testsRun, 1)
         self.assertEqual(len(result.failures), 0)
         self.assertEqual(len(result.errors), 2)
-        # FIXME: unittest framework incorrectly prints the test `FAIL`ed, rather
-        # than `ERROR`ed.
         self.assertEqual(
-            output, "test (test_subtest.Test.test_subtest_catches_exceptions._Test) ... FAIL\n"
+            output,
+            "test (test_subtest.Test.test_subtest_catches_exceptions._Test) ... \n"
+            "  test (test_subtest.Test.test_subtest_catches_exceptions._Test) (inner=1) ... ERROR\n"
+            "  test (test_subtest.Test.test_subtest_catches_exceptions._Test) (inner=2) ... ERROR\n",
         )
 
 

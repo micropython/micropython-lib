@@ -112,7 +112,7 @@ class TestSetupTeardown(helpers.BaseTestCase):
         result, output = helpers.run_tests_in_testcase(self, Test)
         self.assertTestResult(result, testsRun=2, numFailures=0, numErrors=0, numSkipped=0)
         self.assertTestMethodCountsEqual(
-            Test, init=1, setUpClass=1, setUp=2, test=2, tearDown=2, tearDownClass=1
+            Test, init=2, setUpClass=1, setUp=2, test=2, tearDown=2, tearDownClass=1
         )
         self.assertEqual(
             output,
@@ -120,7 +120,6 @@ class TestSetupTeardown(helpers.BaseTestCase):
             f"test2 ({self.full_test_name()}.Test) ... ok\n",
         )
 
-    @unittest.skip("Exceptions/Assertions in setUp are not caught")
     def test_setup_failure_skips_test(self):
         class Test(self.__class__.TracingTestCase):
             def setUp(self):
@@ -134,7 +133,6 @@ class TestSetupTeardown(helpers.BaseTestCase):
         )
         self.assertEqual(output, f"test ({self.full_test_name()}.Test) ... FAIL\n")
 
-    @unittest.skip("Exceptions/Assertions in setUp are not caught")
     def test_setup_errors_skips_test(self):
         class Test(self.__class__.TracingTestCase):
             def setUp(self):
@@ -148,7 +146,6 @@ class TestSetupTeardown(helpers.BaseTestCase):
         )
         self.assertEqual(output, f"test ({self.full_test_name()}.Test) ... ERROR\n")
 
-    @unittest.skip("Exceptions/Assertions in setUp are not caught")
     def test_setup_skiptest_skips_test(self):
         class Test(self.__class__.TracingTestCase):
             def setUp(self):
@@ -162,7 +159,6 @@ class TestSetupTeardown(helpers.BaseTestCase):
         )
         self.assertEqual(output, f"test ({self.full_test_name()}.Test) ... skipped: reason1\n")
 
-    @unittest.skip("Exceptions/Assertions in setUp are not caught")
     def test_class_setup_failure_skips_test(self):
         class Test(self.__class__.TracingTestCase):
             @classmethod
@@ -171,13 +167,14 @@ class TestSetupTeardown(helpers.BaseTestCase):
                 raise AssertionError
 
         result, output = helpers.run_tests_in_testcase(self, Test)
-        self.assertTestResult(result, testsRun=0, numFailures=0, numErrors=1, numSkipped=0)
+        # NOTE: CPython counts this as an error, but this is neither documented,
+        # nor tested.
+        self.assertTestResult(result, testsRun=0, numFailures=1, numErrors=0, numSkipped=0)
         self.assertTestMethodCountsEqual(
             Test, init=1, setUpClass=1, setUp=0, test=0, tearDown=0, tearDownClass=0
         )
         self.assertEqual(output, f"setUpClass ({self.full_test_name()}.Test) ... FAIL\n")
 
-    @unittest.skip("Exceptions/Assertions in setUp are not caught")
     def test_class_setup_errors_skips_test(self):
         class Test(self.__class__.TracingTestCase):
             @classmethod
@@ -192,7 +189,6 @@ class TestSetupTeardown(helpers.BaseTestCase):
         )
         self.assertEqual(output, f"setUpClass ({self.full_test_name()}.Test) ... ERROR\n")
 
-    @unittest.skip("Exceptions/Assertions in setUp are not caught")
     def test_class_setup_skiptest_skips_test(self):
         class Test(self.__class__.TracingTestCase):
             @classmethod
@@ -209,7 +205,6 @@ class TestSetupTeardown(helpers.BaseTestCase):
             output, f"setUpClass ({self.full_test_name()}.Test) ... skipped: reason1\n"
         )
 
-    @unittest.skip("Exceptions/Assertions in setUp are not caught")
     def test_teardown_failure_is_failure(self):
         class Test(self.__class__.TracingTestCase):
             def tearDown(self):
@@ -223,7 +218,6 @@ class TestSetupTeardown(helpers.BaseTestCase):
         )
         self.assertEqual(output, f"test ({self.full_test_name()}.Test) ... FAIL\n")
 
-    @unittest.skip("Exceptions/Assertions in setUp are not caught")
     def test_teardown_errors_are_errors(self):
         class Test(self.__class__.TracingTestCase):
             def tearDown(self):
@@ -237,7 +231,6 @@ class TestSetupTeardown(helpers.BaseTestCase):
         )
         self.assertEqual(output, f"test ({self.full_test_name()}.Test) ... ERROR\n")
 
-    @unittest.skip("Exceptions/Assertions in setUp are not caught")
     def test_teardown_skiptest_is_skip(self):
         class Test(self.__class__.TracingTestCase):
             def tearDown(self):
@@ -264,7 +257,7 @@ class TestSetupTeardown(helpers.BaseTestCase):
             Test.method_call_order,
             (
                 "__init__",
-                # NOTE: CPython calls __init__ here a second time
+                "__init__",
                 "setUpClass",
                 "setUp",
                 "test",
