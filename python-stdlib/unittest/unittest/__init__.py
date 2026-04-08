@@ -71,6 +71,20 @@ class TestCase:
     def __init__(self):
         pass
 
+    def setUp(self):
+        pass
+
+    @classmethod
+    def setUpClass(cls):
+        pass
+
+    def tearDown(self):
+        pass
+
+    @classmethod
+    def tearDownClass(cls):
+        pass
+
     def addCleanup(self, func, *args, **kwargs):
         if not hasattr(self, "_cleanups"):
             self._cleanups = []
