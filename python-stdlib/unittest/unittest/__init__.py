@@ -34,6 +34,9 @@ class AssertRaisesContext:
 __current_test__ = None
 __test_result__ = None
 
+# Hook to allow our tests to overwrite where output is written
+_stdout = sys.stdout
+
 
 class SubtestContext:
     def __init__(self, msg=None, params=None):
@@ -283,15 +286,19 @@ class TestRunner:
         suite.run(res)
 
         res.printErrors()
-        print("----------------------------------------------------------------------")
-        print("Ran %d tests\n" % res.testsRun)
+        print(
+            "----------------------------------------------------------------------", file=_stdout
+        )
+        print("Ran %d tests\n" % res.testsRun, file=_stdout)
         if res.failuresNum > 0 or res.errorsNum > 0:
-            print("FAILED (failures=%d, errors=%d)" % (res.failuresNum, res.errorsNum))
+            print(
+                "FAILED (failures=%d, errors=%d)" % (res.failuresNum, res.errorsNum), file=_stdout
+            )
         else:
             msg = "OK"
             if res.skippedNum > 0:
                 msg += " (skipped=%d)" % res.skippedNum
-            print(msg)
+            print(msg, file=_stdout)
 
         return res
 
@@ -315,7 +322,7 @@ class TestResult:
 
     def printErrors(self):
         if self.errors or self.failures:
-            print()
+            print(file=_stdout)
             self.printErrorList(self.errors)
             self.printErrorList(self.failures)
 
@@ -323,10 +330,13 @@ class TestResult:
         sep = "----------------------------------------------------------------------"
         for c, e in lst:
             detail = " ".join((str(i) for i in c))
-            print("======================================================================")
-            print(f"FAIL: {detail}")
-            print(sep)
-            print(e)
+            print(
+                "======================================================================",
+                file=_stdout,
+            )
+            print(f"FAIL: {detail}", file=_stdout)
+            print(sep, file=_stdout)
+            print(e, file=_stdout)
 
     def __repr__(self):
         # Format is compatible with CPython.
@@ -366,18 +376,18 @@ def _handle_test_exception(
         reason = exc.args[0]
         test_result.skippedNum += 1
         test_result.skipped.append((current_test, reason))
-        print(" skipped:", reason)
+        print(" skipped:", reason, file=_stdout)
         return
     elif isinstance(exc, AssertionError):
         test_result.failuresNum += 1
         test_result.failures.append((current_test, ex_str))
         if verbose:
-            print(" FAIL")
+            print(" FAIL", file=_stdout)
     else:
         test_result.errorsNum += 1
         test_result.errors.append((current_test, ex_str))
         if verbose:
-            print(" ERROR")
+            print(" ERROR", file=_stdout)
     test_result._newFailures += 1
 
 
@@ -402,7 +412,7 @@ def _run_suite(c, test_result: TestResult, suite_name=""):
 
     def run_one(test_function):
         global __test_result__, __current_test__
-        print("%s (%s) ..." % (name, suite_name), end="")
+        print("%s (%s) ..." % (name, suite_name), end="", file=_stdout)
         set_up()
         __test_result__ = test_result
         test_container = f"({suite_name})"
@@ -413,9 +423,9 @@ def _run_suite(c, test_result: TestResult, suite_name=""):
             test_function()
             # No exception occurred, test passed
             if test_result._newFailures:
-                print(" FAIL")
+                print(" FAIL", file=_stdout)
             else:
-                print(" ok")
+                print(" ok", file=_stdout)
         except Exception as ex:
             _handle_test_exception(
                 current_test=(name, c), test_result=test_result, exc_info=(type(ex), ex, None)
