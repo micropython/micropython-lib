@@ -575,10 +575,10 @@ class Interface:
         # - data. Buffer containing data to send, or for data to be read into
         #   (depending on endpoint direction).
         #
-        # - done_cb. Optional callback function for when the transfer
-        # completes. The callback is called with arguments (ep_addr, result,
-        # xferred_bytes) where result is one of xfer_result_t enum (see top of
-        # this file), and xferred_bytes is an integer.
+        # - done_cb. Optional callback function for when the transfer completes.
+        # The callback is called with arguments (ep_addr, result, xferred_bytes)
+        # where result is an integer equal to one of machine.USBDevice.XFER_nnn
+        # enums, and xferred_bytes is an integer.
         #
         # If the function returns, the transfer is queued.
         #
