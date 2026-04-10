@@ -38,7 +38,7 @@ else:
 # Write received data to .txt file
 txt_received = esp.receive_to_txt(
     "filepath/filename.txt", mode="w"
-    )  # Set mode to 'w' so file is truncated before writing
+)  # Set mode to 'w' so file is truncated before writing
 if txt_received:
     print("File received successfully")
 else:
@@ -47,7 +47,7 @@ else:
 # Write received data to .json file
 json_received = esp.receive_to_json(
     "filepath/filename.json", mode="w"
-    )  # Set mode to 'w' so file is truncated before writing
+)  # Set mode to 'w' so file is truncated before writing
 if json_received:
     print("File received successfully")
 else:

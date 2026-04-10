@@ -7,7 +7,7 @@ esp = ftespnow.SERVER()
 message = "Hello"
 peer = "a4f00f772d15"  # Mac address of the client that you want to send data to
 sent = esp.send_message(peer, message)
-if sent: # Check if client received the data
+if sent:  # Check if client received the data
     print("Message received by clientclient")
 else:
     print("Message not received by client")
@@ -36,7 +36,7 @@ else:
 # Write received data to .txt file
 txt_received = esp.receive_to_txt(
     "filepath/filename.txt", mode="w"
-    )  # Set mode to 'w' so file is truncated before writing
+)  # Set mode to 'w' so file is truncated before writing
 if txt_received:
     print("File received successfully")
 else:
@@ -45,7 +45,7 @@ else:
 # Write received data to .json file
 json_received = esp.receive_to_json(
     "filepath/filename.json", mode="w"
-    )  # Set mode to 'w' so file is truncated before writing
+)  # Set mode to 'w' so file is truncated before writing
 if json_received: # Check if any data was received
     print("File received successfully")
 else:

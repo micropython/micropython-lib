@@ -3,19 +3,19 @@ import json
 
 
 class CLIENT:
-    def __init__(self, *, timeout: int = 5) -> None:
+    def __init__(self, *, timeout :int = 5) -> None:
         self.esp = espnow.ESPNow()
         self.timeout = timeout
 
-    def configure(self, *, timeout: int = 5) -> None:
+    def configure(self, *, timeout :int = 5) -> None:
         self.timeout: int = timeout
 
-    def connect(self, peer: str) -> None:
+    def connect(self, peer :str) -> None:
         self.peer: str = peer
         self.esp.active(True)
         self.esp.add_peer(self.peer)
 
-    def send_message(self, data: str) -> bool:
+    def send_message(self, data :str) -> bool:
         """
         Send a string
 
@@ -28,7 +28,7 @@ class CLIENT:
             bool: Confirmation flag (`True` if data was received, `False` otherwise)
         """
 
-        ack: bool = self.esp.send(self.peer, data)
+        ack :bool = self.esp.send(self.peer, data)
         return ack
 
     def receive_message(self, recv_timeout :int = 5) -> list | None:
@@ -49,7 +49,7 @@ class CLIENT:
             return
         return received
 
-    def send_txt(self, filename: str) -> bool:
+    def send_txt(self, filename :str) -> bool:
         """
         Parse and send a `.txt` file as a `string`
 
@@ -63,11 +63,11 @@ class CLIENT:
         """
 
         with open(filename, "r") as f:
-            data: str = str(f.readlines())
-        sent: bool = self.send_message(data)
+            data :str = str(f.readlines())
+        sent :bool = self.send_message(data)
         return sent
 
-    def send_json(self, filename: str, *, indent: int = 4) -> bool:
+    def send_json(self, filename :str, *, indent :int = 4) -> bool:
         """
         Parse and send a `.json` file as a `string`
 
@@ -84,11 +84,11 @@ class CLIENT:
 
         with open(filename, "r") as f:
             unparsed = json.load(f)
-        parsed: str = json.dumps(unparsed, indent=indent)
-        sent: bool = self.send_message(parsed)
+        parsed :str = json.dumps(unparsed, indent=indent)
+        sent :bool = self.send_message(parsed)
         return sent
 
-    def receive_to_txt(self, target_file: str, mode: str = "a") -> bool:
+    def receive_to_txt(self, target_file :str, mode :str = "a") -> bool:
         """
         Write received `string` into a `.txt` file.
 
@@ -126,11 +126,11 @@ class CLIENT:
         if ".txt" not in target_file:
             raise SyntaxError("File format must be .txt")
         try:
-            received: bool = False
-            data: list | None = self.receive_message()
+            received :bool = False
+            data :list | None = self.receive_message()
             if data is None:
                 return received
-            data_list: list[str] = str(data[-1]).split("\n")
+            data_list :list[str] = str(data[-1]).split("\n")
             if data_list[-1] == "":
                 data_list = data_list[:-1]
             with open(target_file, mode) as f:
@@ -139,7 +139,7 @@ class CLIENT:
         except SyntaxError:
             raise
 
-    def receive_to_json(self, target_file: str, mode: str = "a") -> bool:
+    def receive_to_json(self, target_file :str, mode :str = "a") -> bool:
         """
         Write received `string` into a `.json` file.
 
@@ -177,13 +177,13 @@ class CLIENT:
         if ".json" not in target_file:
             raise SyntaxError("File format must be .json")
         try:
-            received: bool = False
-            data: list | None = self.receive_message()
+            received :bool = False
+            data :list | None = self.receive_message()
             if data is None:
                 return received
-            mac: str = str(data[0])
+            mac :str = str(data[0])
             message = json.loads(str(data[-1]))
-            unparsed: dict = {"mac": mac, "message": message}
+            unparsed :dict = {"mac": mac, "message": message}
             with open(target_file, mode) as f:
                 json.dump(unparsed, f)
             return not received
@@ -203,10 +203,10 @@ class CLIENT:
             unparsed (dict): `dictionary` object containing unparsed equivalent of the received `.json`
         """
 
-        data: list | None = self.receive_message()
+        data :list | None = self.receive_message()
         if data is None:
             return {}
-        mac: str = str(data[0])
+        mac :str = str(data[0])
         message = json.loads(str(data[-1]))
-        unparsed: dict = {"mac": mac, "message": message}
+        unparsed :dict = {"mac": mac, "message": message}
         return unparsed
