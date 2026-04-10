@@ -1,9 +1,9 @@
 try:
-    from .clinet import *
+    from .client import *
 except ImportError:
     pass
 
 try:
-    from.server import *
+    from .server import *
 except ImportError:
     pass
