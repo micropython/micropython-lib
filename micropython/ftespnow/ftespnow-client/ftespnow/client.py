@@ -63,8 +63,8 @@ class CLIENT:
         """
 
         with open(filename, "r") as f:
-            data :str = str(f.readlines())
-        sent :bool = self.send_message(data)
+            data: str = str(f.readlines())
+        sent: bool = self.send_message(data)
         return sent
 
     def send_json(self, filename :str, *, indent :int = 4) -> bool:
@@ -84,8 +84,8 @@ class CLIENT:
 
         with open(filename, "r") as f:
             unparsed = json.load(f)
-        parsed :str = json.dumps(unparsed, indent=indent)
-        sent :bool = self.send_message(parsed)
+        parsed: str = json.dumps(unparsed, indent=indent)
+        sent: bool = self.send_message(parsed)
         return sent
 
     def receive_to_txt(self, target_file :str, mode :str = "a") -> bool:
@@ -126,11 +126,11 @@ class CLIENT:
         if ".txt" not in target_file:
             raise SyntaxError("File format must be .txt")
         try:
-            received :bool = False
-            data :list | None = self.receive_message()
+            received: bool = False
+            data: list | None = self.receive_message()
             if data is None:
                 return received
-            data_list :list[str] = str(data[-1]).split("\n")
+            data_list: list[str] = str(data[-1]).split("\n")
             if data_list[-1] == "":
                 data_list = data_list[:-1]
             with open(target_file, mode) as f:
@@ -177,13 +177,13 @@ class CLIENT:
         if ".json" not in target_file:
             raise SyntaxError("File format must be .json")
         try:
-            received :bool = False
-            data :list | None = self.receive_message()
+            received: bool = False
+            data: list | None = self.receive_message()
             if data is None:
                 return received
-            mac :str = str(data[0])
+            mac: str = str(data[0])
             message = json.loads(str(data[-1]))
-            unparsed :dict = {"mac": mac, "message": message}
+            unparsed: dict = {"mac": mac, "message": message}
             with open(target_file, mode) as f:
                 json.dump(unparsed, f)
             return not received
@@ -203,10 +203,10 @@ class CLIENT:
             unparsed (dict): `dictionary` object containing unparsed equivalent of the received `.json`
         """
 
-        data :list | None = self.receive_message()
+        data: list | None = self.receive_message()
         if data is None:
             return {}
-        mac :str = str(data[0])
+        mac: str = str(data[0])
         message = json.loads(str(data[-1]))
-        unparsed :dict = {"mac": mac, "message": message}
+        unparsed: dict = {"mac": mac, "message": message}
         return unparsed
