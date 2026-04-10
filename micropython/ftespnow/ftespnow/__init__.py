@@ -1,5 +1,5 @@
 try:
-    from .clinet import *
+    from .client import *
 except ImportError:
     pass
 
