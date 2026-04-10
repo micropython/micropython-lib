@@ -46,7 +46,7 @@ else:
 json_received = esp.receive_to_json(
     "filepath/filename.json", mode="w"
 )  # Set mode to 'w' so file is truncated before writing
-if json_received: # Check if any data was received
+if json_received:  # Check if any data was received
     print("File received successfully")
 else:
     print("No file received. Destination file was not created/modified")
