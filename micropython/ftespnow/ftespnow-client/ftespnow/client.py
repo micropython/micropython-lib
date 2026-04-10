@@ -2,10 +2,11 @@ import espnow
 import json
 
 class CLIENT:
-    def __init__(self) -> None:
+    def __init__(self, *, timeout: int=5) -> None:
         self.esp = espnow.ESPNow()
+        self.timeout = timeout
     
-    def configure(self, timeout=5) -> None:
+    def configure(self, *, timeout: int=5) -> None:
         self.timeout: int = timeout
 
     def connect(self, peer: str) -> None:
@@ -87,7 +88,9 @@ class CLIENT:
     
     def receive_to_txt(self, target_file: str, mode: str='a') -> bool:
         """
-        Write received `string` into a `.txt` file.
+        Write received `string` into a `.txt` file. 
+        
+        **Will not write or create file if no data is received**
         
         Args:
             
@@ -112,7 +115,7 @@ class CLIENT:
             Read `open()`_ for more information
         
         Returns:
-            
+
             received (bool): Confirmation flag (`True` if data was received, `False` otherwise)
         
         .. _open(): https://docs.python.org/3/library/functions.html#open
@@ -134,6 +137,8 @@ class CLIENT:
     def receive_to_json(self, target_file: str, mode: str='a') -> bool:
         """
         Write received `string` into a `.json` file.
+        
+        **Will not write or create file if no data is received**
         
         Args:
             

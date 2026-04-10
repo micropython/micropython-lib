@@ -91,6 +91,8 @@ class SERVER:
         """
         Write received `string` into a `.txt` file.
         
+        **Will not write or create file if no data is received**
+        
         Args:
             
             target_file (str): Filepath of the destination file for the received data with file name and extension.
@@ -135,6 +137,8 @@ class SERVER:
     def receive_to_json(self, target_file: str, mode: str='a') -> bool:
         """
         Write received `string` into a `.json` file.
+        
+        **Will not write or create file if no data is received**
         
         Args:
             
