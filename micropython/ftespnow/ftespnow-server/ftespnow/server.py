@@ -1,6 +1,7 @@
 import espnow
 import json
 
+
 class SERVER:
     def __init__(self, *, timeout: int = 5) -> None:
         self.esp = espnow.ESPNow()
