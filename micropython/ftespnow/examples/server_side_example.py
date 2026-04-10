@@ -14,7 +14,7 @@ else:
 
 # Receive a message
 received_data = esp.receive_message()
-if received_data == None: # Check if any data was received
+if received_data is None: # Check if any data was received
     print("No message was received (timed out)")
 else:
     print(f"Here is the received data: {received_data}")

@@ -4,6 +4,4 @@ metadata(
 )
 
 require("ftespnow")
-require("json")
-require("espnow")
 package("ftespnow")
