@@ -131,3 +131,75 @@ class SERVER:
             return True
         except SyntaxError:
             raise
+    
+    def receive_to_json(self, target_file: str, mode: str='a') -> bool:
+        """
+        Write received `string` into a `.json` file.
+        
+        Args:
+            
+            target_file (str): Filepath of the destination file for the received data with file name and extension.
+            
+            mode (str, optional): Editing mode
+            
+                - `r` - Read only
+                
+                - `w` - Write only (truncates file before writing)
+                
+                - `x` - Create a new file and open it for writing (raises `FileExistsError` if file already exists)
+                
+                - `a` - Append to the end of the file (default)
+                
+                - `b` - Binary mode
+                
+                - `t` - Text mode
+                
+                - `+` - Update (read and write)
+                
+            Read `open()`_ for more information
+        
+        Returns:
+            
+            received (bool): Confirmation flag (`True` if data was received, `False` otherwise)
+        
+        .. _open(): https://docs.python.org/3/library/functions.html#open
+        """
+        
+        if ".json" not in target_file: raise SyntaxError("File format must be .json")
+        try:
+            received: bool = False
+            data: list | None = self.receive_message()
+            if data == None: return received
+            mac: str = str(data[0])
+            message = json.loads(str(data[-1]))
+            unparsed: dict = {
+                "mac": mac,
+                "message": message
+            }
+            with open(target_file, mode) as f:
+                json.dump(unparsed, f)
+            return not received
+        except SyntaxError:
+            raise
+    
+    def receive_to_dict(self) -> dict:
+        """
+        Unparses received `string` into a `dict` object
+        
+        Args:
+
+            None:
+        
+        Returns:
+
+            unparsed (dict): `dictionary` object containing unparsed equivalent of the received `.json`
+        """
+        data: list | None = self.receive_message()
+        if data == None: return {}
+        mac: str = str(data[0])
+        message = json.loads(str(data[-1]))
+        unparsed: dict = {
+            "mac": mac,
+            "message": message
+        }
+        return unparsed
