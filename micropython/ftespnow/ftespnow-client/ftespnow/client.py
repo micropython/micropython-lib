@@ -3,19 +3,19 @@ import json
 
 
 class CLIENT:
-    def __init__(self, *, timeout :int = 5) -> None:
+    def __init__(self, *, timeout: int = 5) -> None:
         self.esp = espnow.ESPNow()
         self.timeout = timeout
 
-    def configure(self, *, timeout :int = 5) -> None:
+    def configure(self, *, timeout: int = 5) -> None:
         self.timeout: int = timeout
 
-    def connect(self, peer :str) -> None:
+    def connect(self, peer: str) -> None:
         self.peer: str = peer
         self.esp.active(True)
         self.esp.add_peer(self.peer)
 
-    def send_message(self, data :str) -> bool:
+    def send_message(self, data: str) -> bool:
         """
         Send a string
 
@@ -28,10 +28,10 @@ class CLIENT:
             bool: Confirmation flag (`True` if data was received, `False` otherwise)
         """
 
-        ack :bool = self.esp.send(self.peer, data)
+        ack: bool = self.esp.send(self.peer, data)
         return ack
 
-    def receive_message(self, recv_timeout :int = 5) -> list | None:
+    def receive_message(self, recv_timeout: int = 5) -> list | None:
         """
         Receive a string
 
@@ -49,7 +49,7 @@ class CLIENT:
             return
         return received
 
-    def send_txt(self, filename :str) -> bool:
+    def send_txt(self, filename: str) -> bool:
         """
         Parse and send a `.txt` file as a `string`
 
@@ -67,7 +67,7 @@ class CLIENT:
         sent: bool = self.send_message(data)
         return sent
 
-    def send_json(self, filename :str, *, indent :int = 4) -> bool:
+    def send_json(self, filename: str, *, indent: int = 4) -> bool:
         """
         Parse and send a `.json` file as a `string`
 
@@ -88,7 +88,7 @@ class CLIENT:
         sent: bool = self.send_message(parsed)
         return sent
 
-    def receive_to_txt(self, target_file :str, mode :str = "a") -> bool:
+    def receive_to_txt(self, target_file: str, mode: str = "a") -> bool:
         """
         Write received `string` into a `.txt` file.
 
@@ -139,7 +139,7 @@ class CLIENT:
         except SyntaxError:
             raise
 
-    def receive_to_json(self, target_file :str, mode :str = "a") -> bool:
+    def receive_to_json(self, target_file: str, mode: str = "a") -> bool:
         """
         Write received `string` into a `.json` file.
 
