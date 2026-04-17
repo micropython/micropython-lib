@@ -1,20 +1,29 @@
 # enum.py
-# version="1.2.1"
+# version="1.2.2"
 
 
 class EnumValue:
+    # An immutable object representing a specific enum member
     def __init__(self, value, name):
         object.__setattr__(self, 'value', value)
         object.__setattr__(self, 'name', name)
 
     def __repr__(self):
+        return f"<{self.name}: {self.value}>"
+
+    def __str__(self):
         return str(self.value)
 
     def __call__(self):
         return self.value
 
     def __eq__(self, other):
-        return self.value == (other.value if isinstance(other, EnumValue) else other)
+        if isinstance(other, EnumValue):
+            return self.value == other.value
+        return self.value == other
+
+    def __int__(self):
+        return self.value
 
     def __setattr__(self, key, value):
         raise AttributeError("EnumValue is immutable")
@@ -22,16 +31,45 @@ class EnumValue:
 
 class Enum:
     def __new__(cls, *args, **kwargs):
-        if len(args) > 0:
-            raise TypeError(f"{cls.__name__}() kwargs allowed only, not {args} args")
+        # Scenario 1: Reverse lookup by value (e.g., Status(1))
+        if len(args) == 1:
+            if cls is not Enum:
+                return cls._lookup(args[0])
+            return super(Enum, cls).__new__(cls)
+
+        # Scenario 2: Restriction on multiple positional arguments
+        elif len(args) > 1:
+            raise TypeError(f"{cls.__name__}() takes at most 1 positional argument ({len(args)} given)")
+
+        # Scenario 3: Creating an instance (e.g. Color() або Color(BLUE=3))
         return super(Enum, cls).__new__(cls)
 
     def __init__(self, **kwargs):
-        # 1. Collect class-level attributes (constants)
+        # 1. Convert class-level attributes (constants) to EnumValue objects
         self._scan_class_attrs()
-        # 2. Add arguments from the constructor
+        # 2. Add dynamic arguments from constructor
         if kwargs:
             self.append(**kwargs)
+
+    @classmethod
+    def _lookup(cls, value):
+        # Finds an EnumValue by its raw value
+        for key in dir(cls):
+            if key.startswith('_'):
+                continue
+            attr = getattr(cls, key)
+            if isinstance(attr, EnumValue) and (attr.value == value or attr.name == value):
+                return attr
+            if not callable(attr) and attr == value:
+                # Wrap static numbers found in class definition
+                return EnumValue(attr, key)
+                return attr
+
+        raise AttributeError(f"{value} is not in {cls.__name__} enum")
+
+    def list_members(self):
+        # Returns a list of tuples (name, value) for all members
+        return [(m.name, m.value) for m in self]
 
     def _update(self, key, value):
         setattr(self.__class__, key, EnumValue(value, key))
@@ -39,8 +77,7 @@ class Enum:
     def _scan_class_attrs(self):
         # Converts static class attributes into EnumValue objects
         # List of methods and internal names that should not be converted
-        ignored = ('is_value', 'append')
-
+        ignored = ('append', 'is_value', 'list_members')
         for key in dir(self.__class__):
             # Skip internal names and methods
             if key.startswith('_') or key in ignored:
@@ -52,27 +89,19 @@ class Enum:
                 self._update(key, value)
 
     def is_value(self, value):
-        # Оптимізація: ітеруємося по self (де вже є __iter__), а не через dir()
         return any(member.value == value for member in self)
 
     def append(self, **kwargs):
-        forbidden = ('is_value', 'append', '_update', '_scan_class_attrs')
+        # Adds new members dynamically.
         for key, value in kwargs.items():
-            if key in forbidden or key.startswith('_'):
-                raise NameError(f"Cannot add enum member with reserved name: {key}")
-            if hasattr(self.__class__, key):
-                existing = getattr(self.__class__, key)
-                if isinstance(existing, EnumValue):
-                    raise AttributeError(f"Enum member '{key}' already exists and is immutable")
+            if hasattr(self, key):
+                raise AttributeError(f"Enum key '{key}' is immutable")
             self._update(key, value)
-        return self
 
     def __repr__(self):
-        # Implementation of the principle: obj == eval(repr(obj))
-        # Use !r to correctly represent values ​​(e.g., quotes for strings)
-        members = [f"{k}={getattr(self.__class__, k).value!r}" for k in dir(self.__class__) if not k.startswith('_') and isinstance(getattr(self.__class__, k), EnumValue)]
+        members = [f"{m.name}={m.value}" for m in self]
         # Return a string like: Color(RED=1, GREEN=2, BLUE=3)
-        return f"{type(self).__name__}({', '.join(members)})"
+        return f"{self.__class__.__name__}({', '.join(members)})"
 
     def __call__(self, value):
         for member in self:
@@ -105,22 +134,15 @@ def enum(**kwargs):  # `**kwargs` kept backwards compatible as in the Internet e
 
 
 if __name__ == '__main__':
-    # --- Usage Example ---
-
+    # --- Usage Example 1 ---
     # 1. Creation via class
     class Color(Enum):
         RED = 1
         GREEN = 2
 
-    # Create instance
+    # 2. Create instance
     c = Color()
-    print(f"Enum repr: {c}")
-
-    # 2. Strict __init__ control check
-    try:
-        c_bad = Color('BLACK')
-    except TypeError as e:
-        print(f"\nTypeError: Strict Init Check: {e}\n")
+    print(f"Enum repr c: {c}")
 
     # 3. Dynamic addition
     c.append(BLUE=3)
@@ -131,8 +153,8 @@ if __name__ == '__main__':
     # 4. Immutability and name protection check
     try:
         c.append(append=True)
-    except NameError as e:
-        print(f"\nNameError: Reserved name protection: {e}\n")
+    except AttributeError as e:
+        print(f"\nAttributeError: Reserved name protection: {e}\n")
 
     # 5. Basic access
     print(f"RED: Name={c.RED.name}, Value={c.RED.value}, EnumValue={c.RED}, Call={c.RED()} ")
@@ -155,3 +177,50 @@ if __name__ == '__main__':
         c(7)
     except ValueError as e:
         print(f"\nValueError: {c} {e}\n")
+
+    # --- Usage Example 2 ---
+    # 1. Define an Enum class
+    class Status(Enum):
+        IDLE = 0
+        RUNNING = 1
+        ERROR = 2
+
+    # 2. Test: Reverse Lookup
+    # This simulates receiving a byte from the  hardware
+    received_byte = 1
+    status = Status(received_byte)
+    print(f"Lookup check: Received {received_byte} -> {status!r}")
+    assert status == Status.RUNNING
+    assert status.name == "RUNNING"
+
+    # 3. Test: Comparisons
+    print(f"Comparison check: {status} == 1 is {status == 1}")
+    assert status == 1
+    assert status != 0
+    assert status == Status.RUNNING
+
+    # 4. Test: Immutability
+    try:
+        Status.RUNNING.value = 99
+    except AttributeError as e:
+        print(f"\nImmutability check: Passed (Cannot modify EnumValue): {e}\n")
+
+    # 5. Test: Dynamic Append
+    powers = Enum()
+    powers.append(LOW=10, HIGH=100)
+    print(f"Dynamic Enum check: {powers}")
+    assert powers.LOW == 10
+
+    # 6. Test: Iteration
+    print("Iteration check: ", end="")
+    for m in Status():
+        print(f"{m.name}, ", end="")
+    print("-> Passed")
+
+    # 7. Test: Error handling for invalid lookup
+    try:
+        Status(99)
+    except AttributeError as e:
+        print(f"\nAttributeError: Invalid lookup check: Caught expected error -> {e}\n")
+
+    print("\nAll tests passed successfully!")
