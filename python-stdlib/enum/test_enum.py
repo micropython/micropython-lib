@@ -38,7 +38,7 @@ class TestEnum(unittest.TestCase):
         self.assertEqual(result.value, 1)
 
         # Перевірка виключення для неіснуючого значення
-        with self.assertRaises(ValueError):
+        with self.assertRaises(AttributeError):
             self.color(999)
 
     def test_is_value(self):

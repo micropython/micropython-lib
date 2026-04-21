@@ -4,15 +4,15 @@
 import unittest
 from enum import Enum, EnumValue
 
-class TestEnum(unittest.TestCase):
 
+class TestEnum(unittest.TestCase):
     def setUp(self):
         # Define standard Enum classes for testing
         class Color(Enum):
             RED = 'red'
             GREEN = 'green'
             BLUE = 'blue'
-        
+
         class Status(Enum):
             IDLE = 0
             RUNNING = 1
@@ -42,7 +42,7 @@ class TestEnum(unittest.TestCase):
         # Test EnumValue immutability
         with self.assertRaises(AttributeError):
             self.color_inst.RED.value = 'blue'
-        
+
         # Test Enum instance immutability (once initialized)
         with self.assertRaises(AttributeError):
             self.color_inst.NEW_COLOR = 'yellow'
@@ -63,7 +63,7 @@ class TestEnum(unittest.TestCase):
         member = self.color_inst('green')
         self.assertEqual(member.name, 'GREEN')
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(AttributeError):
             self.color_inst('yellow')
 
     def test_iteration(self):
@@ -71,16 +71,17 @@ class TestEnum(unittest.TestCase):
         members = list(self.status_inst)
         names = [m.name for m in members]
         values = [m.value for m in members]
-        
+
         self.assertEqual(len(members), 3)
         self.assertIn('IDLE', names)
         self.assertIn(2, values)
+
 
 #     def test_functional_api(self):
 #         """Test dynamic Enum creation using the Functional API."""
 #         # Dynamic creation via Enum(name, names_dict)
 #         State = Enum(name='State', names={'ON': 1, 'OFF': 0})
-#         
+#
 #         self.assertTrue(hasattr(State, 'ON'))
 #         self.assertEqual(State.ON.value, 1)
 #         self.assertEqual(State.OFF.name, 'OFF')
@@ -92,18 +93,18 @@ class TestEnum(unittest.TestCase):
 #         print('c_repr', c_repr)
 #         c_restored = eval(c_repr)
 #         self.assertEqual(self.color_inst, c_restored)
-#         
+#
 #         # Test dynamically created instance
 #         s_dynamic = Enum(name='State', names={'ON': 1, 'OFF': 0})
 #         s_repr = repr(s_dynamic)
 #         s_restored = eval(s_repr)
 #         self.assertEqual(s_dynamic, s_restored)
 
-    def test_len_and_list_members(self):
-        """Test utility functions like __len__ and list_members."""
+    def test_len_and_list(self):
+        """Test utility functions like __len__ and list."""
         self.assertEqual(len(self.color_inst), 3)
-        members_list = self.color_inst.list_members()
-        self.assertEqual(members_list, [('BLUE', 'blue'), ('GREEN', 'green'), ('RED', 'red')])
+        members_list = self.color_inst.list()
+        self.assertEqual(members_list, [self.color_inst.BLUE, self.color_inst.GREEN, self.color_inst.RED])
 
     def test_deletion_prevention(self):
         """Verify that members cannot be deleted."""

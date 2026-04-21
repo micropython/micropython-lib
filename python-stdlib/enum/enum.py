@@ -65,7 +65,7 @@ class Enum:
                 # Wrap static numbers found in class definition
                 return EnumValue(attr, key)
 
-        raise AttributeError(f"{value} is not in {cls.__name__} enum")
+        raise AttributeError(f"{value} is not in {cls.__name__}")
 
     def list_members(self):
         # Returns a list of tuples (name, value) for all members
@@ -103,7 +103,7 @@ class Enum:
         for member in self:
             if member.value == value:
                 return member
-        raise ValueError(f"no such value: {value}")
+        raise AttributeError(f"{value} is not in {self.__class__.__name__}")
 
     def __setattr__(self, key, value):
         if hasattr(self, '_initialized'):
@@ -139,7 +139,7 @@ if __name__ == '__main__':
 
     # Create instance
     c = Color()
-    print(f"Enum repr c: {c}")
+    print(f"Enum c: {c}")
 
     # Basic access
     print(f"RED: Name={c.RED.name}, Value={c.RED.value}, EnumValue={c.RED}, Call={c.RED()} ")
@@ -162,8 +162,8 @@ if __name__ == '__main__':
 
     try:
         c(999)
-    except ValueError as e:
-        print(f"\nValueError: {c} {e}\n")
+    except AttributeError as e:
+        print(f"\nAttributeError: {e}: {c}\n")
 
     # --- Usage Example 2 ---
     # Define an Enum class

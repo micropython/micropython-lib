@@ -113,5 +113,4 @@ The base class for all enumerations.
     * Raised when attempting to modify an `EnumValue`.
     * Raised when attempting to add new members to an initialized Enum.
     * Raised when a class-level lookup (`Status(999)`) fails.
-* **`ValueError`**:
     * Raised when an instance-level lookup (`s(999)`) fails.
