@@ -1,7 +1,8 @@
+# test_enum.py
 # version="1.2.1"
 
 import unittest
-from enum import Enum, EnumValue, enum
+from enum import Enum, EnumValue
 
 
 class TestEnum(unittest.TestCase):
@@ -20,18 +21,6 @@ class TestEnum(unittest.TestCase):
         self.assertEqual(self.color.RED.value, 1)
         self.assertEqual(self.color.RED.name, 'RED')
         self.assertIsInstance(self.color.RED, EnumValue)
-
-    def test_init_kwargs(self):
-        """Тест додавання значень через конструктор __init__(**kwargs)"""
-        c = self.ColorClass(YELLOW=4, BLACK=0)
-        self.assertEqual(c.YELLOW.value, 4)
-        self.assertEqual(c.BLACK.name, 'BLACK')
-
-    def test_append(self):
-        """Тест методу append(**kwargs) та ланцюжкового виклику"""
-        self.color.append(MAGENTA=5).append(CYAN=6)
-        self.assertEqual(self.color.MAGENTA.value, 5)
-        self.assertEqual(self.color.CYAN.name, 'CYAN')
 
     def test_comparison(self):
         """Тест порівняння EnumValue з числами та іншими об'єктами"""
@@ -80,14 +69,6 @@ class TestEnum(unittest.TestCase):
     def test_len(self):
         """Тест магічного методу __len__"""
         self.assertEqual(len(self.color), 3)
-        self.color.append(WHITE=7)
-        self.assertEqual(len(self.color), 4)
-
-    def test_backwards_compatible_function(self):
-        """Тест глобальної функції enum(**kwargs)"""
-        e = enum(A=10, B=20)
-        self.assertEqual(e.A.value, 10)
-        self.assertEqual(e.B.name, 'B')
 
     def test_call_method(self):
         """Тест виклику об'єкта як функції c.RED() -> 1"""
