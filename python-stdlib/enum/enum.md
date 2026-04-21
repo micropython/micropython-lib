@@ -1,120 +1,117 @@
-Below is the documentation for your `enum.py` library. This file explains the core concepts of your custom `Enum` implementation and provides practical examples for embedded development and general logic.
+# Enum Library
+
+This library provides a lightweight, memory-efficient `Enum` implementation designed for MicroPython environments. It focuses on immutability, reverse lookup capabilities, and serialization support without the complexity of metaclasses.
 
 ---
 
-# Custom Enum Library for Python & MicroPython
-
-This library provides a flexible, memory-efficient `Enum` class designed for dynamic usage and seamless mathematical integration. Unlike the standard CPython `Enum`, this version allows for runtime expansion and direct arithmetic operations without needing to access a `.value` property.
-
 ## Core Features
-* **Transparent Math**: Supports arithmetic (`+`, `-`, `*`, `/`) and bitwise (`&`, `|`, `^`, `<<`, `>>`) operations directly on enum members.
-* **Dynamic Expansion**: Add new members at runtime via `.append()` or direct attribute assignment.
-* **Memory Efficient**: Uses `__slots__` in the `ValueWrapper` to minimize RAM usage on platforms like the ESP32.
-* **Flexible Initialization**: Can be initialized via class inheritance, dictionaries, or keyword arguments.
+* **Immutability**: Enum members (`EnumValue`) are protected against modification. Any attempt to change their name or value raises an `AttributeError`.
+* **Static Design**: Once an Enum instance is initialized, it is "frozen." You cannot add new attributes or delete existing members.
+* **Dual Reverse Lookup**:
+    * **Class Constructor**: Retrieve a member by value using the class name (e.g., `Status(1)`).
+    * **Instance Call**: Retrieve a member by value by calling the instance (e.g., `s(1)`).
+* **Serialization Support**: Implements `__repr__` such that `obj == eval(repr(obj))`, allowing easy restoration of Enum states.
+* **Functional API**: Supports dynamic creation of Enums at runtime.
 
 ---
 
 ## Usage Examples
 
-### 1. Hardware Pin Configuration (ESP32)
-Define your hardware pins using class inheritance. You can skip internal or reserved pins using the `__skipped__` attribute.
+### 1. Standard Class Definition
+Define your enumeration by inheriting from the `Enum` class. Class-level constants are automatically converted into `EnumValue` objects upon initialization.
 
 ```python
 from enum import Enum
 
-class Pins(Enum):
-    # Members defined at class level
-    LED = 2
-    BUTTON = 4
-    # Members to exclude from the enum mapping
-    __skipped__ = ('RESERVED_PIN',)
-    RESERVED_PIN = 0
+class Color(Enum):
+    RED = 'red'
+    GREEN = 'green'
 
-# You can also add pins during instantiation
-pins = Pins(SDA=21, SCL=22)
+# Initialize the enum to process attributes
+c = Color()
 
-print(f"I2C SDA Pin: {pins.SDA}") # Output: 21
-print(f"Is pin 21 valid? {pins.is_value(21)}") # Output: True
+print(c.RED)        # Output: RED: red
+print(c.RED.name)   # Output: RED
+print(c.RED.value)  # Output: red
+print(c.RED())      # Output: red
 ```
 
-### 2. Math and Register Logic
-The `ValueWrapper` allows you to perform calculations directly. This is particularly useful for bitmasks and step-based logic.
+
+### 2. Reverse Lookup
+The library provides two ways to find a member based on its raw value.
 
 ```python
-# Initialize with key-value pairs
-brightness = Enum(MIN=0, STEP=25, MAX=255)
+class Status(Enum):
+    IDLE = 0
+    RUNNING = 1
 
-# Direct arithmetic (Forward and Reflected)
-next_level = brightness.MIN + brightness.STEP // 2
-complex_math = 100 + brightness.STEP 
+# Method A: Via Class (Simulates interpreting hardware/network bytes)
+# Uses __new__ logic to return the correct EnumValue
+current_status = Status(1)
+print(current_status.name)  # Output: RUNNING
+print(current_status)       # Output: RUNNING: 1
+print(current_status())     # Output: 1
 
-print(f"Next Level: {next_level}") # Output: 12
-print(f"Complex Math: {complex_math}") # Output: 125
-
-# Bitwise operations for register control
-flags = Enum(BIT_0=0x01, BIT_1=0x02)
-combined = flags.BIT_0 | flags.BIT_1
-print(f"Combined Flags: {hex(combined)}") # Output: 0x03
+# Method B: Via Instance Call
+s = Status()
+print(s(0).name)            # Output: IDLE
+print(s(0))                 # Output: IDLE: 0
+print(s(0)())               # Output: 0
 ```
 
-### 3. Dynamic State Machines
-You can expand an `Enum` as your program logic progresses, such as adding states to a connection manager.
+
+### 3. Functional API (Dynamic Creation)
+If you need to create an Enum from external data (like a JSON config), use the functional constructor.
 
 ```python
-status = Enum(IDLE=0, CONNECTING=1)
+# Create a dynamic Enum instance
+State = Enum(name='State', names={'ON': 1, 'OFF': 2})
 
-# Add multiple members via append()
-status.append(CONNECTED=2, ERROR=3)
-
-# Add a single member via direct assignment
-status.DISCONNECTING = 4
-
-for name, val in status.items():
-    print(f"Status {name} has code {val}")
+print(State.ON)      # Output: ON: 1
+assert State.ON == 1 # Comparison with raw value
 ```
 
-### 4. Working with Different Data Types
-Enums are not restricted to integers; they can wrap strings, floats, and booleans.
+
+### 4. Serialization (Repr / Eval)
+The library ensures that the string representation can be used to perfectly reconstruct the object.
 
 ```python
-commands = Enum(
-    START="CMD_START",
-    STOP="CMD_STOP",
-    TIMEOUT=5.5,
-    IS_ACTIVE=True
-)
+colors = Color()
+# Get serialized string
+serialized = repr(colors)
+# Reconstruct object
+restored_colors = eval(serialized)
 
-if commands.IS_ACTIVE:
-    # Use str() to get the wrapped string value
-    print(f"Executing: {commands.START}") 
+print(f"Original: {colors}")           # Output: Original: Color(names={'ON': 1, 'OFF': 2, 'GREEN': 'green', 'RED': 'red'})
+print(f"Restored: {restored_colors}")  # Output: Restored: Color(names={'ON': 1, 'OFF': 2, 'GREEN': 'green', 'RED': 'red'})
+print(colors == restored_colors)       # Output: True
+
 ```
 
-### 5. Introspection and Utilities
-The library provides helper methods to validate values or find keys based on their values.
-
-```python
-class ErrorCodes(Enum):
-    NOT_FOUND = 404
-    SERVER_ERROR = 500
-
-# Check if a value exists in the Enum
-exists = ErrorCodes.is_value(404) # True
-
-# Get the formatted string name from a value
-name = ErrorCodes.key_from_value(500) 
-print(name) # Output: ErrorCodes.SERVER_ERROR
-```
 
 ---
 
 ## API Reference
 
-### `ValueWrapper`
-The internal class that wraps values to enable mathematical transparency.
-* `.value`: Access the raw value.
-* `()`: Calling the object returns the raw value.
+### `EnumValue`
+The object representing a specific member of an Enum.
+* `.name`: The string name of the member.
+* `.value`: The raw value associated with the member.
+* `()`: Calling the member object returns its raw value (e.g., `c.RED() -> 'red'`).
 
-### `Enum` (Inherits from `dict`)
-* `append(arg=None, **kwargs)`: Adds new members to the Enum.
-* `is_value(value)`: Returns `True` if the value exists in the Enum.
-* `key_from_value(value)`: Returns the string representation (e.g., `ClassName.KEY`) for a given value.
+### `Enum`
+The base class for all enumerations.
+* `list_members()`: Returns a list of `(name, value)` tuples for all defined members.
+* `is_value(value)`: Returns `True` if the provided raw value exists within the Enum.
+* `__len__`: Returns the total number of members.
+* `__iter__`: Allows looping through members (e.g., `[m.name for m in color_inst]`).
+
+---
+
+## Error Handling
+* **`AttributeError`**:
+    * Raised when attempting to modify an `EnumValue`.
+    * Raised when attempting to add new members to an initialized Enum.
+    * Raised when a class-level lookup (`Status(999)`) fails.
+* **`ValueError`**:
+    * Raised when an instance-level lookup (`s(999)`) fails.
