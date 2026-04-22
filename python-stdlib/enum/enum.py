@@ -67,9 +67,9 @@ class Enum:
 
         raise AttributeError(f"{value} is not in {cls.__name__}")
 
-    def list_members(self):
-        # Returns a list of tuples (name, value) for all members
-        return [(m.name, m.value) for m in self]
+    def list(self):
+        # Returns a list of all members
+        return [member for member in self]
 
     def _update(self, key, value):
         setattr(self.__class__, key, EnumValue(value, key))
@@ -77,7 +77,7 @@ class Enum:
     def _scan_class_attrs(self):
         # Converts static class attributes into EnumValue objects
         # List of methods and internal names that should not be converted
-        ignored = ('is_value', 'list_members')
+        ignored = ('is_value', 'list')
         for key in dir(self.__class__):
             # Skip internal names and methods
             if key.startswith('_') or key in ignored:
@@ -93,7 +93,7 @@ class Enum:
 
     def __repr__(self):
         # Supports the condition: obj == eval(repr(obj))
-        members = {m.name: m.value for m in self}
+        members = {member.name: member.value for member in self}
         if self.__class__.__name__ == 'Enum':
             return f"Enum(name='Enum', names={members})"
         # Return a string like: Name(names={'KEY1': VALUE1, 'KEY2': VALUE2, ..})
@@ -127,7 +127,7 @@ class Enum:
     def __eq__(self, other):
         if not isinstance(other, Enum):
             return False
-        return self.list_members() == other.list_members()
+        return self.list() == other.list()
 
 
 if __name__ == '__main__':
@@ -140,6 +140,7 @@ if __name__ == '__main__':
     # Create instance
     c = Color()
     print(f"Enum c: {c}")
+    print("c.list():", c.list())
 
     # Basic access
     print(f"RED: Name={c.RED.name}, Value={c.RED.value}, EnumValue={c.RED}, Call={c.RED()} ")

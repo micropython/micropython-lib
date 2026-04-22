@@ -101,7 +101,7 @@ The object representing a specific member of an Enum.
 
 ### `Enum`
 The base class for all enumerations.
-* `list_members()`: Returns a list of `(name, value)` tuples for all defined members.
+* `list()`: Returns a list of all defined members.
 * `is_value(value)`: Returns `True` if the provided raw value exists within the Enum.
 * `__len__`: Returns the total number of members.
 * `__iter__`: Allows looping through members (e.g., `[m.name for m in color_inst]`).
