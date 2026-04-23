@@ -94,8 +94,29 @@ Ctrl-D at the asyncio REPL command prompt will terminate the current event loop,
 
 The following features are unsupported:
 
-* Tab completion is not supported (also unsupported in `python -m asyncio`).
+* Tab completion requires `micropython.repl_autocomplete` (available when firmware is built with `MICROPY_HELPER_REPL`, which is the default for most ports).
 * Multi-line continuation. However you can do single-line definitions of functions, see demo above.
 * Exception tracebacks. Only the exception type and message is shown, see demo above.
 * Emacs shortcuts (e.g. Ctrl-A, Ctrl-E, to move to start/end of line).
 * Unicode handling for input.
+
+## Testing
+
+### Unit tests
+
+`test_autocomplete.py` tests the `micropython.repl_autocomplete` API contract
+that aiorepl depends on. Run on the unix port:
+
+    MICROPY_MICROPYTHON=ports/unix/build-standard/micropython \
+        tests/run-tests.py lib/micropython-lib/micropython/aiorepl/test_autocomplete.py
+
+Or deploy to a device with `mpremote cp` and run directly.
+
+### Integration test (PTY)
+
+`test_aiorepl_pty.py` exercises aiorepl interactively via a pseudo-terminal,
+testing tab completion, command execution, and terminal mode switching.
+Run with CPython against the unix build:
+
+    python3 lib/micropython-lib/micropython/aiorepl/test_aiorepl_pty.py \
+        ports/unix/build-standard/micropython
