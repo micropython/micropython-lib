@@ -114,3 +114,66 @@ The base class for all enumerations.
     * Raised when attempting to add new members to an initialized Enum.
     * Raised when a class-level lookup (`Status(999)`) fails.
     * Raised when an instance-level lookup (`s(999)`) fails.
+
+## Compare with CPython
+
+```python
+# Run on MicroPython v1.28.0 on 2026-04-06; Generic ESP32 module with ESP32
+# Run on Python 3.12.10
+from enum import Enum
+
+# class syntax
+class Color(Enum):
+    RED = 1
+    GREEN = 2
+    BLUE = 3
+
+# OR
+# functional syntax
+# Color = Enum('Color', {'RED': 1, 'GREEN': 2, 'BLUE': 3})
+
+# List enum members
+try:
+    print(list(Color))
+# [<Color.RED: 1>, <Color.GREEN: 2>, <Color.BLUE: 3>]
+except:
+    print(Color.list())
+# [RED: 1, GREEN: 2, BLUE: 3]
+
+# Accessing enum member by name
+print(Color.GREEN, type(Color.GREEN))
+# Color.GREEN  <enum 'Color'>
+# GREEN: 2 <class 'EnumValue'>
+
+# Accessing enum member by name
+try:
+    print(Color['GREEN'])
+# Color.GREEN
+except:
+    print(Color('GREEN'))
+# GREEN: 2
+
+# Accessing enum member by value
+print(Color(2))
+# Color.GREEN
+
+# Accessing enum member name
+print(Color.GREEN.name, type(Color.GREEN.name))
+#  GREEN <class 'str'>
+
+# Accessing enum member value
+print(Color.GREEN.value, type(Color.GREEN.value))
+# 2 <class 'int'>
+```
+
+### Output is:
+
+| MicroPython v1.28.0  |  Python 3.12.10  |
+|   :---   |   :---  |
+| [RED: 1, GREEN: 2, BLUE: 3] | [<Color.RED: 1>, <Color.GREEN: 2>, <Color.BLUE: 3>] |
+| GREEN: 2 <class 'EnumValue'> | Color.GREEN <enum 'Color'> |
+| GREEN: 2 | Color.GREEN |
+| GREEN: 2 | Color.GREEN |
+| GREEN <class 'str'> | GREEN <class 'str'> |
+| 2 <class 'int'> | 2 <class 'int'> |
+
