@@ -5,8 +5,8 @@
 class EnumValue:
     # An immutable object representing a specific enum member
     def __init__(self, value, name):
-        object.__setattr__(self, 'value', value)
-        object.__setattr__(self, 'name', name)
+        object.__setattr__(self, "value", value)
+        object.__setattr__(self, "name", name)
 
     def __repr__(self):
         return f"{self.name}: {self.value}"
@@ -30,30 +30,30 @@ class Enum:
             if cls is not Enum:
                 return cls._lookup(name)
 
-        # Scenario 2: Functional API (e.g., Enum('Color', {'RED': 1}))
+        # Scenario 2: Functional API (e.g., Enum("Color", {"RED": 1}))
         return super(Enum, cls).__new__(cls)
 
     def __init__(self, name=None, names=None):
-        if hasattr(self, '_initialized'):
+        if hasattr(self, "_initialized"):
             return
 
         # 1. Convert class-level attributes (constants) to EnumValue objects
         self._scan_class_attrs()
 
-        # Support Functional API: Enum('Name', {'KEY': VALUE})
+        # Support Functional API: Enum("Name", {"KEY": VALUE})
         if name is not None and isinstance(names, dict):
             for key, value in names.items():
                 # Prevent addition if the key already exists
                 if not hasattr(self, key):
                     self._update(key, value)
 
-        object.__setattr__(self, '_initialized', True)
+        object.__setattr__(self, "_initialized", True)
 
     @classmethod
     def _lookup(cls, value):
         # Finds an EnumValue by its raw value
         for key in dir(cls):
-            if key.startswith('_'):
+            if key.startswith("_"):
                 continue
             attr = getattr(cls, key)
             if isinstance(attr, EnumValue) and (attr.value == value or attr.name == value):
@@ -65,12 +65,12 @@ class Enum:
 
     @classmethod
     def __iter__(cls):
-        if '_initialized' not in cls.__dict__:
+        if "_initialized" not in cls.__dict__:
             cls._scan_class_attrs()
-            setattr(cls, '_initialized', True)
+            setattr(cls, "_initialized", True)
 
         for key in dir(cls):
-            if key.startswith('_'):
+            if key.startswith("_"):
                 continue
             attr = getattr(cls, key)
             if isinstance(attr, EnumValue):
@@ -78,13 +78,12 @@ class Enum:
 
     @classmethod
     def list(cls):
-        if '_initialized' not in cls.__dict__:
+        if "_initialized" not in cls.__dict__:
             cls._scan_class_attrs()
-            setattr(cls, '_initialized', True)
+            setattr(cls, "_initialized", True)
 
         # Returns a list of all members
-        return [getattr(cls, key) for key in dir(cls)
-                if isinstance(getattr(cls, key), EnumValue)]
+        return [getattr(cls, key) for key in dir(cls) if isinstance(getattr(cls, key), EnumValue)]
 
     @classmethod
     def _update(cls, key, value):
@@ -94,10 +93,10 @@ class Enum:
     def _scan_class_attrs(cls):
         # Converts static class attributes into EnumValue objects
         # List of methods and internal names that should not be converted
-        ignored = ('is_value', 'list')
+        ignored = ("is_value", "list")
         for key in dir(cls):
             # Skip internal names and methods
-            if key.startswith('_') or key in ignored:
+            if key.startswith("_") or key in ignored:
                 continue
 
             value = getattr(cls, key)
@@ -111,15 +110,15 @@ class Enum:
     def __repr__(self):
         # Supports the condition: obj == eval(repr(obj))
         members = {member.name: member.value for member in self}
-        if self.__class__.__name__ == 'Enum':
+        if self.__class__.__name__ == "Enum":
             return f"Enum(name='Enum', names={members})"
-        # Return a string like: Name(names={'KEY1': VALUE1, 'KEY2': VALUE2, ..})
+        # Return a string like: Name(names={"KEY1": VALUE1, "KEY2": VALUE2, ..})
         return f"{self.__class__.__name__}(names={members})"
 
     def __call__(self, value):
-        if not hasattr(self, '_initialized'):
+        if not hasattr(self, "_initialized"):
             self._scan_class_attrs()
-            object.__setattr__(self, '_initialized', True)
+            object.__setattr__(self, "_initialized", True)
 
         for member in self:
             if member.value == value or member.name == value:
@@ -127,7 +126,7 @@ class Enum:
         raise AttributeError(f"{value} is not in {self.__class__.__name__}")
 
     def __setattr__(self, key, value):
-        if hasattr(self, '_initialized'):
+        if hasattr(self, "_initialized"):
             raise AttributeError(f"Enum '{self.__class__.__name__}' is static")
         super().__setattr__(key, value)
 
@@ -145,7 +144,7 @@ class Enum:
         return self.list() == other.list()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # --- Usage Example 1 ---
     # Standard Class Definition
     class Color(Enum):
@@ -169,14 +168,14 @@ if __name__ == '__main__':
     print(f"RED: Name={c.RED.name}, Value={c.RED.value}, EnumValue={c.RED}, Call={c.RED()} ")
 
     # Assertions
-    assert c.RED.name == 'RED'
+    assert c.RED.name == "RED"
     assert c.RED.value == 1
     assert c.RED == 1
     assert c.RED() == 1
 
     # Reverse Lookup via instance call
-    #print(f"c(1) lookup object: {c(1)}, Name={c(1).name}, value={c(1).value}")  # RED
-    assert c(1).name == 'RED'
+    print(f"c(1) lookup object: {c(1)}, Name={c(1).name}, value={c(1).value}")  # RED
+    assert c(1).name == "RED"
     assert c(1).value == 1
     assert c(1) == 1
 
@@ -242,6 +241,6 @@ if __name__ == '__main__':
     state = eval("Enum(name='State', names={'ON':1, 'OFF':2})")
     print(f"Functional Enum instance (state): {state}")
     assert state.ON == 1
-    assert state.ON.name == 'ON'
+    assert state.ON.name == "ON"
 
     print("\nAll tests passed successfully!")
