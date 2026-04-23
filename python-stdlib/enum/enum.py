@@ -1,5 +1,5 @@
 # enum.py
-# version="1.2.3"
+# version="1.2.4"
 
 
 class EnumValue:
@@ -11,9 +11,6 @@ class EnumValue:
     def __repr__(self):
         return f"{self.name}: {self.value}"
 
-#     def __str__(self):
-#         return str(self.value)
-
     def __call__(self):
         return self.value
 
@@ -21,9 +18,6 @@ class EnumValue:
         if isinstance(other, EnumValue):
             return self.value == other.value
         return self.value == other
-
-#     def __int__(self):
-#         return self.value
 
     def __setattr__(self, key, value):
         raise AttributeError("EnumValue is immutable")
@@ -40,6 +34,9 @@ class Enum:
         return super(Enum, cls).__new__(cls)
 
     def __init__(self, name=None, names=None):
+        if hasattr(self, '_initialized'):
+            return
+
         # 1. Convert class-level attributes (constants) to EnumValue objects
         self._scan_class_attrs()
 
@@ -64,29 +61,49 @@ class Enum:
             if not callable(attr) and attr == value:
                 # Wrap static numbers found in class definition
                 return EnumValue(attr, key)
-
         raise AttributeError(f"{value} is not in {cls.__name__}")
 
-    def list(self):
+    @classmethod
+    def __iter__(cls):
+        if '_initialized' not in cls.__dict__:
+            cls._scan_class_attrs()
+            setattr(cls, '_initialized', True)
+
+        for key in dir(cls):
+            if key.startswith('_'):
+                continue
+            attr = getattr(cls, key)
+            if isinstance(attr, EnumValue):
+                yield attr
+
+    @classmethod
+    def list(cls):
+        if '_initialized' not in cls.__dict__:
+            cls._scan_class_attrs()
+            setattr(cls, '_initialized', True)
+
         # Returns a list of all members
-        return [member for member in self]
+        return [getattr(cls, key) for key in dir(cls)
+                if isinstance(getattr(cls, key), EnumValue)]
 
-    def _update(self, key, value):
-        setattr(self.__class__, key, EnumValue(value, key))
+    @classmethod
+    def _update(cls, key, value):
+        setattr(cls, key, EnumValue(value, key))
 
-    def _scan_class_attrs(self):
+    @classmethod
+    def _scan_class_attrs(cls):
         # Converts static class attributes into EnumValue objects
         # List of methods and internal names that should not be converted
         ignored = ('is_value', 'list')
-        for key in dir(self.__class__):
+        for key in dir(cls):
             # Skip internal names and methods
             if key.startswith('_') or key in ignored:
                 continue
 
-            value = getattr(self.__class__, key)
+            value = getattr(cls, key)
             # Convert only constants, not methods
             if not callable(value) and not isinstance(value, EnumValue):
-                self._update(key, value)
+                cls._update(key, value)
 
     def is_value(self, value):
         return any(member.value == value for member in self)
@@ -100,8 +117,12 @@ class Enum:
         return f"{self.__class__.__name__}(names={members})"
 
     def __call__(self, value):
+        if not hasattr(self, '_initialized'):
+            self._scan_class_attrs()
+            object.__setattr__(self, '_initialized', True)
+
         for member in self:
-            if member.value == value:
+            if member.value == value or member.name == value:
                 return member
         raise AttributeError(f"{value} is not in {self.__class__.__name__}")
 
@@ -118,12 +139,6 @@ class Enum:
     def __len__(self):
         return sum(1 for _ in self)
 
-    def __iter__(self):
-        for key in dir(self.__class__):
-            attr = getattr(self.__class__, key)
-            if isinstance(attr, EnumValue):
-                yield attr
-
     def __eq__(self, other):
         if not isinstance(other, Enum):
             return False
@@ -134,28 +149,36 @@ if __name__ == '__main__':
     # --- Usage Example 1 ---
     # Standard Class Definition
     class Color(Enum):
-        RED = 'red'
-        GREEN = 'green'
-
+        RED = 1
+        GREEN = 2
+        BLUE = 3
+        
+    print("Color.list():", Color.list())
+    print("Color().list():", Color().list())
+    
+    # Iteration
+    print("Members list:", [member for member in Color()])
+    print("Names list:", [member.name for member in Color()])
+    print("Values list:", [member.value for member in Color()])
+    
     # Create instance
     c = Color()
     print(f"Enum c: {c}")
-    print("c.list():", c.list())
 
     # Basic access
     print(f"RED: Name={c.RED.name}, Value={c.RED.value}, EnumValue={c.RED}, Call={c.RED()} ")
 
     # Assertions
     assert c.RED.name == 'RED'
-    assert c.RED.value == 'red'
-    assert c.RED == 'red'
-    assert c.RED() == 'red'
+    assert c.RED.value == 1
+    assert c.RED == 1
+    assert c.RED() == 1
 
     # Reverse Lookup via instance call
-    print(f"c('red') lookup object: {c('red')}, Name={c('red').name}, value={c('red').value}")  # RED
-    assert c('red').name == 'RED'
-    assert c('red').value == 'red'
-    assert c('red') == 'red'
+    #print(f"c(1) lookup object: {c(1)}, Name={c(1).name}, value={c(1).value}")  # RED
+    assert c(1).name == 'RED'
+    assert c(1).value == 1
+    assert c(1) == 1
 
     # Iteration
     print("Values list:", [member.value for member in c])

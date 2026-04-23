@@ -36,6 +36,9 @@ class TestEnum(unittest.TestCase):
         result = self.color(1)
         self.assertEqual(result.name, 'RED')
         self.assertEqual(result.value, 1)
+        result = self.color('RED')
+        self.assertEqual(result.name, 'RED')
+        self.assertEqual(result.value, 1)
 
         # Перевірка виключення для неіснуючого значення
         with self.assertRaises(AttributeError):

@@ -104,7 +104,7 @@ class TestEnum(unittest.TestCase):
         """Test utility functions like __len__ and list."""
         self.assertEqual(len(self.color_inst), 3)
         members_list = self.color_inst.list()
-        self.assertEqual(members_list, [self.color_inst.BLUE, self.color_inst.GREEN, self.color_inst.RED])
+        self.assertEqual(members_list, [self.color_inst.RED, self.color_inst.GREEN, self.color_inst.BLUE])
 
     def test_deletion_prevention(self):
         """Verify that members cannot be deleted."""
