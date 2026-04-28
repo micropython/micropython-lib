@@ -1,8 +1,8 @@
 # test_enum.py
-# version="1.2.5"
+# version="1.3.0"
 
 import unittest
-from enum import Enum, EnumValue
+from enum import Enum
 
 
 class TestEnum(unittest.TestCase):
@@ -27,6 +27,9 @@ class TestEnum(unittest.TestCase):
         """Test basic access to Enum members, names, and values."""
         self.assertEqual(self.color.RED.value, 1)
         self.assertEqual(self.color.RED.name, 'RED')
+        self.assertEqual(str(type(self.color.RED)), "<class 'EnumValue'>")
+        self.assertEqual(type(self.color.RED).__name__, 'EnumValue')
+        EnumValue = type(self.color.RED)
         self.assertIsInstance(self.color.RED, EnumValue)
         self.assertEqual(self.status.IDLE.value, 0)
 

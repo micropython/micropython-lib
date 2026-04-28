@@ -30,10 +30,17 @@ class Color(Enum):
 # Initialize the enum to process attributes
 c = Color()
 
-print(c.RED)        # Output: RED: red
-print(c.RED.name)   # Output: RED
-print(c.RED.value)  # Output: red
-print(c.RED())      # Output: red
+print(c.RED)                  # Output: RED: red
+print(c.RED.name)             # Output: RED
+print(c.RED.value)            # Output: red
+print(c.RED())                # Output: red
+print(c.is_value("RED"))      # Output: true
+print(c.is_value(Color.RED))  # Output: true
+print(c.is_value('red'))      # Output: true
+print(c.list())               # Output: [Color.RED: red, Color.GREEN: green]
+print([m for m in c])         # Output: [Color.RED: red, Color.GREEN: green]
+print([m.name for m in c])    # Output: ['RED', 'GREEN']
+print([m.value for m in c])   # Output: ['red', 'green']
 ```
 
 
@@ -48,14 +55,16 @@ class Status(Enum):
 # Method A: Via Class (Simulates interpreting hardware/network bytes)
 # Uses __new__ logic to return the correct EnumValue
 current_status = Status(1)
-print(current_status.name)  # Output: RUNNING
-print(current_status)       # Output: RUNNING: 1
-print(current_status())     # Output: 1
+print(current_status.name)   # Output: RUNNING
+print(current_status.value)  # Output: 1
+print(current_status)        # Output: Status.RUNNING: 1
+print(current_status())      # Output: 1
 
 # Method B: Via Instance Call
 s = Status()
 print(s(0).name)            # Output: IDLE
-print(s(0))                 # Output: IDLE: 0
+print(s(0).value)           # Output: 0
+print(s(0))                 # Output: Status.IDLE: 0
 print(s(0)())               # Output: 0
 ```
 
@@ -67,8 +76,15 @@ If you need to create an Enum from external data (like a JSON config), use the f
 # Create a dynamic Enum instance
 State = Enum(name='State', names={'ON': 1, 'OFF': 2})
 
-print(State.ON)      # Output: ON: 1
-assert State.ON == 1 # Comparison with raw value
+print(State)                  # Output: Enum(name='State', names={'ON': 1, 'OFF': 2})
+print(State.ON)               # Output: State.ON: 1
+print(State.ON.name)          # Output: ON
+print(State.ON.value)         # Output: 1
+print(State.ON())             # Output: 1
+assert State.ON == 1          # Comparison
+assert State.ON() == 1        #
+assert State.ON.value == 1    #
+assert State.ON.name == "ON"  #
 ```
 
 
@@ -76,16 +92,22 @@ assert State.ON == 1 # Comparison with raw value
 The library ensures that the string representation can be used to perfectly reconstruct the object.
 
 ```python
+from enum import Enum
+
+class Color(Enum):
+    RED = 'red'
+    GREEN = 'green'
+    BLUE = 3
+
 colors = Color()
 # Get serialized string
 serialized = repr(colors)
 # Reconstruct object
 restored_colors = eval(serialized)
 
-print(f"Original: {colors}")           # Output: Original: Color(names={'ON': 1, 'OFF': 2, 'GREEN': 'green', 'RED': 'red'})
-print(f"Restored: {restored_colors}")  # Output: Restored: Color(names={'ON': 1, 'OFF': 2, 'GREEN': 'green', 'RED': 'red'})
+print(f"Original: {colors}")           # Output: Original: Enum(name='Color', names={'BLUE': 3, 'RED': 'red', 'GREEN': 'green'})
+print(f"Restored: {restored_colors}")  # Output: Restored: Enum(name='Color', names={'BLUE': 3, 'RED': 'red', 'GREEN': 'green'})
 print(colors == restored_colors)       # Output: True
-
 ```
 
 
@@ -170,10 +192,10 @@ print(Color.GREEN.value, type(Color.GREEN.value))
 
 | MicroPython v1.28.0  |  Python 3.12.10  |
 |   :---   |   :---  |
-| [RED: 1, GREEN: 2, BLUE: 3] | [<Color.RED: 1>, <Color.GREEN: 2>, <Color.BLUE: 3>] |
-| GREEN: 2 <class 'EnumValue'> | Color.GREEN <enum 'Color'> |
-| GREEN: 2 | Color.GREEN |
-| GREEN: 2 | Color.GREEN |
+| [Color.RED: 1, Color.GREEN: 2, Color.BLUE: 3] | [<Color.RED: 1>, <Color.GREEN: 2>, <Color.BLUE: 3>] |
+| Color.GREEN: 2 <class 'EnumValue'> | Color.GREEN <enum 'Color'> |
+| Color.GREEN: 2 | Color.GREEN |
+| Color.GREEN: 2 | Color.GREEN |
 | GREEN <class 'str'> | GREEN <class 'str'> |
 | 2 <class 'int'> | 2 <class 'int'> |
 
