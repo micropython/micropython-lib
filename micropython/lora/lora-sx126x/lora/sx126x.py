@@ -233,7 +233,7 @@ class _SX126x(BaseModem):
             self._cmd(
                 ">BHHHH",
                 _CMD_CFG_DIO_IRQ,
-                (_IRQ_RX_DONE | _IRQ_TX_DONE | _IRQ_TIMEOUT),  # IRQ mask
+                (_IRQ_RX_DONE | _IRQ_TX_DONE | _IRQ_TIMEOUT | _IRQ_CRC_ERR),  # IRQ mask
                 (_IRQ_RX_DONE | _IRQ_TX_DONE | _IRQ_TIMEOUT),  # DIO1 mask
                 0x0,  # DIO2Mask, not used
                 0x0,  # DIO3Mask, not used
