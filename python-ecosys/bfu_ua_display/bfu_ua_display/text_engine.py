@@ -57,12 +57,14 @@ def ua_text(display, text, x, y, color=1, bg_color=0, clear_bg=False):
             # Character not found, skip it
             continue
 
+        char_width = len(bitmap)
+
         # Clear background if requested
         if clear_bg and hasattr(display, "fill_rect"):
-            display.fill_rect(cursor_x, y, font5x7.FONT_WIDTH, font5x7.FONT_HEIGHT, bg_color)
+            display.fill_rect(cursor_x, y, char_width, font5x7.FONT_HEIGHT, bg_color)
 
         # Render character bitmap
-        for col in range(font5x7.FONT_WIDTH):
+        for col in range(char_width):
             column_data = bitmap[col]
             for row in range(font5x7.FONT_HEIGHT):
                 # Check if pixel should be set (bit is 1)
@@ -73,8 +75,8 @@ def ua_text(display, text, x, y, color=1, bg_color=0, clear_bg=False):
                     display.pixel(cursor_x + col, y + row, bg_color)
 
         # Move cursor to next character position (with 1px spacing)
-        cursor_x += font5x7.FONT_WIDTH + 1
-        total_width += font5x7.FONT_WIDTH + 1
+        cursor_x += char_width + 1
+        total_width += char_width + 1
 
     # Remove trailing spacing from total width
     if total_width > 0:
@@ -83,7 +85,15 @@ def ua_text(display, text, x, y, color=1, bg_color=0, clear_bg=False):
     return total_width
 
 
-def ua_text_center(display, text, y, color=1, bg_color=0, clear_bg=False, display_width=128):
+def ua_text_center(
+    display,
+    text,
+    y,
+    color=1,
+    bg_color=0,
+    clear_bg=False,
+    display_width=128,
+):
     """
     Render text centered horizontally on the display.
 
@@ -161,12 +171,16 @@ def ua_text_scaled(display, text, x, y, scale=2, color=1, bg_color=0, clear_bg=F
         if bitmap is None:
             continue
 
+        char_width = len(bitmap)
+        scaled_width = char_width * scale
+        scaled_height = font5x7.FONT_HEIGHT * scale
+
         # Clear background if requested
         if clear_bg and has_fill_rect:
             display.fill_rect(cursor_x, y, scaled_width, scaled_height, bg_color)
 
         # Render scaled character
-        for col in range(font5x7.FONT_WIDTH):
+        for col in range(char_width):
             column_data = bitmap[col]
             for row in range(font5x7.FONT_HEIGHT):
                 pixel_on = column_data & (1 << row)

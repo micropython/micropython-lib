@@ -116,7 +116,7 @@ def truncate_text(text, max_width, suffix="..."):
         str: Truncated text
 
     Example:
-        >>> short = truncate_text("VERY LONG TEXT", 50)
+        >>> short = truncate_text("LONG TEXT", 50)  # noqa: RUF002
         >>> ua_text(oled, short, 0, 0)
     """
     if not text:

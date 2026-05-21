@@ -1,3 +1,5 @@
+# ruff: noqa: F821
+
 metadata(
     description="Ukrainian text rendering library for MicroPython displays",
     version="0.1.0",
