@@ -4,7 +4,9 @@ This module provides a lightweight version of the Python
 [requests](https://requests.readthedocs.io/en/latest/) library.
 
 It includes support for all HTTP verbs, https, json decoding of responses,
-redirects, basic authentication.
+redirects (including relative Location URLs), basic authentication, HTTP/1.1
+requests, and reading response bodies with Content-Length or chunked
+Transfer-Encoding.
 
 ### Limitations
 
@@ -13,4 +15,12 @@ redirects, basic authentication.
   multipart-form encoding of post data (this can be done manually).
 * Compressed requests/responses are not currently supported.
 * File upload is not supported.
-* Chunked encoding in responses is not supported.
+* HTTP keep-alive connection reuse is not supported (Connection: close by default).
+* Response bodies are buffered in memory. By default at most 32 KiB are read
+  per response; pass ``max_body=None`` to disable the limit or set another
+  byte count with ``max_body=N``.
+
+### Follow-up work
+
+* TLS certificate verification (see micropython-lib issue #838).
+* ``stream=True`` incremental body reads (see issue #777).
