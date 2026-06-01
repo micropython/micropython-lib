@@ -2,8 +2,8 @@
 # Run requests package tests on MicroPython unix port (mock + live).
 set -euo pipefail
 
-MICROPYTHON="${MICROPYTHON:-../../../micropython/ports/unix/build-standard/micropython}"
 ROOT="$(cd "$(dirname "$0")" && pwd)"
+MICROPYTHON="${MICROPYTHON:-$ROOT/../../../micropython/ports/unix/build-standard/micropython}"
 
 if [[ ! -x "$MICROPYTHON" ]]; then
   echo "Build unix port first:" >&2
