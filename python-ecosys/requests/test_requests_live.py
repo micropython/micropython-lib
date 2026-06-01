@@ -29,6 +29,7 @@ _prefer_filesystem_requests()
 if "requests" in sys.modules:
     del sys.modules["requests"]
 
+# ruff: noqa: E402
 import socket
 
 import requests
