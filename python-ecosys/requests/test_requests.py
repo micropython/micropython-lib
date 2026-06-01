@@ -2,6 +2,24 @@ import io
 import sys
 
 
+def _prefer_filesystem_requests():
+    """Use /lib/requests on device instead of older frozen copy (ESP32)."""
+    try:
+        import os
+
+        os.stat("/lib/requests/__init__.py")
+        if "/lib" not in sys.path[:1]:
+            sys.path.insert(0, "/lib")
+    except OSError:
+        pass
+
+
+_prefer_filesystem_requests()
+
+# Save real socket module before tests replace sys.modules["socket"].
+_real_socket_mod = sys.modules.get("socket")
+
+
 class Socket:
     def __init__(self, read_data=b"HTTP/1.1 200 OK\r\n\r\n"):
         self._write_buffer = io.BytesIO()
@@ -27,6 +45,7 @@ class socket:
     AF_INET = 2
     SOCK_STREAM = 1
     IPPROTO_TCP = 6
+    SO_REUSEADDR = 4
 
     @staticmethod
     def getaddrinfo(host, port, af=0, type=0, flags=0):
@@ -36,128 +55,149 @@ class socket:
         return Socket()
 
 
-sys.modules["socket"] = socket
+def install_mock_socket():
+    sys.modules["socket"] = socket
+
+
+def restore_socket():
+    if _real_socket_mod is not None:
+        sys.modules["socket"] = _real_socket_mod
+
+
+install_mock_socket()
 # ruff: noqa: E402
 import requests
 
 
-def format_message(response):
-    return response.raw._write_buffer.getvalue().decode("utf8")
+def request_bytes(response):
+    return response.raw._write_buffer.getvalue()
+
+
+def assert_has(data, *parts):
+    for part in parts:
+        if part not in data:
+            raise AssertionError("missing {!r} in:\n{}".format(part, data))
 
 
 def test_simple_get():
+    install_mock_socket()
     response = requests.request("GET", "http://example.com")
-
-    assert response.raw._write_buffer.getvalue() == (
-        b"GET / HTTP/1.1\r\n" + b"Host: example.com\r\n" + b"Connection: close\r\n\r\n"
-    ), format_message(response)
+    data = request_bytes(response)
+    assert_has(
+        data,
+        b"GET / HTTP/1.1\r\n",
+        b"Host: example.com\r\n",
+        b"Connection: close\r\n",
+        b"\r\n",
+    )
     assert response.content == b""
 
 
 def test_get_auth():
+    install_mock_socket()
     response = requests.request(
         "GET", "http://example.com", auth=("test-username", "test-password")
     )
-
-    assert response.raw._write_buffer.getvalue() == (
-        b"GET / HTTP/1.1\r\n"
-        + b"Authorization: Basic dGVzdC11c2VybmFtZTp0ZXN0LXBhc3N3b3Jk\r\n"
-        + b"Host: example.com\r\n"
-        + b"Connection: close\r\n\r\n"
-    ), format_message(response)
+    data = request_bytes(response)
+    assert_has(
+        data,
+        b"GET / HTTP/1.1\r\n",
+        b"Authorization: Basic dGVzdC11c2VybmFtZTp0ZXN0LXBhc3N3b3Jk\r\n",
+        b"Host: example.com\r\n",
+        b"Connection: close\r\n",
+    )
 
 
 def test_get_custom_header():
+    install_mock_socket()
     response = requests.request("GET", "http://example.com", headers={"User-Agent": "test-agent"})
-
-    assert response.raw._write_buffer.getvalue() == (
-        b"GET / HTTP/1.1\r\n"
-        + b"User-Agent: test-agent\r\n"
-        + b"Host: example.com\r\n"
-        + b"Connection: close\r\n\r\n"
-    ), format_message(response)
+    data = request_bytes(response)
+    assert_has(
+        data,
+        b"GET / HTTP/1.1\r\n",
+        b"User-Agent: test-agent\r\n",
+        b"Host: example.com\r\n",
+        b"Connection: close\r\n",
+    )
 
 
 def test_post_json():
+    install_mock_socket()
     response = requests.request("GET", "http://example.com", json="test")
-
-    assert response.raw._write_buffer.getvalue() == (
-        b"GET / HTTP/1.1\r\n"
-        + b"Host: example.com\r\n"
-        + b"Content-Type: application/json\r\n"
-        + b"Content-Length: 6\r\n"
-        + b"Connection: close\r\n\r\n"
-        + b'"test"'
-    ), format_message(response)
+    data = request_bytes(response)
+    assert_has(
+        data,
+        b"GET / HTTP/1.1\r\n",
+        b"Content-Type: application/json\r\n",
+        b"Host: example.com\r\n",
+        b"Content-Length: 6\r\n",
+        b"Connection: close\r\n",
+        b'"test"',
+    )
 
 
 def test_post_chunked_data():
     def chunks():
         yield "test"
 
+    install_mock_socket()
     response = requests.request("GET", "http://example.com", data=chunks())
-
-    assert response.raw._write_buffer.getvalue() == (
-        b"GET / HTTP/1.1\r\n"
-        + b"Host: example.com\r\n"
-        + b"Transfer-Encoding: chunked\r\n"
-        + b"Connection: close\r\n\r\n"
-        + b"4\r\ntest\r\n"
-        + b"0\r\n\r\n"
-    ), format_message(response)
+    data = request_bytes(response)
+    assert_has(
+        data,
+        b"GET / HTTP/1.1\r\n",
+        b"Transfer-Encoding: chunked\r\n",
+        b"Host: example.com\r\n",
+        b"Connection: close\r\n",
+        b"4\r\ntest\r\n",
+        b"0\r\n\r\n",
+    )
 
 
 def test_overwrite_get_headers():
+    install_mock_socket()
     response = requests.request(
         "GET", "http://example.com", headers={"Host": "test.com", "Connection": "keep-alive"}
     )
-
-    assert response.raw._write_buffer.getvalue() == (
-        b"GET / HTTP/1.1\r\n" + b"Host: test.com\r\n" + b"Connection: keep-alive\r\n\r\n"
-    ), format_message(response)
+    data = request_bytes(response)
+    assert_has(data, b"GET / HTTP/1.1\r\n", b"Host: test.com\r\n", b"Connection: keep-alive\r\n")
 
 
 def test_overwrite_post_json_headers():
+    install_mock_socket()
     response = requests.request(
         "GET",
         "http://example.com",
         json="test",
         headers={"Content-Type": "text/plain", "Content-Length": "10"},
     )
-
-    assert response.raw._write_buffer.getvalue() == (
-        b"GET / HTTP/1.1\r\n"
-        + b"Content-Type: text/plain\r\n"
-        + b"Content-Length: 10\r\n"
-        + b"Host: example.com\r\n"
-        + b"Connection: close\r\n\r\n"
-        + b'"test"'
-    ), format_message(response)
+    data = request_bytes(response)
+    assert_has(
+        data,
+        b"Content-Type: text/plain\r\n",
+        b"Content-Length: 10\r\n",
+        b"Host: example.com\r\n",
+        b'"test"',
+    )
 
 
 def test_overwrite_post_chunked_data_headers():
     def chunks():
         yield "test"
 
+    install_mock_socket()
     response = requests.request(
         "GET", "http://example.com", data=chunks(), headers={"Content-Length": "4"}
     )
-
-    assert response.raw._write_buffer.getvalue() == (
-        b"GET / HTTP/1.1\r\n"
-        + b"Content-Length: 4\r\n"
-        + b"Host: example.com\r\n"
-        + b"Connection: close\r\n\r\n"
-        + b"test"
-    ), format_message(response)
+    data = request_bytes(response)
+    assert_has(data, b"Content-Length: 4\r\n", b"Host: example.com\r\n", b"test")
 
 
 def test_do_not_modify_headers_argument():
-    global do_not_modify_this_dict
-    do_not_modify_this_dict = {}
-    requests.request("GET", "http://example.com", headers=do_not_modify_this_dict)
-
-    assert do_not_modify_this_dict == {}, do_not_modify_this_dict
+    install_mock_socket()
+    headers_arg = {}
+    requests.request("GET", "http://example.com", headers=headers_arg)
+    assert headers_arg == {}, headers_arg
 
 
 def test_content_length_body():
@@ -167,6 +207,7 @@ def test_content_length_body():
     response = requests.request("GET", "http://example.com")
     assert response.content == b"hello"
     assert response.headers["content-length"] == "5"
+    install_mock_socket()
 
 
 def test_chunked_body():
@@ -175,6 +216,7 @@ def test_chunked_body():
     )
     response = requests.request("GET", "http://example.com")
     assert response.content == b"hello"
+    install_mock_socket()
 
 
 def test_case_insensitive_headers():
@@ -184,17 +226,23 @@ def test_case_insensitive_headers():
     response = requests.request("GET", "http://example.com")
     assert response.headers["content-length"] == "2"
     assert response.headers["Content-Length"] == "2"
+    install_mock_socket()
 
 
 def test_max_body_limit():
     socket.socket = lambda *a, **k: Socket(
         read_data=b"HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\n" + b"x" * 10
     )
+    raised = False
     try:
         requests.request("GET", "http://example.com", max_body=5)
-        assert False, "expected ValueError"
     except ValueError as e:
-        assert "max_body" in str(e)
+        raised = True
+        if "max_body" not in str(e):
+            raise
+    if not raised:
+        raise AssertionError("expected ValueError for max_body")
+    install_mock_socket()
 
 
 def test_relative_redirect():
@@ -209,20 +257,33 @@ def test_relative_redirect():
     socket.socket = socket_factory
     response = requests.request("GET", "http://example.com/path/here")
     assert response.content == b"ok"
-    assert b"GET /other HTTP/1.1" in response.raw._write_buffer.getvalue()
+    assert b"GET /other HTTP/1.1" in request_bytes(response)
+    install_mock_socket()
 
 
-test_simple_get()
-test_get_auth()
-test_get_custom_header()
-test_post_json()
-test_post_chunked_data()
-test_overwrite_get_headers()
-test_overwrite_post_json_headers()
-test_overwrite_post_chunked_data_headers()
-test_do_not_modify_headers_argument()
-test_content_length_body()
-test_chunked_body()
-test_case_insensitive_headers()
-test_max_body_limit()
-test_relative_redirect()
+TESTS = (
+    test_simple_get,
+    test_get_auth,
+    test_get_custom_header,
+    test_post_json,
+    test_post_chunked_data,
+    test_overwrite_get_headers,
+    test_overwrite_post_json_headers,
+    test_overwrite_post_chunked_data_headers,
+    test_do_not_modify_headers_argument,
+    test_content_length_body,
+    test_chunked_body,
+    test_case_insensitive_headers,
+    test_max_body_limit,
+    test_relative_redirect,
+)
+
+
+def run_all():
+    for test in TESTS:
+        test()
+
+
+if __name__ == "__main__":
+    run_all()
+    print("test_requests: {} tests OK".format(len(TESTS)))

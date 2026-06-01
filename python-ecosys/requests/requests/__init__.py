@@ -63,7 +63,7 @@ def request(
         import binascii
 
         username, password = auth
-        formatted = (username + ":" + password).encode()
+        formatted = _to_bytes(username) + b":" + _to_bytes(password)
         formatted = str(binascii.b2a_base64(formatted)[:-1], "ascii")
         headers["Authorization"] = "Basic {}".format(formatted)
 
@@ -193,7 +193,7 @@ def request(
             max_body,
         )
 
-    if method == "HEAD":
+    if method == b"HEAD":
         body = b""
     else:
         body = read_body(s, resp_headers, max_body)

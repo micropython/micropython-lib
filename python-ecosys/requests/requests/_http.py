@@ -108,9 +108,11 @@ def read_body(stream, headers, max_body=None):
     """Read the response body according to Content-Length or chunked encoding."""
     max_remaining = max_body
     encoding = headers.get("transfer-encoding", "")
-    if encoding and "chunked" in encoding.lower():
-        body, _ = _read_chunked(stream, max_remaining)
-        return body
+    if encoding:
+        enc = encoding if isinstance(encoding, str) else str(encoding, "utf-8")
+        if "chunked" in enc.lower():
+            body, _ = _read_chunked(stream, max_remaining)
+            return body
     content_length = headers.get("content-length")
     if content_length is not None:
         length = int(content_length)
