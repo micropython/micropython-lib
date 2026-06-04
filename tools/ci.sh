@@ -174,7 +174,12 @@ function ci_push_package_index {
 
     cp -r ${PACKAGE_INDEX_PATH}/* .
 
+    # Disable Jekyll processing to avoid excluding files with a _ prefix.
+    # (e.g. the "__future__" package)
+    touch ${PAGES_PATH}/.nojekyll
+
     git add .
+    git -C ${PAGES_PATH} add .nojekyll
     git_bot_commit "Add CI built packages from commit ${GITHUB_SHA} of ${GITHUB_REF_NAME}"
 
     if [ "$NEW_BRANCH" -eq 0 ]; then
