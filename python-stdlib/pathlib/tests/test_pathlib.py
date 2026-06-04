@@ -164,7 +164,10 @@ class TestPathlib(unittest.TestCase):
         glob_gen = path.glob("*.txt")
         self.assertTrue(_isgenerator(glob_gen))
 
-        res = [str(x) for x in glob_gen]
+        res = list(glob_gen)
+        for p in res:
+            self.assertIsInstance(p, Path)
+
         self.assertTrue(len(res) == 2)
         self.assertTrue(foo_txt in res)
         self.assertTrue(bar_txt in res)
@@ -190,7 +193,10 @@ class TestPathlib(unittest.TestCase):
         glob_gen = path.rglob("*.txt")
         self.assertTrue(_isgenerator(glob_gen))
 
-        res = [str(x) for x in glob_gen]
+        res = list(glob_gen)
+        for p in res:
+            self.assertIsInstance(p, Path)
+
         self.assertTrue(len(res) == 3)
         self.assertTrue(foo_txt in res)
         self.assertTrue(bar_txt in res)
