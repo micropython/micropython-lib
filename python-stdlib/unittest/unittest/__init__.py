@@ -228,14 +228,21 @@ def skipUnless(cond, msg):
     return skip(msg)
 
 
+class _ExpectedFailure(Exception):
+    pass
+
+
+class _UnexpectedSuccess(Exception):
+    pass
+
+
 def expectedFailure(test):
     def test_exp_fail(*args, **kwargs):
         try:
             test(*args, **kwargs)
-        except:
-            pass
-        else:
-            assert False, "unexpected success"
+        except Exception:
+            raise _ExpectedFailure
+        raise _UnexpectedSuccess
 
     return test_exp_fail
 
@@ -270,12 +277,29 @@ class TestRunner:
         res.printErrors()
         print("----------------------------------------------------------------------")
         print("Ran %d tests\n" % res.testsRun)
-        if res.failuresNum > 0 or res.errorsNum > 0:
-            print("FAILED (failures=%d, errors=%d)" % (res.failuresNum, res.errorsNum))
+        extras = []
+        if res.skippedNum > 0:
+            extras.append("skipped=%d" % res.skippedNum)
+        if res.expectedFailuresNum > 0:
+            extras.append("expected failures=%d" % res.expectedFailuresNum)
+        if res.unexpectedSuccessesNum > 0:
+            extras.append("unexpected successes=%d" % res.unexpectedSuccessesNum)
+        if (res.failuresNum + res.errorsNum + res.unexpectedSuccessesNum) > 0:
+            parts = [
+                "failures=%d" % res.failuresNum,
+                "errors=%d" % res.errorsNum,
+            ]
+            if res.unexpectedSuccessesNum > 0:
+                parts.append("unexpected successes=%d" % res.unexpectedSuccessesNum)
+            if res.expectedFailuresNum > 0:
+                parts.append("expected failures=%d" % res.expectedFailuresNum)
+            if res.skippedNum > 0:
+                parts.append("skipped=%d" % res.skippedNum)
+            print("FAILED (%s)" % ", ".join(parts))
         else:
             msg = "OK"
-            if res.skippedNum > 0:
-                msg += " (skipped=%d)" % res.skippedNum
+            if extras:
+                msg += " (%s)" % ", ".join(extras)
             print(msg)
 
         return res
@@ -289,14 +313,22 @@ class TestResult:
         self.errorsNum = 0
         self.failuresNum = 0
         self.skippedNum = 0
+        self.expectedFailuresNum = 0
+        self.unexpectedSuccessesNum = 0
         self.testsRun = 0
         self.errors = []
         self.failures = []
         self.skipped = []
+        self.expectedFailures = []
+        self.unexpectedSuccesses = []
         self._newFailures = 0
 
     def wasSuccessful(self):
-        return self.errorsNum == 0 and self.failuresNum == 0
+        return (
+            self.errorsNum == 0
+            and self.failuresNum == 0
+            and self.unexpectedSuccessesNum == 0
+        )
 
     def printErrors(self):
         if self.errors or self.failures:
@@ -325,10 +357,14 @@ class TestResult:
         self.errorsNum += other.errorsNum
         self.failuresNum += other.failuresNum
         self.skippedNum += other.skippedNum
+        self.expectedFailuresNum += other.expectedFailuresNum
+        self.unexpectedSuccessesNum += other.unexpectedSuccessesNum
         self.testsRun += other.testsRun
         self.errors.extend(other.errors)
         self.failures.extend(other.failures)
         self.skipped.extend(other.skipped)
+        self.expectedFailures.extend(other.expectedFailures)
+        self.unexpectedSuccesses.extend(other.unexpectedSuccesses)
         return self
 
 
@@ -352,6 +388,19 @@ def _handle_test_exception(
         test_result.skippedNum += 1
         test_result.skipped.append((current_test, reason))
         print(" skipped:", reason)
+        return
+    elif isinstance(exc, _ExpectedFailure):
+        test_result.expectedFailuresNum += 1
+        test_result.expectedFailures.append((current_test, ""))
+        if verbose:
+            print(" expected failure")
+        return
+    elif isinstance(exc, _UnexpectedSuccess):
+        test_result.unexpectedSuccessesNum += 1
+        test_result.unexpectedSuccesses.append((current_test, ""))
+        if verbose:
+            print(" unexpected success")
+        test_result._newFailures += 1
         return
     elif isinstance(exc, AssertionError):
         test_result.failuresNum += 1
