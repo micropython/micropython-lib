@@ -17,7 +17,7 @@ def open(name, maxver=10, extra=()):
         pass
 
     def libs():
-        if sys.platform == "linux":
+        if sys.platform in ("linux", "freebsd"):
             yield "%s.so" % name
             for i in range(maxver, -1, -1):
                 yield "%s.so.%u" % (name, i)
@@ -39,7 +39,7 @@ def open(name, maxver=10, extra=()):
 
 
 def libc():
-    return open("libc", 6)
+    return open("libc", 7)
 
 
 # Find out bitness of the platform, even if long ints are not supported
