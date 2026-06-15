@@ -29,7 +29,7 @@ class Enum:
         if name and names:
             # Support Functional API: Enum("Name", {"KEY1": VALUE1, "KEY2": VALUE2, ..})
             # Dynamically create: class <name>
-            new_cls = type(name, (cls,), {"_inited": True})
+            new_cls = type(name, (cls,), {"_i": True})  # _inited
             for k, v in names.items():
                 setattr(new_cls, k, _make_enum(v, k, name))
             return super().__new__(new_cls)
@@ -41,7 +41,7 @@ class Enum:
         return super().__new__(cls)
 
     def __init__(self, name=None, names=None):
-        if "_inited" not in self.__class__.__dict__:
+        if "_i" not in self.__class__.__dict__:
             self.list()
 
     @classmethod
@@ -57,12 +57,12 @@ class Enum:
 
     @classmethod
     def list(cls):
-        if "_inited" not in cls.__dict__:
+        if "_i" not in cls.__dict__:
             # Copy dict.items() to avoid RuntimeError when changing the dictionary
             for k, v in list(cls.__dict__.items()):
                 if not k.startswith("_") and not callable(v):
                     setattr(cls, k, _make_enum(v, k, cls.__name__))
-            cls._inited = True
+            cls._i = True
         return [
             m for k in dir(cls) if not k.startswith("_") and hasattr(m := getattr(cls, k), "name")
         ]
@@ -81,7 +81,7 @@ class Enum:
         return self._lookup(v)
 
     def __setattr__(self, k, v):
-        if "_inited" in self.__class__.__dict__:
+        if "_i" in self.__class__.__dict__:
             raise AttributeError(f"Enum '{self.__class__.__name__}' is immutable")
         super().__setattr__(k, v)
 
@@ -109,7 +109,7 @@ if __name__ == "__main__":
     # Basic access
     print(f"RED: repr={repr(Color.RED)}, type={type(Color.RED)}, {Color(1).name} ")
     print(f"RED: name={Color.RED.name}, value={Color.RED.value}, str={str(Color.RED)}, call={Color.RED()} ")
-    assert Color(1).value == 1 
+    assert Color(1).value == 1
     assert Color.BLUE.value >= Color.GREEN.value
 
     print("Color.list():", Color.list())
