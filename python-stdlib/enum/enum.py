@@ -6,7 +6,7 @@ def _make_enum(v, n, e):
     T = type(v)
 
     def _setattr(self, k, v):
-        raise AttributeError("EnumValue is immutable")
+        raise AttributeError(f"{self.__class__.__name__} is immutable")
 
     # Create class: type(name, bases, dict), which inherits a base type (int, str, etc.)
     return type(
@@ -82,11 +82,11 @@ class Enum:
 
     def __setattr__(self, k, v):
         if "_i" in self.__class__.__dict__:
-            raise AttributeError(f"Enum '{self.__class__.__name__}' is immutable")
+            raise AttributeError(f"{self.__class__.__name__} is immutable")
         super().__setattr__(k, v)
 
     def __delattr__(self, k):
-        raise AttributeError("Enum is immutable")
+        raise AttributeError(f"{self.__class__.__name__} is immutable")
 
     @classmethod
     def __len__(cls):
