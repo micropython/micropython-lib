@@ -1,5 +1,7 @@
 import socket
 
+from ._http import open_body, read_headers, read_status_line
+
 
 class Response:
     def __init__(self, f):
@@ -81,10 +83,6 @@ def request(
     ai = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)
     ai = ai[0]
 
-    resp_d = None
-    if parse_headers is not False:
-        resp_d = {}
-
     s = socket.socket(ai[0], socket.SOCK_STREAM, ai[2])
 
     if timeout is not None:
@@ -98,7 +96,7 @@ def request(
             context = tls.SSLContext(tls.PROTOCOL_TLS_CLIENT)
             context.verify_mode = tls.CERT_NONE
             s = context.wrap_socket(s, server_hostname=host)
-        s.write(b"%s /%s HTTP/1.0\r\n" % (method, path))
+        s.write(b"%s /%s HTTP/1.1\r\n" % (method, path))
 
         if "Host" not in headers:
             headers["Host"] = host
@@ -145,37 +143,21 @@ def request(
             else:
                 s.write(data)
 
-        l = s.readline()
-        # print(l)
-        l = l.split(None, 2)
-        if len(l) < 2:
-            # Invalid response
-            raise ValueError("HTTP error: BadStatusLine:\n%s" % l)
-        status = int(l[1])
-        reason = ""
-        if len(l) > 2:
-            reason = l[2].rstrip()
-        while True:
-            l = s.readline()
-            if not l or l == b"\r\n":
-                break
-            # print(l)
-            if l.startswith(b"Transfer-Encoding:"):
-                if b"chunked" in l:
-                    raise ValueError("Unsupported " + str(l, "utf-8"))
-            elif l.startswith(b"Location:") and not 200 <= status <= 299:
+        status, reason = read_status_line(s)
+        resp_d = read_headers(s, parse_headers)
+
+        if not 200 <= status <= 299:
+            location = None
+            if resp_d:
+                for k in resp_d:
+                    if k.lower() == "location":
+                        location = resp_d[k]
+                        break
+            if location:
                 if status in [301, 302, 303, 307, 308]:
-                    redirect = str(l[10:-2], "utf-8")
+                    redirect = location
                 else:
                     raise NotImplementedError("Redirect %d not yet supported" % status)
-            if parse_headers is False:
-                pass
-            elif parse_headers is True:
-                l = str(l, "utf-8")
-                k, v = l.split(":", 1)
-                resp_d[k] = v.strip()
-            else:
-                parse_headers(l, resp_d)
     except OSError:
         s.close()
         raise
@@ -189,10 +171,10 @@ def request(
         else:
             return request(method, redirect, data, json, headers, stream)
     else:
-        resp = Response(s)
+        resp = Response(open_body(s, resp_d))
         resp.status_code = status
         resp.reason = reason
-        if resp_d is not None:
+        if parse_headers is not False:
             resp.headers = resp_d
         return resp
 
