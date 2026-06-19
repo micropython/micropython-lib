@@ -3,9 +3,9 @@ import sys
 
 
 class Socket:
-    def __init__(self):
+    def __init__(self, read_data=b"HTTP/1.1 200 OK\r\n\r\n"):
         self._write_buffer = io.BytesIO()
-        self._read_buffer = io.BytesIO(b"HTTP/1.0 200 OK\r\n\r\n")
+        self._read_buffer = io.BytesIO(read_data)
 
     def connect(self, address):
         pass
@@ -15,6 +15,15 @@ class Socket:
 
     def readline(self):
         return self._read_buffer.readline()
+
+    def read(self, size=-1):
+        return self._read_buffer.read(size)
+
+    def readinto(self, buf):
+        return self._read_buffer.readinto(buf)
+
+    def close(self):
+        pass
 
 
 class socket:
@@ -43,7 +52,7 @@ def test_simple_get():
     response = requests.request("GET", "http://example.com")
 
     assert response.raw._write_buffer.getvalue() == (
-        b"GET / HTTP/1.0\r\n" + b"Connection: close\r\n" + b"Host: example.com\r\n\r\n"
+        b"GET / HTTP/1.1\r\n" + b"Connection: close\r\n" + b"Host: example.com\r\n\r\n"
     ), format_message(response)
 
 
@@ -53,7 +62,7 @@ def test_get_auth():
     )
 
     assert response.raw._write_buffer.getvalue() == (
-        b"GET / HTTP/1.0\r\n"
+        b"GET / HTTP/1.1\r\n"
         + b"Host: example.com\r\n"
         + b"Authorization: Basic dGVzdC11c2VybmFtZTp0ZXN0LXBhc3N3b3Jk\r\n"
         + b"Connection: close\r\n\r\n"
@@ -64,7 +73,7 @@ def test_get_custom_header():
     response = requests.request("GET", "http://example.com", headers={"User-Agent": "test-agent"})
 
     assert response.raw._write_buffer.getvalue() == (
-        b"GET / HTTP/1.0\r\n"
+        b"GET / HTTP/1.1\r\n"
         + b"User-Agent: test-agent\r\n"
         + b"Host: example.com\r\n"
         + b"Connection: close\r\n\r\n"
@@ -75,7 +84,7 @@ def test_post_json():
     response = requests.request("GET", "http://example.com", json="test")
 
     assert response.raw._write_buffer.getvalue() == (
-        b"GET / HTTP/1.0\r\n"
+        b"GET / HTTP/1.1\r\n"
         + b"Connection: close\r\n"
         + b"Content-Type: application/json\r\n"
         + b"Host: example.com\r\n"
@@ -91,7 +100,7 @@ def test_post_chunked_data():
     response = requests.request("GET", "http://example.com", data=chunks())
 
     assert response.raw._write_buffer.getvalue() == (
-        b"GET / HTTP/1.0\r\n"
+        b"GET / HTTP/1.1\r\n"
         + b"Transfer-Encoding: chunked\r\n"
         + b"Host: example.com\r\n"
         + b"Connection: close\r\n\r\n"
@@ -106,7 +115,7 @@ def test_overwrite_get_headers():
     )
 
     assert response.raw._write_buffer.getvalue() == (
-        b"GET / HTTP/1.0\r\n" + b"Connection: keep-alive\r\n" + b"Host: test.com\r\n\r\n"
+        b"GET / HTTP/1.1\r\n" + b"Connection: keep-alive\r\n" + b"Host: test.com\r\n\r\n"
     ), format_message(response)
 
 
@@ -119,7 +128,7 @@ def test_overwrite_post_json_headers():
     )
 
     assert response.raw._write_buffer.getvalue() == (
-        b"GET / HTTP/1.0\r\n"
+        b"GET / HTTP/1.1\r\n"
         + b"Connection: close\r\n"
         + b"Content-Length: 10\r\n"
         + b"Content-Type: text/plain\r\n"
@@ -137,7 +146,7 @@ def test_overwrite_post_chunked_data_headers():
     )
 
     assert response.raw._write_buffer.getvalue() == (
-        b"GET / HTTP/1.0\r\n"
+        b"GET / HTTP/1.1\r\n"
         + b"Host: example.com\r\n"
         + b"Content-Length: 4\r\n"
         + b"Connection: close\r\n\r\n"
@@ -153,6 +162,70 @@ def test_do_not_modify_headers_argument():
     assert do_not_modify_this_dict == {}, do_not_modify_this_dict
 
 
+def test_content_length_via_content():
+    socket.socket = lambda *a, **k: Socket(
+        read_data=b"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nhello"
+    )
+    response = requests.request("GET", "http://example.com")
+    assert response.content == b"hello"
+    assert response.headers["Content-Length"] == "5"
+    socket.socket = lambda *a, **k: Socket()
+
+
+def test_chunked_response_raises():
+    socket.socket = lambda *a, **k: Socket(
+        read_data=b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n0\r\n\r\n"
+    )
+    raised = False
+    try:
+        requests.request("GET", "http://example.com")
+    except ValueError as e:
+        raised = True
+        if "Unsupported" not in str(e):
+            raise
+    if not raised:
+        raise AssertionError("expected ValueError for chunked response")
+    socket.socket = lambda *a, **k: Socket()
+
+
+def test_raw_open_before_content():
+    socket.socket = lambda *a, **k: Socket(
+        read_data=b"HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nhello"
+    )
+    response = requests.request("GET", "http://example.com")
+    assert response.raw is not None
+    assert response.raw.read(1) == b"h"
+    socket.socket = lambda *a, **k: Socket()
+
+
+def test_raw_incremental_content_length():
+    socket.socket = lambda *a, **k: Socket(
+        read_data=b"HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\nabcdefghij"
+    )
+    response = requests.request("GET", "http://example.com")
+    assert response.raw.read(3) == b"abc"
+    assert response.raw.read(3) == b"def"
+    assert response.content == b"ghij"
+    assert response.raw is None
+    socket.socket = lambda *a, **k: Socket()
+
+
+def test_raw_readinto_content_length():
+    socket.socket = lambda *a, **k: Socket(
+        read_data=b"HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\nabcdefghij"
+    )
+    response = requests.request("GET", "http://example.com")
+    buf = bytearray(3)
+    result = b""
+    while True:
+        n = response.raw.readinto(buf)
+        if n == 0:
+            break
+        result += buf if n == 3 else buf[:n]
+    assert result == b"abcdefghij"
+    socket.socket = lambda *a, **k: Socket()
+
+
 test_simple_get()
 test_get_auth()
 test_get_custom_header()
@@ -162,3 +235,8 @@ test_overwrite_get_headers()
 test_overwrite_post_json_headers()
 test_overwrite_post_chunked_data_headers()
 test_do_not_modify_headers_argument()
+test_content_length_via_content()
+test_chunked_response_raises()
+test_raw_open_before_content()
+test_raw_incremental_content_length()
+test_raw_readinto_content_length()
