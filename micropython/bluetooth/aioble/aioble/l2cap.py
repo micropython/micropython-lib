@@ -4,9 +4,10 @@
 from micropython import const
 
 import asyncio
+import errno
 
 from .core import ble, log_error, register_irq_handler
-from .device import DeviceConnection
+from .device import DeviceConnection, DeviceDisconnectedError
 
 
 _IRQ_L2CAP_ACCEPT = const(22)
@@ -63,7 +64,7 @@ register_irq_handler(_l2cap_irq, _l2cap_shutdown)
 
 
 # The channel was disconnected during a send/recvinto/flush.
-class L2CAPDisconnectedError(Exception):
+class L2CAPDisconnectedError(DeviceDisconnectedError):
     pass
 
 
@@ -75,7 +76,7 @@ class L2CAPConnectionError(Exception):
 class L2CAPChannel:
     def __init__(self, connection):
         if not connection.is_connected():
-            raise ValueError("Not connected")
+            raise L2CAPDisconnectedError
 
         if connection._l2cap_channel:
             raise ValueError("Already has channel")
@@ -118,10 +119,17 @@ class L2CAPChannel:
         self._assert_connected()
 
         # Extract up to len(buf) bytes from the channel buffer.
-        n = ble.l2cap_recvinto(self._connection._conn_handle, self._cid, buf)
+        try:
+            n = ble.l2cap_recvinto(self._connection._conn_handle, self._cid, buf)
 
-        # Check if there's still remaining data in the channel buffers.
-        self._data_ready = ble.l2cap_recvinto(self._connection._conn_handle, self._cid, None) > 0
+            # Check if there's still remaining data in the channel buffers.
+            self._data_ready = (
+                ble.l2cap_recvinto(self._connection._conn_handle, self._cid, None) > 0
+            )
+        except OSError as e:
+            if e.errno == errno.EINVAL:
+                raise L2CAPDisconnectedError()
+            raise
 
         return n
 
@@ -141,11 +149,16 @@ class L2CAPChannel:
                 await self.flush(timeout_ms)
             # l2cap_send returns True if you can send immediately.
             self._assert_connected()
-            self._stalled = not ble.l2cap_send(
-                self._connection._conn_handle,
-                self._cid,
-                mv[offset : offset + chunk_size],
-            )
+            try:
+                self._stalled = not ble.l2cap_send(
+                    self._connection._conn_handle,
+                    self._cid,
+                    mv[offset : offset + chunk_size],
+                )
+            except OSError as e:
+                if e.errno == errno.EINVAL:
+                    raise L2CAPDisconnectedError()
+                raise
             offset += chunk_size
 
     async def flush(self, timeout_ms=None):
@@ -161,7 +174,14 @@ class L2CAPChannel:
             return
 
         # Wait for the cid to be cleared by the disconnect IRQ.
-        ble.l2cap_disconnect(self._connection._conn_handle, self._cid)
+        try:
+            ble.l2cap_disconnect(self._connection._conn_handle, self._cid)
+        except OSError as e:
+            if e.errno == errno.EINVAL:
+                # Channel already closed by peer — treat as disconnected.
+                self._cid = None
+                return
+            raise
         await self.disconnected(timeout_ms)
 
     async def disconnected(self, timeout_ms=1000):
