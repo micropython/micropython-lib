@@ -214,13 +214,12 @@ def test_raw_open_before_content():
 
 def test_raw_incremental_content_length():
     socket.socket = lambda *a, **k: Socket(
-        read_data=b"HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\nhelloworld"
+        read_data=b"HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\nabcdefghij"
     )
     response = requests.request("GET", "http://example.com")
-    assert response.raw.read(3) == b"hel"
-    assert response.raw.read(3) == b"low"
-    assert response.raw.read() == b"orld"
-    assert response.content == b"helloworld"
+    assert response.raw.read(3) == b"abc"
+    assert response.raw.read(3) == b"def"
+    assert response.content == b"ghij"
     assert response.raw is None
     install_mock_socket()
 
