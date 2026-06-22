@@ -1,43 +1,6 @@
 import socket
 
 
-def _header_get(headers, name):
-    name_lower = name.lower()
-    for k, v in headers.items():
-        if k.lower() == name_lower:
-            return v
-    return None
-
-
-def read_status_line(stream):
-    line = stream.readline()
-    if not line:
-        raise ValueError("HTTP error: empty status line")
-    parts = line.split(None, 2)
-    if len(parts) < 2:
-        raise ValueError("HTTP error: BadStatusLine:\n%s" % parts)
-    status = int(parts[1])
-    reason = parts[2].rstrip() if len(parts) > 2 else ""
-    return status, reason
-
-
-def read_headers(stream, parse_headers=True):
-    resp_d = {}
-    while True:
-        line = stream.readline()
-        if not line or line == b"\r\n":
-            break
-        if parse_headers is False:
-            continue
-        if parse_headers is True:
-            text = str(line, "utf-8")
-            key, value = text.split(":", 1)
-            resp_d[key] = value.strip()
-        else:
-            parse_headers(line, resp_d)
-    return resp_d
-
-
 class BodyStream:
     def __init__(self, sock, remaining=None):
         self._sock = sock
@@ -62,18 +25,6 @@ class BodyStream:
 
     def close(self):
         self._sock.close()
-
-
-def open_body(stream, headers):
-    encoding = _header_get(headers, "transfer-encoding")
-    if encoding and "chunked" in encoding.lower():
-        raise ValueError("Unsupported Transfer-Encoding: %s" % encoding)
-    content_length = _header_get(headers, "content-length")
-    if content_length is not None:
-        remaining = int(content_length)
-    else:
-        remaining = None
-    return BodyStream(stream, remaining)
 
 
 class Response:
@@ -222,8 +173,28 @@ def request(
             else:
                 s.write(data)
 
-        status, reason = read_status_line(s)
-        resp_d = read_headers(s, parse_headers)
+        line = s.readline()
+        if not line:
+            raise ValueError("HTTP error: empty status line")
+        parts = line.split(None, 2)
+        if len(parts) < 2:
+            raise ValueError("HTTP error: BadStatusLine:\n%s" % parts)
+        status = int(parts[1])
+        reason = parts[2].rstrip() if len(parts) > 2 else ""
+
+        resp_d = {}
+        while True:
+            line = s.readline()
+            if not line or line == b"\r\n":
+                break
+            if parse_headers is False:
+                continue
+            if parse_headers is True:
+                text = str(line, "utf-8")
+                key, value = text.split(":", 1)
+                resp_d[key] = value.strip()
+            else:
+                parse_headers(line, resp_d)
 
         if not 200 <= status <= 299:
             location = None
@@ -250,7 +221,21 @@ def request(
         else:
             return request(method, redirect, data, json, headers, stream)
     else:
-        resp = Response(open_body(s, resp_d))
+        encoding = None
+        content_length = None
+        for k, v in resp_d.items():
+            kl = k.lower()
+            if kl == "transfer-encoding":
+                encoding = v
+            elif kl == "content-length":
+                content_length = v
+        if encoding and "chunked" in encoding.lower():
+            raise ValueError("Unsupported Transfer-Encoding: %s" % encoding)
+        if content_length is not None:
+            remaining = int(content_length)
+        else:
+            remaining = None
+        resp = Response(BodyStream(s, remaining))
         resp.status_code = status
         resp.reason = reason
         if parse_headers is not False:
