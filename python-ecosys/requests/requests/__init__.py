@@ -2,25 +2,19 @@ import socket
 
 
 class BodyStream:
-    def __init__(self, sock, remaining=None):
+    def __init__(self, sock, remaining):
         self._sock = sock
         self._remaining = remaining
 
     def read(self, n=-1):
         if self._remaining == 0:
             return b""
-        if n < 0:
-            if self._remaining is not None:
-                n = self._remaining
-            data = self._sock.read(n)
-        else:
-            if self._remaining is not None and n > self._remaining:
-                n = self._remaining
-            data = self._sock.read(n)
-        if self._remaining is not None:
-            self._remaining -= len(data)
-            if self._remaining > 0 and not data:
-                raise ValueError("Connection closed before Content-Length satisfied")
+        if n < 0 or n > self._remaining:
+            n = self._remaining
+        data = self._sock.read(n)
+        self._remaining -= len(data)
+        if self._remaining > 0 and not data:
+            raise ValueError("Connection closed before Content-Length satisfied")
         return data
 
     def close(self):
@@ -187,6 +181,7 @@ def request(
         reason = ""
         if len(l) > 2:
             reason = l[2].rstrip()
+        remaining = None
         while True:
             l = s.readline()
             if not l or l == b"\r\n":
@@ -205,7 +200,10 @@ def request(
             elif parse_headers is True:
                 l = str(l, "utf-8")
                 k, v = l.split(":", 1)
-                resp_d[k] = v.strip()
+                v = v.strip()
+                resp_d[k] = v
+                if k.lower() == "content-length":
+                    remaining = int(v)
             else:
                 parse_headers(l, resp_d)
     except OSError:
@@ -221,13 +219,10 @@ def request(
         else:
             return request(method, redirect, data, json, headers, stream)
     else:
-        remaining = None
-        if resp_d is not None:
-            for k, v in resp_d.items():
-                if k.lower() == "content-length":
-                    remaining = int(v)
-                    break
-        resp = Response(BodyStream(s, remaining))
+        if remaining is not None:
+            resp = Response(BodyStream(s, remaining))
+        else:
+            resp = Response(s)
         resp.status_code = status
         resp.reason = reason
         if resp_d is not None:

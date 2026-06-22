@@ -46,7 +46,10 @@ import requests
 
 
 def request_bytes(response):
-    return response.raw._sock._write_buffer.getvalue()
+    raw = response.raw
+    if hasattr(raw, "_sock"):
+        raw = raw._sock
+    return raw._write_buffer.getvalue()
 
 
 def assert_has(data, *parts):
