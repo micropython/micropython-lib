@@ -113,6 +113,10 @@ def request(
     ai = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)
     ai = ai[0]
 
+    resp_d = None
+    if parse_headers is not False:
+        resp_d = {}
+
     s = socket.socket(ai[0], socket.SOCK_STREAM, ai[2])
 
     if timeout is not None:
@@ -173,41 +177,37 @@ def request(
             else:
                 s.write(data)
 
-        line = s.readline()
-        if not line:
-            raise ValueError("HTTP error: empty status line")
-        parts = line.split(None, 2)
-        if len(parts) < 2:
-            raise ValueError("HTTP error: BadStatusLine:\n%s" % parts)
-        status = int(parts[1])
-        reason = parts[2].rstrip() if len(parts) > 2 else ""
-
-        resp_d = {}
+        l = s.readline()
+        # print(l)
+        l = l.split(None, 2)
+        if len(l) < 2:
+            # Invalid response
+            raise ValueError("HTTP error: BadStatusLine:\n%s" % l)
+        status = int(l[1])
+        reason = ""
+        if len(l) > 2:
+            reason = l[2].rstrip()
         while True:
-            line = s.readline()
-            if not line or line == b"\r\n":
+            l = s.readline()
+            if not l or l == b"\r\n":
                 break
-            if parse_headers is False:
-                continue
-            if parse_headers is True:
-                text = str(line, "utf-8")
-                key, value = text.split(":", 1)
-                resp_d[key] = value.strip()
-            else:
-                parse_headers(line, resp_d)
-
-        if not 200 <= status <= 299:
-            location = None
-            if resp_d:
-                for k, v in resp_d.items():
-                    if k.lower() == "location":
-                        location = v
-                        break
-            if location:
+            # print(l)
+            if l.startswith(b"Transfer-Encoding:"):
+                if b"chunked" in l:
+                    raise ValueError("Unsupported " + str(l, "utf-8"))
+            elif l.startswith(b"Location:") and not 200 <= status <= 299:
                 if status in [301, 302, 303, 307, 308]:
-                    redirect = location
+                    redirect = str(l[10:-2], "utf-8")
                 else:
                     raise NotImplementedError("Redirect %d not yet supported" % status)
+            if parse_headers is False:
+                pass
+            elif parse_headers is True:
+                l = str(l, "utf-8")
+                k, v = l.split(":", 1)
+                resp_d[k] = v.strip()
+            else:
+                parse_headers(l, resp_d)
     except OSError:
         s.close()
         raise
@@ -221,24 +221,16 @@ def request(
         else:
             return request(method, redirect, data, json, headers, stream)
     else:
-        encoding = None
-        content_length = None
-        for k, v in resp_d.items():
-            kl = k.lower()
-            if kl == "transfer-encoding":
-                encoding = v
-            elif kl == "content-length":
-                content_length = v
-        if encoding and "chunked" in encoding.lower():
-            raise ValueError("Unsupported Transfer-Encoding: %s" % encoding)
-        if content_length is not None:
-            remaining = int(content_length)
-        else:
-            remaining = None
+        remaining = None
+        if resp_d is not None:
+            for k, v in resp_d.items():
+                if k.lower() == "content-length":
+                    remaining = int(v)
+                    break
         resp = Response(BodyStream(s, remaining))
         resp.status_code = status
         resp.reason = reason
-        if parse_headers is not False:
+        if resp_d is not None:
             resp.headers = resp_d
         return resp
 
