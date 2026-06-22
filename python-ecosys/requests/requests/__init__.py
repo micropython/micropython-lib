@@ -13,7 +13,7 @@ class BodyStream:
             n = self._remaining
         data = self._sock.read(n)
         self._remaining -= len(data)
-        if self._remaining > 0 and not data:
+        if not data:
             raise ValueError("Connection closed before Content-Length satisfied")
         return data
 
