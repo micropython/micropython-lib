@@ -193,9 +193,9 @@ def request(
         if not 200 <= status <= 299:
             location = None
             if resp_d:
-                for k in resp_d:
+                for k, v in resp_d.items():
                     if k.lower() == "location":
-                        location = resp_d[k]
+                        location = v
                         break
             if location:
                 if status in [301, 302, 303, 307, 308]:
