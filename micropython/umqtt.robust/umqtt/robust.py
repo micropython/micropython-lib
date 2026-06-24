@@ -20,7 +20,9 @@ class MQTTClient(simple.MQTTClient):
         i = 0
         while 1:
             try:
-                return super().connect(False)
+                # self.connect will call a subclass definition (if any)
+                # else fall back to parent class definition
+                return self.connect(False)
             except OSError as e:
                 self.log(True, e)
                 i += 1
