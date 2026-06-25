@@ -19,7 +19,7 @@ class AssertRaisesContext:
             return
         self.exception = exc_value
         if exc_type is None:
-            assert False, "%r not raised" % self.expected
+            raise AssertionError("%r not raised" % self.expected)
         if issubclass(exc_type, self.expected):
             # store exception for later retrieval
             self.exception = exc_value
@@ -78,29 +78,25 @@ class TestCase:
         raise SkipTest(reason)
 
     def fail(self, msg=""):
-        assert False, msg
+        raise AssertionError(msg)
 
-    def assertEqual(self, x, y, msg=""):
-        if not msg:
-            msg = "%r vs (expected) %r" % (x, y)
-        assert x == y, msg
+    def assertEqual(self, x, y, msg=None):
+        if not x == y:
+            raise AssertionError(msg or "%r vs (expected) %r" % (x, y))
 
-    def assertNotEqual(self, x, y, msg=""):
-        if not msg:
-            msg = "%r not expected to be equal %r" % (x, y)
-        assert x != y, msg
+    def assertNotEqual(self, x, y, msg=None):
+        if not x != y:
+            raise AssertionError(msg or "%r not expected to be equal %r" % (x, y))
 
     def assertLessEqual(self, x, y, msg=None):
-        if msg is None:
-            msg = "%r is expected to be <= %r" % (x, y)
-        assert x <= y, msg
+        if not x <= y:
+            raise AssertionError(msg or "%r is expected to be <= %r" % (x, y))
 
     def assertGreaterEqual(self, x, y, msg=None):
-        if msg is None:
-            msg = "%r is expected to be >= %r" % (x, y)
-        assert x >= y, msg
+        if not x >= y:
+            raise AssertionError(msg or "%r is expected to be >= %r" % (x, y))
 
-    def assertAlmostEqual(self, x, y, places=None, msg="", delta=None):
+    def assertAlmostEqual(self, x, y, places=None, msg=None, delta=None):
         if x == y:
             return
         if delta is not None and places is not None:
@@ -109,74 +105,60 @@ class TestCase:
         if delta is not None:
             if abs(x - y) <= delta:
                 return
-            if not msg:
-                msg = "%r != %r within %r delta" % (x, y, delta)
+            raise AssertionError(msg or "%r != %r within %r delta" % (x, y, delta))
         else:
             if places is None:
                 places = 7
             if round(abs(y - x), places) == 0:
                 return
-            if not msg:
-                msg = "%r != %r within %r places" % (x, y, places)
+            raise AssertionError(msg or "%r != %r within %r places" % (x, y, places))
 
-        assert False, msg
-
-    def assertNotAlmostEqual(self, x, y, places=None, msg="", delta=None):
+    def assertNotAlmostEqual(self, x, y, places=None, msg=None, delta=None):
         if delta is not None and places is not None:
             raise TypeError("specify delta or places not both")
 
         if delta is not None:
             if not (x == y) and abs(x - y) > delta:
                 return
-            if not msg:
-                msg = "%r == %r within %r delta" % (x, y, delta)
+            raise AssertionError(msg or "%r == %r within %r delta" % (x, y, delta))
         else:
             if places is None:
                 places = 7
             if not (x == y) and round(abs(y - x), places) != 0:
                 return
-            if not msg:
-                msg = "%r == %r within %r places" % (x, y, places)
+            raise AssertionError(msg or "%r == %r within %r places" % (x, y, places))
 
-        assert False, msg
+    def assertIs(self, x, y, msg=None):
+        if not x is y:
+            raise AssertionError(msg or "%r is not %r" % (x, y))
 
-    def assertIs(self, x, y, msg=""):
-        if not msg:
-            msg = "%r is not %r" % (x, y)
-        assert x is y, msg
+    def assertIsNot(self, x, y, msg=None):
+        if not x is not y:
+            raise AssertionError(msg or "%r is %r" % (x, y))
 
-    def assertIsNot(self, x, y, msg=""):
-        if not msg:
-            msg = "%r is %r" % (x, y)
-        assert x is not y, msg
+    def assertIsNone(self, x, msg=None):
+        if not x is None:
+            raise AssertionError(msg or "%r is not None" % x)
 
-    def assertIsNone(self, x, msg=""):
-        if not msg:
-            msg = "%r is not None" % x
-        assert x is None, msg
+    def assertIsNotNone(self, x, msg=None):
+        if not x is not None:
+            raise AssertionError(msg or "%r is None" % x)
 
-    def assertIsNotNone(self, x, msg=""):
-        if not msg:
-            msg = "%r is None" % x
-        assert x is not None, msg
+    def assertTrue(self, x, msg=None):
+        if not x:
+            raise AssertionError(msg or "Expected %r to be True" % x)
 
-    def assertTrue(self, x, msg=""):
-        if not msg:
-            msg = "Expected %r to be True" % x
-        assert x, msg
+    def assertFalse(self, x, msg=None):
+        if x:
+            raise AssertionError(msg or "Expected %r to be False" % x)
 
-    def assertFalse(self, x, msg=""):
-        if not msg:
-            msg = "Expected %r to be False" % x
-        assert not x, msg
-
-    def assertIn(self, x, y, msg=""):
-        if not msg:
-            msg = "Expected %r to be in %r" % (x, y)
-        assert x in y, msg
+    def assertIn(self, x, y, msg=None):
+        if not x in y:
+            raise AssertionError(msg or "Expected %r to be in %r" % (x, y))
 
     def assertIsInstance(self, x, y, msg=""):
-        assert isinstance(x, y), msg
+        if not isinstance(x, y):
+            raise AssertionError(msg)
 
     def assertRaises(self, exc, func=None, *args, **kwargs):
         if func is None:
@@ -189,7 +171,7 @@ class TestCase:
                 return
             raise e
 
-        assert False, "%r not raised" % exc
+        raise AssertionError("%r not raised" % exc)
 
     def assertWarns(self, warn):
         return AssertRaisesContext(None)
@@ -225,7 +207,7 @@ def expectedFailure(test):
         except:
             pass
         else:
-            assert False, "unexpected success"
+            raise AssertionError("unexpected success")
 
     return test_exp_fail
 
