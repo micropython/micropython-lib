@@ -19,6 +19,9 @@ class AssertRaisesContext:
         return self
 
     def __exit__(self, exc_type, exc_value, tb):
+        if self.expected is None:
+            # Used by assertWarns, do nothing.
+            return
         self.exception = exc_value
         if exc_type is None:
             assert False, "%r not raised" % self.expected
@@ -53,17 +56,9 @@ class SubtestContext:
                 detail = ", ".join("%s=%s" % k_v for k_v in self.params.items())
                 test_details += (" (%s)" % detail,)
 
-            _handle_test_exception(test_details, __test_result__, exc_info, False)
+            _handle_test_exception(test_details, __test_result__, exc_value, False)
         # Suppress the exception as we've captured it above
         return True
-
-
-class NullContext:
-    def __enter__(self):
-        pass
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        pass
 
 
 class TestCase:
@@ -202,7 +197,7 @@ class TestCase:
         assert False, "%r not raised" % exc
 
     def assertWarns(self, warn):
-        return NullContext()
+        return AssertRaisesContext(None)
 
 
 def skip(msg):
