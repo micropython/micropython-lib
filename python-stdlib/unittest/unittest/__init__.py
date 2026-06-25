@@ -1,11 +1,6 @@
 import io
 import sys
 
-try:
-    import traceback
-except ImportError:
-    traceback = None
-
 
 class SkipTest(Exception):
     pass
@@ -327,28 +322,20 @@ class TestResult:
         return self
 
 
-def _capture_exc(exc, exc_traceback):
-    buf = io.StringIO()
-    if hasattr(sys, "print_exception"):
-        sys.print_exception(exc, buf)
-    elif traceback is not None:
-        traceback.print_exception(None, exc, exc_traceback, file=buf)
-    return buf.getvalue()
-
-
 def _handle_test_exception(
     current_test: tuple, test_result: TestResult, exc_info: tuple, verbose=True
 ):
     exc = exc_info[1]
-    traceback = exc_info[2]
-    ex_str = _capture_exc(exc, traceback)
     if isinstance(exc, SkipTest):
         reason = exc.args[0]
         test_result.skippedNum += 1
         test_result.skipped.append((current_test, reason))
         print(" skipped:", reason)
         return
-    elif isinstance(exc, AssertionError):
+    buf = io.StringIO()
+    sys.print_exception(exc, buf)
+    ex_str = buf.getvalue()
+    if isinstance(exc, AssertionError):
         test_result.failuresNum += 1
         test_result.failures.append((current_test, ex_str))
         if verbose:
