@@ -40,8 +40,8 @@ class SubtestContext:
     def __enter__(self):
         pass
 
-    def __exit__(self, *exc_info):
-        if exc_info[0] is not None:
+    def __exit__(self, exc_type, exc_value, tb):
+        if exc_type is not None:
             # Exception raised
             global __test_result__, __current_test__
             test_details = __current_test__
@@ -323,9 +323,8 @@ class TestResult:
 
 
 def _handle_test_exception(
-    current_test: tuple, test_result: TestResult, exc_info: tuple, verbose=True
+    current_test: tuple, test_result: TestResult, exc: Exception, verbose=True
 ):
-    exc = exc_info[1]
     if isinstance(exc, SkipTest):
         reason = exc.args[0]
         test_result.skippedNum += 1
@@ -384,9 +383,7 @@ def _run_suite(c, test_result: TestResult, suite_name=""):
             else:
                 print(" ok")
         except Exception as ex:
-            _handle_test_exception(
-                current_test=(name, c), test_result=test_result, exc_info=(type(ex), ex, None)
-            )
+            _handle_test_exception((name, c), test_result, ex)
             # Uncomment to investigate failure in detail
             # raise ex
         finally:
