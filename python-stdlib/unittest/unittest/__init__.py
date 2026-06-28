@@ -334,10 +334,11 @@ def _run_suite(c, test_result: TestResult, suite_name=""):
         o = c()
     else:
         o = c
-    set_up_class = getattr(o, "setUpClass", lambda: None)
-    tear_down_class = getattr(o, "tearDownClass", lambda: None)
-    set_up = getattr(o, "setUp", lambda: None)
-    tear_down = getattr(o, "tearDown", lambda: None)
+    nop = lambda: None
+    set_up_class = getattr(o, "setUpClass", nop)
+    tear_down_class = getattr(o, "tearDownClass", nop)
+    set_up = getattr(o, "setUp", nop)
+    tear_down = getattr(o, "tearDown", nop)
     exceptions = []
     try:
         suite_name += "." + c.__qualname__
