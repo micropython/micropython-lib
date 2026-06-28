@@ -189,15 +189,11 @@ def skip(msg):
 
 
 def skipIf(cond, msg):
-    if not cond:
-        return lambda x: x
-    return skip(msg)
+    return skip(msg) if cond else lambda x: x
 
 
 def skipUnless(cond, msg):
-    if cond:
-        return lambda x: x
-    return skip(msg)
+    return skipIf(not cond, msg)
 
 
 def expectedFailure(test):
