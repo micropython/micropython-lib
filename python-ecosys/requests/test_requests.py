@@ -1,9 +1,11 @@
 import io
 import sys
 
+SERVER_RESPONSE_200_OK = b"HTTP/1.1 200 OK\r\n\r\n"
+
 
 class Socket:
-    def __init__(self, read_data=b"HTTP/1.1 200 OK\r\n\r\n"):
+    def __init__(self, read_data=SERVER_RESPONSE_200_OK):
         self._write_buffer = io.BytesIO()
         self._read_buffer = io.BytesIO(read_data)
 
@@ -226,6 +228,42 @@ def test_raw_readinto_content_length():
     socket.socket = lambda *a, **k: Socket()
 
 
+def test_redirect_absolute():
+    server = iter(
+        [
+            b"HTTP/1.1 301 OK\r\nLocation: http://example.com/index\r\n\r\n",
+            SERVER_RESPONSE_200_OK,
+        ]
+    )
+    socket.socket = lambda *a, **k: Socket(next(server))
+
+    response = requests.request("GET", "http://example.com")
+
+    assert response.raw._write_buffer.getvalue() == (
+        b"GET /index HTTP/1.1\r\nConnection: close\r\nHost: example.com\r\n\r\n"
+    ), format_message(response)
+
+    socket.socket = lambda *a, **k: Socket()
+
+
+def test_redirect_relative():
+    server = iter(
+        [
+            b"HTTP/1.1 301 OK\r\nLocation: /index\r\n\r\n",
+            SERVER_RESPONSE_200_OK,
+        ]
+    )
+    socket.socket = lambda *a, **k: Socket(next(server))
+
+    response = requests.request("GET", "http://example.com")
+
+    assert response.raw._write_buffer.getvalue() == (
+        b"GET /index HTTP/1.1\r\nConnection: close\r\nHost: example.com\r\n\r\n"
+    ), format_message(response)
+
+    socket.socket = lambda *a, **k: Socket()
+
+
 test_simple_get()
 test_get_auth()
 test_get_custom_header()
@@ -240,3 +278,5 @@ test_chunked_response_raises()
 test_raw_open_before_content()
 test_raw_incremental_content_length()
 test_raw_readinto_content_length()
+test_redirect_absolute()
+test_redirect_relative()

@@ -204,6 +204,8 @@ def request(
             elif l.startswith(b"Location:") and not 200 <= status <= 299:
                 if status in [301, 302, 303, 307, 308]:
                     redirect = str(l[10:-2], "utf-8")
+                    if redirect.startswith("/"):
+                        redirect = proto + "//" + host + ":" + str(port) + redirect
                 else:
                     raise NotImplementedError("Redirect %d not yet supported" % status)
             if parse_headers is False:
