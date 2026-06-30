@@ -17,6 +17,18 @@ class BodyStream:
             raise ValueError("Connection closed before Content-Length satisfied")
         return data
 
+    def readinto(self, buf):
+        if self._remaining == 0:
+            return 0
+        n = len(buf)
+        if n > self._remaining:
+            n = self._remaining
+        got = self._sock.readinto(memoryview(buf)[:n])
+        self._remaining -= got
+        if not got:
+            raise ValueError("Connection closed before Content-Length satisfied")
+        return got
+
     def close(self):
         self._sock.close()
 

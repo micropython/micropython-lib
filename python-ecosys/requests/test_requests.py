@@ -19,6 +19,12 @@ class Socket:
     def read(self, size=-1):
         return self._read_buffer.read(size)
 
+    def readinto(self, buf):
+        data = self._read_buffer.read(len(buf))
+        n = len(data)
+        buf[:n] = data
+        return n
+
     def close(self):
         pass
 
@@ -227,6 +233,22 @@ def test_raw_incremental_content_length():
     install_mock_socket()
 
 
+def test_raw_readinto_content_length():
+    socket.socket = lambda *a, **k: Socket(
+        read_data=b"HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\nabcdefghij"
+    )
+    response = requests.request("GET", "http://example.com")
+    buf = bytearray(3)
+    result = b""
+    while True:
+        n = response.raw.readinto(buf)
+        if n == 0:
+            break
+        result += buf if n == 3 else buf[:n]
+    assert result == b"abcdefghij"
+    install_mock_socket()
+
+
 TESTS = (
     test_simple_get,
     test_get_auth,
@@ -241,6 +263,7 @@ TESTS = (
     test_chunked_response_raises,
     test_raw_open_before_content,
     test_raw_incremental_content_length,
+    test_raw_readinto_content_length,
 )
 
 
