@@ -20,9 +20,7 @@ class BodyStream:
     def readinto(self, buf):
         if self._remaining == 0:
             return 0
-        n = len(buf)
-        if n > self._remaining:
-            n = self._remaining
+        n = min(len(buf), self._remaining)
         got = self._sock.readinto(memoryview(buf)[:n])
         self._remaining -= got
         if not got:
