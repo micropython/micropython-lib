@@ -5,7 +5,10 @@ import sys
 class Socket:
     def __init__(self):
         self._write_buffer = io.BytesIO()
-        self._read_buffer = io.BytesIO(b"HTTP/1.0 200 OK\r\n\r\n")
+        self._read_buffer = io.BytesIO(Socket.RESPONSES.pop(0))
+
+    def close(self):
+        pass
 
     def connect(self, address):
         pass
@@ -34,12 +37,20 @@ sys.modules["socket"] = socket
 # ruff: noqa: E402
 import requests
 
+SERVER_RESPONSE_200_OK = b"HTTP/1.0 200 OK\r\n\r\n"
+
+
+def set_server_responses(*buffers):
+    Socket.RESPONSES = list(buffers)
+
 
 def format_message(response):
     return response.raw._write_buffer.getvalue().decode("utf8")
 
 
 def test_simple_get():
+    set_server_responses(SERVER_RESPONSE_200_OK)
+
     response = requests.request("GET", "http://example.com")
 
     assert response.raw._write_buffer.getvalue() == (
@@ -48,6 +59,8 @@ def test_simple_get():
 
 
 def test_get_auth():
+    set_server_responses(SERVER_RESPONSE_200_OK)
+
     response = requests.request(
         "GET", "http://example.com", auth=("test-username", "test-password")
     )
@@ -61,6 +74,8 @@ def test_get_auth():
 
 
 def test_get_custom_header():
+    set_server_responses(SERVER_RESPONSE_200_OK)
+
     response = requests.request("GET", "http://example.com", headers={"User-Agent": "test-agent"})
 
     assert response.raw._write_buffer.getvalue() == (
@@ -72,6 +87,8 @@ def test_get_custom_header():
 
 
 def test_post_json():
+    set_server_responses(SERVER_RESPONSE_200_OK)
+
     response = requests.request("GET", "http://example.com", json="test")
 
     assert response.raw._write_buffer.getvalue() == (
@@ -85,6 +102,8 @@ def test_post_json():
 
 
 def test_post_chunked_data():
+    set_server_responses(SERVER_RESPONSE_200_OK)
+
     def chunks():
         yield "test"
 
@@ -101,6 +120,8 @@ def test_post_chunked_data():
 
 
 def test_overwrite_get_headers():
+    set_server_responses(SERVER_RESPONSE_200_OK)
+
     response = requests.request(
         "GET", "http://example.com", headers={"Host": "test.com", "Connection": "keep-alive"}
     )
@@ -111,6 +132,8 @@ def test_overwrite_get_headers():
 
 
 def test_overwrite_post_json_headers():
+    set_server_responses(SERVER_RESPONSE_200_OK)
+
     response = requests.request(
         "GET",
         "http://example.com",
@@ -129,6 +152,8 @@ def test_overwrite_post_json_headers():
 
 
 def test_overwrite_post_chunked_data_headers():
+    set_server_responses(SERVER_RESPONSE_200_OK)
+
     def chunks():
         yield "test"
 
@@ -146,11 +171,35 @@ def test_overwrite_post_chunked_data_headers():
 
 
 def test_do_not_modify_headers_argument():
+    set_server_responses(SERVER_RESPONSE_200_OK)
+
     global do_not_modify_this_dict
     do_not_modify_this_dict = {}
     requests.request("GET", "http://example.com", headers=do_not_modify_this_dict)
 
     assert do_not_modify_this_dict == {}, do_not_modify_this_dict
+
+
+def test_redirect_with_protocol():
+    set_server_responses(
+        b"HTTP/1.0 301 OK\r\nLocation: http://example.com/index\r\n\r\n", SERVER_RESPONSE_200_OK
+    )
+
+    response = requests.request("GET", "http://example.com")
+
+    assert response.raw._write_buffer.getvalue() == (
+        b"GET /index HTTP/1.0\r\n" + b"Connection: close\r\n" + b"Host: example.com\r\n\r\n"
+    ), format_message(response)
+
+
+def test_redirect_without_protocol():
+    set_server_responses(b"HTTP/1.0 301 OK\r\nLocation: /index\r\n\r\n", SERVER_RESPONSE_200_OK)
+
+    response = requests.request("GET", "http://example.com")
+
+    assert response.raw._write_buffer.getvalue() == (
+        b"GET /index HTTP/1.0\r\n" + b"Connection: close\r\n" + b"Host: example.com\r\n\r\n"
+    ), format_message(response)
 
 
 test_simple_get()
@@ -162,3 +211,5 @@ test_overwrite_get_headers()
 test_overwrite_post_json_headers()
 test_overwrite_post_chunked_data_headers()
 test_do_not_modify_headers_argument()
+test_redirect_with_protocol()
+test_redirect_without_protocol()
