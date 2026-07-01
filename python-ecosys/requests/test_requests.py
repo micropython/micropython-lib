@@ -95,6 +95,53 @@ def test_post_json():
     ), format_message(response)
 
 
+def test_post_json_unicode():
+    response = requests.request("POST", "http://example.com", json="aαbβcγdδ")  # noqa: RUF001
+
+    assert response.raw._write_buffer.getvalue() == (
+        b"POST / HTTP/1.1\r\n"
+        b"Connection: close\r\n"
+        b"Content-Type: application/json\r\n"
+        b"Host: example.com\r\n"
+        b"Content-Length: 14\r\n\r\n" + bytes('"aαbβcγdδ"', "utf-8")  # noqa: RUF001
+    ), format_message(response)
+
+
+def test_post_data_str():
+    response = requests.request("POST", "http://example.com", data="body")
+
+    assert response.raw._write_buffer.getvalue() == (
+        b"POST / HTTP/1.1\r\n"
+        b"Content-Length: 4\r\n"
+        b"Host: example.com\r\n"
+        b"Connection: close\r\n\r\n"
+        b"body"
+    ), format_message(response)
+
+
+def test_post_data_str_unicode():
+    response = requests.request("POST", "http://example.com", data="aαbβcγdδ")  # noqa: RUF001
+
+    assert response.raw._write_buffer.getvalue() == (
+        b"POST / HTTP/1.1\r\n"
+        b"Content-Length: 12\r\n"
+        b"Host: example.com\r\n"
+        b"Connection: close\r\n\r\n" + bytes("aαbβcγdδ", "utf-8")  # noqa: RUF001
+    ), format_message(response)
+
+
+def test_post_data_bytes():
+    response = requests.request("POST", "http://example.com", data=b"body\x01\x02\x03\xff")
+
+    assert response.raw._write_buffer.getvalue() == (
+        b"POST / HTTP/1.1\r\n"
+        b"Content-Length: 8\r\n"
+        b"Host: example.com\r\n"
+        b"Connection: close\r\n\r\n"
+        b"body\x01\x02\x03\xff"
+    ), response.raw._write_buffer.getvalue()
+
+
 def test_post_chunked_data():
     def chunks():
         yield "test"
@@ -268,6 +315,10 @@ test_simple_get()
 test_get_auth()
 test_get_custom_header()
 test_post_json()
+test_post_json_unicode()
+test_post_data_str()
+test_post_data_str_unicode()
+test_post_data_bytes()
 test_post_chunked_data()
 test_overwrite_get_headers()
 test_overwrite_post_json_headers()
