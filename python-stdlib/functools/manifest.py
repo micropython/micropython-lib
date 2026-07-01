@@ -1,3 +1,3 @@
-metadata(version="0.0.7")
+metadata(version="0.0.8")
 
-module("functools.py")
+package("functools")
