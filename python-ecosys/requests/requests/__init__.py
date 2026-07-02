@@ -122,8 +122,11 @@ def request(
             if chunked_data:
                 if "Transfer-Encoding" not in headers and "Content-Length" not in headers:
                     headers["Transfer-Encoding"] = "chunked"
-            elif "Content-Length" not in headers:
-                headers["Content-Length"] = str(len(data))
+            else:
+                if isinstance(data, str):
+                    data = bytes(data, "utf-8")
+                if "Content-Length" not in headers:
+                    headers["Content-Length"] = str(len(data))
 
         if "Connection" not in headers:
             headers["Connection"] = "close"
