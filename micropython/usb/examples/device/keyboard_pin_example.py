@@ -1,4 +1,9 @@
-# MicroPython USB Keyboard example
+# MicroPython USB Keyboard pin example
+#
+# Simulates a basic keyboard using one or more pin inputs to the board.
+#
+# See also the example keyboard_hello_example.py, which is a one-shot example
+# that types something and then exits.
 #
 # To run this example:
 #
@@ -10,7 +15,7 @@
 #
 # 2. Make sure `usb-device-keyboard` is installed via: mpremote mip install usb-device-keyboard
 #
-# 3. Run the example via: mpremote run keyboard_example.py
+# 3. Run the example via: mpremote run keyboard_pin_example.py
 #
 # 4. mpremote will exit with an error after the previous step, because when the
 #    example runs the existing USB device disconnects and then re-enumerates with
@@ -79,13 +84,24 @@ def keyboard_example():
     # iteration will always send
     while True:
         if k.is_open():
+            # Wait for host to process any outstanding keyboard events
+            while k.busy():
+                time.sleep_ms(1)
+
+            # Build the list of keys which are held down, each time around the
+            # loop. The key will stay 'down' for as long as it is in this list,
+            # and will be released as soon as send_keys() is called and it's not
+            # in the list.
             keys.clear()
             for pin, code in KEYS:
                 if not pin():  # active-low
                     keys.append(code)
+
+            # Send a new list of keys each time the list changes
             if keys != prev_keys:
                 # print(keys)
                 k.send_keys(keys)
+
                 prev_keys.clear()
                 prev_keys.extend(keys)
 

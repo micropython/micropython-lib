@@ -98,8 +98,9 @@ source code of the other USB device packages.
 ### Package usb-device-keyboard
 
 This package provides the `usb.device.keyboard` module. See
-[keyboard_example.py](examples/device/keyboard_example.py) for an example
-program.
+[keyboard_hello_example.py](examples/device/keyboard_hello_example.py) and
+[keyboard_pin_example.py](examples/device/keyboard_pin_example.py) for example
+programs.
 
 ### Package usb-device-mouse
 
