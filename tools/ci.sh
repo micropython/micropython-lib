@@ -49,6 +49,7 @@ function ci_package_tests_setup_lib {
     $CP python-stdlib/tempfile/tempfile.py "${VIRTUAL_ENV}/lib/"
     $CP -r python-stdlib/unittest/unittest "${VIRTUAL_ENV}/lib/"
     $CP -r python-stdlib/unittest-discover/unittest "${VIRTUAL_ENV}/lib/"
+    $CP -r python-stdlib/unittest-expectedfailure/unittest "${VIRTUAL_ENV}/lib/"
     $CP unix-ffi/ffilib/ffilib.py "${VIRTUAL_ENV}/lib/"
     tree "${VIRTUAL_ENV}"
 }
@@ -104,6 +105,7 @@ function ci_package_tests_run {
         python-stdlib/time \
         python-stdlib/unittest/tests \
         python-stdlib/unittest-discover/tests \
+        python-stdlib/unittest-expectedfailure/tests \
         ; do
         (cd $path && "${MICROPYTHON}" -m unittest)
         if [ $? -ne 0 ]; then false; return; fi
