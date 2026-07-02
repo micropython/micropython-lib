@@ -3,8 +3,8 @@
 # This example demonstrates creating a custom HID device with its own
 # HID descriptor, in this case for a USB number keypad.
 #
-# For higher level examples that require less code to use, see mouse_example.py
-# and keyboard_example.py
+# For higher level examples that require less code to use, see mouse_example.py,
+# keyboard_hello_example.py and keyboard_pin_example.py
 #
 # To run this example:
 #

@@ -41,6 +41,12 @@ class KeyboardInterface(HIDInterface):
         #
         # Will block for up to timeout_ms if a previous report is still
         # pending to be sent to the host. Returns True on success.
+        #
+        # After passing a keycode value in down_keys, it's necessary to call the
+        # function again without that key code set in order to release the key.
+        #
+        # Calling send_keys(()) (i.e. empty down_keys argument) will release all
+        # keys.
 
         r, s = self._key_reports  # next report buffer to send, spare report buffer
         r[0] = 0  # modifier byte
