@@ -37,6 +37,13 @@ Similar to the main repository, a configuration is provided for the
 rules and apply linting checks. See the documentation for using pre-commit
 in [the code conventions document](https://github.com/micropython/micropython/blob/master/CODECONVENTIONS.md#automatic-pre-commit-hooks)
 
+While it is possible to create simple PRs from within GitHub itself, doing so
+is not really recommended. Doing so would bypass the pre-commit checks and
+you will end up with a PR that will potentially fail one or more CI jobs due
+to a commit subject/message that does not follow the format conventions, code
+that was not formatted using `ruff` beforehand, or for simpler things like a
+typo or a spelling error.
+
 In addition to the conventions from the main repository, there are some
 specific conventions and guidelines for micropython-lib:
 
