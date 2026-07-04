@@ -1,3 +1,3 @@
-metadata(version="1.0.3", pypi="requests")
+metadata(version="1.1.0", pypi="requests")
 
 package("requests")
