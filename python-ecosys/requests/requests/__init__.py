@@ -32,6 +32,59 @@ class BodyStream:
         self._sock.close()
 
 
+class ChunkedStream:
+    def __init__(self, sock):
+        self._sock = sock
+        self._remaining = 0
+        self._done = False
+
+    def _next_size(self):
+        l = self._sock.readline()
+        # Drop any chunk extensions after the size.
+        self._remaining = int(l.split(b";", 1)[0], 16)
+        if self._remaining == 0:
+            # Discard the optional trailer up to the terminating blank line.
+            while True:
+                l = self._sock.readline()
+                if not l or l == b"\r\n":
+                    break
+            self._done = True
+
+    def read(self, n=-1):
+        if n >= 0:
+            buf = bytearray(n)
+            return bytes(buf[: self.readinto(buf)])
+        chunks = []
+        buf = bytearray(256)
+        while True:
+            got = self.readinto(buf)
+            if not got:
+                break
+            chunks.append(bytes(buf[:got]))
+        return b"".join(chunks)
+
+    def readinto(self, buf):
+        if self._remaining == 0:
+            if self._done:
+                return 0
+            self._next_size()
+            if self._done:
+                return 0
+        if len(buf) > self._remaining:
+            buf = memoryview(buf)[: self._remaining]
+        got = self._sock.readinto(buf)
+        if not got:
+            raise ValueError("Connection closed before chunk was complete")
+        self._remaining -= got
+        if self._remaining == 0:
+            # Consume the CRLF that terminates the chunk data.
+            self._sock.readline()
+        return got
+
+    def close(self):
+        self._sock.close()
+
+
 class Response:
     def __init__(self, f):
         self.raw = f
@@ -193,6 +246,7 @@ def request(
         if len(l) > 2:
             reason = l[2].rstrip()
         remaining = None
+        chunked = False
         while True:
             l = s.readline()
             if not l or l == b"\r\n":
@@ -200,7 +254,7 @@ def request(
             # print(l)
             if l.startswith(b"Transfer-Encoding:"):
                 if b"chunked" in l:
-                    raise ValueError("Unsupported " + str(l, "utf-8"))
+                    chunked = True
             elif l.startswith(b"Location:") and not 200 <= status <= 299:
                 if status in [301, 302, 303, 307, 308]:
                     redirect = str(l[10:-2], "utf-8")
@@ -230,7 +284,9 @@ def request(
         else:
             return request(method, redirect, data, json, headers, stream)
     else:
-        if remaining is not None:
+        if chunked:
+            resp = Response(ChunkedStream(s))
+        elif remaining is not None:
             resp = Response(BodyStream(s, remaining))
         else:
             resp = Response(s)
