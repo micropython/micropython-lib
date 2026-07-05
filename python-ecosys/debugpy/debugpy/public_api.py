@@ -37,7 +37,23 @@ def listen(port=DEFAULT_PORT, host=DEFAULT_HOST):
     listener.bind(addr)
     listener.listen(1)
 
-    # getsockname not available in MicroPython, use original values
+    # Resolve the actual bound port (needed when the caller asked for port 0 /
+    # auto). Not every MicroPython port implements getsockname().
+    requested_port = port
+    try:
+        bound_addr = listener.getsockname()
+        if isinstance(bound_addr, (tuple, list)) and len(bound_addr) >= 2:
+            port = bound_addr[1]
+    except Exception:
+        pass
+    if requested_port == 0 and port == 0:
+        # The caller asked for an OS-assigned port and this port has no way
+        # to report what the OS actually picked. Advertising port 0 in the
+        # handshake would tell the client to connect to a port that can
+        # never accept a connection, so fall back to the documented default
+        # instead - it is at least a real, well-known port to try.
+        port = DEFAULT_PORT
+
     print(f"Debugpy listening on {host}:{port}")
 
     # Wait for connection
@@ -69,7 +85,9 @@ def listen(port=DEFAULT_PORT, host=DEFAULT_HOST):
             client_sock.close()
             _debug_session = None
     finally:
-        # Only close the listener, not the client connection
+        # The accepted client socket is independent of the listener; closing
+        # the listener does not affect it. This is a single-connection server,
+        # so stop listening once the client is accepted.
         listener.close()
 
     return (host, port)
@@ -97,11 +115,35 @@ def format_client_addr(client_addr):
         return str(client_addr)
 
 
-def wait_for_client():
-    """Wait for the debugger client to connect and initialize."""
+def wait_for_client(timeout_s=None):
+    """Block until the DAP client has finished configuring (configurationDone).
+
+    Replaces a fixed sleep after debug_this_thread(): breakpoints the client
+    sets before configurationDone are honoured because this drains the socket
+    the whole time it waits. Returns True once configurationDone arrives,
+    False after a bounded timeout (logged, not silent) or if no session is
+    listening.
+    """
     global _debug_session
-    if _debug_session:
-        _debug_session.wait_for_client()
+    if _debug_session is None:
+        print("[DAP] wait_for_client: no debug session is listening, nothing to wait for")
+        return False
+    if timeout_s is None:
+        return _debug_session.wait_for_client()
+    return _debug_session.wait_for_client(timeout_s)
+
+
+def get_capabilities():
+    """Return the firmware capability dict (settrace/save_names/set_local/f_back).
+
+    Uses the active session's probe result if a session exists, otherwise
+    probes directly. Values always come from probing the running
+    interpreter, never from a build/variant name.
+    """
+    global _debug_session
+    if _debug_session is not None:
+        return _debug_session.capabilities
+    return DebugSession.probe_capabilities()
 
 
 def breakpoint():

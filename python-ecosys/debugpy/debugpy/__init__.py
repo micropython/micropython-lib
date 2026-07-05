@@ -7,7 +7,15 @@ needed for basic debugging operations like breakpoints, stepping, and variable i
 
 __version__ = "0.1.0"
 
-from .public_api import listen, wait_for_client, breakpoint, debug_this_thread
+from .public_api import (
+    breakpoint,
+    debug_this_thread,
+    disconnect,
+    get_capabilities,
+    is_client_connected,
+    listen,
+    wait_for_client,
+)
 from .common.constants import DEFAULT_HOST, DEFAULT_PORT
 
 __all__ = [
@@ -15,6 +23,9 @@ __all__ = [
     "DEFAULT_PORT",
     "breakpoint",
     "debug_this_thread",
+    "disconnect",
+    "get_capabilities",
+    "is_client_connected",
     "listen",
     "wait_for_client",
 ]
