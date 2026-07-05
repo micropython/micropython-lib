@@ -109,6 +109,9 @@ class PdbAdapter:
         # list of [runtime_path -> vscode_path mapping]
         self.file_mappings: dict[str, str] = {}
         # runtime_path -> vscode_path mapping                   # todo : merge with .breakpoints
+        self.capabilities: dict = {}
+        # set by DebugSession at session start (see DebugSession.probe_capabilities);
+        # empty dict here means "not yet probed", treated as no set_local support
 
     def _debug_print(self, message):
         """Print debug message only if debug logging is enabled."""
@@ -358,7 +361,7 @@ class PdbAdapter:
         ]
         return scopes
 
-    def _process_special_variables(self, var_dict):
+    def _process_special_variables(self, var_dict, read_only=False):
         """Process special variables (those starting and ending with __)."""
         variables = []
         for name, value in var_dict.items():
@@ -367,19 +370,20 @@ class PdbAdapter:
                     # Use lightweight serialization instead of json.dumps
                     value_str = self._lightweight_serialize(value)
                     type_str = type(value).__name__
-                    variables.append(
-                        {
-                            "name": name,
-                            "value": value_str,
-                            "type": type_str,
-                            "variablesReference": 0,
-                        }
-                    )
+                    info = {
+                        "name": name,
+                        "value": value_str,
+                        "type": type_str,
+                        "variablesReference": 0,
+                    }
+                    if read_only:
+                        info["presentationHint"] = {"attributes": ["readOnly"]}
+                    variables.append(info)
                 except Exception:
                     variables.append(self._var_error(name))
         return variables
 
-    def _process_regular_variables(self, var_dict):
+    def _process_regular_variables(self, var_dict, read_only=False):
         """Process regular variables (excluding special ones) - optimized."""
         variables = []
         for name, value in var_dict.items():
@@ -387,7 +391,10 @@ class PdbAdapter:
             if name.startswith("__") and name.endswith("__"):
                 continue
             # Use fast path for variable info generation
-            variables.append(self._get_variable_info_fast(name, value))
+            info = self._get_variable_info_fast(name, value)
+            if read_only:
+                info["presentationHint"] = {"attributes": ["readOnly"]}
+            variables.append(info)
         return variables
 
     def _is_expandable(self, value: Any) -> bool:
@@ -608,10 +615,16 @@ class PdbAdapter:
 
         frame = self.variables_cache[frame_id]
 
+        # Locals are read-only in DAP when this firmware has no _set_local
+        # (STORY-1.3): the edit affordance is greyed out client-side instead
+        # of setVariable failing with an error after the fact. Globals always
+        # stay editable - global write-back works on every firmware.
+        locals_read_only = not self.capabilities.get("set_local", False)
+
         # Handle special scope types first
         if scope_type == VARREF_LOCALS_SPECIAL:
             var_dict = frame.f_locals if hasattr(frame, "f_locals") else {}
-            return self._process_special_variables(var_dict)
+            return self._process_special_variables(var_dict, read_only=locals_read_only)
         elif scope_type == VARREF_GLOBALS_SPECIAL:
             var_dict = frame.f_globals if hasattr(frame, "f_globals") else {}
             return self._process_special_variables(var_dict)
@@ -629,7 +642,8 @@ class PdbAdapter:
             return []
 
         # Add regular variables with enhanced processing
-        variables.extend(self._process_regular_variables(var_dict))
+        read_only = locals_read_only if scope_type == VARREF_LOCALS else False
+        variables.extend(self._process_regular_variables(var_dict, read_only=read_only))
         return variables
 
     def evaluate_expression(self, expression, frame_id=None):

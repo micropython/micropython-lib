@@ -1,6 +1,7 @@
 """Main debug session handling DAP protocol communication."""
 
 import sys
+import time
 
 from ..common.constants import (
     CMD_ATTACH,
@@ -32,9 +33,22 @@ from ..common.constants import (
     TRACE_EXCEPTION,
     TRACE_LINE,
     TRACE_RETURN,
+    WAIT_FOR_CLIENT_TIMEOUT_S,
 )
 from ..common.messaging import JsonMessageChannel
 from .pdb_adapter import PdbAdapter
+
+
+def _is_placeholder_local_name(name):
+    """True if `name` is a positional `local_N` placeholder, not a real name.
+
+    Without MICROPY_PY_SYS_SETTRACE_SAVE_NAMES, frame.f_locals synthesizes
+    names as `local_1`, `local_2`, ... (see py/profile.c). This is the only
+    reliable signal that separates the two cases at runtime.
+    """
+    if not name.startswith("local_"):
+        return False
+    return name[len("local_") :].isdigit()
 
 
 class DebugSession:
@@ -50,6 +64,10 @@ class DebugSession:
         self.thread_id = 1  # Simple single-thread model
         self.stepping = False
         self.paused = False
+        self.configuration_done = False
+        # Probed once at session start; never inferred from a build/variant name.
+        self.capabilities = self.probe_capabilities()
+        self.pdb.capabilities = self.capabilities
 
     def _debug_print(self, message):
         """Print debug message only if debug logging is enabled."""
@@ -59,6 +77,53 @@ class DebugSession:
     @property
     def _baremetal(self) -> bool:
         return sys.platform not in ("linux")  # to be expanded
+
+    @staticmethod
+    def probe_capabilities():
+        """Probe what the running firmware actually supports.
+
+        Returns a dict with at least `settrace`, `save_names`, `set_local` and
+        `f_back`, each derived by exercising the real interpreter - never by
+        reading a build/variant name, which does not reliably reflect what a
+        given firmware image supports (see BACKGROUND.md). Safe to call on
+        both the unix port and bare-metal builds; never raises.
+        """
+        caps = {
+            "settrace": hasattr(sys, "settrace"),
+            "f_back": False,
+            "save_names": False,
+            "set_local": False,
+        }
+        if not caps["settrace"]:
+            return caps
+
+        try:
+            frame = sys._getframe()
+        except Exception:
+            return caps
+
+        try:
+            caps["f_back"] = hasattr(frame, "f_back")
+        except Exception:
+            pass
+
+        try:
+            caps["set_local"] = hasattr(frame, "_set_local")
+        except Exception:
+            pass
+
+        try:
+            local_names = list(frame.f_locals.keys())
+            # An empty locals dict (e.g. probing from module scope) proves
+            # nothing either way; only trust the signal when there is at
+            # least one local name to inspect for the placeholder pattern.
+            caps["save_names"] = bool(local_names) and not any(
+                _is_placeholder_local_name(n) for n in local_names
+            )
+        except Exception:
+            pass
+
+        return caps
 
     def start(self):
         """Start the debug session message loop."""
@@ -417,6 +482,7 @@ class DebugSession:
         """Handle configurationDone request."""
         # This indicates that the client has finished configuring breakpoints
         # and is ready to start debugging
+        self.configuration_done = True
         self.channel.send_response(CMD_CONFIGURATION_DONE, seq)
 
     def _handle_threads(self, seq, args):
@@ -481,10 +547,34 @@ class DebugSession:
             EVENT_STOPPED, reason=reason, threadId=self.thread_id, allThreadsStopped=True
         )
 
-    def wait_for_client(self):
-        """Wait for client to initialize."""
-        # This is a simplified version - in a real implementation
-        # we might want to wait for specific initialization steps
+    def wait_for_client(self, timeout_s=WAIT_FOR_CLIENT_TIMEOUT_S):
+        """Block until the client has sent configurationDone, or time out.
+
+        Same busy-poll shape as PdbAdapter.wait_for_continue(): there is no
+        server thread, so nothing services the socket unless this loop drains
+        it. Replaces a fixed sleep with a deterministic handshake - breakpoints
+        set before configurationDone are already applied by the time this
+        returns because process_pending_messages() has drained them too.
+        Returns True once configurationDone arrives, False if the bounded
+        timeout elapses first (a hard failure is worse than continuing with a
+        clear log message: a client that never configures is a client bug or
+        a dropped connection, not something to hang on forever).
+        """
+        start = time.ticks_ms()
+        while not self.configuration_done:
+            self.process_pending_messages()
+            if not self.connected or self.channel.closed:
+                print("[DAP] wait_for_client: connection closed before configurationDone")
+                return False
+            if time.ticks_diff(time.ticks_ms(), start) > timeout_s * 1000:
+                print(
+                    "[DAP] wait_for_client: timed out after {}s waiting for configurationDone".format(
+                        timeout_s
+                    )
+                )
+                return False
+            time.sleep(0.01)
+        return True
 
     def trigger_breakpoint(self):
         """Trigger a manual breakpoint."""

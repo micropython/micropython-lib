@@ -67,3 +67,8 @@ STEP_OUT = const("out")
 # Scope types
 SCOPE_LOCALS = const("locals")
 SCOPE_GLOBALS = const("globals")
+
+# Bounded wait for the DAP client to send configurationDone (seconds). There is
+# no server thread, so a hang here would spin forever with no diagnostic; a
+# timeout with a clear message replaces a silent guessed delay.
+WAIT_FOR_CLIENT_TIMEOUT_S = const(30)
