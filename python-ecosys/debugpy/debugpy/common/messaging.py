@@ -82,94 +82,69 @@ class JsonMessageChannel:
         self.send_message(MSG_TYPE_EVENT, event, **kwargs)
 
     def recv_message(self):
-        """Receive a DAP message."""
+        """Receive a DAP message, or None if a full one isn't available yet.
+
+        Called repeatedly against a socket with a short recv timeout (see
+        `DebugSession.process_pending_messages`), so a single message's
+        header and body routinely arrive across several calls. Everything
+        read so far - including an already-located header - is kept in
+        `self._recv_buffer` verbatim until the *entire* message (header +
+        `Content-Length` body bytes) is available, and only then is it
+        parsed and sliced off. Parsing the header again on each call is
+        cheap and avoids having to separately persist "header already
+        parsed, N body bytes still outstanding" state between calls: a
+        prior version stripped the header out of the buffer as soon as it
+        was found, which discarded that state and desynchronised framing
+        for the rest of the connection whenever the body arrived in a
+        later read than the header.
+        """
         if self.closed:
             return None
 
-        # Quick bail-out: if buffer is empty, do a non-blocking peek to see if data is available
-        if not self._recv_buffer:
-            try:
-                # Try to read a small amount non-blocking to see if anything is available
-                peek_data = self.sock.recv(1)
-                if not peek_data:
-                    return None  # No data available
-                # Put the peeked data back into buffer
-                self._recv_buffer = peek_data
-            except OSError as e:
-                # Handle non-blocking socket errors (no data available)
-                if hasattr(e, "errno") and e.errno in (11, 35):  # EAGAIN, EWOULDBLOCK
-                    return None  # No data available, quick exit
-                # Other errors
+        # Non-blocking top-up: pull in whatever is available right now
+        # without blocking if there's nothing new yet.
+        try:
+            data = self.sock.recv(4096)
+            if not data:
+                # A truly empty read (as opposed to EAGAIN/EWOULDBLOCK,
+                # handled below) means the peer closed the connection.
                 self.closed = True
                 return None
+            self._recv_buffer += data
+        except OSError as e:
+            if not (hasattr(e, "errno") and e.errno in (11, 35)):  # EAGAIN, EWOULDBLOCK
+                self.closed = True
+                return None
+            # No new data available right now - fall through and try to
+            # parse a complete message out of whatever is already buffered.
 
-        # Cache frequently accessed attributes
         recv_buffer = self._recv_buffer
-        sock_recv = self.sock.recv
+        header_end = recv_buffer.find(b"\r\n\r\n")
+        if header_end < 0:
+            return None  # Header not fully received yet.
+
+        header_str = recv_buffer[:header_end].decode("utf-8")
+        content_length = 0
+        for line in header_str.split("\r\n"):
+            if line.startswith("Content-Length:"):
+                content_length = int(line.split(":", 1)[1].strip())
+                break
+
+        body_start = header_end + 4
+        if len(recv_buffer) < body_start + content_length:
+            return None  # Body not fully received yet.
+
+        body = recv_buffer[body_start : body_start + content_length]
+        self._recv_buffer = recv_buffer[body_start + content_length :]
 
         try:
-            # Read headers
-            while b"\r\n\r\n" not in recv_buffer:
-                try:
-                    data = sock_recv(1024)
-                    if not data:
-                        self.closed = True
-                        return None
-                    recv_buffer += data
-                except OSError as e:
-                    # Handle timeout and other socket errors
-                    if hasattr(e, "errno") and e.errno in (11, 35):  # EAGAIN, EWOULDBLOCK
-                        return None  # No data available
-                    self.closed = True
-                    return None
-
-            header_end = recv_buffer.find(b"\r\n\r\n")
-            header_str = recv_buffer[:header_end].decode("utf-8")
-            recv_buffer = recv_buffer[header_end + 4 :]
-
-            # Parse Content-Length
-            content_length = 0
-            for line in header_str.split("\r\n"):
-                if line.startswith("Content-Length:"):
-                    content_length = int(line.split(":", 1)[1].strip())
-                    break
-
-            if content_length == 0:
-                self._recv_buffer = recv_buffer
-                return None
-
-            # Read body
-            while len(recv_buffer) < content_length:
-                try:
-                    data = sock_recv(content_length - len(recv_buffer))
-                    if not data:
-                        self.closed = True
-                        return None
-                    recv_buffer += data
-                except OSError as e:
-                    if hasattr(e, "errno") and e.errno in (11, 35):  # EAGAIN, EWOULDBLOCK
-                        self._recv_buffer = recv_buffer
-                        return None
-                    self.closed = True
-                    return None
-
-            body = recv_buffer[:content_length]
-            self._recv_buffer = recv_buffer[content_length:]
-
-            # Parse JSON
-            try:
-                message = json.loads(body.decode("utf-8"))
-                self._debug_print(
-                    f"[DAP] Successfully received message: {message.get('type')} {message.get('command', message.get('event', 'unknown'))}"
-                )
-                return message
-            except (ValueError, UnicodeDecodeError) as e:
-                print(f"[DAP] JSON parse error: {e}")
-                return None
-
-        except OSError as e:
-            print(f"[DAP] Socket error in recv_message: {e}")
-            self.closed = True
+            message = json.loads(body.decode("utf-8"))
+            self._debug_print(
+                f"[DAP] Successfully received message: {message.get('type')} {message.get('command', message.get('event', 'unknown'))}"
+            )
+            return message
+        except (ValueError, UnicodeDecodeError) as e:
+            print(f"[DAP] JSON parse error: {e}")
             return None
 
     def close(self):
