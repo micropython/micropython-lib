@@ -2,10 +2,10 @@ import socket
 
 
 class BodyStream:
-    def __init__(self, sock, remaining=0, chunked=False):
+    def __init__(self, sock, remaining=0):
         self._sock = sock
-        self._remaining = remaining
-        self._chunked = chunked
+        self._chunked = remaining < 0
+        self._remaining = -1 if remaining < 0 else remaining
 
     def read(self, n=-1):
         if not self._chunked:
@@ -18,42 +18,38 @@ class BodyStream:
             if not data:
                 raise ValueError("Connection closed before Content-Length satisfied")
             return data
-        if n >= 0:
-            buf = bytearray(n)
-            return bytes(buf[: self.readinto(buf)])
-        buf = bytearray(256)
-        chunks = []
+        buf = bytearray(n if n >= 0 else 256)
+        result = b""
         while True:
             got = self.readinto(buf)
             if not got:
                 break
-            chunks.append(bytes(buf[:got]))
-        return b"".join(chunks)
+            if n >= 0:
+                return bytes(buf[:got])
+            result += bytes(buf[:got])
+        return result
 
     def readinto(self, buf):
-        if self._remaining == 0:
-            if self._chunked:
-                l = self._sock.readline()
-                self._remaining = int(l.split(b";", 1)[0], 16)
-                if self._remaining == 0:
-                    while True:
-                        l = self._sock.readline()
-                        if not l or l == b"\r\n":
-                            break
-                    self._chunked = False
-                    return 0
-            else:
+        if self._remaining <= 0:
+            if self._remaining == 0:
+                return 0
+            l = self._sock.readline()
+            self._remaining = int(l.split(b";", 1)[0], 16)
+            if self._remaining == 0:
+                while True:
+                    l = self._sock.readline()
+                    if not l or l == b"\r\n":
+                        break
                 return 0
         if len(buf) > self._remaining:
             buf = memoryview(buf)[: self._remaining]
         got = self._sock.readinto(buf)
         if not got:
-            if self._chunked:
-                raise ValueError("Connection closed before chunk was complete")
-            raise ValueError("Connection closed before Content-Length satisfied")
+            raise ValueError("Connection closed before body complete")
         self._remaining -= got
         if self._remaining == 0 and self._chunked:
             self._sock.readline()
+            self._remaining = -1
         return got
 
     def close(self):
@@ -260,7 +256,7 @@ def request(
             return request(method, redirect, data, json, headers, stream)
     else:
         if chunked:
-            resp = Response(BodyStream(s, chunked=True))
+            resp = Response(BodyStream(s, -1))
         elif remaining is not None:
             resp = Response(BodyStream(s, remaining))
         else:
