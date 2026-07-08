@@ -16,7 +16,7 @@ class BodyStream:
             data = self._sock.read(n)
             self._remaining -= len(data)
             if not data:
-                raise ValueError("Connection closed before Content-Length satisfied")
+                raise ValueError("Connection closed before body complete")
             return data
         buf = bytearray(n if n >= 0 else 256)
         result = b""
