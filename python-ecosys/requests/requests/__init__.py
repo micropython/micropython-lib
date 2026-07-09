@@ -41,7 +41,7 @@ class BodyStream:
                         break
                 return 0
         if len(buf) > self._remaining:
-            buf = memoryview(buf)[:self._remaining]
+            buf = memoryview(buf)[: self._remaining]
         got = self._sock.readinto(buf)
         if not got:
             raise ValueError("Connection closed before body complete")
