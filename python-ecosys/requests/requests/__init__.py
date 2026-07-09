@@ -25,16 +25,15 @@ class BodyStream:
             if not got:
                 break
             if n >= 0:
-                return bytes(buf[:got])
-            result += bytes(buf[:got])
+                return buf[:got]
+            result += buf[:got]
         return result
 
     def readinto(self, buf):
         if self._remaining <= 0:
             if self._remaining == 0:
                 return 0
-            l = self._sock.readline()
-            self._remaining = int(l.split(b";", 1)[0], 16)
+            self._remaining = int(self._sock.readline().split(b";", 1)[0], 16)
             if self._remaining == 0:
                 while True:
                     l = self._sock.readline()
@@ -42,7 +41,7 @@ class BodyStream:
                         break
                 return 0
         if len(buf) > self._remaining:
-            buf = memoryview(buf)[: self._remaining]
+            buf = memoryview(buf)[:self._remaining]
         got = self._sock.readinto(buf)
         if not got:
             raise ValueError("Connection closed before body complete")
