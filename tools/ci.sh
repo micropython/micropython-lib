@@ -106,6 +106,7 @@ function ci_package_tests_run {
         python-stdlib/time \
         python-stdlib/unittest/tests \
         python-stdlib/unittest-discover/tests \
+        python-stdlib/uuid \
         ; do
         (cd $path && "${MICROPYTHON}" -m unittest)
         if [ $? -ne 0 ]; then false; return; fi

@@ -1,15 +1,28 @@
+import unittest
 import uuid
 
-u1 = uuid.uuid4()
-u2 = uuid.uuid4()
 
-assert str(u1) != str(u2), "Two uuid4 should not match"
+class TestUUID(unittest.TestCase):
+    def test_unique(self):
+        n = 10
+        us = set(uuid.uuid4().bytes for _ in range(n))
+        self.assertEqual(len(us), n)
 
-assert len(str(u1)) == len(str(u1)) == 36
+    def test_len(self):
+        u = uuid.uuid4()
+        self.assertEqual(len(str(u)), 36)
+        self.assertEqual(len(u.hex), 32)
 
-assert str(repr(u1)).startswith("<UUID")
-assert str(repr(u1)).endswith(">")
+    def test_repr(self):
+        u = str(repr(uuid.uuid4()))
+        self.assertTrue(u.startswith("<UUID"))
+        self.assertTrue(u.endswith(">"))
 
-assert len(u1.hex) == 32
+    def test_constructor(self):
+        u1 = uuid.uuid4()
+        u2 = uuid.UUID(bytes.fromhex(u1.hex))
+        self.assertEqual(u1.hex, u2.hex)
 
-print("OK")
+
+if __name__ == "__main__":
+    unittest.main()
