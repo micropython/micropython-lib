@@ -1,10 +1,13 @@
-import io as _io
-import sys as _sys
+import io
+import sys
+from micropython import const
 
-try:
-    from micropython import const as _const
-except ImportError:
-    _const = lambda x: x
+_NONCONTAINER = const(0)
+_SIMPLE = const(1)
+_LIST = const(2)
+_SET = const(4)
+_TUPLE = const(8)
+_DICT = const(16)
 
 
 class PrettyPrinter:
@@ -17,7 +20,7 @@ class PrettyPrinter:
     def __init__(self, indent=1, depth=1, stream=None, sort_dicts=True):
         self._indent = indent
         self._depth = depth
-        self._stream = stream if stream else _sys.stdout
+        self._stream = stream if stream else sys.stdout
         self._sort_dicts = sort_dicts
 
     def pformat(self, obj):
@@ -40,7 +43,7 @@ def pformat(obj, indent=1, depth=1, sort_dicts=True):
 
     Does not add a newline to the end like pprint() does.
     """
-    stream = _io.StringIO()
+    stream = io.StringIO()
     _pprint_impl(obj, stream, 0, sort_dicts, depth, 0, indent)
     return stream.getvalue()
 
@@ -93,7 +96,7 @@ def pprint(obj, stream=None, indent=1, depth=1, sort_dicts=True):
     mismatch
     """
     if not stream:
-        stream = _sys.stdout
+        stream = sys.stdout
     _pprint_impl(obj, stream, 0, sort_dicts, depth, 0, indent)
     stream.write("\n")  # end in a newline
 
@@ -143,14 +146,6 @@ def _pprint_impl(obj, stream, indent, sort_dicts, maxlevel, level, indent_per_le
                 level + 1,
                 indent_per_level,
             )
-
-
-_NONCONTAINER = _const(0)
-_SIMPLE = _const(1)
-_LIST = _const(2)
-_SET = _const(4)
-_TUPLE = _const(8)
-_DICT = _const(16)
 
 
 def _container_type(obj):
