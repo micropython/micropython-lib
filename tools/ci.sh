@@ -71,6 +71,7 @@ function ci_package_tests_run {
         python-stdlib/operator/test_operator.py \
         python-stdlib/os-path/test_path.py \
         python-stdlib/pickle/test_pickle.py \
+        python-stdlib/pprint/test_pprint.py \
         python-stdlib/string/test_translate.py \
         python-stdlib/unittest/tests/exception.py \
         unix-ffi/gettext/test_gettext.py \
