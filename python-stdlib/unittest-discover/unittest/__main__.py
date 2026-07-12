@@ -146,8 +146,9 @@ def discover_main():
         # Ensure an appropriate output is printed if no tests are found.
         runner.run(TestSuite())
 
-    # Terminate with non zero return code in case of failures.
-    sys.exit(result.failuresNum + result.errorsNum)
+    # Terminate with non zero return code in case of failures. unexpectedSuccessesNum
+    # is only present when the unittest-expectedfailure add-on is installed.
+    sys.exit(result.failuresNum + result.errorsNum + getattr(result, "unexpectedSuccessesNum", 0))
 
 
 discover_main()
