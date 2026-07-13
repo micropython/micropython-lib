@@ -242,7 +242,7 @@ def basicConfig(
         else:
             handler = FileHandler(filename, filemode, encoding)
 
-        handler.setLevel(level)
+        handler.setLevel(NOTSET)
         handler.setFormatter(Formatter(format, datefmt))
 
         logger.setLevel(level)
