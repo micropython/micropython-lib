@@ -1,3 +1,3 @@
-metadata(version="0.2.3")
+metadata(version="0.5.0")
 
 module("itertools.py")
