@@ -89,6 +89,68 @@ def ends_with_path(full_path: str, relative_path: str):
     return full_parts[-len(rel_parts) :] == rel_parts
 
 
+# Augmented-assignment operators checked longest-first so e.g. "**=" is not
+# mistaken for "*=" followed by stray text.
+_AUG_ASSIGN_OPS = ("**=", "//=", ">>=", "<<=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "=")
+
+
+def _is_ident_char(ch: str) -> bool:
+    """True for `[A-Za-z0-9_]` - MicroPython's `str` has no `.isalnum()`."""
+    return ch.isalpha() or ch.isdigit() or ch == "_"
+
+
+def _assigned_name(statement: str):
+    """Return the target name of a simple top-level assignment, or None.
+
+    Recognises only `<identifier><op>...` where the identifier is the very
+    first token and `<op>` is `=` or an augmented-assignment operator. This
+    is a deliberately narrow, best-effort check - it does NOT catch:
+    multi-target assignment (`a = b = 1`, only `a` is seen), tuple/list
+    unpacking (`a, b = 1, 2`), attribute/subscript targets (`obj.x = 1`,
+    `d[k] = 1`), `def`/`class` statements (which also bind a name), a
+    `for`/`with ... as` binding, or an assignment that is not the first
+    statement on the line (e.g. after `;`). Those forms pass through
+    undetected; callers must treat a `None` result as "not proven safe",
+    never as "proven no shadowing".
+    """
+    stripped = statement.strip()
+    if not stripped or stripped[0].isdigit() or not _is_ident_char(stripped[0]):
+        return None
+    i = 1
+    n = len(stripped)
+    while i < n and _is_ident_char(stripped[i]):
+        i += 1
+    name = stripped[:i]
+    rest = stripped[i:].lstrip()
+    for op in _AUG_ASSIGN_OPS:
+        if rest.startswith(op):
+            if op == "=" and rest[1:2] == "=":
+                return None  # `==`, a comparison, not an assignment
+            return name
+    return None
+
+
+def _shadowed_local_warning(statement: str, locals_dict):
+    """Build the honesty-rule warning for `statement`, or None if it doesn't apply.
+
+    Fires when `_assigned_name` recognises a top-level assignment whose
+    target name is also a key in `locals_dict` (the paused frame's
+    `f_locals` snapshot): that name is about to be rebound in `f_globals`
+    only, so the LOCAL of the same name stays exactly as it was. On
+    firmware without local-name capture (`save_names` capability False),
+    `locals_dict` keys are synthetic `local_N` placeholders rather than
+    real identifiers, so a real name can never match and this warning
+    silently cannot fire there - a known limitation, not a bug.
+    """
+    name = _assigned_name(statement)
+    if name and name in locals_dict:
+        return (
+            f"Warning: '{name}' also exists as a LOCAL in this frame; "
+            "the local is unchanged (statement ran against globals only)."
+        )
+    return None
+
+
 class PdbAdapter:
     """Adapter between DAP protocol and MicroPython's sys.settrace functionality."""
 
@@ -646,8 +708,28 @@ class PdbAdapter:
         variables.extend(self._process_regular_variables(var_dict, read_only=read_only))
         return variables
 
-    def evaluate_expression(self, expression, frame_id=None):
-        """Evaluate an expression in the context of a frame."""
+    def evaluate_expression(self, expression, frame_id=None, context="watch"):
+        """Evaluate a DAP `evaluate` request in the context of a frame.
+
+        `watch`/`hover` (and any other/absent `context`) keep the original,
+        read-only contract: `eval()` only - a statement is a `SyntaxError`,
+        surfaced as an evaluation error, exactly as before this method
+        gained statement support.
+
+        `repl`/`clipboard` add statement execution: `eval()` is tried first
+        (so a plain expression like `1 + 1` still returns a value); a
+        `SyntaxError` falls back to `exec(expression, globals_dict)` against
+        the frame's live `f_globals` only. The locals snapshot is
+        deliberately never passed to `exec` as a namespace - `exec(code, g,
+        l)` binds a top-level assignment into `l`, and `l` here is a
+        disposable copy handed back to the caller and then discarded, so
+        the assignment would silently vanish instead of taking effect. Only
+        `globals_dict` is live, so a statement's top-level assignments land
+        in the running module namespace and are visible to the target
+        program after `continue`. See `_shadowed_local_warning` for the
+        honesty-rule warning this implies when the assigned name also
+        exists as a frame LOCAL.
+        """
         if frame_id is not None and frame_id in self.variables_cache:
             frame = self.variables_cache[frame_id]
             globals_dict = frame.f_globals if hasattr(frame, "f_globals") else {}
@@ -661,12 +743,25 @@ class PdbAdapter:
             else:
                 globals_dict = globals()
                 locals_dict = {}
+
         try:
-            # Evaluate the expression
             result = eval(expression, globals_dict, locals_dict)
             return result
+        except SyntaxError as e:
+            if context not in ("repl", "clipboard"):
+                raise Exception(f"Evaluation error: {e}")
         except Exception as e:
             raise Exception(f"Evaluation error: {e}")
+
+        # Only repl/clipboard reach here, and only after eval() raised a
+        # SyntaxError - try `expression` as a statement instead.
+        try:
+            exec(expression, globals_dict)
+        except Exception as e:
+            raise Exception(f"Evaluation error: {e}")
+
+        warning = _shadowed_local_warning(expression, locals_dict)
+        return warning if warning else ""
 
     def cleanup(self):
         """Clean up resources with enhanced cache management."""

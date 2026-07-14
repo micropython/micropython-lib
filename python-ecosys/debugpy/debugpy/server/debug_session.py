@@ -456,17 +456,23 @@ class DebugSession:
             self.channel.send_response(CMD_SET_VARIABLE, seq, success=False, message=str(e))
 
     def _handle_evaluate(self, seq, args):
-        """Handle evaluate request."""
+        """Handle evaluate request.
+
+        `context` selects the contract PdbAdapter.evaluate_expression applies:
+        `repl`/`clipboard` (Debug Console, "Copy as Expression") may execute a
+        statement when `expression` isn't a valid expression; `watch`/`hover`
+        and any other or absent context stay read-only eval.
+        """
         expression = args.get("expression", "")
         frame_id = args.get("frameId")
-        # context = args.get("context", "watch")
+        context = args.get("context", "watch")
         if not expression:
             self.channel.send_response(
                 CMD_EVALUATE, seq, success=False, message="No expression provided"
             )
             return
         try:
-            result = self.pdb.evaluate_expression(expression, frame_id)
+            result = self.pdb.evaluate_expression(expression, frame_id, context)
             self.channel.send_response(
                 CMD_EVALUATE, seq, body={"result": str(result), "variablesReference": 0}
             )
