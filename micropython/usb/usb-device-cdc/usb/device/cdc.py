@@ -107,18 +107,14 @@ class CDCInterface(io.IOBase, Interface):
         self.line_coding_cb = None
 
         self._line_state = 0  # DTR & RTS
-        # Set a default line coding of 115200/8N1
-        self._line_coding = bytearray(b"\x00\xc2\x01\x00\x00\x00\x08")
-
-        self._wb = ()  # Optional write Buffer (IN endpoint), set by CDC.init()
-        self._rb = ()  # Optional read Buffer (OUT endpoint), set by CDC.init()
-        self._timeout = 1000  # set from CDC.init() as well
+        self._line_coding = bytearray(7)  # Will be populated by .init()
 
         # one control interface endpoint, two data interface endpoints
         self.ep_c_in = self.ep_d_in = self.ep_d_out = None
 
         self._c_itf = None  # Number of control interface, data interface is one more
 
+        # The _timeout, _wb and _rb attributes will be set by this call to .init().
         self.init(**kwargs)
 
     def init(
