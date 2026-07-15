@@ -25,8 +25,8 @@ import time
 import usb.device
 from usb.device.cdc import CDCInterface
 
-cdc = CDCInterface()
-cdc.init(timeout=0)  # zero timeout makes this non-blocking, suitable for os.dupterm()
+# Zero timeout makes this non-blocking, suitable for os.dupterm().
+cdc = CDCInterface(timeout=0)
 
 # pass builtin_driver=True so that we get the built-in USB-CDC alongside,
 # if it's available.
