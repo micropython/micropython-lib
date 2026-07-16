@@ -24,6 +24,34 @@ _HOSTS = {
 
 _ALLOWED_MIP_URL_PREFIXES = const(("http://", "https://", "codeberg:", "github:", "gitlab:"))
 
+# NB: Must be in the correct order wrt sys.implementation._mpy
+MPY_ARCHITECTURES = [
+    None,
+    "x86",
+    "x64",
+    "armv6",
+    "armv6m",
+    "armv7m",
+    "armv7em",
+    "armv7emsp",
+    "armv7emdp",
+    "xtensa",
+    "xtensawin",
+    "rv32imc",
+    "rv64imc",
+]
+
+
+def _get_mpy_arch_version():
+    sys_mpy = sys.implementation._mpy
+    sys_arch = (sys_mpy >> 10) & 0x0F
+
+    mpy_major = sys_mpy & 0xFF
+    mpy_minor = sys_mpy >> 8 & 3
+    mpy_arch = MPY_ARCHITECTURES[sys_arch]
+
+    return mpy_arch, mpy_major, mpy_minor
+
 
 # This implements os.makedirs(os.dirname(path))
 def _ensure_path_exists(path):
@@ -74,6 +102,12 @@ def _check_exists(path, short_hash):
 
 
 def _rewrite_url(url, branch=None):
+    # substitute markers for native modules (if present)
+    mpy_arch, mpy_major, mpy_minor = _get_mpy_arch_version()
+    mpy_version = f"{mpy_major}.{mpy_minor}"
+    url = url.replace("{MPY_VERSION}", mpy_version)
+    url = url.replace("{MPY_ARCH}", mpy_arch)
+
     for provider, url_format in _HOSTS.items():
         if not url.startswith(provider):
             continue
