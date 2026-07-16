@@ -162,9 +162,19 @@ class MQTTClient:
         assert self.cb is not None, "Subscribe callback is not set"
         pkt = bytearray(b"\x82\0\0\0")
         self.pid += 1
-        struct.pack_into("!BH", pkt, 1, 2 + 2 + len(topic) + 1, self.pid)
+        pid = self.pid
+        sz = 2 + 2 + len(topic) + 1
+        assert sz < 2097152
+        i = 1
+        while sz > 0x7F:
+            pkt[i] = (sz & 0x7F) | 0x80
+            sz >>= 7
+            i += 1
+        pkt[i] = sz
         # print(hex(len(pkt)), hexlify(pkt, ":"))
-        self.sock.write(pkt)
+        self.sock.write(pkt, i + 1)
+        struct.pack_into("!H", pkt, 0, pid)
+        self.sock.write(pkt, 2)
         self._send_str(topic)
         self.sock.write(qos.to_bytes(1, "little"))
         while 1:
@@ -172,7 +182,7 @@ class MQTTClient:
             if op == 0x90:
                 resp = self.sock.read(4)
                 # print(resp)
-                assert resp[1] == pkt[2] and resp[2] == pkt[3]
+                assert resp[1] == pid >> 8 and resp[2] == (pid & 0xFF)
                 if resp[3] == 0x80:
                     raise MQTTException(resp[3])
                 return
@@ -180,14 +190,24 @@ class MQTTClient:
     def unsubscribe(self, topic):
         pkt = bytearray(b"\xa2\0\0\0")
         self.pid += 1
-        struct.pack_into("!BH", pkt, 1, 2 + 2 + len(topic), self.pid)
-        self.sock.write(pkt)
+        pid = self.pid
+        sz = 2 + 2 + len(topic)
+        assert sz < 2097152
+        i = 1
+        while sz > 0x7F:
+            pkt[i] = (sz & 0x7F) | 0x80
+            sz >>= 7
+            i += 1
+        pkt[i] = sz
+        self.sock.write(pkt, i + 1)
+        struct.pack_into("!H", pkt, 0, pid)
+        self.sock.write(pkt, 2)
         self._send_str(topic)
         while 1:
             op = self.wait_msg()
             if op == 0xB0:
                 resp = self.sock.read(3)
-                assert resp[1] == pkt[2] and resp[2] == pkt[3]
+                assert resp[1] == pid >> 8 and resp[2] == (pid & 0xFF)
                 return
 
     # Wait for a single incoming MQTT message and process it.
