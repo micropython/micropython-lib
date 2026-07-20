@@ -7,6 +7,16 @@ class MQTTException(Exception):
     pass
 
 
+def _encode_len(pkt, sz):
+    i = 1
+    while sz > 0x7F:
+        pkt[i] = (sz & 0x7F) | 0x80
+        sz >>= 7
+        i += 1
+    pkt[i] = sz
+    return i
+
+
 class MQTTClient:
     def __init__(
         self,
@@ -93,12 +103,7 @@ class MQTTClient:
             msg[6] |= 0x4 | (self.lw_qos & 0x1) << 3 | (self.lw_qos & 0x2) << 3
             msg[6] |= self.lw_retain << 5
 
-        i = 1
-        while sz > 0x7F:
-            premsg[i] = (sz & 0x7F) | 0x80
-            sz >>= 7
-            i += 1
-        premsg[i] = sz
+        i = _encode_len(premsg, sz)
 
         self.sock.write(premsg, i + 2)
         self.sock.write(msg)
@@ -130,12 +135,7 @@ class MQTTClient:
         if qos > 0:
             sz += 2
         assert sz < 2097152
-        i = 1
-        while sz > 0x7F:
-            pkt[i] = (sz & 0x7F) | 0x80
-            sz >>= 7
-            i += 1
-        pkt[i] = sz
+        i = _encode_len(pkt, sz)
         # print(hex(len(pkt)), hexlify(pkt, ":"))
         self.sock.write(pkt, i + 1)
         self._send_str(topic)
@@ -158,37 +158,33 @@ class MQTTClient:
         elif qos == 2:
             assert 0
 
-    def subscribe(self, topic, qos=0):
-        assert self.cb is not None, "Subscribe callback is not set"
-        pkt = bytearray(b"\x82\0\0\0")
+    def _send_subunsub(self, topic, typ, ack_op, ack_n, qos=0):
+        pkt = bytearray(4)
+        pkt[0] = typ
         self.pid += 1
-        struct.pack_into("!BH", pkt, 1, 2 + 2 + len(topic) + 1, self.pid)
-        # print(hex(len(pkt)), hexlify(pkt, ":"))
-        self.sock.write(pkt)
+        pid = self.pid
+        i = _encode_len(pkt, 4 + len(topic) + (ack_n > 3))
+        self.sock.write(pkt, i + 1)
+        struct.pack_into("!H", pkt, 0, pid)
+        self.sock.write(pkt, 2)
         self._send_str(topic)
-        self.sock.write(qos.to_bytes(1, "little"))
+        if ack_n > 3:
+            self.sock.write(bytes((qos,)))
         while 1:
             op = self.wait_msg()
-            if op == 0x90:
-                resp = self.sock.read(4)
-                # print(resp)
-                assert resp[1] == pkt[2] and resp[2] == pkt[3]
-                if resp[3] == 0x80:
+            if op == ack_op:
+                resp = self.sock.read(ack_n)
+                assert (resp[1] << 8 | resp[2]) == pid
+                if ack_n > 3 and resp[3] == 0x80:
                     raise MQTTException(resp[3])
                 return
 
+    def subscribe(self, topic, qos=0):
+        assert self.cb is not None, "Subscribe callback is not set"
+        self._send_subunsub(topic, 0x82, 0x90, 4, qos)
+
     def unsubscribe(self, topic):
-        pkt = bytearray(b"\xa2\0\0\0")
-        self.pid += 1
-        struct.pack_into("!BH", pkt, 1, 2 + 2 + len(topic), self.pid)
-        self.sock.write(pkt)
-        self._send_str(topic)
-        while 1:
-            op = self.wait_msg()
-            if op == 0xB0:
-                resp = self.sock.read(3)
-                assert resp[1] == pkt[2] and resp[2] == pkt[3]
-                return
+        self._send_subunsub(topic, 0xA2, 0xB0, 3)
 
     # Wait for a single incoming MQTT message and process it.
     # Subscribed messages are delivered to a callback previously
