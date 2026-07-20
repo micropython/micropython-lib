@@ -10,8 +10,9 @@ class TestUUID(unittest.TestCase):
 
     def test_len(self):
         u = uuid.uuid4()
-        self.assertEqual(len(str(u)), 36)
+        self.assertEqual(len(u.bytes), 16)
         self.assertEqual(len(u.hex), 32)
+        self.assertEqual(len(str(u)), 36)
 
     def test_repr(self):
         u = str(repr(uuid.uuid4()))

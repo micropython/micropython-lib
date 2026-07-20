@@ -5,11 +5,11 @@ class UUID:
     def __init__(self, bytes):
         if len(bytes) != 16:
             raise ValueError("bytes arg must be 16 bytes long")
-        self._bytes = bytes
+        self.bytes = bytes
 
     @property
     def hex(self):
-        return self._bytes.hex()
+        return self.bytes.hex()
 
     def __str__(self):
         h = self.hex
@@ -24,4 +24,4 @@ def uuid4():
     random = bytearray(os.urandom(16))
     random[6] = (random[6] & 0x0F) | 0x40
     random[8] = (random[8] & 0x3F) | 0x80
-    return UUID(bytes=random)
+    return UUID(bytes(random))
