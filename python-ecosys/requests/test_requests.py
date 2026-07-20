@@ -221,19 +221,28 @@ def test_content_length_via_content():
     socket.socket = lambda *a, **k: Socket()
 
 
-def test_chunked_response_raises():
+def test_chunked_response_via_content():
     socket.socket = lambda *a, **k: Socket(
-        read_data=b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n0\r\n\r\n"
+        read_data=b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nhello\r\n6\r\n world\r\n0\r\n\r\n"
     )
-    raised = False
-    try:
-        requests.request("GET", "http://example.com")
-    except ValueError as e:
-        raised = True
-        if "Unsupported" not in str(e):
-            raise
-    if not raised:
-        raise AssertionError("expected ValueError for chunked response")
+    response = requests.request("GET", "http://example.com")
+    assert response.content == b"hello world"
+    socket.socket = lambda *a, **k: Socket()
+
+
+def test_chunked_response_readinto():
+    socket.socket = lambda *a, **k: Socket(
+        read_data=b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n3\r\nabc\r\n4\r\ndefg\r\n0\r\n\r\n"
+    )
+    response = requests.request("GET", "http://example.com")
+    buf = bytearray(2)
+    result = b""
+    while True:
+        n = response.raw.readinto(buf)
+        if n == 0:
+            break
+        result += buf if n == 2 else buf[:n]
+    assert result == b"abcdefg"
     socket.socket = lambda *a, **k: Socket()
 
 
@@ -325,7 +334,8 @@ test_overwrite_post_json_headers()
 test_overwrite_post_chunked_data_headers()
 test_do_not_modify_headers_argument()
 test_content_length_via_content()
-test_chunked_response_raises()
+test_chunked_response_via_content()
+test_chunked_response_readinto()
 test_raw_open_before_content()
 test_raw_incremental_content_length()
 test_raw_readinto_content_length()
