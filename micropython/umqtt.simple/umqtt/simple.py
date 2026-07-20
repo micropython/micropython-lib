@@ -7,6 +7,16 @@ class MQTTException(Exception):
     pass
 
 
+def _encode_len(pkt, sz):
+    i = 1
+    while sz > 0x7F:
+        pkt[i] = (sz & 0x7F) | 0x80
+        sz >>= 7
+        i += 1
+    pkt[i] = sz
+    return i
+
+
 class MQTTClient:
     def __init__(
         self,
@@ -93,12 +103,7 @@ class MQTTClient:
             msg[6] |= 0x4 | (self.lw_qos & 0x1) << 3 | (self.lw_qos & 0x2) << 3
             msg[6] |= self.lw_retain << 5
 
-        i = 1
-        while sz > 0x7F:
-            premsg[i] = (sz & 0x7F) | 0x80
-            sz >>= 7
-            i += 1
-        premsg[i] = sz
+        i = _encode_len(premsg, sz)
 
         self.sock.write(premsg, i + 2)
         self.sock.write(msg)
@@ -130,12 +135,7 @@ class MQTTClient:
         if qos > 0:
             sz += 2
         assert sz < 2097152
-        i = 1
-        while sz > 0x7F:
-            pkt[i] = (sz & 0x7F) | 0x80
-            sz >>= 7
-            i += 1
-        pkt[i] = sz
+        i = _encode_len(pkt, sz)
         # print(hex(len(pkt)), hexlify(pkt, ":"))
         self.sock.write(pkt, i + 1)
         self._send_str(topic)
@@ -163,26 +163,19 @@ class MQTTClient:
         pkt[0] = typ
         self.pid += 1
         pid = self.pid
-        sz = 4 + len(topic) + (0 if qos is None else 1)
-        assert sz < 2097152
-        i = 1
-        while sz > 0x7F:
-            pkt[i] = (sz & 0x7F) | 0x80
-            sz >>= 7
-            i += 1
-        pkt[i] = sz
+        i = _encode_len(pkt, 4 + len(topic) + (qos != None))
         self.sock.write(pkt, i + 1)
         struct.pack_into("!H", pkt, 0, pid)
         self.sock.write(pkt, 2)
         self._send_str(topic)
-        if qos is not None:
-            self.sock.write(qos.to_bytes(1, "little"))
+        if qos != None:
+            self.sock.write(bytes((qos,)))
         while 1:
             op = self.wait_msg()
             if op == ack_op:
                 resp = self.sock.read(ack_n)
-                assert resp[1] == pid >> 8 and resp[2] == (pid & 0xFF)
-                if ack_n == 4 and resp[3] == 0x80:
+                assert (resp[1] << 8 | resp[2]) == pid
+                if ack_n > 3 and resp[3] == 0x80:
                     raise MQTTException(resp[3])
                 return
 
