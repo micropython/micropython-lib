@@ -158,17 +158,17 @@ class MQTTClient:
         elif qos == 2:
             assert 0
 
-    def _send_subunsub(self, topic, typ, ack_op, ack_n, qos=None):
+    def _send_subunsub(self, topic, typ, ack_op, ack_n, qos=0):
         pkt = bytearray(4)
         pkt[0] = typ
         self.pid += 1
         pid = self.pid
-        i = _encode_len(pkt, 4 + len(topic) + (qos != None))
+        i = _encode_len(pkt, 4 + len(topic) + (ack_n > 3))
         self.sock.write(pkt, i + 1)
         struct.pack_into("!H", pkt, 0, pid)
         self.sock.write(pkt, 2)
         self._send_str(topic)
-        if qos != None:
+        if ack_n > 3:
             self.sock.write(bytes((qos,)))
         while 1:
             op = self.wait_msg()
