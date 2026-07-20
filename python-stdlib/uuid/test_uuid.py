@@ -15,9 +15,10 @@ class TestUUID(unittest.TestCase):
         self.assertEqual(len(str(u)), 36)
 
     def test_repr(self):
-        u = str(repr(uuid.uuid4()))
-        self.assertTrue(u.startswith("<UUID"))
-        self.assertTrue(u.endswith(">"))
+        u = repr(uuid.uuid4())
+        self.assertEqual(len(u), 44)
+        self.assertTrue(u.startswith("UUID('"))
+        self.assertTrue(u.endswith("')"))
 
     def test_constructor(self):
         u1 = uuid.uuid4()

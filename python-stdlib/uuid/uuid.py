@@ -16,7 +16,7 @@ class UUID:
         return "-".join((h[0:8], h[8:12], h[12:16], h[16:20], h[20:32]))
 
     def __repr__(self):
-        return "<UUID: %s>" % str(self)
+        return "UUID('{}')".format(self)
 
 
 def uuid4():
