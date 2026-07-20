@@ -112,6 +112,15 @@ function ci_package_tests_run {
         if [ $? -ne 0 ]; then false; return; fi
     done
 
+    # unexpected_success.py isn't named "test_*.py" so discovery skips it; run it
+    # explicitly and assert an unexpected success exits non-zero (like CPython).
+    echo "Running test python-stdlib/unittest/tests/unexpected_success.py (expecting failure)"
+    if (cd python-stdlib/unittest/tests && "${MICROPYTHON}" -m unittest unexpected_success.py); then
+        echo "Error: an unexpected success did not produce a non-zero exit code"
+        false
+        return
+    fi
+
     (cd micropython/usb/usb-device && "${MICROPYTHON}" -m tests.test_core_buffer)
     if [ $? -ne 0 ]; then false; return; fi
 
