@@ -92,6 +92,7 @@ function ci_package_tests_run {
     done
 
     for path in \
+        micropython/uaiohttpclient \
         micropython/ucontextlib \
         python-stdlib/colorsys \
         python-stdlib/contextlib \
