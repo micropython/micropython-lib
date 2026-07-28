@@ -65,7 +65,7 @@ async def request_raw(method, url):
         path,
         host,
     )
-    await writer.awrite(query.encode("latin-1"))
+    await writer.awrite(query.encode("utf8"))
     return reader
 
 
@@ -87,7 +87,7 @@ async def request(method, url):
                 if b"chunked" in line:
                     chunked = True
             elif line.startswith(b"Location:"):
-                url = line.rstrip().split(None, 1)[1].decode("latin-1")
+                url = line.rstrip().split(None, 1)[1].decode("utf8")
 
         if 301 <= status <= 303:
             redir_cnt += 1
