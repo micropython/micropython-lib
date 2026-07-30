@@ -125,10 +125,11 @@ class ClientSession:
                 if not line or line == b"\r\n":
                     break
                 _headers.append(line)
-                if line.startswith(b"Transfer-Encoding:"):
+                lowerl = line.lower()
+                if lowerl.startswith(b"transfer-encoding:"):
                     if b"chunked" in line:
                         chunked = True
-                elif line.startswith(b"Location:"):
+                elif lowerl.startswith(b"location:"):
                     url = line.rstrip().split(None, 1)[1].decode()
 
             if 301 <= status <= 303:
