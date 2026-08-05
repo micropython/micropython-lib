@@ -7,21 +7,31 @@ from .common.constants import DEFAULT_HOST, DEFAULT_PORT
 from .server.debug_session import DebugSession
 
 _debug_session = None
+# Bound-but-not-yet-accepted socket, held between listen() and the accept that
+# wait_for_client() performs.
+_listener = None
 
 
 def listen(port=DEFAULT_PORT, host=DEFAULT_HOST):
-    """Start listening for debugger connections.
+    """Bind a listening socket and return the address it is bound to.
+
+    Returns as soon as the socket is bound, WITHOUT waiting for a client, so
+    the caller can publish the endpoint that a client then connects to. The
+    accept and the `initialize` handshake happen in `wait_for_client()`. This
+    matches CPython debugpy, where `listen()` reports the endpoint and
+    `wait_for_client()` blocks.
 
     Args:
-        port: Port number to listen on (default: 5678)
+        port: Port number to listen on, or 0 to let the system choose
+              (default: 5678)
         host: Host address to bind to (default: "127.0.0.1")
 
     Returns:
-        (host, port) tuple of the actual listening address
+        (host, port) tuple of the actual bound address
     """
-    global _debug_session
+    global _listener
 
-    if _debug_session is not None:
+    if _listener is not None or _debug_session is not None:
         raise RuntimeError("Already listening for debugger")
 
     # Create listening socket
@@ -47,25 +57,42 @@ def listen(port=DEFAULT_PORT, host=DEFAULT_HOST):
     except Exception:
         pass
     if requested_port == 0 and port == 0:
-        # The caller asked for an OS-assigned port and this port has no way
-        # to report what the OS actually picked. Advertising port 0 in the
-        # handshake would tell the client to connect to a port that can
-        # never accept a connection, so fall back to the documented default
-        # instead - it is at least a real, well-known port to try.
-        port = DEFAULT_PORT
+        # Callers act on the endpoint this returns, so reporting a port
+        # nothing can connect to would be worse than refusing: substituting
+        # DEFAULT_PORT here would advertise an address the socket is not
+        # bound to. Ask for an explicit port on a target whose getsockname()
+        # cannot report the OS-assigned one.
+        listener.close()
+        raise OSError(
+            "port=0 needs getsockname() to report the assigned port, which "
+            "this target does not implement; pass an explicit port"
+        )
 
+    _listener = listener
     print(f"Debugpy listening on {host}:{port}")
+    return (host, port)
 
-    # Wait for connection
+
+def _accept_and_initialize():
+    """Accept the pending connection and handle the client's `initialize`.
+
+    Split out of `listen()` so the endpoint can be published before a client
+    exists. Returns True once a session is ready.
+    """
+    global _debug_session, _listener
+
+    if _listener is None:
+        print("[DAP] no listening socket; call listen() first")
+        return False
+
+    listener, _listener = _listener, None
     client_sock = None
     try:
         client_sock, client_addr = listener.accept()
         print(f"Debugger connected from {format_client_addr(client_addr)}")
 
-        # Create debug session
         _debug_session = DebugSession(client_sock)
 
-        # Handle just the initialize request, then return immediately
         print("[DAP] Waiting for initialize request...")
         init_message = _debug_session.channel.recv_message()
         if init_message and init_message.get("command") == "initialize":
@@ -78,19 +105,19 @@ def listen(port=DEFAULT_PORT, host=DEFAULT_HOST):
         _debug_session.channel.sock.settimeout(0.001)
 
         print("[DAP] Debug session ready - all other messages will be handled in trace function")
+        return True
 
     except Exception as e:
         print(f"[DAP] Connection error: {e}")
         if client_sock:
             client_sock.close()
-            _debug_session = None
+        _debug_session = None
+        return False
     finally:
         # The accepted client socket is independent of the listener; closing
         # the listener does not affect it. This is a single-connection server,
         # so stop listening once the client is accepted.
         listener.close()
-
-    return (host, port)
 
 
 def format_client_addr(client_addr):
@@ -116,17 +143,18 @@ def format_client_addr(client_addr):
 
 
 def wait_for_client(timeout_s=None):
-    """Block until the DAP client has finished configuring (configurationDone).
+    """Block until a client has attached and finished configuring.
 
-    Replaces a fixed sleep after debug_this_thread(): breakpoints the client
-    sets before configurationDone are honoured because this drains the socket
-    the whole time it waits. Returns True once configurationDone arrives,
-    False after a bounded timeout (logged, not silent) or if no session is
-    listening.
+    Accepts the connection and handles `initialize` (both deferred by
+    `listen()` so the endpoint can be published first), then waits for
+    `configurationDone`. Breakpoints the client sets before then are honoured
+    because this drains the socket the whole time it waits. Returns True once
+    configurationDone arrives, False after a bounded timeout (logged, not
+    silent) or if nothing is listening.
     """
     global _debug_session
-    if _debug_session is None:
-        print("[DAP] wait_for_client: no debug session is listening, nothing to wait for")
+    if _debug_session is None and not _accept_and_initialize():
+        print("[DAP] wait_for_client: nothing is listening, nothing to wait for")
         return False
     if timeout_s is None:
         return _debug_session.wait_for_client()
