@@ -65,6 +65,7 @@ class DebugSession:
         self.stepping = False
         self.paused = False
         self.configuration_done = False
+        self._pumping = False
         # Probed once at session start; never inferred from a build/variant name.
         self.capabilities = self.probe_capabilities()
         self.pdb.capabilities = self.capabilities
@@ -201,7 +202,19 @@ class DebugSession:
             print(f"[DAP] Initialization error: {e}")
 
     def process_pending_messages(self):
-        """Process any pending DAP messages without blocking."""
+        """Process any pending DAP messages without blocking.
+
+        Not re-entered: the trace function calls this on entry to every new
+        frame, so handling a message here can call it again. A nested call
+        must not touch the socket timeout, because its `finally` would put the
+        socket back into blocking mode underneath the outer loop, whose next
+        recv() then waits for a message the client will not send until it has
+        seen an event this loop is what produces. MicroPython sockets have no
+        gettimeout(), so the nesting is tracked rather than the timeout saved.
+        """
+        if self._pumping:
+            return
+        self._pumping = True
         try:
             # Set socket to non-blocking mode for message processing
             self.channel.sock.settimeout(0.001)  # Very short timeout
@@ -218,6 +231,7 @@ class DebugSession:
         finally:
             # Reset to blocking mode
             self.channel.sock.settimeout(None)
+            self._pumping = False
 
     def _handle_message(self, message):
         """Handle incoming DAP messages."""
