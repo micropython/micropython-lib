@@ -58,6 +58,18 @@ def test_simple_get():
     ), format_message(response)
 
 
+def test_get_query_anchor():
+    response = requests.request("GET", "http://example.com?query")
+    assert response.raw._write_buffer.getvalue() == (
+        b"GET /?query HTTP/1.1\r\nConnection: close\r\nHost: example.com\r\n\r\n"
+    ), format_message(response)
+
+    response = requests.request("GET", "http://example.com#anchor")
+    assert response.raw._write_buffer.getvalue() == (
+        b"GET /#anchor HTTP/1.1\r\nConnection: close\r\nHost: example.com\r\n\r\n"
+    ), format_message(response)
+
+
 def test_get_auth():
     response = requests.request(
         "GET", "http://example.com", auth=("test-username", "test-password")
@@ -312,6 +324,7 @@ def test_redirect_relative():
 
 
 test_simple_get()
+test_get_query_anchor()
 test_get_auth()
 test_get_custom_header()
 test_post_json()
