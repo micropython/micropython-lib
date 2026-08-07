@@ -347,17 +347,29 @@ class PdbAdapter:
         self.paused = True
 
     def wait_for_continue(self):
-        """Wait for continue command (simplified implementation)."""
-        # In a real implementation, this would block until continue
-        # For MicroPython, we'll use a simple polling approach
+        """Busy-poll until a continue/step command arrives, or the client is gone.
+
+        No server thread services the socket, so this loop is what drains it
+        while the target sits stopped. If the channel disappears (bridge
+        killed, board reset) while stopped, waiting forever would wedge the
+        target - `sys.settrace(None)` is dropped and the loop exits so the
+        target resumes and the process/session can end cleanly instead of
+        requiring a power cycle.
+        """
         self.continue_event = False
 
-        # Process DAP messages while waiting for continue
         self._debug_print("[PDB] Waiting for continue command...")
         while not self.continue_event:
-            # Process any pending DAP messages (scopes, variables, etc.)
-            if hasattr(self, "_debug_session"):
-                self._debug_session.process_pending_messages()  # type: ignore[arg-type]
+            session = getattr(self, "_debug_session", None)
+            if session is None:
+                break
+            if not session.connected or session.channel.closed:
+                self._debug_print("[PDB] wait_for_continue: connection lost, resuming target")
+                if hasattr(sys, "settrace"):
+                    sys.settrace(None)
+                self.continue_event = True
+                break
+            session.process_pending_messages()  # type: ignore[arg-type]
             time.sleep(0.01)
 
     def get_stack_trace(self):

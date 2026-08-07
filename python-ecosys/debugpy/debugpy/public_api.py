@@ -4,6 +4,7 @@ import socket
 import struct
 import sys
 from .common.constants import DEFAULT_HOST, DEFAULT_PORT
+from .common.stream_transport import StreamTransport
 from .server.debug_session import DebugSession
 
 _debug_session = None
@@ -73,6 +74,26 @@ def listen(port=DEFAULT_PORT, host=DEFAULT_HOST):
     return (host, port)
 
 
+def listen_stream(reader, writer=None):
+    """Start a debug session directly on an already-open stream, no TCP.
+
+    For a board with a second CDC interface dedicated to DAP: `reader`/`writer`
+    are that interface's stream (the same object for both if it is one
+    read/write file, as `open(dev, "r+b")` gives on the unix port). Unlike
+    `listen()`, the stream is already connected - there is no bind/accept
+    step, so `wait_for_client()` goes straight to the initialize/
+    configurationDone handshake.
+    """
+    global _listener
+
+    if _listener is not None or _debug_session is not None:
+        raise RuntimeError("Already listening for debugger")
+
+    _listener = StreamTransport(reader, writer)
+    print("Debugpy listening on stream")
+    return _listener
+
+
 def _accept_and_initialize():
     """Accept the pending connection and handle the client's `initialize`.
 
@@ -86,10 +107,17 @@ def _accept_and_initialize():
         return False
 
     listener, _listener = _listener, None
+    # A stream transport (listen_stream()) is already connected - there is no
+    # separate client socket to accept, and no separate listener to close off
+    # once accepted (it IS the connection).
+    is_stream = isinstance(listener, StreamTransport)
     client_sock = None
     try:
-        client_sock, client_addr = listener.accept()
-        print(f"Debugger connected from {format_client_addr(client_addr)}")
+        if is_stream:
+            client_sock = listener
+        else:
+            client_sock, client_addr = listener.accept()
+            print(f"Debugger connected from {format_client_addr(client_addr)}")
 
         _debug_session = DebugSession(client_sock)
 
@@ -109,15 +137,16 @@ def _accept_and_initialize():
 
     except Exception as e:
         print(f"[DAP] Connection error: {e}")
-        if client_sock:
+        if client_sock is not None:
             client_sock.close()
         _debug_session = None
         return False
     finally:
-        # The accepted client socket is independent of the listener; closing
-        # the listener does not affect it. This is a single-connection server,
-        # so stop listening once the client is accepted.
-        listener.close()
+        # This is a single-connection server, so stop listening once the
+        # client is accepted. Not for a stream transport: it IS the client
+        # socket, still needed by the session this just started.
+        if not is_stream:
+            listener.close()
 
 
 def format_client_addr(client_addr):
