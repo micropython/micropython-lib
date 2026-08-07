@@ -14,6 +14,7 @@ from .public_api import (
     get_capabilities,
     is_client_connected,
     listen,
+    listen_stream,
     wait_for_client,
 )
 from .common.constants import DEFAULT_HOST, DEFAULT_PORT
@@ -27,5 +28,6 @@ __all__ = [
     "get_capabilities",
     "is_client_connected",
     "listen",
+    "listen_stream",
     "wait_for_client",
 ]

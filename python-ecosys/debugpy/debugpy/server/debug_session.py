@@ -81,20 +81,37 @@ class DebugSession:
         return sys.platform not in ("linux")  # to be expanded
 
     @staticmethod
+    def _probe_serial_dap():
+        """Whether this board exposes a second CDC interface dedicated to DAP.
+
+        No port implements the board-specific detection yet (which TinyUSB
+        CDC instance is DAP's, if any, is per-board configuration - e.g. rp2's
+        second `machine.USBDevice` CDC), so this always reports `False`; a
+        board's own boot script never gets to choose `listen_stream()` over
+        `listen()` on that basis until a real check lands here. Kept as its
+        own probe (mirroring `f_back`/`save_names`/`set_local` above) so the
+        one place a board-specific check would go is unambiguous, and so the
+        capability is always present in `caps` rather than only sometimes.
+        """
+        return False
+
+    @staticmethod
     def probe_capabilities():
         """Probe what the running firmware actually supports.
 
-        Returns a dict with at least `settrace`, `save_names`, `set_local` and
-        `f_back`, each derived by exercising the real interpreter - never by
-        reading a build/variant name, which does not reliably reflect what a
-        given firmware image supports (see BACKGROUND.md). Safe to call on
-        both the unix port and bare-metal builds; never raises.
+        Returns a dict with at least `settrace`, `save_names`, `set_local`,
+        `f_back` and `serial_dap`, each derived by exercising the real
+        interpreter - never by reading a build/variant name, which does not
+        reliably reflect what a given firmware image supports (see
+        BACKGROUND.md). Safe to call on both the unix port and bare-metal
+        builds; never raises.
         """
         caps = {
             "settrace": hasattr(sys, "settrace"),
             "f_back": False,
             "save_names": False,
             "set_local": False,
+            "serial_dap": DebugSession._probe_serial_dap(),
         }
         if not caps["settrace"]:
             return caps
