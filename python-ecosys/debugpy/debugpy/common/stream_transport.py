@@ -15,10 +15,11 @@ class StreamTransport:
 
     `recv` raises `OSError(11)` (EAGAIN) when no data has arrived within the
     current timeout, matching a non-blocking socket, and returns `b""` once
-    the stream is at EOF. `send` raises `OSError(110)` (ETIMEDOUT) if the
-    writer won't take the rest of the data within the current timeout, rather
-    than returning having written only part of it - a short write here would
-    desync `messaging.py`'s Content-Length framing with no way to resync.
+    the stream is at EOF. `send` returns the byte count a socket would, but
+    only ever the whole buffer: it raises `OSError(110)` (ETIMEDOUT) if the
+    writer won't take the rest of the data within the current timeout rather
+    than reporting a partial write, since a truncated frame would desync
+    `messaging.py`'s Content-Length framing with no way to resync.
     `settimeout` is mutated repeatedly at runtime by
     `public_api.py`/`debug_session.py` and governs both directions, matching
     a real socket; `poll(ms)` is called fresh on every `recv`/`send` rather
@@ -93,6 +94,7 @@ class StreamTransport:
             written = self._writer.write(mv[off:])
             if written:
                 off += written
+        return total  # the socket contract: how many bytes went out
 
     def close(self):
         try:

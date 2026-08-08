@@ -1,7 +1,23 @@
 """JSON message handling for DAP protocol."""
 
 import json
+import time
+
 from .constants import MSG_TYPE_REQUEST, MSG_TYPE_RESPONSE, MSG_TYPE_EVENT
+
+# "Nothing to read / no room to write right now" on a socket carrying a
+# timeout, which this channel always does (see DebugSession's settimeout
+# calls). Which errno says that depends on the network stack, not on the
+# situation: the unix port raises EAGAIN, and lwIP - every WiFi board -
+# raises ETIMEDOUT once the timeout elapses. None of them means the peer went
+# away, so none may close the channel. A stack whose errno is missing here
+# drops the session on its first idle poll, which is immediately.
+_WOULD_BLOCK = (11, 35, 110)  # EAGAIN, EWOULDBLOCK, ETIMEDOUT
+
+# How long a single DAP frame may take to drain into the socket before the
+# peer is treated as gone. Generous: it is a stall budget, not a latency
+# target, and the loop returns as soon as the bytes are written.
+_SEND_DEADLINE_MS = 5000
 
 
 class JsonMessageChannel:
@@ -47,10 +63,41 @@ class JsonMessageChannel:
         content = json_str.encode("utf-8")
         header = f"Content-Length: {len(content)}\r\n\r\n".encode("utf-8")
 
-        try:
-            self.sock.send(header + content)
-        except OSError:
-            self.closed = True
+        self._send_all(header + content)
+
+    def _send_all(self, data):
+        """Write every byte of one frame, or close the channel trying.
+
+        `sock.send()` is not `sendall()`: it may accept a prefix and return
+        the count, and on a socket carrying a timeout it reports a full
+        transmit buffer as an error instead of blocking. Either one truncates
+        a DAP frame mid-`Content-Length`, which desynchronises the stream for
+        the rest of the session rather than failing visibly. Both are ordinary
+        on a board - a `variables` response is easily larger than lwIP's
+        window - so the write is driven to completion here.
+
+        `sendall()` is not the answer: MicroPython does not support it on a
+        socket with a timeout, which is the only kind this channel has.
+        """
+        view = memoryview(data)
+        sent = 0
+        start = time.ticks_ms()
+        while sent < len(view):
+            try:
+                sent += self.sock.send(view[sent:])
+            except OSError as e:
+                if getattr(e, "errno", None) not in _WOULD_BLOCK:
+                    self.closed = True
+                    return
+                if time.ticks_diff(time.ticks_ms(), start) > _SEND_DEADLINE_MS:
+                    self._debug_print(
+                        "[DAP] send stalled with {} of {} bytes written; closing".format(
+                            sent, len(view)
+                        )
+                    )
+                    self.closed = True
+                    return
+                time.sleep(0.001)
 
     def send_request(self, command, **kwargs):
         """Send a request message."""
@@ -106,13 +153,13 @@ class JsonMessageChannel:
         try:
             data = self.sock.recv(4096)
             if not data:
-                # A truly empty read (as opposed to EAGAIN/EWOULDBLOCK,
+                # A truly empty read (as opposed to a _WOULD_BLOCK errno,
                 # handled below) means the peer closed the connection.
                 self.closed = True
                 return None
             self._recv_buffer += data
         except OSError as e:
-            if not (hasattr(e, "errno") and e.errno in (11, 35)):  # EAGAIN, EWOULDBLOCK
+            if getattr(e, "errno", None) not in _WOULD_BLOCK:
                 self.closed = True
                 return None
             # No new data available right now - fall through and try to
