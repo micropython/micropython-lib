@@ -13,6 +13,7 @@ from ..common.constants import (
     CMD_LAUNCH,
     CMD_NEXT,
     CMD_PAUSE,
+    CMD_RESTART,
     CMD_SCOPES,
     CMD_SET_BREAKPOINTS,
     CMD_SET_VARIABLE,
@@ -24,6 +25,7 @@ from ..common.constants import (
     CMD_VARIABLES,
     EVENT_CONTINUED,
     EVENT_INITIALIZED,
+    EVENT_OUTPUT,
     EVENT_STOPPED,
     EVENT_TERMINATED,
     STOP_REASON_BREAKPOINT,
@@ -37,6 +39,24 @@ from ..common.constants import (
 )
 from ..common.messaging import JsonMessageChannel
 from .pdb_adapter import PdbAdapter
+
+
+class RestartRequest(BaseException):
+    """Raised inside the debugged program to unwind it back to its launcher.
+
+    A restart cannot wait for the target to return - the ordinary embedded
+    shape is a main loop that never does - and nothing else on the device can
+    interrupt it: there is no second thread, and the DAP message pump runs
+    inside the trace function, where raising would kill the program with an
+    error belonging to the debug channel. A deliberate raise from the trace
+    function is the one remaining mechanism, and it is how CPython debuggers
+    unwind a target too.
+
+    Derived from BaseException so a target's own `except Exception` does not
+    swallow the unwind and leave the restart silently undone. A target that
+    catches BaseException (or uses a bare `except:`) can still swallow it;
+    there is no mechanism behind that, only documentation.
+    """
 
 
 def _is_placeholder_local_name(name):
@@ -86,7 +106,7 @@ def _probe_local_names(frame):
 class DebugSession:
     """Manages a debugging session with a DAP client."""
 
-    def __init__(self, client_socket, is_stream):
+    def __init__(self, client_socket, is_stream, restart_supported=False):
         self.debug_logging = False  # Initialize first
         self.channel = JsonMessageChannel(client_socket, self._debug_print)
         self.pdb = PdbAdapter()
@@ -99,6 +119,11 @@ class DebugSession:
         self.paused = False
         self.configuration_done = False
         self._pumping = False
+        # Whether the launcher can actually re-run the target. Only it knows,
+        # so a session never assumes it: `restart` is refused, and
+        # supportsRestartRequest not advertised, unless it was told otherwise.
+        self.restart_supported = restart_supported
+        self.restart_requested = False
         # is_stream comes from the caller (_accept_and_initialize already
         # knows which kind of channel client_socket is) rather than being
         # re-derived here, so there is exactly one place that decides it.
@@ -355,6 +380,8 @@ class DebugSession:
                 self._handle_set_variable(seq, args)
             elif command == CMD_EVALUATE:
                 self._handle_evaluate(seq, args)
+            elif command == CMD_RESTART:
+                self._handle_restart(seq, args)
             elif command == CMD_DISCONNECT:
                 self._handle_disconnect(seq, args)
             elif command == CMD_CONFIGURATION_DONE:
@@ -391,7 +418,10 @@ class DebugSession:
             # "supportsModulesRequest": False,
             # "additionalModuleColumns": [],
             # "supportedChecksumAlgorithms": [],
-            # "supportsRestartRequest": False,
+            # Advertised only when the launcher runs the target in a loop it
+            # can re-enter; a client that sees this offers a restart button
+            # and expects the debuggee to come back, not the session to end.
+            "supportsRestartRequest": self.restart_supported,
             # "supportsExceptionOptions": False,
             # "supportsValueFormattingOptions": False,
             # "supportsExceptionInfoRequest": False,
@@ -566,6 +596,90 @@ class DebugSession:
         except Exception as e:
             self.channel.send_response(CMD_EVALUATE, seq, success=False, message=str(e))
 
+    def _handle_restart(self, seq, args):
+        """Handle restart request: unwind the target so the launcher re-runs it.
+
+        The session outlives the restart deliberately. Breakpoints live in
+        `self.pdb`, and a client that sent `restart` rather than reconnecting
+        does not re-send them, so keeping the one session alive is what makes
+        them still bind on the next run - and it costs no re-attach round trip.
+
+        Only the flag is set here. Whatever the target is doing, it is doing it
+        somewhere below this call: this runs inside the trace function, so the
+        unwind happens where that returns to, not here.
+        """
+        if not self.restart_supported:
+            self.channel.send_response(
+                CMD_RESTART,
+                seq,
+                success=False,
+                message="the target was not launched in a loop that can re-run it",
+            )
+            return
+
+        self.restart_requested = True
+        # A target stopped at a breakpoint is inside wait_for_continue(); it has
+        # to be let go before it can be unwound. Stepping is cleared with it, so
+        # a pending step does not stop the target again on its way out.
+        self.stepping = False
+        self.pdb.step_mode = None
+        self.pdb.paused = False
+        self.pdb.continue_event = True
+
+        self.channel.send_response(CMD_RESTART, seq)
+        # The client last heard `stopped`; without this its UI stays stopped on
+        # a frame that is about to cease to exist.
+        self.channel.send_event(EVENT_CONTINUED, threadId=self.thread_id, allThreadsContinued=True)
+
+    def _raise_if_restarting(self):
+        """Unwind the target if a restart arrived, clearing the request.
+
+        Cleared here, not by the launcher, so the exception itself is the whole
+        signal: one restart unwinds one run, and a second request during the
+        unwind is a fresh one rather than a repeat of this.
+        """
+        if self.restart_requested:
+            self.restart_requested = False
+            raise RestartRequest
+
+    def console(self, text):
+        """Show `text` in the client's debug console (a DAP `output` event).
+
+        The only route a target's own notes have to the user on a transport
+        where device stdout never reaches the host: a mounted serial session's
+        filesystem pump discards everything the device prints. Run-boundary
+        markers go through here as well as to stdout so they are visible on
+        every transport, not just the ones with a readable console.
+        """
+        self.channel.send_event(EVENT_OUTPUT, category="console", output=text)
+
+    def wait_for_restart(self):
+        """Pump DAP messages between runs, until a restart or the client leaves.
+
+        A target that returned normally is no longer generating trace events, so
+        nothing would service the socket and a restart request would sit unread
+        in it. Returns True if a restart arrived, False if the client went away,
+        in which case there is nothing left to restart for.
+
+        `terminated` is deliberately not what marks the end of a run: a client
+        that sees it tears the session down, which is the opposite of what loop
+        mode exists for. An `output` event says the same thing without ending
+        anything, and is the only notice a client gets that the program has
+        finished and a restart is what comes next.
+
+        Callers must not be traced while they wait here: a restart handled by
+        the pump below would otherwise unwind the caller itself.
+        """
+        self.console("Target finished; waiting for a restart request.\n")
+        while True:
+            if self.restart_requested:
+                self.restart_requested = False
+                return True
+            if not self.connected or self.channel.closed:
+                return False
+            self.process_pending_messages()
+            time.sleep(0.01)
+
     def _handle_disconnect(self, seq, args):
         """Handle disconnect request."""
         self.channel.send_response(CMD_DISCONNECT, seq)
@@ -616,6 +730,9 @@ class DebugSession:
         # Process any pending DAP messages frequently
 
         self.process_pending_messages()
+        # Before any breakpoint work: a restart that arrived above wants this
+        # program gone, not stopped somewhere else on the way out.
+        self._raise_if_restarting()
         # Handle breakpoints and stepping
         if self.pdb.should_stop(frame, event, arg):
             self._send_stopped_event(
@@ -627,6 +744,8 @@ class DebugSession:
             )
             # Wait for continue command
             self.pdb.wait_for_continue()
+            # A restart is one of the things that ends that wait.
+            self._raise_if_restarting()
 
         # The trace function is invoked (with event set to 'call') whenever a new local scope is entered;
         # it should return a reference to a local trace function to be used for the new scope,
