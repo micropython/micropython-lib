@@ -202,38 +202,46 @@ class PdbAdapter:
             raise RuntimeError("sys.settrace not available")
 
     def _filename_as_debugee(self, path: str):
+        """Translate an IDE-side (vscode) path to the runtime's own path.
+
+        The first mapping whose `vscode_path` names `path` itself or a
+        directory containing it wins - matched on a path-separator boundary,
+        not a bare string prefix, so a sibling directory that merely shares
+        the root's name (`/home/dev/src-old` against root `/home/dev/src`)
+        is left untranslated instead of being rewritten into a device path
+        that cannot exist. First-match-wins makes this the exact inverse of
+        `_filename_as_debugger` below.
+        """
         # check if we have a 1:1 file mapping for this path
         if self.file_mappings.get(path):
             return self.file_mappings[path]
-        # Check if we have a folder mapping for this path
         for runtime_path, vscode_path in self.path_mappings:
-            if path.startswith(vscode_path):
-                path = path.replace(vscode_path, runtime_path, 1)
+            if path == vscode_path or path.startswith(vscode_path + "/"):
+                path = runtime_path + path[len(vscode_path) :]
                 if path.startswith("//"):
                     path = path[1:]
+                return path
         # If no mapping found, return the original path
         return path
 
     def _filename_as_debugger(self, path: str):
-        """Convert a file path to the debugger's expected format."""
+        """Translate a runtime path (`frame.f_code.co_filename`) to the IDE's path.
+
+        Inverse of `_filename_as_debugee`: same first-match, boundary-aware
+        rule, applied in the other direction.
+        """
         path = path or ""
         if not path:
             return path
         if path.startswith("<"):
             # Special case for <stdin> or similar
             return path
-        # Check if we have a 1:1 file mapping for this path
         for runtime_path, vscode_path in self.path_mappings:
-            if path.startswith(runtime_path):
-                path = path.replace(runtime_path, vscode_path, 1)
-                return path
-
-        # Check if we have a folder mapping for this path
-        for runtime_path, vscode_path in self.path_mappings:
-            if path.startswith(runtime_path):
-                path = path.replace(runtime_path, vscode_path, 1)
+            if path == runtime_path or path.startswith(runtime_path + "/"):
+                path = vscode_path + path[len(runtime_path) :]
                 if path.startswith("//"):
                     path = path[1:]
+                return path
         # If no mapping found, return the original path
         return path
 
