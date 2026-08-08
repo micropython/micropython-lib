@@ -259,6 +259,12 @@ class DebugSession:
         recv() then waits for a message the client will not send until it has
         seen an event this loop is what produces. MicroPython sockets have no
         gettimeout(), so the nesting is tracked rather than the timeout saved.
+
+        Nothing here may raise: every caller is `_trace_function`, so an
+        exception escaping this method lands in whichever line of the
+        debugged program was being traced and kills that program with an
+        errno belonging to the debug channel, not to anything the program
+        did.
         """
         if self._pumping:
             return
@@ -277,9 +283,23 @@ class DebugSession:
             # No messages available or socket error
             pass
         finally:
-            # Reset to blocking mode
-            self.channel.sock.settimeout(None)
             self._pumping = False
+            # Reset to blocking mode - but only against a channel that is
+            # still there. Restoring the timeout is a socket operation like
+            # any other and fails on a closed socket, and the loop above is
+            # exactly what closes it: a `disconnect` request handled there
+            # runs the whole session teardown, so on the way out of that
+            # request this socket is already gone. A client that vanishes
+            # without sending `disconnect` reaches the same place without
+            # setting the flag, hence the guard as well as the check.
+            # Either way the session is over, so end it here rather than
+            # leaving a trace function installed that pumps a dead channel.
+            if self.channel.closed:
+                return
+            try:
+                self.channel.sock.settimeout(None)
+            except Exception:
+                self.disconnect()
 
     def _handle_message(self, message):
         """Handle incoming DAP messages."""
@@ -410,8 +430,13 @@ class DebugSession:
 
         # get debugger root and debuggee root from pathMappings
         for pm in args.get("pathMappings", []):
-            # debuggee - debugger
-            self.pdb.path_mappings.append((pm.get("remoteRoot", "./"), pm.get("localRoot", "./")))
+            # debuggee - debugger. Trailing slashes are stripped so "/remote"
+            # and "/remote/" name the same root: pdb_adapter's translation
+            # matches a mapping on a path-separator boundary it adds itself,
+            # and a root that already carries one would double it up.
+            remote_root = pm.get("remoteRoot", "./").rstrip("/")
+            local_root = pm.get("localRoot", "./").rstrip("/")
+            self.pdb.path_mappings.append((remote_root, local_root))
         # # TODO: justMyCode, debugOptions  ,
 
         # Enable trace function
