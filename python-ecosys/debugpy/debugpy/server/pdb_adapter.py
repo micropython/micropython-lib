@@ -238,21 +238,30 @@ class PdbAdapter:
         return path
 
     def set_breakpoints(self, filename: str, breakpoints: list[dict]):
-        """Set breakpoints for a file."""
-        self.breakpoints[filename] = {}
+        """Replace the breakpoint set for one file.
+
+        DAP sends the whole set for a source on every request, so this
+        replaces rather than adds, and an empty list is how a client removes
+        every breakpoint in a file.
+
+        The set is stored under both the path the client used and the name
+        the debuggee knows the same file by, because `should_stop` matches
+        whatever `frame.f_code.co_filename` reports. Both are replaced
+        together: clearing only one leaves the other still armed.
+        """
         local_name = self._filename_as_debugee(filename)
         self.file_mappings[local_name] = filename
+        self.breakpoints[filename] = {}
+        self.breakpoints[local_name] = {}
+
         actual_breakpoints = []
-        self._debug_print(f"[PDB] Setting breakpoints for file: {filename}")
+        self._debug_print(f"[PDB] Setting breakpoints for file: {filename} (as {local_name})")
 
         for bp in breakpoints:
             line = bp.get("line")
             if line:
-                if local_name != filename:
-                    self.breakpoints[local_name] = {}
-                    self._debug_print(f"[>>>] Setting breakpoints for local: {local_name}:{line}")
-                    self.breakpoints[local_name][line] = {}
                 self.breakpoints[filename][line] = {}
+                self.breakpoints[local_name][line] = {}
                 actual_breakpoints.append(
                     {"line": line, "verified": True, "source": {"path": filename}}
                 )
