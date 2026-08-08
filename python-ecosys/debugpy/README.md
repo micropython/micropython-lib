@@ -10,13 +10,21 @@ such as VS Code debugging support.
   - Breakpoints
   - Step over/into/out
   - Stack trace inspection
-  - Variable inspection (globals, locals generally not supported)
+  - Variable inspection: globals, and locals when the firmware reports
+    `save_names` (otherwise positional `local_NN` placeholders). Locals are
+    read-only; no MicroPython build implements local-variable write-back.
   - Expression evaluation
-  - Pause/continue execution
+  - Continue
+
+`pause` is accepted and answered, but does not stop a running target: nothing
+in the trace hook consults the flag it sets. Use a breakpoint instead.
 
 ## Requirements
 
-- MicroPython with `sys.settrace` support (enabled with `MICROPY_PY_SYS_SETTRACE`)
+- MicroPython with `sys.settrace` support (enabled with `MICROPY_PY_SYS_SETTRACE`).
+  Real local-variable names additionally need
+  `MICROPY_PY_SYS_SETTRACE_LOCALNAMES`, where the build provides it; without it
+  locals are reported as positional placeholders.
 - Socket support for network communication
 - JSON support for DAP message parsing
 
