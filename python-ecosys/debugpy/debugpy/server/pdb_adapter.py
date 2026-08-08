@@ -284,14 +284,6 @@ class PdbAdapter:
         self.current_frame = frame
         self.hit_breakpoint = False
 
-        # Get frame information
-        filename = frame.f_code.co_filename
-        lineno = frame.f_lineno
-        # Check for exact filename match first
-        if self.paused or (filename in self.breakpoints and lineno in self.breakpoints[filename]):
-            self._debug_print(f"[PDB] HIT BREAKPOINT (exact match) at {filename}:{lineno}")
-            # Record the path mapping (in this case, they're already the same)
-            # self.file_mappings[filename] = self._filename_as_debugger(filename)
         # Cache frame attributes to reduce lookup overhead
         _frame_code = frame.f_code
         _filename = _frame_code.co_filename
@@ -300,8 +292,16 @@ class PdbAdapter:
         # Optimize dictionary lookups - use .get() to avoid double lookup
         file_breakpoints = self.breakpoints.get(_filename)
         if file_breakpoints and _lineno in file_breakpoints:
-            self.hit_breakpoint = True
-            return True
+            # Only an event that is about to run this line counts as a hit.
+            # `return` reports the last line the frame executed, so a breakpoint
+            # on a function's final line would otherwise stop a second time on
+            # the way out, on a frame that has already produced its value.
+            # `call` reports the `def` line, which is the only event that can
+            # ever match a breakpoint placed there.
+            if event in (TRACE_CALL, TRACE_LINE):
+                self._debug_print(f"[PDB] HIT BREAKPOINT (exact match) at {_filename}:{_lineno}")
+                self.hit_breakpoint = True
+                return True
         else:
             # file not (yet) matched - this is slow so we do not want to do this often.
             # TODO: use sys.path[] method to find the file, does not work for frozen ....
