@@ -51,6 +51,38 @@ def _is_placeholder_local_name(name):
     return name[len("local_") :].isdigit()
 
 
+# Compiled by the running firmware at probe time; see _probe_local_names.
+_LOCAL_NAMES_PROBE_SRC = """
+def _probe():
+    _mpdbg_probe_local = 1
+    return list(sys._getframe().f_locals.keys())
+"""
+
+
+def _probe_local_names(frame):
+    """Local names as seen in a frame the *running firmware* compiled.
+
+    Names are attached to a code object when that object is compiled, so
+    reading this module's own frame measures whichever compiler produced
+    this module, not the firmware. Those differ whenever debugpy is
+    installed cross-compiled: mpy-cross only persists names into .mpy with
+    MICROPY_PY_SYS_SETTRACE_LOCALNAMES_PERSIST, which is off by default (it
+    corrupts line numbers), so an .mpy install always reports placeholders
+    however the firmware was built.
+
+    Compiling a throwaway function here measures the firmware's own
+    compiler, which is what the `save_names` capability claims. A firmware
+    without `exec` cannot compile source at all, so there `frame` - the
+    caller's own - is the only frame available and the honest answer.
+    """
+    namespace = {"sys": sys}
+    try:
+        exec(_LOCAL_NAMES_PROBE_SRC, namespace)
+    except Exception:
+        return list(frame.f_locals.keys())
+    return namespace["_probe"]()
+
+
 class DebugSession:
     """Manages a debugging session with a DAP client."""
 
@@ -99,6 +131,10 @@ class DebugSession:
         stream" by forgetting the argument - passed in by the caller rather
         than guessed here, so the two can never disagree. Safe to call on
         both the unix port and bare-metal builds; never raises.
+
+        `save_names` is measured on code the firmware compiles here rather
+        than on this module's own frame, so it reports the firmware and not
+        how debugpy itself was deployed (see _probe_local_names).
         """
         caps = {
             "settrace": hasattr(sys, "settrace"),
@@ -126,7 +162,7 @@ class DebugSession:
             pass
 
         try:
-            local_names = list(frame.f_locals.keys())
+            local_names = _probe_local_names(frame)
             # An empty locals dict (e.g. probing from module scope) proves
             # nothing either way; only trust the signal when there is at
             # least one local name to inspect for the placeholder pattern.
