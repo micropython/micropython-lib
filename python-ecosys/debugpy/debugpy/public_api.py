@@ -5,12 +5,15 @@ import struct
 import sys
 from .common.constants import DEFAULT_HOST, DEFAULT_PORT
 from .common.stream_transport import StreamTransport
-from .server.debug_session import DebugSession
+from .server.debug_session import DebugSession, RestartRequest
 
 _debug_session = None
 # Bound-but-not-yet-accepted socket, held between listen() and the accept that
 # wait_for_client() performs.
 _listener = None
+# Set by enable_restart() before a session exists, because the capability it
+# controls is answered during the `initialize` that starts one.
+_restart_supported = False
 
 
 def listen(port=DEFAULT_PORT, host=DEFAULT_HOST):
@@ -119,7 +122,7 @@ def _accept_and_initialize():
             client_sock, client_addr = listener.accept()
             print(f"Debugger connected from {format_client_addr(client_addr)}")
 
-        _debug_session = DebugSession(client_sock, is_stream)
+        _debug_session = DebugSession(client_sock, is_stream, _restart_supported)
 
         print("[DAP] Waiting for initialize request...")
         init_message = _debug_session.channel.recv_message()
@@ -188,6 +191,42 @@ def wait_for_client(timeout_s=None):
     if timeout_s is None:
         return _debug_session.wait_for_client()
     return _debug_session.wait_for_client(timeout_s)
+
+
+def enable_restart():
+    """Declare that this process can re-run its target, so `restart` is offered.
+
+    Must be called before `wait_for_client()`: the capability is answered in the
+    `initialize` request, which that accepts and handles. Only the code that
+    owns the run loop can honour a restart, so nothing else turns this on.
+    """
+    global _restart_supported
+    _restart_supported = True
+    if _debug_session is not None:
+        _debug_session.restart_supported = True
+
+
+def wait_for_restart():
+    """Block between runs until a restart is requested, or the client leaves.
+
+    Returns True if the target should be run again, False if there is no client
+    left to run it for. The caller must not be traced while it waits (see
+    DebugSession.wait_for_restart).
+    """
+    if _debug_session is None:
+        return False
+    return _debug_session.wait_for_restart()
+
+
+def console(text):
+    """Show `text` in the client's debug console, if a session is connected.
+
+    A no-op with no session, so a target can report progress unconditionally
+    without caring whether it is being debugged. See DebugSession.console for
+    why anything worth saying goes here as well as to stdout.
+    """
+    if _debug_session is not None:
+        _debug_session.console(text)
 
 
 def get_capabilities():
