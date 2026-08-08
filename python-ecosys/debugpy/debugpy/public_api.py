@@ -119,7 +119,7 @@ def _accept_and_initialize():
             client_sock, client_addr = listener.accept()
             print(f"Debugger connected from {format_client_addr(client_addr)}")
 
-        _debug_session = DebugSession(client_sock)
+        _debug_session = DebugSession(client_sock, is_stream)
 
         print("[DAP] Waiting for initialize request...")
         init_message = _debug_session.channel.recv_message()
@@ -195,12 +195,21 @@ def get_capabilities():
 
     Uses the active session's probe result if a session exists, otherwise
     probes directly. Values always come from probing the running
-    interpreter, never from a build/variant name.
+    interpreter, never from a build/variant name - except `serial_dap`,
+    which comes from whichever of `_debug_session`/`_listener` exists: the
+    boot script calls this between `listen()`/`listen_stream()` and
+    `wait_for_client()` (before a session exists), so `_listener` is the
+    only place the channel choice is recorded yet.
+
+    Call this after `listen()`/`listen_stream()`; called before either, or
+    after `disconnect()`/a `wait_for_client()` timeout has cleared both
+    globals, `serial_dap` reports `False` regardless of which channel a
+    prior session used.
     """
     global _debug_session
     if _debug_session is not None:
         return _debug_session.capabilities
-    return DebugSession.probe_capabilities()
+    return DebugSession.probe_capabilities(isinstance(_listener, StreamTransport))
 
 
 def breakpoint():
