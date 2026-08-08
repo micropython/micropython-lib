@@ -60,11 +60,13 @@ class RestartRequest(BaseException):
 
 
 def _is_placeholder_local_name(name):
-    """True if `name` is a positional `local_N` placeholder, not a real name.
+    """True if `name` is a positional `local_NN` placeholder, not a real name.
 
-    Without MICROPY_PY_SYS_SETTRACE_SAVE_NAMES, frame.f_locals synthesizes
-    names as `local_1`, `local_2`, ... (see py/profile.c). This is the only
-    reliable signal that separates the two cases at runtime.
+    Without MICROPY_PY_SYS_SETTRACE_LOCALNAMES, frame.f_locals synthesizes
+    names as `local_00`, `local_01`, ... (`local_%02d` in py/profile.c). The
+    digit test below stays width-agnostic so a build that numbers them
+    differently is still recognised; this is the only reliable signal that
+    separates the two cases at runtime.
     """
     if not name.startswith("local_"):
         return False
