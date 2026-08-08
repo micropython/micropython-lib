@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Simple demo of MicroPython debugpy functionality."""
 
 import sys
