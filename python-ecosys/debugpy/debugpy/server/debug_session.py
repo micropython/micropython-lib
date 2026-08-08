@@ -58,7 +58,8 @@ class DebugSession:
         self.debug_logging = False  # Initialize first
         self.channel = JsonMessageChannel(client_socket, self._debug_print)
         self.pdb = PdbAdapter()
-        self.pdb._debug_session = self  # Allow PDB to process messages during wait # type: ignore[assignment]
+        # Lets the adapter pump DAP messages while it waits.
+        self.pdb._debug_session = self  # type: ignore[assignment]
         self.initialized = False
         self.connected = True
         self.thread_id = 1  # Simple single-thread model
