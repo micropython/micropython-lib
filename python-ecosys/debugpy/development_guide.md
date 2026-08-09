@@ -1,11 +1,25 @@
 # Debugging MicroPython debugpy with VS Code
 
+## Starting a session
+
+Nothing in the program being debugged talks to the debugger. The server is
+started around it: `listen()`, then `wait_for_client()`, and only then is the
+program imported and run, so the breakpoints the client sent are already in
+place when its first line executes. `test_vscode.py` is such a program - no
+debugpy import, no manual breakpoint - and this runs it:
+
+```bash
+<path-to>/micropython -c "import debugpy; debugpy.listen(); \
+    debugpy.wait_for_client(); debugpy.debug_this_thread(); \
+    import test_vscode; test_vscode.main()"
+```
+
+`wait_for_client()` blocks until a client has attached and sent
+`configurationDone`, so there is no race to connect and no sleep to tune.
+
 ## Method 1: Direct Connection with Enhanced Logging
 
-1. **Start MicroPython with enhanced logging:**
-   ```bash
-   ~/micropython2/ports/unix/build-standard/micropython test_vscode.py
-   ```
+1. **Start the session** as above, in a terminal you can read.
    
    This will now show detailed DAP protocol messages like:
    ```
@@ -22,10 +36,7 @@
 
 ## Method 2: Using DAP Monitor (Recommended for detailed analysis)
 
-1. **Start MicroPython debugpy server:**
-   ```bash
-   ~/micropython2/ports/unix/build-standard/micropython test_vscode.py
-   ```
+1. **Start the session** as above.
 
 2. **In another terminal, start the DAP monitor:**
    ```bash

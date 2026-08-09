@@ -1,10 +1,14 @@
-"""Simple demo of MicroPython debugpy functionality."""
+"""Simple demo of MicroPython debugpy functionality.
+
+Exercises the pieces a session is built from without starting one: the
+firmware's trace hook, and the two package internals that sit on top of it.
+Starting a server is the launcher's job, not a sample's.
+"""
 
 import sys
 
+# The package is a sibling of this file, not installed.
 sys.path.insert(0, ".")
-
-import debugpy
 
 
 def simple_function(a, b):
@@ -62,11 +66,12 @@ def main():
 
     print()
     print("3. debugpy is ready for VS Code integration!")
-    print("   To use with VS Code:")
-    print("   - Import debugpy in your script")
-    print("   - Call debugpy.listen() to start the debug server")
-    print("   - Connect VS Code using the 'Attach to MicroPython' configuration")
-    print("   - Set breakpoints and debug normally")
+    print("   To debug a program with VS Code:")
+    print("   - Start the server first: listen(), then wait_for_client()")
+    print("   - Import and run the program from there, so the client's")
+    print("     breakpoints are already set when it starts")
+    print("   - Attach with the 'Attach to MicroPython' configuration")
+    print("   - See development_guide.md for the command")
 
 
 if __name__ == "__main__":
