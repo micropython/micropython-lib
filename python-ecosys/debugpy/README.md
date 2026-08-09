@@ -78,21 +78,26 @@ Create a `.vscode/launch.json` file in your project:
 
 ### Testing
 
-1. Build the MicroPython Unix coverage port:
+1. Build the MicroPython Unix port with tracing enabled:
    ```bash
    cd ports/unix
    make CFLAGS_EXTRA="-DMICROPY_PY_SYS_SETTRACE=1"
    ```
 
-2. Run the test script:
+2. Run the sample program under a debug server. The program itself contains
+   no debugpy calls, so the server is started around it:
    ```bash
    cd lib/micropython-lib/python-ecosys/debugpy
-   ../../../../ports/unix/build-coverage/micropython test_debugpy.py
+   ../../../../ports/unix/build-standard/micropython -c "import debugpy; \
+       debugpy.listen(); debugpy.wait_for_client(); \
+       debugpy.debug_this_thread(); import test_vscode; test_vscode.main()"
    ```
+   It waits for a client to attach and finish configuring before running
+   anything, so breakpoints set now are in place for the first line.
 
 3. In VS Code, open the debugpy folder and press F5 to attach the debugger
 
-4. Set breakpoints in the test script and observe debugging functionality
+4. Set breakpoints in `test_vscode.py` and observe debugging functionality
 
 ## API Reference
 

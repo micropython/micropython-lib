@@ -1,10 +1,14 @@
-"""Test script for VS Code debugging with MicroPython debugpy."""
+"""A program to debug: ordinary MicroPython that knows nothing about debugpy.
+
+Something else starts the session and then runs this. A launcher calls
+`debugpy.listen()` and `debugpy.wait_for_client()`, imports this module and
+calls `main()`; `development_guide.md` gives the command. That is the case
+worth demonstrating - stopping in code with no debugger calls in it - and the
+only one available when the program being debugged is on a device and the
+client is not.
+"""
 
 import sys
-
-sys.path.insert(0, ".")
-
-import debugpy
 
 foo = 42
 bar = "Hello, MicroPython!"
@@ -21,26 +25,17 @@ def fibonacci(n):
 
 
 def debuggable_code():
-    """The actual code we want to debug - wrapped in a function so sys.settrace will trace it."""
+    """A call to step into, a global to watch, and a loop to break inside."""
     global foo
     print("Starting debuggable code...")
 
-    # Test data - set breakpoint here (using smaller numbers to avoid slow fibonacci)
+    # Small numbers: fibonacci is here to be stepped through, not benchmarked.
     numbers = [3, 4, 5]
     for i, num in enumerate(numbers):
-        print(f"Calculating fibonacci({num})...")
-        result = fibonacci(num)  # <-- SET BREAKPOINT HERE (line 26)
+        print(f"[{i}] Calculating fibonacci({num})...")
+        result = fibonacci(num)  # <-- SET BREAKPOINT HERE
         foo += result  # Modify foo to see if it gets traced
         print(f"fibonacci({num}) = {result}")
-        print(sys.implementation)
-        import machine
-
-        print(dir(machine))
-
-    # Test manual breakpoint
-    print("\nTriggering manual breakpoint...")
-    debugpy.breakpoint()
-    print("Manual breakpoint triggered!")
 
     print("Test completed successfully!")
 
@@ -48,35 +43,8 @@ def debuggable_code():
 def main():
     print("MicroPython VS Code Debugging Test")
     print("==================================")
-
-    # Start debug server
-    try:
-        debugpy.listen()
-        print("Debug server attached on 127.0.0.1:5678")
-        print("Connecting back to VS Code debugger now...")
-        # print("Set a breakpoint on line 26: 'result = fibonacci(num)'")
-        # print("Press Enter to continue after connecting debugger...")
-        # try:
-        #     input()
-        # except:
-        #     pass
-
-        # Enable debugging for this thread
-        debugpy.debug_this_thread()
-
-        # Give VS Code a moment to set breakpoints after attach
-        print("\nGiving VS Code time to set breakpoints...")
-        import time
-
-        time.sleep(2)
-
-        # Call the debuggable code function so it gets traced
-        debuggable_code()
-
-    except KeyboardInterrupt:
-        print("\nTest interrupted by user")
-    except Exception as e:
-        print(f"Error: {e}")
+    print(sys.implementation)
+    debuggable_code()
 
 
 if __name__ == "__main__":
