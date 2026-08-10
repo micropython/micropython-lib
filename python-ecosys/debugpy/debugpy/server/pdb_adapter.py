@@ -161,8 +161,9 @@ class PdbAdapter:
         self.step_mode = None  # None, 'over', 'into', 'out'
         self.step_frame = None
         self.step_depth = 0
-        self.paused = False
+        self.paused = False  # a pause request waiting for the next line event
         self.hit_breakpoint = False
+        self.hit_pause = False
         self.continue_event = False
         self.variables_cache = {}  # frameId -> variables
         self.var_cache = VariableReferenceCache()  # Enhanced variable reference cache
@@ -279,10 +280,17 @@ class PdbAdapter:
         return actual_breakpoints
 
     def should_stop(self, frame, event: str, arg):
-        """Determine if execution should stop at this point."""
+        """Determine if execution should stop at this point.
+
+        Returns True for exactly three reasons - a breakpoint, a pending
+        pause, or a landed step - and records which one in `hit_breakpoint` /
+        `hit_pause` so the caller can name it without keeping its own copy of
+        the decision.
+        """
         # HOT path - no debug printing here
         self.current_frame = frame
         self.hit_breakpoint = False
+        self.hit_pause = False
 
         # Cache frame attributes to reduce lookup overhead
         _frame_code = frame.f_code
@@ -310,6 +318,18 @@ class PdbAdapter:
                 self.breakpoints[_filename] = {}  # Ensure the filename is in the breakpoints dict
             if _filename not in self.file_mappings:
                 self.file_mappings[_filename] = self._filename_as_debugger(_filename)
+
+        # A pause request that arrived while the target was running is consumed
+        # here. Only on `line`: `call` reports the `def` line before the body
+        # has run and `return` reports a frame that has already produced its
+        # value, so neither is a place the user asked to stop at.
+        if self.paused and event == TRACE_LINE:
+            self.paused = False
+            # A pause is a user interrupt; a step that outlived it would fire
+            # later at a point nobody asked for.
+            self.step_mode = None
+            self.hit_pause = True
+            return True
 
         # Check stepping
         _step_mode = self.step_mode
@@ -359,8 +379,14 @@ class PdbAdapter:
         self.continue_event = True
 
     def pause(self):
-        """Pause execution at next opportunity."""
-        # This is handled by the debug session
+        """Request a stop at the next line event.
+
+        Nothing stops here: the target is running, and the only code that can
+        interrupt it is the trace function. `should_stop` consumes this. A
+        target executing no traced bytecode - blocked in `time.sleep`, inside
+        a C-level loop, or between runs of a `--loop` session - produces no
+        trace event, so the request simply stays pending until one comes.
+        """
         self.paused = True
 
     def wait_for_continue(self):
@@ -388,6 +414,11 @@ class PdbAdapter:
                 break
             session.process_pending_messages()  # type: ignore[arg-type]
             time.sleep(0.01)
+
+        # A pause that arrived during the wait is about a target that was
+        # already stopped. Dropping it here is what keeps it from stopping the
+        # target again one line after the user's next continue.
+        self.paused = False
 
     def get_stack_trace(self):
         """Get the current stack trace."""

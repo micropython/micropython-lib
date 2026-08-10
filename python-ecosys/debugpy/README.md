@@ -15,9 +15,12 @@ such as VS Code debugging support.
     read-only; no MicroPython build implements local-variable write-back.
   - Expression evaluation
   - Continue
+  - Pause
 
-`pause` is accepted and answered, but does not stop a running target: nothing
-in the trace hook consults the flag it sets. Use a breakpoint instead.
+A pause takes effect at the next line the target executes, because the trace
+hook is the only thing that can interrupt it. A target that is executing no
+Python - blocked in `time.sleep`, or inside a long-running C function - stays
+running until it does; the request is not lost, it is pending.
 
 ## Requirements
 
