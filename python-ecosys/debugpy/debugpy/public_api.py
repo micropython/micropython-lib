@@ -77,7 +77,7 @@ def listen(port=DEFAULT_PORT, host=DEFAULT_HOST):
     return (host, port)
 
 
-def listen_stream(reader, writer=None):
+def listen_stream(reader, writer=None, is_connected=None):
     """Start a debug session directly on an already-open stream, no TCP.
 
     For a board with a second CDC interface dedicated to DAP: `reader`/`writer`
@@ -86,13 +86,17 @@ def listen_stream(reader, writer=None):
     `listen()`, the stream is already connected - there is no bind/accept
     step, so `wait_for_client()` goes straight to the initialize/
     configurationDone handshake.
+
+    `is_connected` is how a stream that cannot reach EOF says the host has
+    gone, and belongs to the caller because it is port-specific; see
+    `StreamTransport._peer_gone`. A stream with a real EOF needs none.
     """
     global _listener
 
     if _listener is not None or _debug_session is not None:
         raise RuntimeError("Already listening for debugger")
 
-    _listener = StreamTransport(reader, writer)
+    _listener = StreamTransport(reader, writer, is_connected)
     print("Debugpy listening on stream")
     return _listener
 
