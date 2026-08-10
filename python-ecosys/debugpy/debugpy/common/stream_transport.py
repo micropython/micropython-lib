@@ -22,13 +22,18 @@ class StreamTransport:
     both directions, matching a real socket; `poll(ms)` is called fresh on
     every `recv`/`send` rather than cached, so each change takes effect
     immediately.
+
+    `is_connected`, when the runtime has something to offer, is a callable
+    reporting whether the host still holds the other end - see `_peer_gone`.
     """
 
-    def __init__(self, reader, writer=None):
+    def __init__(self, reader, writer=None, is_connected=None):
         self._reader = reader
         self._writer = writer if writer is not None else reader
         self._timeout = None  # seconds, or None = block forever
         self._eof = False
+        self._is_connected = is_connected
+        self._had_traffic = False
         self._poller = select.poll()
         self._poller.register(self._reader, select.POLLIN)
         self._write_poller = select.poll()
@@ -38,8 +43,33 @@ class StreamTransport:
     def settimeout(self, seconds):
         self._timeout = seconds
 
+    def _peer_gone(self):
+        """Has the host held this channel and then let go of it?
+
+        A USB CDC interface never reaches EOF. An idle one and one whose host
+        has vanished read identically - no bytes - so a session stopped at a
+        breakpoint would wait for a `continue` that cannot come, and the board
+        would need a power cycle. `is_connected` is whatever the runtime has
+        instead: on stm32 it is `pyb.USB_VCP.isconnected()`, the interface's
+        DTR line, raised by the host when it opens the port and dropped by the
+        kernel when the last opener goes away.
+
+        It counts only once the channel has carried a byte. The line goes up
+        and down for reasons that are not a session ending: nobody holds the
+        interface between `listen_stream()` and the client's first connect,
+        and a host may open it briefly beforehand just to check that it can.
+        Down on its own therefore says nothing; down after the two ends were
+        talking is the peer leaving.
+        """
+        if self._is_connected is None or not self._had_traffic:
+            return False
+        return not self._is_connected()
+
     def recv(self, n):
         if self._eof:
+            return b""
+        if self._peer_gone():
+            self._eof = True
             return b""
         timeout_ms = None if self._timeout is None else max(0, int(self._timeout * 1000))
         if not self._poller.poll(timeout_ms):
@@ -72,6 +102,7 @@ class StreamTransport:
             if self._eof:
                 return b""
             raise OSError(11)
+        self._had_traffic = True
         return bytes(mv[:got])
 
     def send(self, data):
