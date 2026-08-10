@@ -332,6 +332,33 @@ def test_redirect_relative():
     socket.socket = lambda *a, **k: Socket()
 
 
+def test_chunked_response_lowercase_header():
+    socket.socket = lambda *a, **k: Socket(
+        read_data=b"HTTP/1.1 200 OK\r\ntransfer-encoding: chunked\r\n\r\n5\r\nhello\r\n6\r\n world\r\n0\r\n\r\n"
+    )
+    response = requests.request("GET", "http://example.com")
+    assert response.content == b"hello world"
+    socket.socket = lambda *a, **k: Socket()
+
+
+def test_redirect_lowercase_location():
+    server = iter(
+        [
+            b"HTTP/1.1 301 OK\r\nlocation: /index\r\n\r\n",
+            SERVER_RESPONSE_200_OK,
+        ]
+    )
+    socket.socket = lambda *a, **k: Socket(next(server))
+
+    response = requests.request("GET", "http://example.com")
+
+    assert response.raw._write_buffer.getvalue() == (
+        b"GET /index HTTP/1.1\r\nConnection: close\r\nHost: example.com\r\n\r\n"
+    ), format_message(response)
+
+    socket.socket = lambda *a, **k: Socket()
+
+
 test_simple_get()
 test_get_query_anchor()
 test_get_auth()
@@ -354,3 +381,5 @@ test_raw_incremental_content_length()
 test_raw_readinto_content_length()
 test_redirect_absolute()
 test_redirect_relative()
+test_chunked_response_lowercase_header()
+test_redirect_lowercase_location()
