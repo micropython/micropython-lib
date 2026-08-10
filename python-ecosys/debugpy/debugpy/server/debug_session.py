@@ -117,8 +117,6 @@ class DebugSession:
         self.initialized = False
         self.connected = True
         self.thread_id = 1  # Simple single-thread model
-        self.stepping = False
-        self.paused = False
         self.configuration_done = False
         self._pumping = False
         # Whether the launcher can actually re-run the target. Only it knows,
@@ -497,35 +495,30 @@ class DebugSession:
 
     def _handle_continue(self, seq, args):
         """Handle continue request."""
-        self.stepping = False
-        self.paused = False
         self.pdb.continue_execution()
         self.channel.send_response(CMD_CONTINUE, seq)
 
     def _handle_next(self, seq, args):
         """Handle next (step over) request."""
-        self.stepping = True
-        self.paused = False
         self.pdb.step_over()
         self.channel.send_response(CMD_NEXT, seq)
 
     def _handle_step_in(self, seq, args):
         """Handle stepIn request."""
-        self.stepping = True
-        self.paused = False
         self.pdb.step_into()
         self.channel.send_response(CMD_STEP_IN, seq)
 
     def _handle_step_out(self, seq, args):
         """Handle stepOut request."""
-        self.stepping = True
-        self.paused = False
         self.pdb.step_out()
         self.channel.send_response(CMD_STEP_OUT, seq)
 
     def _handle_pause(self, seq, args):
-        """Handle pause request."""
-        self.paused = True
+        """Handle pause request.
+
+        The response says the request was accepted, not that the target has
+        stopped; `stopped` follows when the trace function consumes it.
+        """
         self.pdb.pause()
         self.channel.send_response(CMD_PAUSE, seq)
 
@@ -621,9 +614,8 @@ class DebugSession:
 
         self.restart_requested = True
         # A target stopped at a breakpoint is inside wait_for_continue(); it has
-        # to be let go before it can be unwound. Stepping is cleared with it, so
-        # a pending step does not stop the target again on its way out.
-        self.stepping = False
+        # to be let go before it can be unwound. A pending step or pause is
+        # cleared with it, so neither stops the target again on its way out.
         self.pdb.step_mode = None
         self.pdb.paused = False
         self.pdb.continue_event = True
@@ -735,14 +727,16 @@ class DebugSession:
         # Before any breakpoint work: a restart that arrived above wants this
         # program gone, not stopped somewhere else on the way out.
         self._raise_if_restarting()
-        # Handle breakpoints and stepping
+        # Handle breakpoints, pauses and stepping. The reason comes from the
+        # adapter because the adapter is what decided: a stop is a breakpoint,
+        # a consumed pause, or a landed step, and those are the only three.
         if self.pdb.should_stop(frame, event, arg):
             self._send_stopped_event(
                 STOP_REASON_BREAKPOINT
                 if self.pdb.hit_breakpoint
-                else STOP_REASON_STEP
-                if self.stepping
                 else STOP_REASON_PAUSE
+                if self.pdb.hit_pause
+                else STOP_REASON_STEP
             )
             # Wait for continue command
             self.pdb.wait_for_continue()
