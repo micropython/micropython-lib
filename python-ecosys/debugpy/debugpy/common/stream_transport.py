@@ -2,6 +2,13 @@
 
 import select
 
+# How long a wait that was asked to block forever may sit inside one poll
+# before the liveness check runs again. The line `is_connected` reads is not
+# something a poll can wait on, so a blocking wait would otherwise never
+# notice the host letting go. A bound on how quickly that is noticed, not a
+# timeout: a wait carrying a real one is still governed by it.
+_LIVENESS_SLICE_MS = 100
+
 
 class StreamTransport:
     """Presents a reader/writer stream pair as a socket to `JsonMessageChannel`.
@@ -34,6 +41,7 @@ class StreamTransport:
         self._eof = False
         self._is_connected = is_connected
         self._had_traffic = False
+        self._was_held = is_connected is not None and bool(is_connected())
         self._poller = select.poll()
         self._poller.register(self._reader, select.POLLIN)
         self._write_poller = select.poll()
@@ -54,16 +62,43 @@ class StreamTransport:
         DTR line, raised by the host when it opens the port and dropped by the
         kernel when the last opener goes away.
 
-        It counts only once the channel has carried a byte. The line goes up
-        and down for reasons that are not a session ending: nobody holds the
-        interface between `listen_stream()` and the client's first connect,
-        and a host may open it briefly beforehand just to check that it can.
-        Down on its own therefore says nothing; down after the two ends were
-        talking is the peer leaving.
+        It counts only once the channel has been held, because the line goes
+        up and down for reasons that are not a session ending: a host may open
+        an idle interface briefly just to check that it can. Down on its own
+        therefore says nothing; down after the channel was held is the peer
+        leaving. Held means either of two things, and which one applies is
+        decided by whether anyone was on the far end when the channel was
+        made:
+
+        - Nobody was, so the channel has to earn the signal - a byte has to
+          cross it. This is the dedicated-DAP-interface case: nothing holds
+          that interface between `listen_stream()` and the client's first
+          connect, so its line being down at any point before then is the
+          ordinary state and not a peer.
+        - Somebody was, recorded at construction as `_was_held`. This is the
+          case where DAP shares the stream the host is already using to drive
+          the board: that hold predates the channel, so nothing but the host
+          leaving can drop it, and waiting for traffic would mean a client
+          that never sends anything holds the stream forever.
         """
-        if self._is_connected is None or not self._had_traffic:
+        if self._is_connected is None or not (self._had_traffic or self._was_held):
             return False
         return not self._is_connected()
+
+    def _wait(self, poller, timeout_ms):
+        """Poll for readiness, giving up early once the peer has gone.
+
+        Returns whatever `poll` returned, which is falsy both when the wait
+        timed out and when the peer left; callers separate the two with
+        `_peer_gone()`. A wait asked to block forever is served in slices so
+        that check gets to run - see `_LIVENESS_SLICE_MS`.
+        """
+        if timeout_ms is not None:
+            return poller.poll(timeout_ms)
+        while True:
+            ready = poller.poll(_LIVENESS_SLICE_MS)
+            if ready or self._peer_gone():
+                return ready
 
     def recv(self, n):
         if self._eof:
@@ -72,7 +107,10 @@ class StreamTransport:
             self._eof = True
             return b""
         timeout_ms = None if self._timeout is None else max(0, int(self._timeout * 1000))
-        if not self._poller.poll(timeout_ms):
+        if not self._wait(self._poller, timeout_ms):
+            if self._peer_gone():
+                self._eof = True
+                return b""
             raise OSError(11)  # EAGAIN: no data within the timeout
 
         # `.read()`/`.readinto()` loop internally until the buffer is full
@@ -115,7 +153,7 @@ class StreamTransport:
         # the retry would then re-send that prefix and desynchronise the
         # Content-Length framing it was meant to protect.
         timeout_ms = None if self._timeout is None else max(0, int(self._timeout * 1000))
-        if not self._write_poller.poll(timeout_ms):
+        if not self._wait(self._write_poller, timeout_ms):
             raise OSError(11)  # EAGAIN: no room within the timeout
         # `write()` answers a non-blocking stream that took nothing with None
         # rather than 0, so both are treated as "came back not ready after

@@ -129,8 +129,20 @@ def _accept_and_initialize():
         _debug_session = DebugSession(client_sock, is_stream, _restart_supported)
 
         print("[DAP] Waiting for initialize request...")
-        init_message = _debug_session.channel.recv_message()
-        if init_message and init_message.get("command") == "initialize":
+        # `recv_message()` answers None both for "not a whole message yet" and
+        # for "the channel is gone", and against a blocking channel the first
+        # of those is what a message split across reads looks like. Retrying
+        # while the channel is open tells them apart, and stops a split
+        # `initialize` from being read as a client that sent something else.
+        init_message = None
+        while init_message is None and not _debug_session.channel.closed:
+            init_message = _debug_session.channel.recv_message()
+        if init_message is None:
+            print("[DAP] Connection closed before the initialize request")
+            _debug_session = None
+            client_sock.close()
+            return False
+        if init_message.get("command") == "initialize":
             _debug_session._handle_message(init_message)
             print("[DAP] Initialize request handled - returning control immediately")
         else:
