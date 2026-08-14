@@ -241,7 +241,7 @@ def request(
                 k, v = l.split(":", 1)
                 v = v.strip()
                 resp_d[k] = v
-                if k.lower() == "content-length":
+                if lowerl.startswith(b"content-length:"):
                     remaining = int(v)
             else:
                 parse_headers(l, resp_d)

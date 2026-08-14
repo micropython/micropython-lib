@@ -359,6 +359,16 @@ def test_redirect_lowercase_location():
     socket.socket = lambda *a, **k: Socket()
 
 
+def test_content_length_lowercase_header():
+    socket.socket = lambda *a, **k: Socket(
+        read_data=b"HTTP/1.1 200 OK\r\ncontent-length: 5\r\n\r\nhello"
+    )
+    response = requests.request("GET", "http://example.com")
+    assert response.content == b"hello"
+    assert response.headers["content-length"] == "5"
+    socket.socket = lambda *a, **k: Socket()
+
+
 test_simple_get()
 test_get_query_anchor()
 test_get_auth()
@@ -383,3 +393,4 @@ test_redirect_absolute()
 test_redirect_relative()
 test_chunked_response_lowercase_header()
 test_redirect_lowercase_location()
+test_content_length_lowercase_header()
