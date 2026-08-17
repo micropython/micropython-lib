@@ -196,14 +196,23 @@ def skipUnless(cond, msg):
     return skipIf(not cond, msg)
 
 
+# Sentinels for the two @expectedFailure outcomes: a test that raised
+# (expected failure) vs one that passed (unexpected success).
+class _ExpFail(Exception):
+    pass
+
+
+class _UnexpSucc(Exception):
+    pass
+
+
 def expectedFailure(test):
     def test_exp_fail(*args, **kwargs):
         try:
             test(*args, **kwargs)
-        except:
-            pass
-        else:
-            raise AssertionError("unexpected success")
+        except Exception:
+            raise _ExpFail
+        raise _UnexpSucc
 
     return test_exp_fail
 
@@ -238,13 +247,18 @@ class TestRunner:
         res.printErrors()
         print("----------------------------------------------------------------------")
         print("Ran %d tests\n" % res.testsRun)
-        if res.failuresNum > 0 or res.errorsNum > 0:
-            print("FAILED (failures=%d, errors=%d)" % (res.failuresNum, res.errorsNum))
-        else:
-            msg = "OK"
-            if res.skippedNum > 0:
-                msg += " (skipped=%d)" % res.skippedNum
-            print(msg)
+        info = []
+        for num, label in (
+            (res.failuresNum, "failures"),
+            (res.errorsNum, "errors"),
+            (res.skippedNum, "skipped"),
+            (res.expectedFailuresNum, "expected failures"),
+            (res.unexpectedSuccessesNum, "unexpected successes"),
+        ):
+            if num:
+                info.append("%s=%d" % (label, num))
+        status = "OK" if res.wasSuccessful() else "FAILED"
+        print("%s (%s)" % (status, ", ".join(info)) if info else status)
 
         return res
 
@@ -257,6 +271,8 @@ class TestResult:
         self.errorsNum = 0
         self.failuresNum = 0
         self.skippedNum = 0
+        self.expectedFailuresNum = 0
+        self.unexpectedSuccessesNum = 0
         self.testsRun = 0
         self.errors = []
         self.failures = []
@@ -264,7 +280,8 @@ class TestResult:
         self._newFailures = 0
 
     def wasSuccessful(self):
-        return self.errorsNum == 0 and self.failuresNum == 0
+        # An unexpected success isn't a failure/error but still fails the run.
+        return self.errorsNum == 0 and self.failuresNum == 0 and self.unexpectedSuccessesNum == 0
 
     def printErrors(self):
         if self.errors or self.failures:
@@ -293,6 +310,8 @@ class TestResult:
         self.errorsNum += other.errorsNum
         self.failuresNum += other.failuresNum
         self.skippedNum += other.skippedNum
+        self.expectedFailuresNum += other.expectedFailuresNum
+        self.unexpectedSuccessesNum += other.unexpectedSuccessesNum
         self.testsRun += other.testsRun
         self.errors.extend(other.errors)
         self.failures.extend(other.failures)
@@ -308,6 +327,16 @@ def _handle_test_exception(
         test_result.skippedNum += 1
         test_result.skipped.append((current_test, reason))
         print(" skipped:", reason)
+        return
+    if isinstance(exc, _ExpFail):
+        test_result.expectedFailuresNum += 1
+        if verbose:
+            print(" expected failure")
+        return
+    if isinstance(exc, _UnexpSucc):
+        test_result.unexpectedSuccessesNum += 1
+        if verbose:
+            print(" unexpected success")
         return
     buf = io.StringIO()
     sys.print_exception(exc, buf)
