@@ -50,6 +50,7 @@ function ci_package_tests_setup_lib {
     $CP -r python-stdlib/unittest/unittest "${VIRTUAL_ENV}/lib/"
     $CP -r python-stdlib/unittest-discover/unittest "${VIRTUAL_ENV}/lib/"
     $CP unix-ffi/ffilib/ffilib.py "${VIRTUAL_ENV}/lib/"
+    $CP -r python-ecosys/requests/requests "${VIRTUAL_ENV}/lib/"
     tree "${VIRTUAL_ENV}"
 }
 
@@ -57,6 +58,7 @@ function ci_package_tests_run {
     export MICROPYPATH
     for test in \
         micropython/drivers/storage/sdcard/sdtest.py \
+        micropython/mip/test_mip_tag.py \
         micropython/umqtt.simple/test_umqtt_simple.py \
         micropython/xmltok/test_xmltok.py \
         python-ecosys/requests/test_requests.py \
