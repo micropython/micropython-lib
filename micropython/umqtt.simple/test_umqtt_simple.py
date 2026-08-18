@@ -15,6 +15,12 @@ class Socket:
     def read(self, n):
         return self._read_buffer.read(n)
 
+    def settimeout(self, timeout):
+        pass
+
+    def connect(self, addr):
+        pass
+
     def setblocking(self, blocking):
         pass
 
@@ -24,7 +30,8 @@ class Socket:
 
 sys.path.insert(0, "micropython/umqtt.simple")
 # ruff: noqa: E402
-from umqtt.simple import MQTTClient
+from umqtt.simple import MQTTClient, MQTTException
+import umqtt.simple as umqtt_simple
 
 
 def make_client(read_data):
@@ -71,6 +78,69 @@ def test_unsubscribe_long_topic():
     assert out[7:131] == topic, out
 
 
+class FakeSocketMod:
+    def __init__(self, sock):
+        self._sock = sock
+
+    def socket(self, *a, **k):
+        return self._sock
+
+    def getaddrinfo(self, *a, **k):
+        return [(None, None, None, None, ("127.0.0.1", 1883))]
+
+
+def _patch_mqtt_socket(sock):
+    orig = umqtt_simple.socket
+    umqtt_simple.socket = FakeSocketMod(sock)
+    return orig
+
+
+def _restore_mqtt_socket(orig):
+    umqtt_simple.socket = orig
+
+
+def test_connect_ok():
+    sock = Socket(b"\x20\x02\x00\x00")
+    orig = _patch_mqtt_socket(sock)
+    try:
+        c = MQTTClient(b"cid", "127.0.0.1")
+        assert c.connect() == 0
+    finally:
+        _restore_mqtt_socket(orig)
+
+
+def test_connect_short_connack_raises():
+    sock = Socket(b"")
+    orig = _patch_mqtt_socket(sock)
+    try:
+        c = MQTTClient(b"cid", "127.0.0.1")
+        try:
+            c.connect()
+            assert False, "expected MQTTException"
+        except MQTTException as e:
+            assert e.args == (-1,)
+    finally:
+        _restore_mqtt_socket(orig)
+
+
+def test_connect_none_connack_raises():
+    sock = Socket()
+    sock.read = lambda n: None
+    orig = _patch_mqtt_socket(sock)
+    try:
+        c = MQTTClient(b"cid", "127.0.0.1")
+        try:
+            c.connect()
+            assert False, "expected MQTTException"
+        except MQTTException as e:
+            assert e.args == (-1,)
+    finally:
+        _restore_mqtt_socket(orig)
+
+
 test_subscribe_short_topic()
 test_subscribe_long_topic()
 test_unsubscribe_long_topic()
+test_connect_ok()
+test_connect_short_connack_raises()
+test_connect_none_connack_raises()
