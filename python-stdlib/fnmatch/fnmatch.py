@@ -131,7 +131,7 @@ def translate(pat):
                 # Using ure rather than re-pcre
                 res = res + re_escape(c)
     # Original patterns is undefined, see http://bugs.python.org/issue21464
-    return "(?ms)" + res + "\Z"
+    return "(?ms)" + res + "\\Z"
 
 
 def re_escape(pattern):
