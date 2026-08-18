@@ -58,6 +58,7 @@ function ci_package_tests_run {
     for test in \
         micropython/drivers/storage/sdcard/sdtest.py \
         micropython/umqtt.simple/test_umqtt_simple.py \
+        micropython/net/ntptime/test_ntptime.py \
         micropython/xmltok/test_xmltok.py \
         python-ecosys/requests/test_requests.py \
         python-stdlib/argparse/test_argparse.py \
