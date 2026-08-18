@@ -39,8 +39,9 @@ sys.path.insert(0, "micropython/net/ntptime")
 import ntptime
 
 
-def ntp_msg(ts=3913056000):
+def ntp_msg(ts=3913056000, stratum=2):
     msg = bytearray(48)
+    msg[1] = stratum
     struct.pack_into("!I", msg, 40, ts)
     return bytes(msg)
 
@@ -84,6 +85,32 @@ def test_time_spoof_raises():
         ntptime.socket = orig
 
 
+def test_time_kod_stratum_raises():
+    orig = _patch((ntp_msg(stratum=0), ("1.2.3.4", 123)))
+    try:
+        try:
+            ntptime.time()
+            assert False, "expected OSError"
+        except OSError as e:
+            assert e.args == (-1,)
+    finally:
+        ntptime.socket = orig
+
+
+def test_time_zero_ts_raises():
+    orig = _patch((ntp_msg(ts=0), ("1.2.3.4", 123)))
+    try:
+        try:
+            ntptime.time()
+            assert False, "expected OSError"
+        except OSError as e:
+            assert e.args == (-1,)
+    finally:
+        ntptime.socket = orig
+
+
 test_time_ok()
 test_time_short_raises()
 test_time_spoof_raises()
+test_time_kod_stratum_raises()
+test_time_zero_ts_raises()
