@@ -6,7 +6,7 @@ ascii_letters = ascii_lowercase + ascii_uppercase
 digits = "0123456789"
 hexdigits = digits + "abcdef" + "ABCDEF"
 octdigits = "01234567"
-punctuation = """!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~"""
+punctuation = """!"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"""
 printable = digits + ascii_letters + punctuation + whitespace
 
 

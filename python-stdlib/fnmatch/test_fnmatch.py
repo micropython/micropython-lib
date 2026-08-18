@@ -65,14 +65,14 @@ class FnmatchTestCase(unittest.TestCase):
 
 class TranslateTestCase(unittest.TestCase):
     def test_translate(self):
-        self.assertEqual(translate("*"), "(?ms).*\Z")
-        self.assertEqual(translate("?"), "(?ms).\Z")
-        self.assertEqual(translate("a?b*"), "(?ms)a.b.*\Z")
-        self.assertEqual(translate("[abc]"), "(?ms)[abc]\Z")
-        self.assertEqual(translate("[]]"), "(?ms)[]]\Z")
-        self.assertEqual(translate("[!x]"), "(?ms)[^x]\Z")
-        self.assertEqual(translate("[^x]"), "(?ms)[\\^x]\Z")
-        self.assertEqual(translate("[x"), "(?ms)\\[x\Z")
+        self.assertEqual(translate("*"), "(?ms).*\\Z")
+        self.assertEqual(translate("?"), "(?ms).\\Z")
+        self.assertEqual(translate("a?b*"), "(?ms)a.b.*\\Z")
+        self.assertEqual(translate("[abc]"), "(?ms)[abc]\\Z")
+        self.assertEqual(translate("[]]"), "(?ms)[]]\\Z")
+        self.assertEqual(translate("[!x]"), "(?ms)[^x]\\Z")
+        self.assertEqual(translate("[^x]"), "(?ms)[\\^x]\\Z")
+        self.assertEqual(translate("[x"), "(?ms)\\[x\\Z")
 
 
 class FilterTestCase(unittest.TestCase):
