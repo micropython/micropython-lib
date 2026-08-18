@@ -16,10 +16,14 @@ def time():
     try:
         s.settimeout(timeout)
         s.sendto(NTP_QUERY, addr)
-        msg = s.recv(48)
+        msg, src = s.recvfrom(48)
     finally:
         s.close()
+    if src[0] != addr[0] or len(msg) < 48:
+        raise OSError(-1)
     val = struct.unpack("!I", msg[40:44])[0]
+    if not (msg[1] and val):
+        raise OSError(-1)
 
     # 2024-01-01 00:00:00 converted to an NTP timestamp
     MIN_NTP_TIMESTAMP = 3913056000
