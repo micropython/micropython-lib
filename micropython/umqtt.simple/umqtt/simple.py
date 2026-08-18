@@ -116,11 +116,12 @@ class MQTTClient:
             self._send_str(self.user)
             self._send_str(self.pswd)
         resp = self.sock.read(4)
-        if not resp or len(resp) < 4 or resp[0] != 0x20 or resp[1] != 0x02:
-            raise MQTTException(-1)
-        if resp[3] != 0:
-            raise MQTTException(resp[3])
-        return resp[2] & 1
+        r = -1
+        if resp and len(resp) > 3 and resp[0] == 0x20 and resp[1] == 0x02:
+            r = resp[3]
+            if not r:
+                return resp[2] & 1
+        raise MQTTException(r)
 
     def disconnect(self):
         self.sock.write(b"\xe0\0")
