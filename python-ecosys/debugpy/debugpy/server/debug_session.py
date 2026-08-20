@@ -105,6 +105,11 @@ def _probe_local_names(frame):
     return namespace["_probe"]()
 
 
+# Filled by DebugSession.probe_capabilities() on its first call; the values
+# describe the firmware, which does not change while it is running.
+_CAPABILITIES = None
+
+
 class DebugSession:
     """Manages a debugging session with a DAP client."""
 
@@ -150,10 +155,19 @@ class DebugSession:
         it (`caps["repl_dap"]`). Safe to call on both the unix port and
         bare-metal builds; never raises.
 
+        Probed once per interpreter and remembered: every value describes the
+        firmware, which cannot change while it is running, and the probe is
+        not free - `_probe_local_names` compiles source on the device. A copy
+        is handed out so a caller adding its own key (the boot script adds
+        `repl_dap`) cannot reach the cache.
+
         `save_names` is measured on code the firmware compiles here rather
         than on this module's own frame, so it reports the firmware and not
         how debugpy itself was deployed (see _probe_local_names).
         """
+        global _CAPABILITIES
+        if _CAPABILITIES is not None:
+            return dict(_CAPABILITIES)
         caps = {
             "settrace": hasattr(sys, "settrace"),
             "f_back": False,
@@ -161,12 +175,14 @@ class DebugSession:
             "set_local": False,
         }
         if not caps["settrace"]:
-            return caps
+            _CAPABILITIES = caps
+            return dict(caps)
 
         try:
             frame = sys._getframe()
         except Exception:
-            return caps
+            _CAPABILITIES = caps
+            return dict(caps)
 
         try:
             caps["f_back"] = hasattr(frame, "f_back")
@@ -189,7 +205,8 @@ class DebugSession:
         except Exception:
             pass
 
-        return caps
+        _CAPABILITIES = caps
+        return dict(caps)
 
     def start(self):
         """Start the debug session message loop."""
