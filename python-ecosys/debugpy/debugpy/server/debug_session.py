@@ -108,7 +108,7 @@ def _probe_local_names(frame):
 class DebugSession:
     """Manages a debugging session with a DAP client."""
 
-    def __init__(self, client_socket, is_stream, restart_supported=False):
+    def __init__(self, client_socket, restart_supported=False):
         self.debug_logging = False  # Initialize first
         self.channel = JsonMessageChannel(client_socket, self._debug_print)
         self.pdb = PdbAdapter()
@@ -124,11 +124,8 @@ class DebugSession:
         # supportsRestartRequest not advertised, unless it was told otherwise.
         self.restart_supported = restart_supported
         self.restart_requested = False
-        # is_stream comes from the caller (_accept_and_initialize already
-        # knows which kind of channel client_socket is) rather than being
-        # re-derived here, so there is exactly one place that decides it.
         # Probed once at session start; never inferred from a build/variant name.
-        self.capabilities = self.probe_capabilities(is_stream)
+        self.capabilities = self.probe_capabilities()
         self.pdb.capabilities = self.capabilities
 
     def _debug_print(self, message):
@@ -141,21 +138,17 @@ class DebugSession:
         return sys.platform not in ("linux")  # to be expanded
 
     @staticmethod
-    def probe_capabilities(is_stream):
+    def probe_capabilities():
         """Probe what the running firmware actually supports.
 
-        Returns a dict with at least `settrace`, `save_names`, `set_local`,
-        `f_back` and `serial_dap`, each derived by exercising the real
-        interpreter - never by reading a build/variant name, which does not
-        reliably reflect what a given firmware image supports (see
-        BACKGROUND.md). `serial_dap` is the one exception to "probe, don't
-        ask": whether the DAP channel is a stream rather than a TCP socket
-        is a fact about *this session*, decided by whichever boot script
-        called `listen_stream()` vs `listen()`. `is_stream` is that fact -
-        required, not defaulted, so a caller cannot silently report "not a
-        stream" by forgetting the argument - passed in by the caller rather
-        than guessed here, so the two can never disagree. Safe to call on
-        both the unix port and bare-metal builds; never raises.
+        Returns a dict with at least `settrace`, `save_names`, `set_local`
+        and `f_back`, each derived by exercising the real interpreter -
+        never by reading a build/variant name, which does not reliably
+        reflect what a given firmware image supports (see BACKGROUND.md).
+        Which channel a session took is not in here: that is a fact about
+        the run rather than about the firmware, and the boot script reports
+        it (`caps["repl_dap"]`). Safe to call on both the unix port and
+        bare-metal builds; never raises.
 
         `save_names` is measured on code the firmware compiles here rather
         than on this module's own frame, so it reports the firmware and not
@@ -166,7 +159,6 @@ class DebugSession:
             "f_back": False,
             "save_names": False,
             "set_local": False,
-            "serial_dap": is_stream,
         }
         if not caps["settrace"]:
             return caps
