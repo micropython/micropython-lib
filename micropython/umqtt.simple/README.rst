@@ -51,6 +51,7 @@ follows MQTT control operations, and maps them to class methods:
   clean_session=True argument is used (default)).
 * ``disconnect()`` - Disconnect from a server, release resources.
 * ``ping()`` - Ping server (response is processed automatically by wait_msg()).
+  * ``ping_response_received`` - True once ping has been responded to, False if not. Set by wait_msg() and reset upon next ping().
 * ``publish()`` - Publish a message.
 * ``subscribe()`` - Subscribe to a topic.
 * ``unsubscribe()`` - Unsubscribe to a topic.
