@@ -273,7 +273,7 @@ class DeviceConnection:
 
     async def exchange_mtu(self, mtu=None, timeout_ms=1000):
         if not self.is_connected():
-            raise ValueError("Not connected")
+            raise DeviceDisconnectedError
 
         if mtu:
             ble.config(mtu=mtu)

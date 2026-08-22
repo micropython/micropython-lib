@@ -15,7 +15,7 @@ from .core import (
     register_irq_handler,
     GattError,
 )
-from .device import DeviceConnection, DeviceTimeout
+from .device import DeviceConnection, DeviceDisconnectedError, DeviceTimeout
 
 _registered_characteristics = {}
 
@@ -263,7 +263,7 @@ class Characteristic(BaseCharacteristic):
         if self._indicate_connection is not None:
             raise ValueError("In progress")
         if not connection.is_connected():
-            raise ValueError("Not connected")
+            raise DeviceDisconnectedError
 
         self._indicate_connection = connection
         self._indicate_status = None
