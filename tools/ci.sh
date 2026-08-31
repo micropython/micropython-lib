@@ -46,6 +46,7 @@ function ci_package_tests_setup_lib {
     $CP -r python-stdlib/hashlib-sha384/hashlib "${VIRTUAL_ENV}/lib/"
     $CP -r python-stdlib/hashlib-sha512/hashlib "${VIRTUAL_ENV}/lib/"
     $CP python-stdlib/shutil/shutil.py "${VIRTUAL_ENV}/lib/"
+    $CP python-stdlib/stat/stat.py "${VIRTUAL_ENV}/lib/"
     $CP python-stdlib/tempfile/tempfile.py "${VIRTUAL_ENV}/lib/"
     $CP -r python-stdlib/unittest/unittest "${VIRTUAL_ENV}/lib/"
     $CP -r python-stdlib/unittest-discover/unittest "${VIRTUAL_ENV}/lib/"
@@ -77,6 +78,7 @@ function ci_package_tests_run {
         python-stdlib/string/test_translate.py \
         python-stdlib/unittest/tests/exception.py \
         unix-ffi/gettext/test_gettext.py \
+        unix-ffi/os/test_popen.py \
         unix-ffi/pwd/test_getpwnam.py \
         unix-ffi/re/test_re.py \
         unix-ffi/sqlite3/test_sqlite3.py \
