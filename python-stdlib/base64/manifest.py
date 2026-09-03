@@ -1,4 +1,4 @@
-metadata(version="3.3.6")
+metadata(version="3.3.7")
 
 require("binascii")
 
