@@ -436,16 +436,14 @@ def main():
     import sys, getopt
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "deut")
+        opts, args = getopt.getopt(sys.argv[1:], "deu")
     except getopt.error as msg:
         sys.stdout = sys.stderr
         print(msg)
         print(
-            """usage: %s [-d|-e|-u|-t] [file|-]
+            """usage: %s [-d|-e|-u] [file|-]
         -d, -u: decode
-        -e: encode (default)
-        -t: encode and decode string 'Aladdin:open sesame'"""
-            % sys.argv[0]
+        -e: encode (default)""".format(sys.argv[0])
         )
         sys.exit(2)
     func = encode
@@ -456,24 +454,11 @@ def main():
             func = decode
         if o == "-u":
             func = decode
-        if o == "-t":
-            test()
-            return
     if args and args[0] != "-":
         with open(args[0], "rb") as f:
             func(f, sys.stdout.buffer)
     else:
         func(sys.stdin.buffer, sys.stdout.buffer)
-
-
-def test():
-    s0 = b"Aladdin:open sesame"
-    print(repr(s0))
-    s1 = encodebytes(s0)
-    print(repr(s1))
-    s2 = decodebytes(s1)
-    print(repr(s2))
-    assert s0 == s2
 
 
 if __name__ == "__main__":
