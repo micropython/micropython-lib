@@ -40,4 +40,15 @@ b = base64.b32decode(d)
 if b != b"zlutoucky kun upel dabelske ody":
     raise Exception("Error")
 
+binary = b"\x99\x10\xaa"
+b = base64.b32encode(binary)
+if b != b"TEIKU===":
+    raise Exception("Error")
+
+d = base64.b32decode(b)
+print(d)
+if d != binary:
+    raise Exception("Error")
+
+
 print("OK")
