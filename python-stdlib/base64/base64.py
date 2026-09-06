@@ -120,23 +120,8 @@ def b64decode(s, altchars=None, validate=False):
     return binascii.a2b_base64(s)
 
 
-def standard_b64encode(s):
-    """Encode a byte string using the standard Base64 alphabet.
-
-    s is the byte string to encode.  The encoded byte string is returned.
-    """
-    return b64encode(s)
-
-
-def standard_b64decode(s):
-    """Decode a byte string encoded with the standard Base64 alphabet.
-
-    s is the byte string to decode.  The decoded byte string is
-    returned.  binascii.Error is raised if the input is incorrectly
-    padded or if there are non-alphabet characters present in the
-    input.
-    """
-    return b64decode(s)
+standard_b64encode = b64encode
+standard_b64decode = b64decode
 
 
 # _urlsafe_encode_translation = _maketrans(b'+/', b'-_')
