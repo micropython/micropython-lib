@@ -14,277 +14,27 @@ a2b_hex = unhexlify
 
 # ____________________________________________________________
 
-PAD = "="
+_PAD = const("=")
 
-table_a2b_base64 = [
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    62,
-    -1,
-    -1,
-    -1,
-    63,
-    52,
-    53,
-    54,
-    55,
-    56,
-    57,
-    58,
-    59,
-    60,
-    61,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,  # Note PAD->-1 here
-    -1,
-    0,
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7,
-    8,
-    9,
-    10,
-    11,
-    12,
-    13,
-    14,
-    15,
-    16,
-    17,
-    18,
-    19,
-    20,
-    21,
-    22,
-    23,
-    24,
-    25,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    26,
-    27,
-    28,
-    29,
-    30,
-    31,
-    32,
-    33,
-    34,
-    35,
-    36,
-    37,
-    38,
-    39,
-    40,
-    41,
-    42,
-    43,
-    44,
-    45,
-    46,
-    47,
-    48,
-    49,
-    50,
-    51,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-]
-
-
-def _transform(n):
-    if n == -1:
-        return "\xff"
-    else:
-        return chr(n)
-
-
-table_a2b_base64 = "".join(map(_transform, table_a2b_base64))
-assert len(table_a2b_base64) == 256
+# a2b = bytearray('\xff' * 256); for i, j in enumerate(b2a): a2b[ord(j)] = i
+_TABLE_A2B_BASE64 = const(
+    b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+    b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+    b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x3e\xff\xff\xff\x3f"
+    b"\x34\x35\x36\x37\x38\x39\x3a\x3b\x3c\x3d\xff\xff\xff\xff\xff\xff"
+    b"\xff\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e"
+    b"\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\xff\xff\xff\xff\xff"
+    b"\xff\x1a\x1b\x1c\x1d\x1e\x1f\x20\x21\x22\x23\x24\x25\x26\x27\x28"
+    b"\x29\x2a\x2b\x2c\x2d\x2e\x2f\x30\x31\x32\x33\xff\xff\xff\xff\xff"
+    b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+    b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+    b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+    b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+    b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+    b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+    b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+    b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+)
 
 
 def a2b_base64(ascii):
@@ -297,13 +47,12 @@ def a2b_base64(ascii):
     last_char_was_a_pad = False
 
     for c in ascii:
-        c = chr(c)
-        if c == PAD:
+        if c == 61:  # ord('=')
             if quad_pos > 2 or (quad_pos == 2 and last_char_was_a_pad):
                 break  # stop on 'xxx=' or on 'xx=='
             last_char_was_a_pad = True
         else:
-            n = ord(table_a2b_base64[ord(c)])
+            n = _TABLE_A2B_BASE64[c]
             if n == 0xFF:
                 continue  # ignore strange characters
             #
@@ -328,14 +77,12 @@ def a2b_base64(ascii):
 
 # ____________________________________________________________
 
-table_b2a_base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+_TABLE_B2A_BASE64 = const("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/")
 
 
 def b2a_base64(bin, newline=True):
     "Base64-code line of data."
 
-    newlength = (len(bin) + 2) // 3
-    newlength = newlength * 4 + 1
     res = []
 
     leftchar = 0
@@ -344,19 +91,19 @@ def b2a_base64(bin, newline=True):
         # Shift into our buffer, and output any 6bits ready
         leftchar = (leftchar << 8) | c
         leftbits += 8
-        res.append(table_b2a_base64[(leftchar >> (leftbits - 6)) & 0x3F])
+        res.append(_TABLE_B2A_BASE64[(leftchar >> (leftbits - 6)) & 0x3F])
         leftbits -= 6
         if leftbits >= 6:
-            res.append(table_b2a_base64[(leftchar >> (leftbits - 6)) & 0x3F])
+            res.append(_TABLE_B2A_BASE64[(leftchar >> (leftbits - 6)) & 0x3F])
             leftbits -= 6
     #
     if leftbits == 2:
-        res.append(table_b2a_base64[(leftchar & 3) << 4])
-        res.append(PAD)
-        res.append(PAD)
+        res.append(_TABLE_B2A_BASE64[(leftchar & 3) << 4])
+        res.append(_PAD)
+        res.append(_PAD)
     elif leftbits == 4:
-        res.append(table_b2a_base64[(leftchar & 0xF) << 2])
-        res.append(PAD)
+        res.append(_TABLE_B2A_BASE64[(leftchar & 0xF) << 2])
+        res.append(_PAD)
     if newline:
         res.append("\n")
     return "".join(res).encode("ascii")
