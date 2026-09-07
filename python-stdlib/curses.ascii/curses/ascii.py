@@ -94,11 +94,11 @@ def isascii(c):
 
 
 def isblank(c):
-    return _ctoi(c) in (8, 32)
+    return _ctoi(c) in (9, 32)
 
 
 def iscntrl(c):
-    return _ctoi(c) <= 31
+    return _ctoi(c) <= 31 or _ctoi(c) == 127
 
 
 def isdigit(c):
@@ -118,7 +118,8 @@ def isprint(c):
 
 
 def ispunct(c):
-    return _ctoi(c) != 32 and not isalnum(c)
+    char = _ctoi(c)
+    return (47 >= char >= 33) or (64 >= char >= 58) or (96 >= char >= 91) or (126 >= char >= 123)
 
 
 def isspace(c):
