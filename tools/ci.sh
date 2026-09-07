@@ -66,6 +66,7 @@ function ci_package_tests_run {
         python-stdlib/collections-defaultdict/test_defaultdict.py \
         python-stdlib/functools/test_partial.py \
         python-stdlib/functools/test_reduce.py \
+        python-stdlib/functools/test_cache.py \
         python-stdlib/heapq/test_heapq.py \
         python-stdlib/hmac/test_hmac.py \
         python-stdlib/itertools/test_itertools.py \
