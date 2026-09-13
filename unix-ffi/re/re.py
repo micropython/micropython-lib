@@ -191,12 +191,15 @@ class PCREPattern:
 
 
 def _compile(pattern, flags):
-    # These are output arguments and must be writable and of the size that
-    # pcre2_compile() writes: int for the error code, PCRE2_SIZE for the offset.
-    errcode = array.array("i", [0])
-    erroffset = array.array(PCRE2_SIZE_TYPE, [0])
+    # These are output arguments and must be of the size that pcre2_compile()
+    # writes: int for the error code, PCRE2_SIZE for the offset.
+    errcode = bytes(4)
+    erroffset = bytes(PCRE2_SIZE_SIZE)
     regex = pcre2_compile(pattern, PCRE2_ZERO_TERMINATED, flags, errcode, erroffset, None)
-    assert regex, "error %d compiling regex at offset %d" % (errcode[0], erroffset[0])
+    assert regex, "compile error %d at %d" % (
+        int.from_bytes(errcode, sys.byteorder),
+        int.from_bytes(erroffset, sys.byteorder),
+    )
     return PCREPattern(regex)
 
 
