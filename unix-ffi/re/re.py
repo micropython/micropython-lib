@@ -2,6 +2,7 @@ import sys
 import ffilib
 import array
 import uctypes
+import weakref
 
 pcre2 = ffilib.open("libpcre2-8")
 
@@ -91,20 +92,10 @@ class PCREMatch:
 class PCREPattern:
     def __init__(self, compiled_ptn):
         self.obj = compiled_ptn
-        self.key = None  # set while this pattern is held by the cache
-
-    def _free(self):
-        # MicroPython does not run __del__ on instances of Python classes, so
-        # the compiled pattern cannot be released by the garbage collector and
-        # has to be freed explicitly.
-        if self.obj is not None:
-            if self.key is not None:
-                # Drop the pattern from the cache first, so that nothing hands
-                # out a pointer that is about to become invalid.
-                del _cache[self.key]
-                self.key = None
-            pcre2_code_free(self.obj)
-            self.obj = None
+        # The compiled pattern lives in memory that PCRE2 owns and that the
+        # garbage collector knows nothing about, so release it once this object
+        # is collected.
+        weakref.finalize(self, pcre2_code_free, compiled_ptn)
 
     def search(self, s, pos=0, endpos=-1, _flags=0):
         assert endpos == -1, "pos: %d, endpos: %d" % (pos, endpos)
@@ -205,80 +196,49 @@ def _compile(pattern, flags):
 
 # Compiled patterns are cached, the way CPython does it, so that using the same
 # pattern again does not compile it a second time.  compile() returns the
-# cached pattern, so re.compile(p) is re.compile(p), as in CPython.
-#
-# The cache owns the patterns it holds and never evicts them.  A pattern that
-# is still being used, either by the caller or by a call further up the stack,
-# must not be freed underneath it; a replacement callback passed to sub() can
-# otherwise trigger exactly that.  The cache is bounded instead: once it is
-# full, further patterns are compiled and, where this module owns them, freed
-# again after use.
+# cached pattern, so re.compile(p) is re.compile(p), as in CPython.  A pattern
+# that is dropped from the cache is freed by the garbage collector once nothing
+# refers to it any more.
 _MAXCACHE = 32
 _cache = {}
 
 
-def _cached(pattern, flags):
-    # Return the compiled pattern, and whether the caller has to free it.
+def compile(pattern, flags=0):
     key = (pattern, flags)
     r = _cache.get(key)
-    if r is not None:
-        return r, False
-    r = _compile(pattern, flags)
-    if len(_cache) < _MAXCACHE:
+    if r is None:
+        r = _compile(pattern, flags)
+        if len(_cache) >= _MAXCACHE:
+            # Drop the whole cache, the way CPython does, instead of keeping
+            # track of which entry was used last.
+            _cache.clear()
         _cache[key] = r
-        r.key = key
-        return r, False
-    return r, True
-
-
-def compile(pattern, flags=0):
-    # The pattern belongs to the caller, so it is never freed here.
-    return _cached(pattern, flags)[0]
+    return r
 
 
 def search(pattern, string, flags=0):
-    r, owned = _cached(pattern, flags)
-    try:
-        return r.search(string)
-    finally:
-        if owned:
-            r._free()
+    r = compile(pattern, flags)
+    return r.search(string)
 
 
 def match(pattern, string, flags=0):
-    r, owned = _cached(pattern, flags | PCRE2_ANCHORED)
-    try:
-        return r.search(string)
-    finally:
-        if owned:
-            r._free()
+    r = compile(pattern, flags | PCRE2_ANCHORED)
+    return r.search(string)
 
 
 def sub(pattern, repl, s, count=0, flags=0):
-    r, owned = _cached(pattern, flags)
-    try:
-        return r.sub(repl, s, count)
-    finally:
-        if owned:
-            r._free()
+    r = compile(pattern, flags)
+    return r.sub(repl, s, count)
 
 
 def split(pattern, s, maxsplit=0, flags=0):
-    r, owned = _cached(pattern, flags)
-    try:
-        return r.split(s, maxsplit)
-    finally:
-        if owned:
-            r._free()
+    r = compile(pattern, flags)
+    return r.split(s, maxsplit)
 
 
 def findall(pattern, s, flags=0):
-    r, owned = _cached(pattern, flags)
-    try:
-        return r.findall(s)
-    finally:
-        if owned:
-            r._free()
+    r = compile(pattern, flags)
+    return r.findall(s)
 
 
 def escape(s):
