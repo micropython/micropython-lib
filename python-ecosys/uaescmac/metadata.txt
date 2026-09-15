@@ -1,0 +1,6 @@
+srctype = micropython-lib
+type = module
+version = 0.0
+author = Marceau Fillon
+desc = Module containing an aes cypher and aes-cmac hash algorithm.
+long_desc = README
