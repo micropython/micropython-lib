@@ -31,13 +31,19 @@ class SSLContext:
         self._context.load_verify_locations(cadata)
 
     def wrap_socket(
-        self, sock, server_side=False, do_handshake_on_connect=True, server_hostname=None
+        self,
+        sock,
+        server_side=False,
+        do_handshake_on_connect=True,
+        server_hostname=None,
+        session=None,
     ):
         return self._context.wrap_socket(
             sock,
             server_side=server_side,
             do_handshake_on_connect=do_handshake_on_connect,
             server_hostname=server_hostname,
+            session=session,
         )
 
 
@@ -50,6 +56,7 @@ def wrap_socket(
     cadata=None,
     server_hostname=None,
     do_handshake=True,
+    session=None,
 ):
     con = SSLContext(PROTOCOL_TLS_SERVER if server_side else PROTOCOL_TLS_CLIENT)
     if cert or key:
@@ -62,4 +69,5 @@ def wrap_socket(
         server_side=server_side,
         do_handshake_on_connect=do_handshake,
         server_hostname=server_hostname,
+        session=session,
     )
