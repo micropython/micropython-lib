@@ -99,6 +99,10 @@
 #   "v": 1,     <-- file format version
 #   "hashes": [
 #     ["aioble/server.mpy", "e39dbf64"],
+#     ["aioble/server.mpy", "e39dbf64", 2822],  # optional 3rd element: only
+#                                                # installed if it matches the
+#                                                # device's sys.implementation._mpy
+#                                                # (not emitted by this script)
 #     ...
 #   ],
 #   "urls": [   <-- not used by micropython-lib packages
