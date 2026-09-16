@@ -72,6 +72,7 @@ class MIDIInterface(Interface):
         self.ep_in = None  # TX direction (device to host)
         self._rx = Buffer(rxlen)
         self._tx = Buffer(txlen)
+        self._on_rx_schedule = False
 
     # Callbacks for handling received MIDI messages.
     #
@@ -147,10 +148,22 @@ class MIDIInterface(Interface):
             self.submit_xfer(self.ep_out, self._rx.pend_write(), self._rx_cb)
 
     def _rx_cb(self, ep, res, num_bytes):
-        if res == 0:
-            self._rx.finish_write(num_bytes)
-            schedule(self._on_rx, None)
-        self._rx_xfer()
+        # This function assumes it's only called via an irq (soft or hard), and therefore
+        # it won't be interrupted by its own scheduled callback until it finishes.
+        try:
+            if res == 0:
+                # Queue at most one concurrent call to self._on_rx, as each execution
+                # will read all the bytes queued in self._rx buffer
+                if not self._on_rx_schedule:
+                    schedule(self._on_rx, None)
+                    self._on_rx_schedule = True
+                # Ordering so that if the schedule() call fails, the bytes
+                # already in the buffer will be lost (overwritten by the next
+                # xfer). This prevents wedging the MIDI RX path with a full buffer
+                # and no call to _on_rx pending.
+                self._rx.finish_write(num_bytes)
+        finally:
+            self._rx_xfer()
 
     def on_open(self):
         super().on_open()
@@ -160,6 +173,7 @@ class MIDIInterface(Interface):
 
     def _on_rx(self, _):
         # Receive MIDI events. Called via micropython.schedule, outside of the USB callback function.
+        self._on_rx_schedule = False
         m = self._rx.pend_read()
         i = 0
         while i <= len(m) - 4:
