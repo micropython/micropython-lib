@@ -338,3 +338,17 @@ def register_services(*services):
             for descriptor in characteristic.descriptors:
                 descriptor._register(service_handles[n])
                 n += 1
+
+
+# Send indication on the service changed characteristic.
+# Targets specific connection if provided, else sends to all connected and/or bonded devices.
+# Flags specific changed characteristics if provided else all will be indicated.
+def indicate_service_changed(conn_handle=None, changed: List[Characteristic] = None):
+    handle_start = 0x0000
+    handle_end = 0xFFFF
+    if changed:
+        print(_registered_characteristics)
+        handles = sorted([c._value_handle for c in changed])
+        handle_start = handles[0] - 1  # def handle is one less than value_handle
+        handle_end = handles[-1]
+    ble.gap_indicate_service_changed(conn_handle, handle_start, handle_end)
