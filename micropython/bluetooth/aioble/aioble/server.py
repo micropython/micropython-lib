@@ -279,15 +279,19 @@ class Characteristic(BaseCharacteristic):
 
     def _indicate_done(conn_handle, value_handle, status):
         if characteristic := _registered_characteristics.get(value_handle, None):
+            if not (characteristic.flags & _FLAG_INDICATE):
+                log_warn("Received indication on unexpected characteristic:", value_handle)
+                return
             if connection := DeviceConnection._connected.get(conn_handle, None):
                 if not characteristic._indicate_connection:
                     # Timeout.
                     return
                 # See TODO in __init__ to support multiple concurrent indications.
-                assert connection == characteristic._indicate_connection
-                characteristic._indicate_status = status
-                characteristic._indicate_event.set()
-
+                if connection == characteristic._indicate_connection:
+                    characteristic._indicate_status = status
+                    characteristic._indicate_event.set()
+                else:
+                    log_warn("Received indication for unexpected connection")
 
 class BufferedCharacteristic(Characteristic):
     def __init__(self, *args, max_len=20, append=False, **kwargs):
