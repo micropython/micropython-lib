@@ -39,6 +39,12 @@ def exists(fname):
         return False
 
 
+def validate_boot_file():
+    if not exists(RC):
+        with open(RC, "w") as f:
+            f.write("# boot.py -- run on boot-up\n")
+
+
 def get_daemon_status():
     with open(RC) as f:
         for l in f:
@@ -71,6 +77,7 @@ def change_daemon(action):
 
 
 def main():
+    validate_boot_file()
     status = get_daemon_status()
 
     print("WebREPL daemon auto-start status:", "enabled" if status else "disabled")
