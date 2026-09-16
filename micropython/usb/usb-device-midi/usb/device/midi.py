@@ -181,6 +181,7 @@ class MIDIInterface(Interface):
             self.on_midi_event(cin, m[i + 1], m[i + 2], m[i + 3])
             i += 4
         self._rx.finish_read(i)
+        self._rx_xfer()  # resume xfer if needed because _rx buffer was previously full
 
     def desc_cfg(self, desc, itf_num, ep_num, strs):
         # Start by registering a USB Audio Control interface, that is required to point to the
