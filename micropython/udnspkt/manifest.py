@@ -1,4 +1,4 @@
-metadata(description="Make and parse DNS packets (Sans I/O approach).", version="0.1.0")
+metadata(description="Make and parse DNS packets (Sans I/O approach).", version="0.2.0")
 
 # Originally written by Paul Sokolovsky.
 
