@@ -32,8 +32,15 @@ EMLINK = 31  # Too many links
 EPIPE = 32  # Broken pipe
 EDOM = 33  # Math argument out of domain of func
 ERANGE = 34  # Math result not representable
-EAFNOSUPPORT = 97  # Address family not supported by protocol
-ECONNRESET = 104  # Connection timed out
-ENOTCONN = 107 # Not connected
+ECONNRESET = 104  # Connection reset by peer
+ENOTCONN = 107  # Transport endpoint is not connected
 ETIMEDOUT = 110  # Connection timed out
 EINPROGRESS = 115  # Operation now in progress
+
+# Override the table above with the built-in module's values, which come from
+# this port's system headers.  The u-prefix reaches the built-in module.
+try:
+    from uerrno import *
+except ImportError:
+    # Built without MICROPY_PY_ERRNO.
+    pass
