@@ -57,25 +57,23 @@ class ClientResponse:
 
 
 class ChunkedClientResponse(ClientResponse):
-    def __init__(self, reader):
-        self.content = reader
-        self.chunk_size = 0
+    async def read(self, sz=-1):
+        data = bytearray(b"")  # response data accumulator
 
-    async def read(self, sz=4 * 1024 * 1024):
-        if self.chunk_size == 0:
+        while True:
             l = await self.content.readline()
-            l = l.split(b";", 1)[0]
-            self.chunk_size = int(l, 16)
-            if self.chunk_size == 0:
-                # End of message
-                sep = await self.content.readexactly(2)
-                assert sep == b"\r\n"
-                return b""
-        data = await self.content.readexactly(min(sz, self.chunk_size))
-        self.chunk_size -= len(data)
-        if self.chunk_size == 0:
-            sep = await self.content.readexactly(2)
-            assert sep == b"\r\n"
+            l = l.strip(b"\r\n")  # remove CRLF
+            l = l.split(b";", 1)[0]  # ignore chunk-extensions
+            chunk_size = int(l, 16)
+            if chunk_size == 0:
+                break
+
+            data.extend(await self.content.readexactly(chunk_size))
+
+            chunk_trailer = await self.content.readline()
+            if chunk_trailer != b"\r\n":
+                raise ValueError(f"Expected CRLF, got {chunk_trailer!r}")
+
         return self._decode(data)
 
     def __repr__(self):
