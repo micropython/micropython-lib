@@ -1,6 +1,5 @@
 import socket
 import struct
-from binascii import hexlify
 
 
 class MQTTException(Exception):
@@ -107,7 +106,6 @@ class MQTTClient:
 
         self.sock.write(premsg, i + 2)
         self.sock.write(msg)
-        # print(hex(len(msg)), hexlify(msg, ":"))
         self._send_str(self.client_id)
         if self.lw_topic:
             self._send_str(self.lw_topic)
@@ -138,7 +136,6 @@ class MQTTClient:
             sz += 2
         assert sz < 2097152
         i = _encode_len(pkt, sz)
-        # print(hex(len(pkt)), hexlify(pkt, ":"))
         self.sock.write(pkt, i + 1)
         self._send_str(topic)
         if qos > 0:
