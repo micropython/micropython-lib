@@ -335,19 +335,13 @@ def server_once():
             stream_bytes[i] += stats.nb0 - nb
         stats.update()
 
-    # Need to continue writing so other side doesn't get blocked waiting for data
-    if reverse and not udp:
-        poll.unregister(s_ctrl)
-        while True:
-            pollables = poll.poll(0)
-            if not pollables:
-                break
-            for pollable in pollables:
-                for s in s_data:
-                    if pollable_is_sock(pollable, s):
-                        s.send(data_buf)
-
     stats.stop()
+
+    # Close the data streams now, as the reference implementation does.  A client that
+    # reads whole blocks would otherwise wait for the rest of one, and the unread data
+    # held for the streams can leave no room to receive the client's results.
+    for s in s_data:
+        s.close()
 
     # Ask to exchange results
     s_ctrl.sendall(bytes([EXCHANGE_RESULTS]))
@@ -393,8 +387,6 @@ def server_once():
     assert cmd == IPERF_DONE
 
     # Close all sockets
-    for s in s_data:
-        s.close()
     s_ctrl.close()
     s_listen.close()
 
