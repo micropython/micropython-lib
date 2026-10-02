@@ -343,22 +343,27 @@ def server_once():
                     break
         stats.update()
 
-    # Need to continue writing so other side doesn't get blocked waiting for data
-    if reverse and not udp:
-        poll.unregister(s_ctrl)
-        while True:
-            pollables = poll.poll(0)
-            if not pollables:
-                break
-            for pollable in pollables:
-                for s in s_data:
-                    if pollable_is_sock(pollable, s):
-                        s.send(data_buf)
-
     stats.stop()
 
     # Ask to exchange results
     s_ctrl.sendall(bytes([EXCHANGE_RESULTS]))
+
+    # Need to continue writing until the other side responds, because it may be blocked
+    # waiting for the rest of a block of data and not see the request until it gets it
+    if reverse and not udp:
+        waiting = True
+        while waiting:
+            for pollable in poll.poll():
+                if pollable_is_sock(pollable, s_ctrl):
+                    waiting = False
+                    continue
+                for s in s_data:
+                    if pollable_is_sock(pollable, s):
+                        try:
+                            s.send(data_buf)
+                        except OSError:
+                            # The other side has closed this stream
+                            poll.unregister(s)
 
     # Get client results
     n = struct.unpack(">I", recvn(s_ctrl, 4))[0]
