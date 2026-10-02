@@ -71,7 +71,8 @@ def fmt_size(val, div):
 
 class Stats:
     def __init__(self, param):
-        self.pacing_timer_us = param["pacing_timer"] * 1000
+        # iperf3 clients before 3.2 do not send the pacing timer.
+        self.pacing_timer_us = param.get("pacing_timer", 1000) * 1000
         self.udp = param.get("udp", False)
         self.reverse = param.get("reverse", False)
         self.running = False
