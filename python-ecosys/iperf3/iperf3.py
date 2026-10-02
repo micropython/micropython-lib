@@ -217,8 +217,10 @@ def _transfer(udp, reverse, addr, s_data, buf, udp_last_send, udp_packet_id, udp
                 stats.add_bytes(n)
     else:
         if reverse:
-            recvninto(s_data, buf)
-            n = len(buf)
+            # The socket is non-blocking, so this reads only what is available.  The
+            # sender is not required to end the stream on a block boundary, so waiting
+            # here for a full block could block forever and miss TEST_END.
+            n = recvinto(s_data, buf) or 0
         else:
             n = s_data.send(buf)
         stats.add_bytes(n)
@@ -260,6 +262,9 @@ def server_once():
         s_data, addr = s_listen.accept()
         print("Accepted connection:", addr)
         recvn(s_data, COOKIE_SIZE)
+        if not reverse:
+            # Receive without blocking, see _transfer().
+            s_data.setblocking(False)
         udp = False
         udp_packet_id = 0
         udp_interval = None
@@ -488,6 +493,9 @@ def client(host, udp=False, reverse=False, bandwidth=10 * 1024 * 1024):
                         s_data = socket.socket(ai[0], socket.SOCK_STREAM)
                         s_data.connect(ai[-1])
                         s_data.sendall(cookie)
+                        if reverse:
+                            # Receive without blocking, see _transfer().
+                            s_data.setblocking(False)
                     buf = bytearray(urandom(param["len"]))
                 elif cmd == EXCHANGE_RESULTS:
                     # Close data socket now that server knows we are finished, to prevent it flooding us
