@@ -1,6 +1,6 @@
 import socket
 import struct
-from binascii import hexlify
+# from binascii import hexlify
 
 
 class MQTTException(Exception):
