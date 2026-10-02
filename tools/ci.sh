@@ -103,6 +103,7 @@ function ci_package_tests_run {
         python-stdlib/inspect \
         python-stdlib/pathlib \
         python-stdlib/quopri \
+        python-stdlib/selectors \
         python-stdlib/shutil \
         python-stdlib/tarfile \
         python-stdlib/tempfile \
