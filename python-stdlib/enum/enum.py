@@ -1,269 +1,182 @@
 # enum.py
-# version="1.3.0"
+# Enum implementation without metaclasses
+# version="1.4.0"
+
+# ==============================================================================
+# Variable & Abbreviation Definitions:
+# ==============================================================================
+# Functions & Helper Methods:
+#   _c(e, n, v, v_t) -> create_enum_item: Helper function to construct a typed enum instance.
+#   _i()        -> items: Classmethod to lazily initialize and return the __members__ dict.
+#   a(s, k, v)  -> __setattr__: Inner setter guard raising AttributeError on enum items.
+#
+# Helper Arguments & Local Variables:
+#   e       - enum_name / enum_item: Class name string or instance of an enum item.
+#   n       - name: String representing the enum member key (e.g., "RED").
+#   v       - value / member value: Value assigned to or searched within the enum member.
+#   c       - class / new_class: Dynamically created Enum subclass via `type()`.
+#   v_t     - value_type: Target constraint type (`int`, `str`, or `None` for generic Enum).
+#   l       - names_list: List of parsed string keys from comma/space-separated inputs.
+#   d       - dict / mapping: Temporary dictionary for parsed enum members.
+#   k, v    - key, value: Key-value pair during iteration over attributes or dictionaries.
+#   i       - item: Individual enum member instance during iteration.
+#   __members__ - Dictionary mapping enum member instances to their raw values.
+#   s, k, o - self, key/attribute_name, other_enum (standard short parameters).
+# ==============================================================================
 
 
-def _make_enum(v, n, e):
-    T = type(v)
+def _c(e, n, v, v_t=None):
+    # Inner guard to prevent modification of enum item attributes
+    def a(s, k, v):
+        raise AttributeError("cannot set attribute")
 
-    def _setattr(self, k, v):
-        raise AttributeError(f"{self.__class__.__name__} is immutable")
+    # Type checks for IntEnum and StrEnum
+    if v_t is int and not isinstance(v, int):
+        raise TypeError(f"IntEnum member {n!r} value must be int, got {type(v).__name__}")
+    elif v_t is str and not isinstance(v, str):
+        raise TypeError(f"StrEnum member {n!r} value must be str, got {type(v).__name__}")
 
-    # Create class: type(name, bases, dict), which inherits a base type (int, str, etc.)
+    # Safely extract class name string if a class or object was passed
+    e = getattr(e, "__name__", str(e))
+
+    # Create dynamic subclass inheriting the value's type (int, str, float etc.)
     return type(
-        "EnumValue",
-        (T,),
+        f"{e}.{n}",
+        (type(v),),
         {
             "name": n,
-            "value": property(lambda s: v),
-            "__repr__": lambda s: f"{e}.{n}: {v}",
-            "__str__": lambda s: f"{e}.{n}: {v}",
+            "value": v,
+            "__str__": lambda s: str(v) if v_t in (int, str) else f"{e}.{n}",
+            "__repr__": lambda s: f"<{e}.{n}: {v!r}>",
             "__call__": lambda s: v,
-            "__setattr__": _setattr,
+            "__setattr__": a,
         },
     )(v)
 
 
 class Enum:
-    def __new__(cls, name=None, names=None):
-        # If a name and names are provided, create a NEW subclass of Enum
-        if name and names:
-            # Support Functional API: Enum("Name", {"KEY1": VALUE1, "KEY2": VALUE2, ..})
-            # Dynamically create: class <name>
-            new_cls = type(name, (cls,), {"_i": True})  # _inited
-            for k, v in names.items():
-                setattr(new_cls, k, _make_enum(v, k, name))
-            return super().__new__(new_cls)
+    _v_t = None  # Expected value type constraint (int, str, or None)
 
-        # Reverse lookup by value or name (e.g., Color(1) or Color("RED"))
-        if name and cls is not Enum:
-            return cls._lookup(name)
+    def __new__(cls, value=None, names=None, *, start=1):
+        # Functional API: dynamic creation of a new Enum class
+        if value is not None and names is not None:
+            is_str_enum = cls._v_t is str
+
+            # Parse 'names' parameter into a key-value dictionary
+            if isinstance(names, dict):
+                d = names
+            elif isinstance(names, str):
+                # Space or comma-separated string of member names
+                l = names.replace(",", " ").split()
+                d = (
+                    {k: k for k in l}
+                    if is_str_enum
+                    else {k: v for v, k in enumerate(l, start=start)}
+                )
+            elif isinstance(names, (list, tuple)):
+                # List/tuple of strings or (name, value) pairs
+                if names and isinstance(names[0], (list, tuple)):
+                    d = dict(names)
+                else:
+                    d = (
+                        {k: k for k in names}
+                        if is_str_enum
+                        else {k: v for v, k in enumerate(names, start=start)}
+                    )
+            else:
+                # Other iterables (e.g., sets)
+                d = (
+                    {k: k for k in names}
+                    if is_str_enum
+                    else {k: v for v, k in enumerate(names, start=start)}
+                )
+
+            # Construct and return a new Enum subclass
+            c = type(str(value), (cls,), {"__members__": {}})
+            for k, v in d.items():
+                e = _c(value, k, v, v_t=cls._v_t)
+                setattr(c, k, e)
+                c.__members__[e] = v
+            return c
+
+        if cls not in (Enum, IntEnum, StrEnum):
+            # Lazy initialization of subclass members
+            cls._i()
+
+            # Lookup existing member by value or name: e.g., Color(1) or Color("RED")
+            if value is not None:
+                return cls()(value)
 
         return super().__new__(cls)
 
-    def __init__(self, name=None, names=None):
-        if "_i" not in self.__class__.__dict__:
-            self.list()
+    @classmethod
+    def __contains__(cls, v):
+        # Lookup member by value or name
+        for i in cls._i():
+            if i.value == v or i.name == v:
+                return True
+        return False
 
     @classmethod
-    def _lookup(cls, v):
-        for m in cls.list():
-            if m.value == v or m.name == v:
-                return m
-        raise AttributeError(f"{v} is not in {cls.__name__}")
+    def __call__(cls, v):
+        # Lookup member by value or name
+        for i in cls._i():
+            if i.value == v or i.name == v:
+                return i
+        raise ValueError(f"{v!r} is not a valid {cls.__name__}")
 
     @classmethod
-    def __iter__(cls):
-        return iter(cls.list())
+    def __getitem__(cls, k):
+        # Instance-level container lookup: Color()["RED"]
+        for i in cls._i():
+            if i.name == k:
+                return i
+        raise KeyError(k)
+
+    # Equality checks if both classes are Enums and have identical __members__ dicts
+    # __eq__ = classmethod(lambda cls, o: isinstance(o, type) and issubclass(o, Enum) and cls._i() == o._i())
+    __eq__ = classmethod(lambda cls, o: getattr(o, "_i", None) and cls._i() == o._i())
+    # Iteration yields enum member instances (keys of __members__)
+    __iter__ = classmethod(lambda cls: iter(cls._i()))
+    __len__ = classmethod(lambda cls: len(cls._i()))
+    __str__ = __repr__ = classmethod(lambda cls: f"<enum '{type(cls).__name__}'>")
 
     @classmethod
-    def list(cls):
-        if "_i" not in cls.__dict__:
-            # Copy dict.items() to avoid RuntimeError when changing the dictionary
+    def __setattr__(cls, k, v):
+        raise AttributeError("cannot set attribute")
+
+    @classmethod
+    def __delattr__(cls, k):
+        raise AttributeError("cannot delete attribute")
+
+    @classmethod
+    def dump(cls):
+        # Serialize enum members to string representation for eval compatibility
+        # cls == eval(cls.dump())
+        if cls._v_t is None:
+            e = "Enum"
+        else:
+            e = cls._v_t.__name__[0].upper() + cls._v_t.__name__[1:] + "Enum"
+        d = {i.name: i.value for i in cls._i()}
+        return f"{e}('{cls.__name__}', {d})"
+
+    @classmethod
+    def _i(cls):
+        # Initialize and return dictionary mapping enum member instances to their values
+        if "__members__" not in cls.__dict__:
+            # Convert raw class attributes into typed enum instances
+            cls.__members__ = {}
             for k, v in list(cls.__dict__.items()):
                 if not k.startswith("_") and not callable(v):
-                    setattr(cls, k, _make_enum(v, k, cls.__name__))
-            cls._i = True
-        return [
-            m for k in dir(cls) if not k.startswith("_") and hasattr(m := getattr(cls, k), "name")
-        ]
-
-    @classmethod
-    def is_value(cls, v):
-        return any(m.value == v or m.name == v for m in cls.list())
-
-    def __repr__(self):
-        # Supports the condition: obj == eval(repr(obj))
-        d = {m.name: m.value for m in self.__class__.list()}
-        # Return a string like: Enum(name='Name', names={'KEY1': VALUE1, 'KEY2': VALUE2, ..})
-        return f"Enum(name='{self.__class__.__name__}', names={d})"
-
-    def __call__(self, v):
-        return self._lookup(v)
-
-    def __setattr__(self, k, v):
-        if "_i" in self.__class__.__dict__:
-            raise AttributeError(f"{self.__class__.__name__} is immutable")
-        super().__setattr__(k, v)
-
-    def __delattr__(self, k):
-        raise AttributeError(f"{self.__class__.__name__} is immutable")
-
-    @classmethod
-    def __len__(cls):
-        return len(cls.list())
-
-    def __eq__(self, o):
-        if not isinstance(o, Enum):
-            return False
-        return self.list() == o.list()
+                    e = _c(cls.__name__, k, v, v_t=cls._v_t)
+                    setattr(cls, k, e)
+                    cls.__members__[e] = v
+        return cls.__members__
 
 
-if __name__ == "__main__":
-    # --- Usage Example 1 ---
-    # Standard Class Definition
-    class Color(Enum):
-        RED = 1
-        GREEN = 2
-        BLUE = 3
+class IntEnum(Enum):
+    _v_t = int
 
-    # Basic access
-    print(f"RED: repr={repr(Color.RED)}, type={type(Color.RED)}, {Color(1).name} ")
-    print(f"RED: name={Color.RED.name}, value={Color.RED.value}, str={str(Color.RED)}, call={Color.RED()} ")
-    assert Color(1).value == 1
-    assert Color.BLUE.value >= Color.GREEN.value
 
-    print("Color.list():", Color.list())
-
-    # Iteration
-    print("Members list:", [member for member in Color()])
-    print("Names list:", [member.name for member in Color()])
-    print("Values list:", [member.value for member in Color()])
-    print()
-
-    # Create instance
-    c = Color()
-    print(f"Enum c: {c}")
-
-    # Basic access
-    print(f"RED: name={c.RED.name}, value={c.RED.value}, str={str(c.RED)}, call={c.RED()} ")
-
-    # Assertions
-    assert c.RED.name == "RED"
-    assert c.RED.value == 1
-    assert c.RED == 1
-    assert c.RED() == 1
-
-    # Reverse Lookup via instance call
-    o = c(1)
-    print(f"c(1) lookup object: {o}, name={o.name}, value={o.value}")
-    assert c(1).name == "RED"
-    assert c(1).value == 1
-    assert c(1) == 1
-
-    try:
-        c(999)
-        0 / 0
-    except AttributeError as e:
-        print(f"\nAttributeError: {e}: {c}\n")
-
-    # --- Usage Example 2 ---
-    # Define an Enum class
-    class Status(Enum):
-        IDLE = 0
-        RUNNING = 1
-        ERROR = 2
-
-    # 2. Test: Reverse Lookup
-    # This simulates receiving a byte from the  hardware
-    received_byte = 1
-    status = Status(received_byte)
-    print(f"Lookup check: Received {received_byte} -> {status}")
-    print(Status.__len__())
-    print(len(Status()))
-    assert status == received_byte
-    assert status == Status.RUNNING
-    assert status.name == "RUNNING"
-    assert status.value == received_byte
-
-    # Test: Comparisons
-    print(f"Comparison check: {status} == 1 is {status == 1}")
-    assert status == 1
-    assert status != 0
-
-    # Immutability Check
-    try:
-        Status.RUNNING.value = 999
-        0 / 0
-    except AttributeError as e:
-        print(f"\nImmutability check: Passed (Cannot modify EnumValue): {e}\n")
-
-    # Test: Iteration
-    print("Iteration check: ", end="")
-    for m in Status():
-        print(f"{m.name}, ", end="")
-    print("-> Passed")
-
-    # Test: Error handling for invalid lookup
-    try:
-        Status(999)
-        0 / 0
-    except AttributeError as e:
-        print(f"\nAttributeError: Invalid lookup check: Caught expected error -> {e}\n")
-
-    # --- Example 3: Functional API and serialization ---
-    print("--- Functional API and Eval Check ---")
-
-    # Verify that eval(repr(obj)) restores the object
-    c_repr = repr(c)
-    print(f"Original: {c_repr}")
-    c_restored = eval(c_repr)
-    print(f"Restored: {repr(c_restored)}")
-    print(f"Objects are equal: {c == c_restored}")
-    assert c == c_restored
-
-    # Direct creation using the Enum base class
-    state = eval("Enum(name='State', names={'ON':1, 'OFF':2})")
-    print(f"Functional Enum instance (state): {state}")
-    print(type(state))
-    assert state.ON == 1
-    assert state.ON.name == "ON"
-    assert state.ON > 0
-    assert state.ON.value | state.OFF.value == 3
-
-    # --- 1. Unique Data Types & Class Methods ---
-    # Enums can hold more than just integers; here we use strings and add a method.
-    class HttpMethod(Enum):
-        GET = "GET"
-        POST = "POST"
-        DELETE = "DELETE"
-
-        def is_safe(self):
-            # Demonstrates that custom logic can coexist with Enum members
-            return self.list()[0] == self.GET  # Simplistic example check
-
-    api_call = HttpMethod()
-    print(f"Member with string value: {api_call.GET}")
-    assert api_call.GET == "GET"
-
-    # --- 2. Advanced Reverse Lookup Scenarios ---
-    # Demonstrates lookup by both name string and raw value string.
-    print(f"Lookup by value 'POST': {api_call('POST')}")
-    print(f"Lookup by name 'DELETE': {api_call('DELETE')}")
-    assert api_call("GET").name == "GET"
-
-    # --- 3. Empty Enum Handling ---
-    # Verifies behavior when no members are defined.
-    class Empty(Enum):
-        pass
-
-    empty_inst = Empty()
-    print(f"Empty Enum list: {empty_inst.list()}")
-    assert len(empty_inst) == 0
-
-    # --- 4. Deep Functional API & Serialization ---
-    # Testing complex name strings and verifying the 'eval' round-trip for functional enums.
-    complex_enum = Enum(name='Config', names={'MAX_RETRY': 5, 'TIMEOUT_SEC': 30})
-
-    # Verify serialization maintains the dynamic class name
-    repr_str = repr(complex_enum)
-    restored = eval(repr_str)
-
-    print(f"Restored Functional Enum: {restored}")
-    assert restored.MAX_RETRY == 5
-    assert type(restored).__name__ == 'Config'
-
-    # --- 5. Immutability & Integrity Guard ---
-    # Ensuring the Enum structure cannot be tampered with after creation.
-    try:
-        api_call.NEW_METHOD = "PATCH"
-        0 / 0
-    except AttributeError as e:
-        print(f"Caught expected mutation error: {e}")
-
-    try:
-        del api_call.GET
-        0 / 0
-    except AttributeError as e:
-        print(f"Caught expected deletion error: {e}")
-
-    print("\nAll tests passed successfully!")
+class StrEnum(Enum):
+    _v_t = str
