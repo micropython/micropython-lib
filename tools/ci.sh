@@ -66,6 +66,7 @@ function ci_package_tests_run {
         python-stdlib/binascii/test_binascii.py \
         python-stdlib/collections-defaultdict/test_defaultdict.py \
         python-stdlib/enum/test_enum.py \
+        python-stdlib/enum/test_enum_mini.py \
         python-stdlib/functools/test_partial.py \
         python-stdlib/functools/test_reduce.py \
         python-stdlib/heapq/test_heapq.py \
