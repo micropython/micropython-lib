@@ -68,6 +68,7 @@ function ci_package_tests_run {
         python-stdlib/curses.ascii/test_curses_ascii.py \
         python-stdlib/errno/test_errno.py \
         python-stdlib/enum/test_enum.py \
+        python-stdlib/enum/test_enum_mini.py \
         python-stdlib/functools/test_partial.py \
         python-stdlib/functools/test_reduce.py \
         python-stdlib/functools/test_cache.py \
