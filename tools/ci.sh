@@ -67,6 +67,7 @@ function ci_package_tests_run {
         python-stdlib/collections-defaultdict/test_defaultdict.py \
         python-stdlib/curses.ascii/test_curses_ascii.py \
         python-stdlib/enum/test_enum.py \
+        python-stdlib/enum/test_enum_mini.py \
         python-stdlib/functools/test_partial.py \
         python-stdlib/functools/test_reduce.py \
         python-stdlib/functools/test_cache.py \
