@@ -75,10 +75,7 @@ controlnames = [
 
 
 def _ctoi(c):
-    if type(c) == type(""):
-        return ord(c)
-    else:
-        return c
+    return ord(c) if type(c) is str else c
 
 
 def isalnum(c):
@@ -94,45 +91,58 @@ def isascii(c):
 
 
 def isblank(c):
-    return _ctoi(c) in (8, 32)
+    ch = _ctoi(c)
+    return ch == 9 or ch == 32
 
 
 def iscntrl(c):
-    return _ctoi(c) <= 31
+    ch = _ctoi(c)
+    return ch <= 31 or ch == 127
 
 
 def isdigit(c):
-    return _ctoi(c) >= 48 and _ctoi(c) <= 57
+    ch = _ctoi(c)
+    return ch >= 48 and ch <= 57
 
 
 def isgraph(c):
-    return _ctoi(c) >= 33 and _ctoi(c) <= 126
+    ch = _ctoi(c)
+    return ch >= 33 and ch <= 126
 
 
 def islower(c):
-    return _ctoi(c) >= 97 and _ctoi(c) <= 122
+    ch = _ctoi(c)
+    return ch >= 97 and ch <= 122
 
 
 def isprint(c):
-    return _ctoi(c) >= 32 and _ctoi(c) <= 126
+    ch = _ctoi(c)
+    return ch >= 32 and ch <= 126
 
 
 def ispunct(c):
-    return _ctoi(c) != 32 and not isalnum(c)
+    ch = _ctoi(c)
+    return (
+        (ch >= 33 and ch <= 47)
+        or (ch >= 58 and ch <= 64)
+        or (ch >= 91 and ch <= 96)
+        or (ch >= 123 and ch <= 126)
+    )
 
 
 def isspace(c):
-    return _ctoi(c) in (9, 10, 11, 12, 13, 32)
+    ch = _ctoi(c)
+    return isblank(c) or (ch >= 10 and ch <= 13)
 
 
 def isupper(c):
-    return _ctoi(c) >= 65 and _ctoi(c) <= 90
+    ch = _ctoi(c)
+    return ch >= 65 and ch <= 90
 
 
 def isxdigit(c):
-    return (
-        isdigit(c) or (_ctoi(c) >= 65 and _ctoi(c) <= 70) or (_ctoi(c) >= 97 and _ctoi(c) <= 102)
-    )
+    ch = _ctoi(c)
+    return isdigit(c) or (ch >= 65 and ch <= 70) or (ch >= 97 and ch <= 102)
 
 
 def isctrl(c):
@@ -144,24 +154,18 @@ def ismeta(c):
 
 
 def ascii(c):
-    if type(c) == type(""):
-        return chr(_ctoi(c) & 0x7F)
-    else:
-        return _ctoi(c) & 0x7F
+    ch = _ctoi(c) & 0x7F
+    return chr(ch) if type(c) is str else ch
 
 
 def ctrl(c):
-    if type(c) == type(""):
-        return chr(_ctoi(c) & 0x1F)
-    else:
-        return _ctoi(c) & 0x1F
+    ch = _ctoi(c) & 0x1F
+    return chr(ch) if type(c) is str else ch
 
 
 def alt(c):
-    if type(c) == type(""):
-        return chr(_ctoi(c) | 0x80)
-    else:
-        return _ctoi(c) | 0x80
+    ch = _ctoi(c) | 0x80
+    return chr(ch) if type(c) is str else ch
 
 
 def unctrl(c):
@@ -172,6 +176,4 @@ def unctrl(c):
         rep = chr(bits & 0x7F)
     else:
         rep = "^" + chr(((bits & 0x7F) | 0x20) + 0x20)
-    if bits & 0x80:
-        return "!" + rep
-    return rep
+    return "!" + rep if bits & 0x80 else rep
