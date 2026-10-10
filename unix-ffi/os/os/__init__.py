@@ -45,6 +45,7 @@ if libc:
     write_ = libc.func("i", "write", "iPi")
     close_ = libc.func("i", "close", "i")
     dup_ = libc.func("i", "dup", "i")
+    dup2_ = libc.func("i", "dup2", "ii")
     access_ = libc.func("i", "access", "si")
     fork_ = libc.func("i", "fork", "")
     pipe_ = libc.func("i", "pipe", "p")
@@ -208,6 +209,12 @@ def dup(fd):
     return r
 
 
+def dup2(oldfd, newfd):
+    r = dup2_(oldfd, newfd)
+    check_error(r)
+    return r
+
+
 def access(path, mode):
     return access_(path, mode) == 0
 
@@ -252,9 +259,12 @@ def getpid():
 
 def waitpid(pid, opts):
     a = array.array("i", [0])
-    r = waitpid_(pid, a, opts)
-    check_error(r)
-    return (r, a[0])
+    while True:
+        r = waitpid_(pid, a, opts)
+        # A signal can interrupt the wait, in which case the child has not been
+        # reaped yet and the call has to be restarted.
+        if not check_error(r):
+            return (r, a[0])
 
 
 def kill(pid, sig):
@@ -294,23 +304,88 @@ def urandom(n):
         return f.read(n)
 
 
+class _PopenStream:
+    # Wraps the pipe to a process started by popen().  Stream operations are
+    # forwarded to the underlying file, and closing the stream also waits for
+    # the process to finish, so that it does not stay around as a zombie.
+
+    def __init__(self, f, pid):
+        self._f = f
+        self._p = pid
+        self._s = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def __iter__(self):
+        return iter(self._f)
+
+    def read(self, *args):
+        return self._f.read(*args)
+
+    def readinto(self, *args):
+        return self._f.readinto(*args)
+
+    def readline(self, *args):
+        return self._f.readline(*args)
+
+    def readlines(self, *args):
+        return self._f.readlines(*args)
+
+    def write(self, *args):
+        return self._f.write(*args)
+
+    def flush(self):
+        return self._f.flush()
+
+    def fileno(self):
+        return self._f.fileno()
+
+    def close(self):
+        if self._f is not None:
+            f, self._f = self._f, None
+            try:
+                f.close()
+            finally:
+                # Reap the child even if closing the pipe raised, so that a
+                # failure there cannot leave the process behind.
+                _, self._s = waitpid(self._p, 0)
+        # Match CPython: None if the process exited successfully.
+        return self._s or None
+
+
 def popen(cmd, mode="r"):
     import builtins
 
-    i, o = pipe()
-    if mode[0] == "w":
-        i, o = o, i
+    rfd, wfd = pipe()
     pid = fork()
-    if not pid:
+
+    if pid == 0:
+        # Child: connect the relevant end of the pipe to stdout/stdin, then
+        # replace this process with the command.
         if mode[0] == "r":
-            close(1)
+            close(rfd)
+            dup2(wfd, 1)
+            close(wfd)
         else:
-            close(0)
-        close(i)
-        dup(o)
-        close(o)
-        s = system(cmd)
-        _exit(s)
+            close(wfd)
+            dup2(rfd, 0)
+            close(rfd)
+        try:
+            execvp("sh", ["sh", "-c", cmd])
+        except OSError:
+            pass
+        _exit(127)
+
+    # Parent: close the child's end of the pipe and wrap the other end so that
+    # closing it also reaps the child.
+    if mode[0] == "r":
+        close(wfd)
+        fd = rfd
     else:
-        close(o)
-        return builtins.open(i, mode)
+        close(rfd)
+        fd = wfd
+    return _PopenStream(builtins.open(fd, mode), pid)
