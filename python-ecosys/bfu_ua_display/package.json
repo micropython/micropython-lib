@@ -1,0 +1,10 @@
+{
+  "urls": [
+    ["__init__.py", "github:BrainFromUkraine/bfu_ua_display/bfu_ua_display/__init__.py"],
+    ["font5x7.py", "github:BrainFromUkraine/bfu_ua_display/bfu_ua_display/font5x7.py"],
+    ["text_engine.py", "github:BrainFromUkraine/bfu_ua_display/bfu_ua_display/text_engine.py"],
+    ["utils.py", "github:BrainFromUkraine/bfu_ua_display/bfu_ua_display/utils.py"]
+  ],
+  "deps": [],
+  "version": "0.1.0"
+}
