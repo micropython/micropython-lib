@@ -15,7 +15,7 @@ from .core import (
     register_irq_handler,
     GattError,
 )
-from .device import DeviceConnection, DeviceTimeout
+from .device import DeviceConnection, DeviceDisconnectedError, DeviceTimeout
 
 _registered_characteristics = {}
 
@@ -56,6 +56,10 @@ def _server_irq(event, data):
 
 def _server_shutdown():
     global _registered_characteristics
+    for characteristic in _registered_characteristics.values():
+        if hasattr(characteristic, "_write_event"):
+            characteristic._write_event.set()
+        characteristic._value_handle = None
     _registered_characteristics = {}
     if hasattr(BaseCharacteristic, "_capture_task"):
         BaseCharacteristic._capture_task.cancel()
@@ -84,7 +88,6 @@ class BaseCharacteristic:
         _registered_characteristics[value_handle] = self
         if self._initial is not None:
             self.write(self._initial)
-            self._initial = None
 
     # Read value from local db.
     def read(self):
@@ -100,13 +103,21 @@ class BaseCharacteristic:
         else:
             ble.gatts_write(self._value_handle, data, send_update)
 
-    # When the a capture-enabled characteristic is created, create the
+    # When a capture-enabled characteristic is created, create the
     # necessary events (if not already created).
+    # Guard on _capture_task (not _capture_queue) to match _server_shutdown()
+    # which guards on _capture_task. This ensures partial teardown (task gone
+    # but queue remains) self-heals instead of silently no-oping.
     @staticmethod
     def _init_capture():
-        if hasattr(BaseCharacteristic, "_capture_queue"):
+        if hasattr(BaseCharacteristic, "_capture_task"):
             return
-
+        # Clean up any partial state from incomplete shutdown
+        for attr in ("_capture_queue", "_capture_write_event", "_capture_consumed_event"):
+            try:
+                delattr(BaseCharacteristic, attr)
+            except AttributeError:
+                pass
         BaseCharacteristic._capture_queue = deque((), _WRITE_CAPTURE_QUEUE_LIMIT)
         BaseCharacteristic._capture_write_event = asyncio.ThreadSafeFlag()
         BaseCharacteristic._capture_consumed_event = asyncio.ThreadSafeFlag()
@@ -151,6 +162,9 @@ class BaseCharacteristic:
         # our turn by _capture_task.
         with DeviceTimeout(None, timeout_ms):
             await self._write_event.wait()
+
+        if self._value_handle is None:
+            raise DeviceDisconnectedError
 
         # Return the write data and clear the stored copy.
         # In default usage this will be just the connection handle.
@@ -338,3 +352,8 @@ def register_services(*services):
             for descriptor in characteristic.descriptors:
                 descriptor._register(service_handles[n])
                 n += 1
+
+    for characteristic in _registered_characteristics.values():
+        if characteristic.flags & _FLAG_WRITE_CAPTURE:
+            BaseCharacteristic._init_capture()
+            break

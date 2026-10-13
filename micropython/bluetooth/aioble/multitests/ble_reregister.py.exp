@@ -1,0 +1,35 @@
+--- instance0 ---
+advertise 0
+connected 0
+written 0
+disconnected 0
+shutdown 0
+advertise 1
+connected 1
+written 1
+disconnected 1
+shutdown 1
+advertise 2
+connected 2
+written 2
+disconnected 2
+shutdown 2
+--- instance1 ---
+connect 0
+read initial b'hello'
+read written b'periph0'
+write 0
+disconnect 0
+disconnected 0
+connect 1
+read initial b'hello'
+read written b'periph1'
+write 1
+disconnect 1
+disconnected 1
+connect 2
+read initial b'hello'
+read written b'periph2'
+write 2
+disconnect 2
+disconnected 2
