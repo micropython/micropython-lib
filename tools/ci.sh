@@ -66,6 +66,7 @@ function ci_package_tests_run {
         python-stdlib/binascii/test_binascii.py \
         python-stdlib/collections-defaultdict/test_defaultdict.py \
         python-stdlib/curses.ascii/test_curses_ascii.py \
+        python-stdlib/errno/test_errno.py \
         python-stdlib/functools/test_partial.py \
         python-stdlib/functools/test_reduce.py \
         python-stdlib/functools/test_cache.py \

@@ -1,3 +1,8 @@
+# Codes 1 to 34 are the same in glibc, musl, newlib and the MSVC CRT, so they
+# are more or less portable and this table provides them as a fallback.  Codes
+# above 34 differ between operating systems and architectures (ETIMEDOUT is 110
+# on Linux/x86, 145 on Linux/mips and 60 on macOS), so they are deliberately
+# not defined here and come only from the built-in module.
 EPERM = 1  # Operation not permitted
 ENOENT = 2  # No such file or directory
 ESRCH = 3  # No such process
@@ -32,8 +37,11 @@ EMLINK = 31  # Too many links
 EPIPE = 32  # Broken pipe
 EDOM = 33  # Math argument out of domain of func
 ERANGE = 34  # Math result not representable
-EAFNOSUPPORT = 97  # Address family not supported by protocol
-ECONNRESET = 104  # Connection timed out
-ENOTCONN = 107 # Not connected
-ETIMEDOUT = 110  # Connection timed out
-EINPROGRESS = 115  # Operation now in progress
+
+# Override the table above with the built-in module's values, which come from
+# this port's system headers.  The u-prefix reaches the built-in module.
+try:
+    from uerrno import *
+except ImportError:
+    # Built without MICROPY_PY_ERRNO.
+    pass
