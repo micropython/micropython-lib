@@ -191,7 +191,7 @@ class SDCard:
         self.spi.write(b"\xff")
         return -1
 
-    def readinto(self, buf):
+    def readinto(self, buf, release=True):
         self.cs(0)
 
         # read until start byte (0xff)
@@ -214,10 +214,11 @@ class SDCard:
         self.spi.write(b"\xff")
         self.spi.write(b"\xff")
 
-        self.cs(1)
-        self.spi.write(b"\xff")
+        if release:
+            self.cs(1)
+            self.spi.write(b"\xff")
 
-    def write(self, token, buf):
+    def write(self, token, buf, release=True):
         self.cs(0)
 
         # send: start of block, data, checksum
@@ -236,8 +237,9 @@ class SDCard:
         while self.spi.read(1, 0xFF)[0] == 0:
             pass
 
-        self.cs(1)
-        self.spi.write(b"\xff")
+        if release:
+            self.cs(1)
+            self.spi.write(b"\xff")
 
     def write_token(self, token):
         self.cs(0)
@@ -274,8 +276,10 @@ class SDCard:
             offset = 0
             mv = memoryview(buf)
             while nblocks:
-                # receive the data and release card
-                self.readinto(mv[offset : offset + 512])
+                # receive the data, keeping the card selected until CMD12:
+                # some cards lose bit alignment if CS is released between
+                # the blocks of a multi-block read
+                self.readinto(mv[offset : offset + 512], release=False)
                 offset += 512
                 nblocks -= 1
             if self.cmd(12, 0, skip1=True):
@@ -297,13 +301,15 @@ class SDCard:
             self.write(_TOKEN_DATA, buf)
         else:
             # CMD25: set write address for first block
-            if self.cmd(25, block_num * self.cdv) != 0:
+            if self.cmd(25, block_num * self.cdv, release=False) != 0:
+                # release the card
+                self.cs(1)
                 raise OSError(5)  # EIO
-            # send the data
+            # send the data, keeping the card selected until the stop token
             offset = 0
             mv = memoryview(buf)
             while nblocks:
-                self.write(_TOKEN_CMD25, mv[offset : offset + 512])
+                self.write(_TOKEN_CMD25, mv[offset : offset + 512], release=False)
                 offset += 512
                 nblocks -= 1
             self.write_token(_TOKEN_STOP_TRAN)
