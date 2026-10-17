@@ -1,5 +1,5 @@
 # enum_usage.py
-# version="1.4.0"
+# version="1.5.0"
 
 from enum import Enum, IntEnum, StrEnum
 
@@ -16,8 +16,6 @@ class Color(Enum):
     GREEN = 2
     BLUE = 3
 
-
-color = Color()  # Trigger initialization
 
 # 1. Canonical output (str and repr)
 print(Color.RED)              # Color.RED
@@ -37,12 +35,11 @@ print(Color(2))               # Color.GREEN
 print(Color("RED"))           # Color.RED
 
 # 5. Container access (via instance)
-print(Color()["RED"])         # Color.RED (via instance)
-# print(Color["RED"])         # does not work
+print(Color["RED"])           # Color.RED
 
 # 6. Length and iteration (order may vary)
-print(len(Color()))           # 3
-print([x for x in Color()])   # [<Color.RED: 1>, <Color.GREEN: 2>, <Color.BLUE: 3>]
+print(len(Color))             # 3
+print([x for x in Color])     # [<Color.RED: 1>, <Color.GREEN: 2>, <Color.BLUE: 3>]
 
 # 7. Serialization and dictionary mapping
 print(Color.__members__)      # {<Color.RED: 1>: 1, <Color.GREEN: 2>: 2, <Color.BLUE: 3>: 3}
@@ -56,26 +53,25 @@ except AttributeError as e:
     print("Immutability test passed:", e)
 
 try:
-    color.RED = 100
+    Color.RED = 100
     raise AssertionError("Expected AttributeError on setting attribute")
 except AttributeError as e:
     print("Immutability test passed:", e)
 
 try:
-    del color.RED
+    del Color.RED
     raise AssertionError("Expected AttributeError on deleting attribute")
 except AttributeError as e:
     print("Immutability test passed:", e)
 
-# # test NOT passed
-# try:
-#     del Color.RED
-#     0 / 0
-# except AttributeError as e:
-#     print("Immutability test passed:", e)
-# print(Color.RED)
+try:
+    del Color.RED
+    0 / 0
+except AttributeError as e:
+    print("Immutability test passed:", e)
+print(Color.RED)
 
-assert color.RED == 1
+assert Color.RED == 1
 
 # 9. Functional API: Comma / space separated string with custom start
 State = Enum("State", "OFF, ON", start=10)
@@ -127,9 +123,8 @@ class Status(StrEnum):
     RUNNING = "running"
     DONE = "done"
 
-status = Status()
-
 print("\n--- StrEnum ---")
+print(Status.__members__)
 print(Status.PENDING)                  # pending
 print(repr(Status.PENDING))            # <Status.PENDING: 'pending'>
 
@@ -150,6 +145,6 @@ print(Status.dump())                   # StrEnum('Status', {'DONE': 'done', 'RUN
 HttpCode = StrEnum("HttpCode", "OK NOT_FOUND INTERNAL_ERROR")
 
 print("\n--- StrEnum Functional API ---")
-print(HttpCode.OK.value)                 # OK
-print(HttpCode.NOT_FOUND == "NOT_FOUND") # True
-print(HttpCode.dump())                   # StrEnum('HttpCode', {'NOT_FOUND': 'NOT_FOUND', 'OK': 'OK', 'INTERNAL_ERROR': 'INTERNAL_ERROR'})
+print(HttpCode.OK.value)                  # ok
+print(HttpCode.NOT_FOUND == "not_found")  # True
+print(HttpCode.dump())                    # StrEnum('HttpCode', {'NOT_FOUND': 'not_found', 'OK': 'ok', 'INTERNAL_ERROR': 'internal_error'})

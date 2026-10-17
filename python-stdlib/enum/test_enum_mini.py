@@ -1,3 +1,6 @@
+# test_enum_mini.py
+# version="1.5.0"
+
 import unittest
 from enum_mini import Enum
 
@@ -14,10 +17,6 @@ class Status(Enum):
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
-
-
-Color()
-Status()
 
 
 class TestEnumMini(unittest.TestCase):
@@ -68,8 +67,8 @@ class TestEnumMini(unittest.TestCase):
     # ==========================================================================
     def test_iteration_and_len(self):
         """Verify iteration, len(), and __members__ mapping."""
-        self.assertEqual(len(Color()), 3)
-        self.assertEqual(list(Color()), [Color.RED, Color.GREEN, Color.BLUE])
+        self.assertEqual(len(Color), 3)
+        self.assertEqual(list(Color), [Color.RED, Color.GREEN, Color.BLUE])
 
         items_dict = Color.__members__
         self.assertIn(Color.RED, items_dict)
@@ -98,10 +97,10 @@ class TestEnumMini(unittest.TestCase):
             Color.RED.new_attr = "test"
 
         with self.assertRaises(AttributeError):
-            Color().NEW_MEMBER = 4
+            Color.NEW_MEMBER = 4
 
         with self.assertRaises(AttributeError):
-            del Color().RED
+            del Color.RED
 
 
 if __name__ == "__main__":

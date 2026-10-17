@@ -1,5 +1,5 @@
 # enum_mini_usage.py
-# version="1.4.0"
+# version="1.5.0"
 
 from enum_mini import Enum
 
@@ -35,8 +35,8 @@ print(Color(2))               # Color.GREEN
 print(Color("RED"))           # Color.RED
 
 # 5. Length and iteration (order may vary)
-print(len(Color()))           # 3
-print([x for x in Color()])   # [<Color.RED: 1>, <Color.GREEN: 2>, <Color.BLUE: 3>]
+print(len(Color))             # 3
+print([x for x in Color])     # [<Color.RED: 1>, <Color.GREEN: 2>, <Color.BLUE: 3>]
 
 # 6. Enum members mapping (order may vary)
 print(Color.__members__)      # {<Color.RED: 1>: 1, <Color.GREEN: 2>: 2, <Color.BLUE: 3>: 3}
@@ -60,12 +60,11 @@ try:
 except AttributeError as e:
     print("Immutability test passed:", e)
 
-# # test NOT passed
-# try:
-#     del Color.RED
-#     0 / 0
-# except AttributeError as e:
-#     print("Immutability test passed:", e)
+try:
+    del Color.RED
+    0 / 0
+except AttributeError as e:
+    print("Immutability test passed:", e)
 
 assert Color.RED == 1
 
@@ -83,8 +82,6 @@ class Priority(Enum):
     MEDIUM = 2
     HIGH = 3
 
-Priority()
-
 # Arithmetic and numeric comparison (inherits int)
 print(Priority.HIGH > 2)             # True
 print(Priority.LOW + 10)             # 11
@@ -97,8 +94,6 @@ class Status(Enum):
     PENDING = "pending"
     RUNNING = "running"
     DONE = "done"
-
-status = Status()
 
 # String operations (inherits str)
 print(Status.PENDING == "pending")     # True
