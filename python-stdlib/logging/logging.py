@@ -96,13 +96,7 @@ class Formatter:
     def format(self, record):
         if self.usesTime():
             record.asctime = self.formatTime(self.datefmt, record)
-        return self.fmt % {
-            "name": record.name,
-            "message": record.message,
-            "msecs": record.msecs,
-            "asctime": record.asctime,
-            "levelname": record.levelname,
-        }
+        return self.fmt % record.__dict__
 
 
 class Logger:
