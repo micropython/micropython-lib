@@ -1,13 +1,13 @@
 # enum_mini.py
 # Minimalist Enum implementation without metaclasses
-# version="1.5.0"
+# version="1.5.1"
 
 # ==============================================================================
 # Variable & Abbreviation Definitions:
 # ==============================================================================
 # Functions & Helper Methods:
-#   _c(e, n, v) -> create_enum_item: Helper function to construct a typed enum instance.
-#   _i()        -> items: Classmethod to lazily initialize and return the __members__ dict.
+#   _c(cls, n, v) -> create_enum_item: Helper function to construct a typed enum instance.
+#   _i()        -> items: Classmethod to initialize and return the __members__ dict.
 #   a(s, k, v)  -> __setattr__: Inner setter guard raising AttributeError on enum items.
 #
 # Helper Arguments & Local Variables:
@@ -29,18 +29,22 @@
 # ==============================================================================
 
 
-def _c(e, n, v):
-    # Inner guard to prevent modification of enum item attributes
+def _n(n):
+    # str.capitalize()
+    return n[0].upper() + n[1:]
+
+
+def _c(cls, n, v):
+    # prevent modification of enum item attributes
     def a(s, k, v):
         raise AttributeError("readonly")
 
-    # Safely extract class name string if a class or object was passed
-    e = getattr(e, "__name__", str(e))
+    e = cls.__name__
 
-    # Create dynamic subclass inheriting the value's type (int, str, float etc.)
+    # create a subclass inheriting the value's type (int, str, float etc.)
     return type(
         f"{e}.{n}",
-        (type(v),),
+        (type(v), cls),
         {
             "name": n,
             "value": v,
@@ -59,46 +63,38 @@ class Enum:
             if not isinstance(names, dict):
                 raise TypeError("must be dict")
 
-            # Construct and return a new Enum subclass
-            c = type(str(value), (cls,), {})
-            for k, v in names.items():
-                setattr(c, k, v)
+            # build and return a new Enum subclass
+            names["__name__"] = value
+            c = type(str(value), (cls,), names)
             c._i()
-            return c
+            return c()
 
-        if cls is not Enum:
-            # Lazy initialization of subclass members
-            cls._i()
-
-            # Lookup existing member by value or name: e.g., Color(1) or Color("RED")
-            if value is not None:
-                return cls()(value)
+        # lookup by value or name: Color(1) / Color("RED")
+        if value is not None and cls is not Enum:
+            return cls.__call__(value)
 
         return super().__new__(cls)
 
     @classmethod
     def __contains__(cls, v):
-        # Lookup member by value or name
-        for i in cls._i():
-            if i.value == v or i.name == v:
-                return True
-        return False
+        # lookup by value or name
+        return any(i.value == v or i.name == v for i in cls._i())
 
     @classmethod
     def __call__(cls, v=None):
         if v is None:
             return cls()
 
-        # Lookup member by value or name
+        # lookup by value or name
         for i in cls._i():
             if i.value == v or i.name == v:
                 return i
         raise ValueError(f"invalid: {v!r}")
 
-    # Equality checks if both classes are Enums and have identical __members__ dicts
+    # True if both classes are Enums and the member dicts match
     __eq__ = classmethod(lambda cls, o: getattr(o, "_i", False) and cls._i() == o._i())
-    # Iteration yields enum member instances (keys of __members__)
     __iter__ = classmethod(lambda cls: iter(cls._i()))
+    __len__ = classmethod(lambda cls: len(cls._i()))
 
     @classmethod
     def __setattr__(cls, k, v):
@@ -110,37 +106,39 @@ class Enum:
 
     @classmethod
     def _i(cls):
-        # Initialize and return dictionary mapping enum member instances to their values
+        # build and return the dict that maps member instances to their values
         if "__members__" not in cls.__dict__:
-            # Convert raw class attributes into typed enum instances
+            for b in cls.__bases__:
+                if issubclass(b, Enum) and b is not Enum and b._i():
+                    raise TypeError(f"can't extend {b.__name__}")
+
+            # convert raw class attributes into typed enum instances
             cls.__members__ = {}
             for k, v in list(cls.__dict__.items()):
                 if not k.startswith("_") and not callable(v):
-                    if isinstance(v, cls):
-                        continue
                     if v in cls.__members__:
                         raise ValueError(f"duplicate value {v!r} in {cls.__name__}")
-                    e = _c(cls.__name__, k, v)
+                    e = _c(cls, k, v)
                     setattr(cls, k, e)
                     cls.__members__[e] = v
         return cls.__members__
 
 
-# Install builder hook
+# install class-builder hook
 import builtins
 
-_SN = "__ENUM_STATE__"  # _STATE_NAME
-if getattr(builtins, _SN, None):
-    builtins.__ENUM_STATE__["base"] = Enum
-else:
-    _orig = builtins.__build_class__
+_orig = builtins.__build_class__
 
-    # def _build_class(f, n, *b, **kw):
-    def _bc(f, n, *b, **kw):
-        cls = _orig(f, n, *b, **kw)
-        return (
-            cls() if any(isinstance(base, type) and issubclass(base, Enum) for base in b) else cls
-        )
 
-    builtins.__build_class__ = _bc
-    setattr(builtins, _SN, {"original": _orig, "base": Enum, "wrapper": _bc})
+# def _build_class(function, name, *bases, **kwargs):
+def _bc(f, n, *b, **kw):
+    # when a base is an Enum instance (returned by cls()), extract its class
+    b = tuple(type(e) if isinstance(e, Enum) else e for e in b)
+    cls = _orig(f, n, *b, **kw)
+    if issubclass(cls, Enum):
+        cls._i()
+        return cls()
+    return cls
+
+
+builtins.__build_class__ = _bc
