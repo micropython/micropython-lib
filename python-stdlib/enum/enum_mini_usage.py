@@ -1,5 +1,5 @@
 # enum_mini_usage.py
-# version="1.5.0"
+# version="1.5.1"
 
 from enum_mini import Enum
 
@@ -14,8 +14,6 @@ class Color(Enum):
     GREEN = 2
     BLUE = 3
 
-
-color = Color()  # Trigger initialization
 
 # 1. Canonical output (str and repr)
 print(Color.RED)              # Color.RED
@@ -49,13 +47,13 @@ except AttributeError as e:
     print("Immutability test passed:", e)
 
 try:
-    color.RED = 100
+    Color.RED = 100
     0 / 0
 except AttributeError as e:
     print("Immutability test passed:", e)
 
 try:
-    del color.RED
+    del Color.RED
     0 / 0
 except AttributeError as e:
     print("Immutability test passed:", e)
@@ -83,8 +81,11 @@ class Priority(Enum):
     HIGH = 3
 
 # Arithmetic and numeric comparison (inherits int)
+print(Priority.LOW == 1)             # True
 print(Priority.HIGH > 2)             # True
 print(Priority.LOW + 10)             # 11
+
+# Preserving int type inheritance
 print(isinstance(Priority.LOW, int)) # True
 
 
@@ -95,8 +96,16 @@ class Status(Enum):
     RUNNING = "running"
     DONE = "done"
 
+print("\n--- StrEnum ---")
+print(Status.__members__)
+print(Status.PENDING)                  # pending
+print(repr(Status.PENDING))            # <Status.PENDING: 'pending'>
+
 # String operations (inherits str)
 print(Status.PENDING == "pending")     # True
-print(Status.RUNNING.lower())          # running
-print(Status.RUNNING.name.lower())     # running
+print(Status.RUNNING.upper())          # RUNNING
+print(Status.RUNNING.name)             # RUNNING
 print(Status.RUNNING.value.upper())    # RUNNING
+
+# Preserving str type inheritance
+print(isinstance(Status.PENDING, str)) # True

@@ -1,5 +1,5 @@
 # test_enum_mini.py
-# version="1.5.0"
+# version="1.5.1"
 
 import unittest
 from enum_mini import Enum
