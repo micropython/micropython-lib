@@ -1,3 +1,5 @@
+import sys
+
 from enum import Enum, StrEnum, IntEnum
 
 
@@ -66,7 +68,9 @@ try:
     print(DynCoord)                           # <enum 'DynCoord'>
     print(type(DynCoord))                     # <class 'enum.EnumType'> #  <class 'DynCoord'>
     print(DynCoord.__members__)               # {'X': <DynCoord.X: 10>, 'Y': <DynCoord.Y: 20>} # {<DynCoord.Y: 20>: 20, <DynCoord.X: 10>: 10}
-    print(list(DynCoord))                     # [<DynCoord.X: 10>, <DynCoord.Y: 20>] # [<DynCoord.Y: 20>, <DynCoord.X: 10>]
+    # Functional generic enums retain their container API on MicroPython.
+    coord_members = DynCoord() if sys.implementation.name == "micropython" else DynCoord
+    print(list(coord_members))                # Order may vary on MicroPython.
     print(DynCoord.X.value)                   # 10
 
 except Exception as e:
@@ -78,9 +82,12 @@ try:
     DynStr = StrEnum("DynStr", "A B C")
     print(DynStr)                             # <enum 'DynStr'>
     print(type(DynStr))                       # <class 'enum.EnumType'> # <class 'DynStr'>
-    print(DynStr.__members__)                 # {'A': <DynStr.A: 'a'>, 'B': <DynStr.B: 'b'>, 'C': <DynStr.C: 'c'>} # {<DynStr.A: 'a'>: 'a', <DynStr.C: 'c'>: 'c', <DynStr.B: 'b'>: 'b'}
-    print(list(DynStr))                       # [<DynStr.A: 'a'>, <DynStr.B: 'b'>, <DynStr.C: 'c'>] # [<DynStr.A: 'a'>, <DynStr.C: 'c'>, <DynStr.B: 'b'>]
+    print(DynStr.__members__)                 # {'A': <DynStr.A: 'a'>, 'B': <DynStr.B: 'b'>, 'C': <DynStr.C: 'c'>} # {'a': 'a', 'c': 'c', 'b': 'b'}
+    print(list(DynStr))                       # [<DynStr.A: 'a'>, <DynStr.B: 'b'>, <DynStr.C: 'c'>] # ['a', 'c', 'b']
     print(DynStr.A.value)                     # a
+    print(type(DynStr.A) is DynStr)           # True
+    print(isinstance(DynStr.A, StrEnum))      # True
+    print(repr(DynStr.A))                     # <DynStr.A: 'a'> # 'a' on MicroPython
 except Exception as e:
     print(f"Functional string API not supported or error: {e}")
 
@@ -98,6 +105,6 @@ if hasattr(Color, "dump"):
     print(Restored)                           # <enum 'Color'>
     print(type(Restored))                     # <class 'Color'>
     print(Restored.__members__)               # {<Color.RED: 1>: 1, <Color.GREEN: 2>: 2, <Color.BLUE: 3>: 3}
-    print(list(Restored))                     # [<Color.RED: 1>, <Color.GREEN: 2>, <Color.BLUE: 3>]
+    print(list(Restored()))                   # [<Color.RED: 1>, <Color.GREEN: 2>, <Color.BLUE: 3>]
     print("Restored equality:", Restored == Color)                      # True
     print("Restored equality:", Restored.RED.value == Color.RED.value)  # True

@@ -126,7 +126,7 @@ class Status(StrEnum):
 print("\n--- StrEnum ---")
 print(Status.__members__)
 print(Status.PENDING)                  # pending
-print(repr(Status.PENDING))            # <Status.PENDING: 'pending'>
+print(repr(Status.PENDING))            # 'pending' (native string repr)
 
 # String operations (inherits str)
 print(Status.PENDING == "pending")     # True
@@ -136,6 +136,8 @@ print(Status.RUNNING.value.upper())    # RUNNING
 
 # Preserving str type inheritance
 print(isinstance(Status.PENDING, str)) # True
+print(type(Status.PENDING) is Status)  # True
+print(isinstance(Status.PENDING, Status)) # True
 print(Status.dump())                   # StrEnum('Status', {'DONE': 'done', 'RUNNING': 'running', 'PENDING': 'pending'})
 
 

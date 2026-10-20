@@ -161,5 +161,206 @@ class TestEnum(unittest.TestCase):
         self.assertEqual(s_dynamic.__members__, s_restored.__members__)
 
 
+class TestTypedStrEnum(unittest.TestCase):
+    def test_identity_lookup_and_methods(self):
+        class Mode(StrEnum):
+            FAST = "fast"
+            SLOW = "slow"
+            _private_helper = 123
+
+            def describe(self):
+                return self.name + ":" + self.value
+
+        self.assertIs(type(Mode.FAST), Mode)
+        for base in (Mode, StrEnum, Enum, str):
+            self.assertTrue(isinstance(Mode.FAST, base))
+        self.assertFalse(isinstance("fast", Mode))
+        for value in ("fast", "FAST", Mode.FAST):
+            self.assertIs(Mode(value), Mode.FAST)
+        self.assertIs(Mode(), Mode)
+        self.assertEqual(Mode.FAST.name, "FAST")
+        self.assertEqual(Mode.FAST.value, "fast")
+        self.assertEqual(Mode.FAST.describe(), "FAST:fast")
+        self.assertEqual(Mode.FAST(), "fast")
+        with self.assertRaises(ValueError):
+            Mode("missing")
+
+    def test_string_operations_and_iteration(self):
+        class Mode(StrEnum):
+            FAST = "fast"
+            SLOW = "slow"
+
+        self.assertTrue(Mode.FAST == "fast")
+        self.assertTrue("fast" == Mode.FAST)
+        self.assertEqual(Mode.FAST.upper(), "FAST")
+        self.assertEqual(Mode.FAST + "!", "fast!")
+        self.assertEqual(hash(Mode.FAST), hash("fast"))
+        self.assertEqual(Mode.FAST[0], "f")
+        self.assertEqual(Mode.FAST[:2], "fa")
+        self.assertEqual(Mode.FAST[-1], "t")
+        with self.assertRaises(TypeError):
+            Mode.FAST[None]
+        members = list(Mode)
+        self.assertEqual(len(members), 2)
+        self.assertTrue(any(item is Mode.FAST for item in members))
+        self.assertTrue(any(item is Mode.SLOW for item in members))
+        self.assertEqual(list(Mode.FAST), list("fast"))
+        self.assertEqual(str(Mode.FAST), "fast")
+        self.assertEqual(repr(Mode.FAST), repr("fast"))
+
+    def test_direct_functional_api_and_dump(self):
+        for names in ("FAST SLOW", {"FAST": "fast", "SLOW": "slow"},
+                      (("FAST", "fast"), ("SLOW", "slow"))):
+            Mode = StrEnum("Mode", names)
+            self.assertIs(type(Mode.FAST), Mode)
+            self.assertEqual(Mode.FAST.value, "fast")
+            self.assertIs(Mode("FAST"), Mode.FAST)
+            self.assertEqual(len(list(Mode)), 2)
+            restored = eval(Mode.dump())
+            self.assertIs(type(restored.FAST), restored)
+            self.assertEqual(restored.FAST.value, "fast")
+        self.assertEqual(StrEnum("Words", ["UP", "DOWN"]).UP.value, "UP")
+        self.assertEqual(StrEnum("Words", (x for x in ["UP", "DOWN"])).UP.value, "UP")
+
+    def test_reject_invalid_declarations(self):
+        with self.assertRaises(TypeError):
+            class Invalid(StrEnum):
+                BAD = 1
+        with self.assertRaises(ValueError):
+            class Duplicate(StrEnum):
+                A = "same"
+                B = "same"
+        with self.assertRaises(TypeError):
+            class Constructor(StrEnum):
+                A = "a"
+                def __init__(self, value):
+                    pass
+        with self.assertRaises(TypeError):
+            class Allocator(StrEnum):
+                A = "a"
+                def __new__(cls, value):
+                    return value
+        class Base(StrEnum):
+            A = "a"
+        with self.assertRaises(TypeError):
+            class Child(Base):
+                B = "b"
+        class Mixin:
+            pass
+        with self.assertRaises(TypeError):
+            class Mixed(Mixin, StrEnum):
+                A = "a"
+        with self.assertRaises(TypeError):
+            Base("Child", {"B": "b"})
+        with self.assertRaises(TypeError):
+            class Reserved(StrEnum):
+                __members__ = {}
+        Empty = StrEnum("Empty", {})
+        self.assertEqual(list(Empty), [])
+
+    def test_callable_string_values_and_normalization(self):
+        class Text(str):
+            def __call__(self):
+                return "callable"
+            def __str__(self):
+                return "misleading"
+        class Mode(StrEnum):
+            FAST = Text("fast")
+        self.assertIs(type(Mode.FAST), Mode)
+        self.assertEqual(Mode.FAST, "fast")
+        self.assertIs(type(Mode.FAST.value), str)
+        class Copy(StrEnum):
+            FAST = Mode.FAST
+        self.assertIs(type(Copy.FAST), Copy)
+        self.assertEqual(Copy.FAST.value, "fast")
+        class SlicedText(Text):
+            def __getitem__(self, key):
+                return "wrong"
+        with self.assertRaises(TypeError):
+            class UnsupportedValue(StrEnum):
+                FAST = SlicedText("fast")
+        with self.assertRaises(ValueError):
+            class Duplicate(StrEnum):
+                A = Text("same")
+                B = "same"
+
+    def test_member_metadata_and_stock_limits(self):
+        class Mode(StrEnum):
+            FAST = "fast"
+        with self.assertRaises(AttributeError):
+            Mode.FAST.name = "changed"
+        with self.assertRaises(AttributeError):
+            del Mode.FAST.value
+        with self.assertRaises(TypeError):
+            len(Mode)
+        with self.assertRaises(TypeError):
+            Mode["FAST"]
+        import json
+        self.assertEqual(json.loads(json.dumps(Mode.FAST)), "fast")
+        self.assertEqual(json.loads(json.dumps([Mode.FAST])), ["fast"])
+
+    def test_full_then_mini_and_fresh_full(self):
+        import enum_mini
+        class Mini(enum_mini.Enum):
+            A = 1
+        self.assertEqual(Mini.A.name, "A")
+        class Mode(StrEnum):
+            FAST = "fast"
+        self.assertIs(type(Mode.FAST), Mode)
+        state = __ENUM_STATE__
+        wrapper = state["wrapper"]
+        import enum as module
+        count = len(state["families"])
+        self.assertIs(__import__("enum"), module)
+        self.assertEqual(len(state["families"]), count)
+        import sys
+        del sys.modules["enum"]
+        try:
+            fresh = __import__("enum")
+        finally:
+            sys.modules["enum"] = module
+        namespace = {"StrEnum": fresh.StrEnum, "Enum": fresh.Enum, "IntEnum": fresh.IntEnum}
+        self.assertIs(state["wrapper"], wrapper)
+        class OldMode(StrEnum):
+            A = "a"
+        class FreshMode(namespace["StrEnum"]):
+            A = "a"
+        self.assertIs(type(OldMode.A), OldMode)
+        self.assertIs(type(FreshMode.A), FreshMode)
+        class OldGeneric(Enum):
+            A = 1
+        class FreshGeneric(namespace["Enum"]):
+            A = 1
+        class FreshNumber(namespace["IntEnum"]):
+            A = 1
+        self.assertEqual(OldGeneric.A.name, "A")
+        self.assertEqual(FreshGeneric.A.name, "A")
+        self.assertTrue(isinstance(FreshNumber.A, int))
+
+    def test_cooperative_hooks_and_unrelated_classes(self):
+        import builtins
+        import enum as module
+        previous = __build_class__
+        calls = []
+        def cooperative(body, name, *bases, **keywords):
+            calls.append(name)
+            return previous(body, name, *bases, **keywords)
+        builtins.__build_class__ = cooperative
+        try:
+            namespace = {"__name__": "cooperative_enum"}
+            exec(open(module.__file__).read(), namespace)
+            self.assertIs(__build_class__, cooperative)
+            class Ordinary:
+                A = "a"
+            class Mode(namespace["StrEnum"]):
+                FAST = "fast"
+            self.assertIs(type(Mode.FAST), Mode)
+            self.assertEqual(Ordinary.A, "a")
+            self.assertTrue("Ordinary" in calls)
+            self.assertTrue("Mode" in calls)
+        finally:
+            builtins.__build_class__ = previous
+
+
 if __name__ == '__main__':
     unittest.main()
