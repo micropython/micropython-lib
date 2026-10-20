@@ -102,6 +102,28 @@ class TestEnumMini(unittest.TestCase):
         with self.assertRaises(AttributeError):
             del Color.RED
 
+    def test_mini_then_full_and_old_alias(self):
+        import enum
+        class Full(enum.Enum):
+            A = 1
+        class Mode(enum.StrEnum):
+            FAST = "fast"
+        class Mini(Enum):
+            A = 1
+        self.assertEqual(Full.A.name, "A")
+        self.assertIs(type(Mode.FAST), Mode)
+        self.assertEqual(Mini.A.name, "A")
+        self.assertEqual(len(Mini), 1)
+        import enum_mini
+        namespace = {"__name__": "fresh_mini"}
+        exec(open(enum_mini.__file__).read(), namespace)
+        class FreshMini(namespace["Enum"]):
+            A = 1
+        class OldMini(Enum):
+            A = 1
+        self.assertEqual(FreshMini.A.name, "A")
+        self.assertEqual(len(OldMini), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

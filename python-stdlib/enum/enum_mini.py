@@ -99,6 +99,7 @@ class Enum:
     __eq__ = classmethod(lambda cls, o: getattr(o, "_i", False) and cls._i() == o._i())
     # Iteration yields enum member instances (keys of __members__)
     __iter__ = classmethod(lambda cls: iter(cls._i()))
+    __len__ = classmethod(lambda cls: len(cls._i()))
 
     @classmethod
     def __setattr__(cls, k, v):
@@ -126,21 +127,38 @@ class Enum:
         return cls.__members__
 
 
-# Install builder hook
+def _finish_class(cls, bases):
+    return cls()
+
+
+# Share one dispatcher across full/mini and fresh imports. Retain old families
+# for aliases still in use, and never replace a later cooperative wrapper.
 import builtins
 
-_SN = "__ENUM_STATE__"  # _STATE_NAME
-if getattr(builtins, _SN, None):
-    builtins.__ENUM_STATE__["base"] = Enum
-else:
-    _orig = builtins.__build_class__
 
-    # def _build_class(f, n, *b, **kw):
-    def _bc(f, n, *b, **kw):
-        cls = _orig(f, n, *b, **kw)
-        return (
-            cls() if any(isinstance(base, type) and issubclass(base, Enum) for base in b) else cls
-        )
+def _register_enum(base, finish):
+    try:
+        state = __ENUM_STATE__
+    except NameError:
+        state = None
+    if state is None:
+        # Read the effective builtin: MicroPython's module attribute may still
+        # expose the original builtin after a cooperative override is installed.
+        state = {"original": __build_class__, "families": []}
 
-    builtins.__build_class__ = _bc
-    setattr(builtins, _SN, {"original": _orig, "base": Enum, "wrapper": _bc})
+        def dispatch(body, name, *bases, **keywords):
+            cls = state["original"](body, name, *bases, **keywords)
+            for family, finalizer in state["families"]:
+                if any(isinstance(parent, type) and issubclass(parent, family) for parent in bases):
+                    return finalizer(cls, bases)
+            return cls
+
+        state["wrapper"] = dispatch
+        builtins.__build_class__ = dispatch
+        builtins.__ENUM_STATE__ = state
+    elif "families" not in state:
+        raise RuntimeError("incompatible enum builder state")
+    state["families"].append((base, finish))
+
+
+_register_enum(Enum, _finish_class)

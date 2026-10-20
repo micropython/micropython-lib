@@ -8,19 +8,17 @@ This package provides two lightweight enumeration implementations for MicroPytho
   members, dictionary-based functional creation, lookup by name or value, and
   iteration.
 
-Both implementations avoid metaclasses. They use a `builtins.__build_class__`
-hook to turn classes derived from their `Enum` base into initialized enum
-containers. Members are created lazily by `_i()` when needed; functional-API
-enums are initialized during creation. Each member is a dynamically created
-subclass of its raw value's type (for example, `int` or `str`), rather than an
-instance of the enum container class. As a result, members can compare equal to
-their raw values, and members from different enum containers can compare equal
-when their values match.
+Both implementations avoid metaclasses and share one process-wide
+`__build_class__` dispatcher. `Enum` and `IntEnum`, and the mini implementation,
+keep their existing initialized-container architecture. Their members inherit
+raw value types rather than the declared enum class. `StrEnum` instead keeps
+the real declared class and constructs genuine string instances of that class.
 
-**Important:** Both modules install a process-wide class-building hook when
-imported. This affects class creation for classes derived from the relevant
-`Enum` base, so use these modules with care in applications that define many
-classes or mix implementations.
+**Important:** The dispatcher registers both modules and retains families from
+fresh imports, so old aliases continue to work. It chains an existing cooperative
+class-building hook and leaves later cooperative hooks installed. Hooks that do
+not delegate, or manually changing the shared builtin state, are not supported.
+Ordinary classes unrelated to a registered enum family are passed through.
 
 ## Quick start: `enum.py`
 
@@ -64,40 +62,90 @@ print(isinstance(Status.DONE, str))   # True
 `IntEnum` values must be integers and `StrEnum` values must be strings.
 Invalid member values raise `TypeError`.
 
-### Standard Behavior (Compatible)
-- ✅ Member access: `Color.RED`, `.name`, `.value`
-- ✅ Member iteration: `for item in Color`
-- ✅ `IntEnum` and `StrEnum` types with strict value checking
-- ✅ Immutability: members cannot be modified after creation
-- ✅ Functional API: `Enum('Name', {'KEY': value, ...})`
+## Typed `StrEnum` on stock MicroPython
 
-### Non-Standard Behavior
-Key differences from CPython:
-- **Name-based lookup via call**: `Color("RED")` works for both name and value lookup (CPython standard call only supports value lookup).
-- **Value equality**: `Color.RED == 1` is `True` (only true for `IntEnum` in CPython).
-- **Custom methods**: `.dump()` does not exist in stdlib `Enum`.
-- **Callable members**: `Color.RED()` returns the value (not supported in CPython).
-- **Instance `__len__`**: `len(Color)` works; CPython enums are not containers.
-- **Serialization**: `dump()` for eval-based reconstruction is MicroPython-specific.
+```python
+class Mode(StrEnum):
+    FAST = "fast"
+    SLOW = "slow"
+
+    def describe(self):
+        return self.name + ":" + self.value
+
+print(type(Mode.FAST) is Mode)           # True
+print(isinstance(Mode.FAST, Mode))       # True
+print(isinstance(Mode.FAST, StrEnum))    # True
+print(isinstance(Mode.FAST, Enum))       # True
+print(isinstance(Mode.FAST, str))        # True
+print(Mode("fast") is Mode.FAST)        # True
+print(Mode("FAST") is Mode.FAST)        # True
+print(Mode(Mode.FAST) is Mode.FAST)      # True
+print(Mode.FAST.describe())             # FAST:fast
+print(Mode.FAST[0], Mode.FAST[:2])       # f fa
+print([member.name for member in Mode]) # order is not guaranteed
+
+Dynamic = StrEnum("Dynamic", "FAST SLOW")
+print(Dynamic.FAST.value)               # fast
+```
+
+Members are finalized immediately after the class body. Construction through
+the declared string subclass is adapted from [Dungeon Drifters' StrEnum by
+MrCodeGameAndAnime](https://github.com/MrCodeGameandAnime/Dungeon-Drifters/blob/2fa5f9d0ca806e5e7dbd41f3ac9073465d26762b/root/portability/micropython/enum.py),
+building on this package's existing class-finalization hook.
+
+The direct functional API is retained: dictionaries, strings, lists/tuples of
+names or pairs, and other name iterables supported by 1.5.0. A string of names
+generates lowercase values; lists and other name iterables retain name spelling.
+`dump()` still emits `StrEnum(...)`. There is no separate factory API.
+
+String operations, equality and hashing use native string behavior. String-valued
+inputs remain members even if callable, and their content is normalized to a
+plain string before duplicate detection. Inputs overriding string slicing are
+rejected, because stock MicroPython cannot safely bypass that override; members
+produced by this package retain safe string slicing and can be reused as values.
+Private names are ignored and public declared methods are preserved. Duplicate values,
+non-string declarations, custom constructors, mixins and extension of finalized
+StrEnum classes are rejected. Member metadata is read-only through normal
+attribute assignment/deletion.
+
+### Stock-runtime limits
+
+This is a supported subset, not full CPython enum parity:
+
+- `list(Mode)` and `for member in Mode` use stock MicroPython's class sequence
+  fallback. Member indexing and slicing still operate on their string content.
+  This class-iteration fallback is not a CPython feature.
+- `len(Mode)` and `Mode["FAST"]` are unavailable for the real-class typed profile.
+  Use `len(Mode._i())` and `Mode("FAST")` when those operations are needed.
+- Class member replacement/deletion is not intercepted. The exposed member-to-value
+  metadata dictionary is mutable. Do not modify class members or this metadata.
+- Classes keep ordinary class representation. Members keep native string `str`
+  and `repr`, rather than enum-style representation, for scalar/list JSON encoding.
+- Stock MicroPython has limitations with Python string-subclass dictionary keys,
+  including JSON dictionary keys. Use plain `.value` strings when creating keys.
+  This package does not change dictionary or JSON runtime behavior.
+- `Mode()` returning the class, name lookup by call and callable members returning
+  values remain 1.5.0 extensions. Member order follows the runtime's declaration
+  dictionary traversal and is not guaranteed.
+
+Generic `Enum`/`IntEnum` and mini containers keep their existing operations and
+representations. They are not changed to match the typed StrEnum restrictions.
 
 ## Comparing the implementations
 
-| Feature | CPython | `enum.py` | `enum_mini.py` |
-| --- | --- | --- | --- |
-| Enum types | `Enum`, `IntEnum`, `StrEnum` | `Enum`, `IntEnum`, `StrEnum` | `Enum` |
-| Lookup by name | `Color["RED"]` | `Color("RED")` or `Color["RED"]` | `Color("RED")` |
-| Lookup by value | `Color(1)` | `Color(1)` | `Color(1)` |
-| Iteration | `for item in Color` | `for item in Color` | `for item in Color` |
-| Iteration in `__members__` | Yes | Yes | Yes |
-| `__members__` mapping | Name to member | Member to raw value | Member to raw value |
-| Functional API | Dict, names string, list/tuple, or iterable | Dict, names string, list/tuple, or iterable | Dictionary only |
-| `start` for generated integer values | Yes | Yes | No |
-| Strict integer/string member types | `IntEnum` / `StrEnum` | `IntEnum` / `StrEnum` | Not provided |
-| Length | Not provided | `len(Color)` | `len(Color)` |
-| `.dump()` | No | Yes | No |
-| Plain `Enum` member equals its raw value | No | Yes | Yes |
-| Member is an instance of its enum class | Yes | No | No |
-| Calling a member, e.g. `Color.RED()` | Not supported | Returns its raw value | Returns its raw value |
+| Feature | CPython | `Enum` / `IntEnum` | Typed `StrEnum` (stock MicroPython) | `enum_mini.py` |
+| --- | --- | --- | --- | --- |
+| Declared-class member identity | Yes | No | Yes | No |
+| Name lookup | `Color["RED"]` | `Color("RED")` or `Color["RED"]` | `Mode("FAST")` | `Color("RED")` |
+| Value lookup | `Color(1)` | `Color(1)` | `Mode("fast")` | `Color(1)` |
+| Iteration | `for item in Color` | `for item in Color` | `for item in Mode` | `for item in Color` |
+| Length | `len(Color)` | `len(Color)` | `len(Mode._i())` | `len(Color)` |
+| `__members__` mapping | Name to member | Member to raw value | Member to raw value | Member to raw value |
+| Functional creation | `Enum(...)` | `Enum(...)` / `IntEnum(...)` | `StrEnum(...)` | `Enum(name, dictionary)` |
+| `.dump()` | No | Yes | Yes | No |
+| Member repr | Enum-style | Enum-style | Native string | Enum-style |
+| Plain Enum equals raw value | No | Yes | String equality | Yes |
+| Calling a member | Not supported | Returns value | Returns value | Returns value |
 
 ## Code
 
@@ -108,9 +156,23 @@ Run it with `python CPy.py`.
 
 ## Limitations
 
-These implementations intentionally provide a smaller API than Python's
-standard-library `enum`. In particular, members are value-type instances, not
-instances of their enum class; equal values can compare equal across different
-enum classes; and enum classes do not provide the full standard-library Enum
-semantics. Choose the full implementation when you need `IntEnum`, `StrEnum`,
-the expanded functional API, or `.dump()`.
+The package intentionally provides a smaller API than standard-library `enum`.
+Equal raw values can compare equal across different enum classes. Generic Enum,
+IntEnum and mini members retain their value-type/container architecture; only
+the typed StrEnum profile provides declared-class member identity. The stock
+limitations above are intentional boundaries, not prerequisites for a modified
+interpreter.
+
+## Tests
+
+With a stock MicroPython 1.29.0 executable and the `unittest` package available,
+run both existing files from this directory in separate processes:
+
+```sh
+micropython test_enum.py
+micropython test_enum_mini.py
+```
+
+The files cover full-first and mini-first imports, fresh full imports preserving
+old aliases, cooperative hooks, and the typed-member profile. Check each runner's
+reported result: some MicroPython unittest versions exit zero even on failure.
