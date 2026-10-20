@@ -1,5 +1,24 @@
+# CPy.py
+# version="1.5.1"
+
+is_micropython = False
+try:
+    from machine import reset
+    is_micropython = True
+except ImportError:
+    pass
+
 from enum import Enum, StrEnum, IntEnum
 
+
+def section(s):
+    print(s)
+    
+    
+# ---------------------------------------------------------------------------
+# 1. Basic class-based Enum
+# ---------------------------------------------------------------------------
+section("Basic Enum (class syntax)")
 
 class Color(Enum):
     RED = 1
@@ -32,6 +51,9 @@ print(len(Color))                      # 3
 print(Color["RED"])                    # Color.RED
 print(Color["RED"] is Color.RED)       # True
 print(Color.RED == 1)                  # False # True
+# ---------------------------------------------------------------------------
+# 2. Immutability
+# ---------------------------------------------------------------------------
 
 print("\n--- Immutability Tests ---")
 try:
@@ -59,6 +81,9 @@ except AttributeError:
     print("Protected: Cannot set attribute on enum item")  # Protected: Cannot set attribute on enum item
 
 assert Color.RED.value == 1
+# ---------------------------------------------------------------------------
+# 3. Functional API
+# ---------------------------------------------------------------------------
 
 print("\n--- Functional API & Extensions ---")
 try:
@@ -70,7 +95,6 @@ try:
     print(DynCoord.X.value)                   # 10
 
 except Exception as e:
-    print_exception(e)
     print(f"Functional dict API error: {e}")
 
 print()
@@ -101,3 +125,82 @@ if hasattr(Color, "dump"):
     print(list(Restored))                     # [<Color.RED: 1>, <Color.GREEN: 2>, <Color.BLUE: 3>]
     print("Restored equality:", Restored == Color)                      # True
     print("Restored equality:", Restored.RED.value == Color.RED.value)  # True
+
+# ---------------------------------------------------------------------------
+# 4. StrEnum class vs instance
+# ---------------------------------------------------------------------------
+print()
+
+class Mode(StrEnum):
+    FAST = "fast"
+    SLOW = "slow"
+
+class Mode2(StrEnum):
+    FAST2 = "fast2"
+    SLOW2 = "slow2"
+
+print("--- Class ---")
+print("Mode:", Mode)
+print("type(Mode):", type(Mode))
+print("Mode.FAST:", Mode.FAST)
+print("type(Mode.FAST):", type(Mode.FAST))
+print("Members:", getattr(Mode, "__members__", None))
+
+assert Mode.FAST.name == "FAST"
+assert Mode.FAST.value == "fast"
+assert Mode("fast") is Mode.FAST
+assert Mode(Mode.FAST) is Mode.FAST
+
+assert isinstance(Mode.FAST, str)
+
+if is_micropython:
+    assert isinstance(Mode, Enum)
+    assert isinstance(Mode, (StrEnum, type(StrEnum)))
+else:
+    pass
+
+# ---------------------------------------------------------------------------
+# 5. Instance pattern (MicroPython-friendly)
+# ---------------------------------------------------------------------------
+
+if is_micropython:
+    assert issubclass(type(Mode), Enum)
+    assert issubclass(type(Mode), (StrEnum, type(StrEnum)))
+else:
+    assert issubclass(Mode, Enum)
+    assert issubclass(Mode, StrEnum)
+
+assert isinstance(Mode.FAST, str)
+if is_micropython:
+    assert isinstance(Mode.FAST, type(Mode))
+else:
+    assert isinstance(Mode.FAST, Mode)
+
+if is_micropython:
+    print()
+    print("--- Instance ---")
+    mode = Mode()
+    print("mode:", mode)
+    print("type(mode):", type(mode))
+    print("mode.FAST:", mode.FAST)
+    print("type(mode.FAST):", type(mode.FAST))
+    print("Members:", getattr(mode, "__members__", None))
+
+    assert mode.FAST.name == "FAST"
+    assert mode.FAST.value == "fast"
+    assert mode("fast") is mode.FAST
+    assert mode(mode.FAST) is mode.FAST
+
+    assert isinstance(mode.FAST, str)
+
+    assert issubclass(type(mode), Enum)
+    assert issubclass(type(mode), (StrEnum, type(StrEnum)))
+
+    assert isinstance(mode, Enum)
+    assert isinstance(mode, (StrEnum, type(StrEnum)))
+
+    assert isinstance(mode.FAST, str)
+    assert isinstance(mode.FAST, type(mode))
+
+    assert type(mode) is type(Mode)
+    assert mode == Mode
