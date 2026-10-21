@@ -1,5 +1,5 @@
 # enum_usage.py
-# version="1.5.0"
+# version="1.5.1"
 
 from enum import Enum, IntEnum, StrEnum
 
@@ -84,7 +84,7 @@ print(repr(State.ON))         # <State.ON: 11>
 Load = Enum("Load", {"LOW": "low", "HIGH": "high"})
 print(Load.HIGH)              # Load.HIGH
 print(Load.HIGH.value)        # high
-print(Load.LOW == "low")      # True (like CPython's StrEnum; standard CPython Enum returns False)
+print(Load.LOW == "low")      # True (like CPython StrEnum; CPython Enum returns False)
 
 # 11. Functional API: Tuple of pairs
 Do = Enum("Do", (("START", 200), ("STOP", 201)))
