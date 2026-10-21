@@ -169,4 +169,24 @@ try:
 except AttributeError as e:
     print(f"Caught expected deletion error: {e}")  # Caught expected deletion error: cannot delete attribute
 
+# --- Typed StrEnum: identity, direct construction and string behavior ---
+class Mode(StrEnum):
+    FAST = "fast"
+    SLOW = "slow"
+
+    def describe(self):
+        return self.name + ":" + self.value
+
+if type(Mode.FAST) is not Mode or not isinstance(Mode.FAST, Enum):
+    raise AssertionError("StrEnum member lost its declared type")
+if Mode("fast") is not Mode.FAST or Mode("FAST") is not Mode.FAST:
+    raise AssertionError("StrEnum lookup lost canonical identity")
+if Mode.FAST.describe() != "FAST:fast" or Mode.FAST[:2] != "fa":
+    raise AssertionError("StrEnum methods or string slicing failed")
+if len(list(Mode)) != 2:
+    raise AssertionError("StrEnum iteration failed")
+Dynamic = StrEnum("Dynamic", "FAST SLOW")
+if type(Dynamic.FAST) is not Dynamic or Dynamic.FAST.value != "fast":
+    raise AssertionError("StrEnum direct functional creation failed")
+
 print("\nAll tests passed successfully!")

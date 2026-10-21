@@ -124,6 +124,41 @@ class Enum:
         return cls.__members__
 
 
+def _finish_class(cls, bases):
+    return cls()
+
+
+# Share one dispatcher across full/mini and fresh imports. Retain old families
+# for aliases still in use, and never replace a later cooperative wrapper.
+import builtins
+
+
+def _register_enum(base, finish):
+    try:
+        state = __ENUM_STATE__
+    except NameError:
+        state = None
+    if state is None:
+        # Read the effective builtin: MicroPython's module attribute may still
+        # expose the original builtin after a cooperative override is installed.
+        state = {"original": __build_class__, "families": []}
+
+        def dispatch(body, name, *bases, **keywords):
+            cls = state["original"](body, name, *bases, **keywords)
+            for family, finalizer in state["families"]:
+                if any(isinstance(parent, type) and issubclass(parent, family) for parent in bases):
+                    return finalizer(cls, bases)
+            return cls
+
+        state["wrapper"] = dispatch
+        builtins.__build_class__ = dispatch
+        builtins.__ENUM_STATE__ = state
+    elif "families" not in state:
+        raise RuntimeError("incompatible enum builder state")
+    state["families"].append((base, finish))
+
+
+_register_enum(Enum, _finish_class)
 # install class-builder hook
 import builtins
 
