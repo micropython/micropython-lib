@@ -105,11 +105,14 @@ class Logger:
         self.level = level
         self.handlers = []
         self.record = LogRecord()
+        self.disabled = False
 
     def setLevel(self, level):
         self.level = level
 
     def isEnabledFor(self, level):
+        if self.disabled:
+            return False
         return level >= self.getEffectiveLevel()
 
     def getEffectiveLevel(self):
