@@ -1645,7 +1645,7 @@ class Test5DateTime(unittest.TestCase):
             self.assertTrue(ds.fold)
 
     def test_fromtimestamp06(self):
-        with LocalTz("US/Eastern"):
+        with LocalTz("America/New_York"):
             dt = datetime(2020, 11, 1, 5, 30, tzinfo=timezone.utc)
             ts = (dt - EPOCH).total_seconds()
             dt = dt.replace(tzinfo=None) - 4 * td1h
@@ -1653,7 +1653,7 @@ class Test5DateTime(unittest.TestCase):
             self.assertEqual(ds, dt)
 
     def test_fromtimestamp07(self):
-        with LocalTz("US/Eastern"):
+        with LocalTz("America/New_York"):
             dt = datetime(2020, 11, 1, 7, 30, tzinfo=timezone.utc)
             ts = (dt - EPOCH).total_seconds()
             dt = dt.replace(tzinfo=None) - 5 * td1h
@@ -2110,22 +2110,22 @@ class Test5DateTime(unittest.TestCase):
             self.assertEqual(dt.timestamp(), 1288488600.0)
 
     def test_timestamp06(self):
-        with LocalTz("US/Eastern"):
+        with LocalTz("America/New_York"):
             dt = datetime(2020, 3, 8, 2, 30)  # doesn't exist
             self.assertEqual(dt.timestamp(), 1583652600.0)
 
     def test_timestamp07(self):
-        with LocalTz("US/Eastern"):
+        with LocalTz("America/New_York"):
             dt = datetime(2020, 8, 10, 2, 30)
             self.assertEqual(dt.timestamp(), 1597041000.0)
 
     def test_timestamp08(self):
-        with LocalTz("US/Eastern"):
+        with LocalTz("America/New_York"):
             dt = datetime(2020, 11, 1, 2, 30, fold=0)
             self.assertEqual(dt.timestamp(), 1604215800.0)
 
     def test_timestamp09(self):
-        with LocalTz("US/Eastern"):
+        with LocalTz("America/New_York"):
             dt = datetime(2020, 11, 1, 2, 30, fold=1)
             self.assertEqual(dt.timestamp(), 1604215800.0)
 
