@@ -24,6 +24,29 @@ _HOSTS = {
 
 _ALLOWED_MIP_URL_PREFIXES = const(("http://", "https://", "codeberg:", "github:", "gitlab:"))
 
+# Bits 0-15 of sys.implementation._mpy: version/sub-version/arch (exact
+# match required). Bits 16+: optional arch-flags (e.g. RV32 extensions) -
+# a tag's flags must be a subset of what this device supports, not equal.
+_MPY_VERSION_MASK = const(0xFF)
+_MPY_BASE_MASK = const(0xFFFF)
+
+
+def _mpy_tag_ok(tag, device_mpy=None):
+    if device_mpy is None:
+        device_mpy = getattr(sys.implementation, "_mpy", None)
+    if device_mpy is None:
+        return False
+    # A bytecode-only tag (arch nibble 0) only needs the major version to
+    # match - mirrors mp_raw_code_load()'s own arch == MP_NATIVE_ARCH_NONE
+    # fast path in py/persistentcode.c, which skips the sub-version check
+    # entirely for non-native code (sub-version only encodes native-code ABI
+    # changes and is meaningless for portable bytecode).
+    if (tag >> 10) & 0xF == 0:
+        return (tag & _MPY_VERSION_MASK) == (device_mpy & _MPY_VERSION_MASK)
+    if (tag & _MPY_BASE_MASK) != (device_mpy & _MPY_BASE_MASK):
+        return False
+    return (tag >> 16) & (device_mpy >> 16) == (tag >> 16)
+
 
 # This implements os.makedirs(os.dirname(path))
 def _ensure_path_exists(path):
@@ -112,7 +135,10 @@ def _install_json(package_json_url, index, target, version, mpy):
         package_json = response.json()
     finally:
         response.close()
-    for target_path, short_hash in package_json.get("hashes", ()):
+    for entry in package_json.get("hashes", ()):
+        target_path, short_hash = entry[0], entry[1]
+        if len(entry) > 2 and not _mpy_tag_ok(entry[2]):
+            continue
         fs_target_path = target + "/" + target_path
         if _check_exists(fs_target_path, short_hash):
             print("Exists:", fs_target_path)
@@ -122,7 +148,10 @@ def _install_json(package_json_url, index, target, version, mpy):
                 print("File not found: {} {}".format(target_path, short_hash))
                 return False
     base_url = package_json_url.rpartition("/")[0]
-    for target_path, url in package_json.get("urls", ()):
+    for entry in package_json.get("urls", ()):
+        target_path, url = entry[0], entry[1]
+        if len(entry) > 2 and not _mpy_tag_ok(entry[2]):
+            continue
         fs_target_path = target + "/" + target_path
         is_full_url = any(url.startswith(p) for p in _ALLOWED_MIP_URL_PREFIXES)
         if base_url and not is_full_url:
