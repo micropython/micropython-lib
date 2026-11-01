@@ -2,6 +2,7 @@ import sys
 import ffilib
 import array
 import uctypes
+import weakref
 
 pcre2 = ffilib.open("libpcre2-8")
 
@@ -21,6 +22,12 @@ pcre2_pattern_info = pcre2.func("i", "pcre2_pattern_info_8", "Pip")
 
 #       PCRE2_SIZE *pcre2_get_ovector_pointer(pcre2_match_data *match_data);
 pcre2_get_ovector_pointer = pcre2.func("p", "pcre2_get_ovector_pointer_8", "p")
+
+#       void pcre2_code_free(pcre2_code *code);
+pcre2_code_free = pcre2.func("v", "pcre2_code_free_8", "p")
+
+#       void pcre2_match_data_free(pcre2_match_data *match_data);
+pcre2_match_data_free = pcre2.func("v", "pcre2_match_data_free_8", "p")
 
 #       pcre2_match_data *pcre2_match_data_create_from_pattern(const pcre2_code *code,
 #           pcre2_general_context *gcontext);
@@ -85,6 +92,10 @@ class PCREMatch:
 class PCREPattern:
     def __init__(self, compiled_ptn):
         self.obj = compiled_ptn
+        # The compiled pattern lives in memory that PCRE2 owns and that the
+        # garbage collector knows nothing about, so release it once this object
+        # is collected.
+        weakref.finalize(self, pcre2_code_free, compiled_ptn)
 
     def search(self, s, pos=0, endpos=-1, _flags=0):
         assert endpos == -1, "pos: %d, endpos: %d" % (pos, endpos)
@@ -92,14 +103,18 @@ class PCREPattern:
         pcre2_pattern_info(self.obj, PCRE2_INFO_CAPTURECOUNT, buf)
         cap_count = buf[0]
         match_data = pcre2_match_data_create_from_pattern(self.obj, None)
-        num = pcre2_match(self.obj, s, len(s), pos, _flags, match_data, None)
-        if num == -1:
-            # No match
-            return None
-        ov_ptr = pcre2_get_ovector_pointer(match_data)
-        # pcre2_get_ovector_pointer return PCRE2_SIZE
-        ov_buf = uctypes.bytearray_at(ov_ptr, PCRE2_SIZE_SIZE * (cap_count + 1) * 2)
-        ov = array.array(PCRE2_SIZE_TYPE, ov_buf)
+        try:
+            num = pcre2_match(self.obj, s, len(s), pos, _flags, match_data, None)
+            if num == -1:
+                # No match
+                return None
+            ov_ptr = pcre2_get_ovector_pointer(match_data)
+            # pcre2_get_ovector_pointer return PCRE2_SIZE.  The offsets are
+            # copied out here, because the match data is freed below.
+            ov_buf = uctypes.bytearray_at(ov_ptr, PCRE2_SIZE_SIZE * (cap_count + 1) * 2)
+            ov = array.array(PCRE2_SIZE_TYPE, ov_buf)
+        finally:
+            pcre2_match_data_free(match_data)
         # We don't care how many matching subexpressions we got, we
         # care only about total # of capturing ones (including empty)
         return PCREMatch(s, cap_count + 1, ov)
@@ -166,12 +181,39 @@ class PCREPattern:
             start = end
 
 
-def compile(pattern, flags=0):
+def _compile(pattern, flags):
+    # These are output arguments and must be of the size that pcre2_compile()
+    # writes: int for the error code, PCRE2_SIZE for the offset.
     errcode = bytes(4)
-    erroffset = bytes(4)
+    erroffset = bytes(PCRE2_SIZE_SIZE)
     regex = pcre2_compile(pattern, PCRE2_ZERO_TERMINATED, flags, errcode, erroffset, None)
-    assert regex
+    assert regex, "compile error %d at %d" % (
+        int.from_bytes(errcode, sys.byteorder),
+        int.from_bytes(erroffset, sys.byteorder),
+    )
     return PCREPattern(regex)
+
+
+# Compiled patterns are cached, the way CPython does it, so that using the same
+# pattern again does not compile it a second time.  compile() returns the
+# cached pattern, so re.compile(p) is re.compile(p), as in CPython.  A pattern
+# that is dropped from the cache is freed by the garbage collector once nothing
+# refers to it any more.
+_MAXCACHE = 32
+_cache = {}
+
+
+def compile(pattern, flags=0):
+    key = (pattern, flags)
+    r = _cache.get(key)
+    if r is None:
+        r = _compile(pattern, flags)
+        if len(_cache) >= _MAXCACHE:
+            # Drop the whole cache, the way CPython does, instead of keeping
+            # track of which entry was used last.
+            _cache.clear()
+        _cache[key] = r
+    return r
 
 
 def search(pattern, string, flags=0):
