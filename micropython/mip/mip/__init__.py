@@ -121,7 +121,9 @@ def _install_json(package_json_url, index, target, version, mpy):
             if not _download_file(file_url, fs_target_path):
                 print("File not found: {} {}".format(target_path, short_hash))
                 return False
-    base_url = package_json_url.rpartition("/")[0]
+    # str.rpartition is not available on all builds.
+    slash = package_json_url.rfind("/")
+    base_url = package_json_url[:slash] if slash >= 0 else ""
     for target_path, url in package_json.get("urls", ()):
         fs_target_path = target + "/" + target_path
         is_full_url = any(url.startswith(p) for p in _ALLOWED_MIP_URL_PREFIXES)
