@@ -169,6 +169,7 @@ class ClientSession:
         is_handshake=False,
         version=None,
     ):
+        headers = headers.copy()
         if json and isinstance(json, dict):
             data = _json.dumps(json)
         if data is not None and method == "GET":
