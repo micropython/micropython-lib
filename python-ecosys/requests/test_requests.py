@@ -42,6 +42,33 @@ class socket:
 
 
 sys.modules["socket"] = socket
+
+
+class SSLContext:
+    def __init__(self, protocol=None):
+        self.protocol = protocol
+        self.verify_mode = None
+        self.wrapped = []
+
+    def wrap_socket(self, sock, server_hostname=None):
+        self.wrapped.append(server_hostname)
+        return sock
+
+
+class tls:
+    PROTOCOL_TLS_CLIENT = 0
+    CERT_NONE = 0
+    CERT_REQUIRED = 2
+    contexts = []
+
+    @staticmethod
+    def SSLContext(protocol):
+        context = SSLContext(protocol)
+        tls.contexts.append(context)
+        return context
+
+
+sys.modules["tls"] = tls
 # ruff: noqa: E402
 import requests
 
@@ -296,6 +323,45 @@ def test_raw_readinto_content_length():
     socket.socket = lambda *a, **k: Socket()
 
 
+def test_https_without_ssl_skips_verification():
+    tls.contexts.clear()
+
+    requests.request("GET", "https://example.com")
+
+    assert len(tls.contexts) == 1
+    assert tls.contexts[0].verify_mode == tls.CERT_NONE
+    assert tls.contexts[0].wrapped == ["example.com"]
+
+
+def test_https_wraps_with_the_given_ssl_context():
+    tls.contexts.clear()
+    context = SSLContext()
+    context.verify_mode = tls.CERT_REQUIRED
+
+    requests.get("https://example.com:8443/x", ssl=context)
+
+    assert tls.contexts == []
+    assert context.wrapped == ["example.com"]
+    assert context.verify_mode == tls.CERT_REQUIRED
+
+
+def test_redirect_keeps_the_ssl_context():
+    server = iter(
+        [
+            b"HTTP/1.1 302 Found\r\nLocation: https://other.example.com/next\r\n\r\n",
+            SERVER_RESPONSE_200_OK,
+        ]
+    )
+    socket.socket = lambda *a, **k: Socket(next(server))
+    context = SSLContext()
+
+    requests.get("https://example.com", ssl=context)
+
+    assert context.wrapped == ["example.com", "other.example.com"]
+
+    socket.socket = lambda *a, **k: Socket()
+
+
 def test_redirect_absolute():
     server = iter(
         [
@@ -379,6 +445,9 @@ test_post_data_str()
 test_post_data_str_unicode()
 test_post_data_bytes()
 test_post_chunked_data()
+test_https_without_ssl_skips_verification()
+test_https_wraps_with_the_given_ssl_context()
+test_redirect_keeps_the_ssl_context()
 test_overwrite_get_headers()
 test_overwrite_post_json_headers()
 test_overwrite_post_chunked_data_headers()
