@@ -146,8 +146,8 @@ def discover_main():
         # Ensure an appropriate output is printed if no tests are found.
         runner.run(TestSuite())
 
-    # Terminate with non zero return code in case of failures.
-    sys.exit(result.failuresNum + result.errorsNum)
+    # Non-zero exit on failures; an unexpected success counts as a failure too.
+    sys.exit(result.failuresNum + result.errorsNum + result.unexpectedSuccessesNum)
 
 
 discover_main()
