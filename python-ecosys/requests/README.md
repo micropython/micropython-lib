@@ -27,7 +27,7 @@ import tls, requests
 
 ctx = tls.SSLContext(tls.PROTOCOL_TLS_CLIENT)
 ctx.verify_mode = tls.CERT_REQUIRED
-ctx.load_verify_locations(cadata=root_der)
+ctx.load_verify_locations(root_der)
 requests.get("https://example.com", ssl=ctx)
 ```
 
