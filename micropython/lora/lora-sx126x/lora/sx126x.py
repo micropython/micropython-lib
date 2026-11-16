@@ -66,7 +66,7 @@ _STATUS_CMD_ERROR = const(0x4)
 _STATUS_CMD_EXEC_FAIL = const(0x5)
 _STATUS_CMD_TX_COMPLETE = const(0x6)
 
-_CFG_SF_MIN = const(6)  # inclusive
+_CFG_SF_MIN = const(5)  # inclusive
 _CFG_SF_MAX = const(12)  # inclusive
 
 _IRQ_TX_DONE = const(1 << 0)
