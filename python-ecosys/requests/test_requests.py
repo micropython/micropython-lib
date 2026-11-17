@@ -42,6 +42,33 @@ class socket:
 
 
 sys.modules["socket"] = socket
+
+
+class SSLContext:
+    def __init__(self, protocol=None):
+        self.protocol = protocol
+        self.verify_mode = None
+        self.wrapped = []
+
+    def wrap_socket(self, sock, server_hostname=None):
+        self.wrapped.append(server_hostname)
+        return sock
+
+
+class tls:
+    PROTOCOL_TLS_CLIENT = 0
+    CERT_NONE = 0
+    CERT_REQUIRED = 2
+    contexts = []
+
+    @staticmethod
+    def SSLContext(protocol):
+        context = SSLContext(protocol)
+        tls.contexts.append(context)
+        return context
+
+
+sys.modules["tls"] = tls
 # ruff: noqa: E402
 import requests
 
@@ -296,6 +323,120 @@ def test_raw_readinto_content_length():
     socket.socket = lambda *a, **k: Socket()
 
 
+def test_https_without_ssl_skips_verification():
+    tls.contexts.clear()
+
+    requests.request("GET", "https://example.com")
+
+    assert len(tls.contexts) == 1
+    assert tls.contexts[0].verify_mode == tls.CERT_NONE
+    assert tls.contexts[0].wrapped == ["example.com"]
+
+
+def test_https_wraps_with_the_given_ssl_context():
+    tls.contexts.clear()
+    context = SSLContext()
+    context.verify_mode = tls.CERT_REQUIRED
+
+    requests.get("https://example.com:8443/x", ssl=context)
+
+    assert tls.contexts == []
+    assert context.wrapped == ["example.com"]
+    assert context.verify_mode == tls.CERT_REQUIRED
+
+
+def test_redirect_keeps_the_ssl_context():
+    server = iter(
+        [
+            b"HTTP/1.1 302 Found\r\nLocation: https://other.example.com/next\r\n\r\n",
+            SERVER_RESPONSE_200_OK,
+        ]
+    )
+    socket.socket = lambda *a, **k: Socket(next(server))
+    context = SSLContext()
+
+    requests.get("https://example.com", ssl=context)
+
+    assert context.wrapped == ["example.com", "other.example.com"]
+
+    socket.socket = lambda *a, **k: Socket()
+
+
+def test_errors_close_the_socket():
+    class RaisingContext:
+        def __init__(self, exc):
+            self.exc = exc
+
+        def wrap_socket(self, s, server_hostname=None):
+            raise self.exc
+
+    # A failed verification raises ValueError; running out of memory, MemoryError;
+    # a value that isn't a context, AttributeError.
+    for ssl, exc_type in (
+        (RaisingContext(ValueError("certificate verify failed")), ValueError),
+        (RaisingContext(MemoryError()), MemoryError),
+        (True, AttributeError),
+    ):
+        sock = Socket()
+        closed = []
+        sock.close = lambda: closed.append(True)
+        socket.socket = lambda *a, **k: sock
+
+        try:
+            requests.get("https://example.com", ssl=ssl)
+        except exc_type:
+            pass
+        else:
+            assert False, "expected %s" % exc_type
+
+        assert closed == [True], exc_type
+
+    socket.socket = lambda *a, **k: Socket()
+
+
+def test_ssl_refuses_an_http_url():
+    made = []
+    socket.socket = lambda *a, **k: made.append(1) or Socket()
+
+    try:
+        requests.get("http://example.com", ssl=SSLContext())
+    except ValueError:
+        pass
+    else:
+        assert False, "expected ValueError"
+
+    assert made == []
+
+    socket.socket = lambda *a, **k: Socket()
+
+
+def test_ssl_refuses_a_redirect_to_http():
+    first = Socket(b"HTTP/1.1 302 Found\r\nLocation: http://example.com/next\r\n\r\n")
+    closed = []
+    first.close = lambda: closed.append(True)
+    made = []
+
+    def make(*a, **k):
+        made.append(1)
+        return first
+
+    socket.socket = make
+    context = SSLContext()
+
+    try:
+        requests.get("https://example.com", ssl=context)
+    except ValueError:
+        pass
+    else:
+        assert False, "expected ValueError"
+
+    assert context.wrapped == ["example.com"]
+    assert closed == [True]
+    assert made == [1]
+
+    socket.socket = lambda *a, **k: Socket()
+
+
 def test_redirect_absolute():
     server = iter(
         [
@@ -379,6 +520,12 @@ test_post_data_str()
 test_post_data_str_unicode()
 test_post_data_bytes()
 test_post_chunked_data()
+test_https_without_ssl_skips_verification()
+test_https_wraps_with_the_given_ssl_context()
+test_redirect_keeps_the_ssl_context()
+test_errors_close_the_socket()
+test_ssl_refuses_an_http_url()
+test_ssl_refuses_a_redirect_to_http()
 test_overwrite_get_headers()
 test_overwrite_post_json_headers()
 test_overwrite_post_chunked_data_headers()
