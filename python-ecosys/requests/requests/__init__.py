@@ -93,6 +93,7 @@ def request(
     auth=None,
     timeout=None,
     parse_headers=True,
+    ssl=None,
 ):
     if headers is None:
         headers = {}
@@ -124,6 +125,11 @@ def request(
     else:
         raise ValueError("Unsupported protocol: " + proto)
 
+    if ssl is not None and proto != "https:":
+        # A request that asked for a verified connection never goes out without
+        # one, including when a redirect points to http://.
+        raise ValueError("ssl needs https")
+
     if "?" in host:
         host, _path = host.split("?", 1)
         path = "?" + _path + path
@@ -153,8 +159,10 @@ def request(
     try:
         s.connect(ai[-1])
         if proto == "https:":
-            context = tls.SSLContext(tls.PROTOCOL_TLS_CLIENT)
-            context.verify_mode = tls.CERT_NONE
+            context = ssl
+            if context is None:
+                context = tls.SSLContext(tls.PROTOCOL_TLS_CLIENT)
+                context.verify_mode = tls.CERT_NONE
             s = context.wrap_socket(s, server_hostname=host)
         s.write(b"%s /%s HTTP/1.1\r\n" % (method, path))
 
@@ -245,7 +253,9 @@ def request(
                     remaining = int(v)
             else:
                 parse_headers(l, resp_d)
-    except OSError:
+    except:
+        # Close the socket whatever went wrong: a certificate that fails
+        # verification raises ValueError, and running out of memory MemoryError.
         s.close()
         raise
 
@@ -254,9 +264,9 @@ def request(
         # Use the host specified in the redirect URL, as it may not be the same as the original URL.
         headers.pop("Host", None)
         if status in [301, 302, 303]:
-            return request("GET", redirect, None, None, headers, stream)
+            return request("GET", redirect, None, None, headers, stream, ssl=ssl)
         else:
-            return request(method, redirect, data, json, headers, stream)
+            return request(method, redirect, data, json, headers, stream, ssl=ssl)
     else:
         if chunked:
             resp = Response(BodyStream(s, -1))
