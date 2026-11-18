@@ -284,6 +284,10 @@ class DeviceConnection:
             await self._mtu_event.wait()
         return self.mtu
 
+    def indicate_service_changed(self, changed: List[Characteristic] = None):
+        from .server import indicate_service_changed
+        indicate_service_changed(self._conn_handle, changed)
+
     # Wait for a connection on an L2CAP connection-oriented-channel.
     async def l2cap_accept(self, psm, mtu, timeout_ms=None):
         from .l2cap import accept
