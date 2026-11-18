@@ -1,0 +1,16 @@
+--- instance0 ---
+advertise
+connected
+wait_for_pairing
+paired encrypted=1 authenticated=0 bonded=0
+disconnected
+--- instance1 ---
+connect
+service UUID('a5a5a5a5-ffff-9999-1111-5a5a5a5a5a5a')
+characteristic UUID('00000000-1111-2222-3333-444444444444')
+pair
+paired encrypted=1 authenticated=0 bonded=0
+read_encrypted
+read b'encrypted_data'
+disconnect
+disconnected
