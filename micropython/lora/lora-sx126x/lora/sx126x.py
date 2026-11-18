@@ -227,15 +227,21 @@ class _SX126x(BaseModem):
         # can trigger the ISR and may not be reset by the driver, leaving DIO1
         # high.
         if dio1:
-            self._cmd(
-                ">BHHHH",
-                _CMD_CFG_DIO_IRQ,
-                (_IRQ_RX_DONE | _IRQ_TX_DONE | _IRQ_TIMEOUT | _IRQ_CRC_ERR),  # IRQ mask
-                (_IRQ_RX_DONE | _IRQ_TX_DONE | _IRQ_TIMEOUT),  # DIO1 mask
-                0x0,  # DIO2Mask, not used
-                0x0,  # DIO3Mask, not used
-            )
-            dio1.irq(self._radio_isr, Pin.IRQ_RISING)
+            dio1_mask = _IRQ_RX_DONE | _IRQ_TX_DONE | _IRQ_TIMEOUT
+        else:
+            dio1_mask = 0
+
+        self._cmd(
+            ">BHHHH",
+            _CMD_CFG_DIO_IRQ,
+            # The Irq Mask byte needs to be set so that _CMD_GET_IRQ_STATUS returns all
+            # relevant flags that driver might check
+            _IRQ_TX_DONE | _IRQ_DRIVER_RX_MASK,
+            dio1_mask,  # DIO1Mask
+            0x0,  # DIO2Mask, not used
+            0x0,  # DIO3Mask, not used
+        )
+        dio1.irq(self._radio_isr, Pin.IRQ_RISING)
 
         self._clear_irq()
 
