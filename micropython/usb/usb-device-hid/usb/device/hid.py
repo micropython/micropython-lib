@@ -92,7 +92,8 @@ class HIDInterface(Interface):
         self.report_descriptor = report_descriptor
         self.extra_descriptors = extra_descriptors
         self._set_report_buf = set_report_buf
-        self.protocol = protocol
+        self.interface_protocol = protocol  # descriptor value, constant
+        self.protocol = 1  # runtime mode: 0 boot, 1 report (HID 1.11 F.5)
         self.interface_str = interface_str
         self.interval_ms = interval_ms
 
@@ -138,9 +139,9 @@ class HIDInterface(Interface):
             1,
             _INTERFACE_CLASS,
             _INTERFACE_SUBCLASS_NONE
-            if self.protocol == _INTERFACE_PROTOCOL_NONE
+            if self.interface_protocol == _INTERFACE_PROTOCOL_NONE
             else _INTERFACE_SUBCLASS_BOOT,
-            self.protocol,
+            self.interface_protocol,
             len(strs) if self.interface_str else 0,
         )
 
