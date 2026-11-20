@@ -1,3 +1,3 @@
-metadata(version="1.5.1")
+metadata(version="1.5.2")
 
 module("enum.py")

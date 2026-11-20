@@ -109,7 +109,7 @@ class Enum:
         # build and return the dict that maps member instances to their values
         if "__members__" not in cls.__dict__:
             for b in cls.__bases__:
-                if issubclass(b, Enum) and b is not Enum and b._i():
+                if issubclass(b, Enum) and b is not Enum:  # and b._i():
                     raise TypeError(f"can't extend {b.__name__}")
 
             # convert raw class attributes into typed enum instances
