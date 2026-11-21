@@ -96,13 +96,7 @@ class Formatter:
     def format(self, record):
         if self.usesTime():
             record.asctime = self.formatTime(self.datefmt, record)
-        return self.fmt % {
-            "name": record.name,
-            "message": record.message,
-            "msecs": record.msecs,
-            "asctime": record.asctime,
-            "levelname": record.levelname,
-        }
+        return self.fmt % record.__dict__
 
 
 class Logger:
@@ -111,11 +105,14 @@ class Logger:
         self.level = level
         self.handlers = []
         self.record = LogRecord()
+        self.disabled = False
 
     def setLevel(self, level):
         self.level = level
 
     def isEnabledFor(self, level):
+        if self.disabled:
+            return False
         return level >= self.getEffectiveLevel()
 
     def getEffectiveLevel(self):
@@ -131,8 +128,8 @@ class Logger:
             handlers = self.handlers
             if not handlers:
                 handlers = getLogger().handlers
-            for h in handlers:
-                h.emit(self.record)
+            for handler in handlers:
+                handler.emit(self.record)
 
     def debug(self, msg, *args):
         self.log(DEBUG, msg, *args)
@@ -207,10 +204,10 @@ def exception(msg, *args, exc_info=True):
 
 
 def shutdown():
-    for k, logger in _loggers.items():
-        for h in logger.handlers:
-            h.close()
-        _loggers.pop(logger, None)
+    for name, logger in _loggers.items():
+        for handler in logger.handlers:
+            handler.close()
+        _loggers.pop(name, None)
 
 
 def addLevelName(level, name):
@@ -227,26 +224,34 @@ def basicConfig(
     encoding="UTF-8",
     force=False,
 ):
+    """
+    Perform basic configuration of the logging system.
+
+    Creates a logger named "root" and adds a single handler, either a
+    StreamHandler or FileHandler, with configuration specified by the arguments.
+    Defaults to adding a StreamHandler which writes to sys.stderr. If a root
+    logger with handlers already exists, no changes are made by default.
+    """
+
     if "root" not in _loggers:
         _loggers["root"] = Logger("root")
 
-    logger = _loggers["root"]
+    root = _loggers["root"]
 
-    if force or not logger.handlers:
-        for h in logger.handlers:
-            h.close()
-        logger.handlers = []
+    if force or not root.hasHandlers():
+        for handler in root.handlers:
+            handler.close()
+        root.handlers = []
 
         if filename is None:
             handler = StreamHandler(stream)
         else:
             handler = FileHandler(filename, filemode, encoding)
 
-        handler.setLevel(level)
         handler.setFormatter(Formatter(format, datefmt))
 
-        logger.setLevel(level)
-        logger.addHandler(handler)
+        root.setLevel(level)
+        root.addHandler(handler)
 
 
 if hasattr(sys, "atexit"):
