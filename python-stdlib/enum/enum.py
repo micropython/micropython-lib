@@ -1,6 +1,5 @@
 # enum.py
 # Enum implementation without metaclasses
-# version="1.5.2"
 
 # ==============================================================================
 # Variable & Abbreviation Definitions:

@@ -1,6 +1,5 @@
 # enum_mini.py
 # Minimalist Enum implementation without metaclasses
-# version="1.5.1"
 
 # ==============================================================================
 # Variable & Abbreviation Definitions:
