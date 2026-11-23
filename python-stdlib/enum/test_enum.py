@@ -25,10 +25,7 @@ class TestEnum(unittest.TestCase):
         """Test basic access to Enum members, names, and values."""
         self.assertEqual(self.color.RED.value, 1)
         self.assertEqual(self.color.RED.name, 'RED')
-#         self.assertEqual(str(type(self.color.RED)), "<class 'Color.RED'>")
-        self.assertEqual(type(self.color.RED).__name__, 'Color.RED')
-
-        self.assertIsInstance(self.color.RED, type(self.color.RED))
+        self.assertIs(type(self.color.RED), self.ColorClass)
         self.assertEqual(self.status.IDLE.value, 0)
 
     def test_getitem_access(self):
