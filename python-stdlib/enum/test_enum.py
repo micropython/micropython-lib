@@ -64,6 +64,20 @@ class TestEnum(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.StatusClass(999)
 
+    def test_string_value_lookup(self):
+        class HttpMethod(Enum):
+            GET = "GET"
+
+        method = HttpMethod()
+        self.assertEqual(method.GET, "GET")
+        self.assertEqual(method("GET").name, "GET")
+
+    def test_empty_enum(self):
+        class Empty(Enum):
+            pass
+
+        self.assertEqual(len(Empty()), 0)
+
     def test_iteration(self):
         """Test iteration over Enum instance."""
         members = list(self.color)
