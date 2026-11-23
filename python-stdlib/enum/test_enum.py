@@ -172,6 +172,12 @@ class TestEnum(unittest.TestCase):
 
 
 class TestTypedStrEnum(unittest.TestCase):
+    def test_value_lookup_returns_declared_member(self):
+        class Mode(StrEnum):
+            FAST = "fast"
+
+        self.assertIs(Mode("fast"), Mode.FAST)
+
     def test_identity_lookup_and_methods(self):
         class Mode(StrEnum):
             FAST = "fast"
@@ -185,7 +191,7 @@ class TestTypedStrEnum(unittest.TestCase):
         for base in (Mode, StrEnum, Enum, str):
             self.assertTrue(isinstance(Mode.FAST, base))
         self.assertFalse(isinstance("fast", Mode))
-        for value in ("fast", "FAST", Mode.FAST):
+        for value in ("FAST", Mode.FAST):
             self.assertIs(Mode(value), Mode.FAST)
         self.assertIs(Mode(), Mode)
         self.assertEqual(Mode.FAST.name, "FAST")
