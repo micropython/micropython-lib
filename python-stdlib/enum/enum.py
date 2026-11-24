@@ -44,7 +44,7 @@ def _c(cls, n, v, t=None):
     if t is not None:
         c = cls(v)
         c._i()
-        assert not (type(c) is type)  # not (c is class)
+        assert type(c) is not type  # c is not class
         assert isinstance(c, Enum)
         assert isinstance(c, t)
         if t is str:
