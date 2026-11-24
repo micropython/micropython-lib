@@ -96,7 +96,39 @@ def test_time_zero_ts_raises():
         ntptime.socket = orig
 
 
+def test_time_short_raises_ntp_error():
+    orig = _patch(b"short")
+    try:
+        try:
+            ntptime.time()
+            assert False, "expected NTPError"
+        except ntptime.NTPError as e:
+            assert isinstance(e, OSError)
+            assert e.args == (-1,)
+    finally:
+        ntptime.socket = orig
+
+
+def test_unsupported_epoch_raises():
+    orig_socket = _patch(ntp_msg())
+    orig_gmtime = ntptime.gmtime
+    ntptime.gmtime = lambda t: (2010, 1, 1, 0, 0, 0, 0, 0)
+    try:
+        try:
+            ntptime.time()
+            assert False, "expected UnsupportedEpochError"
+        except ntptime.UnsupportedEpochError as e:
+            assert isinstance(e, Exception)
+            assert not isinstance(e, OSError)
+            assert "Unsupported epoch: 2010" in str(e)
+    finally:
+        ntptime.gmtime = orig_gmtime
+        ntptime.socket = orig_socket
+
+
 test_time_ok()
 test_time_short_raises()
 test_time_kod_stratum_raises()
 test_time_zero_ts_raises()
+test_time_short_raises_ntp_error()
+test_unsupported_epoch_raises()

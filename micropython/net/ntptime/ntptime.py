@@ -8,6 +8,14 @@ host = "pool.ntp.org"
 timeout = 1
 
 
+class NTPError(OSError):
+    """The NTP server returned an error or an invalid response."""
+
+
+class UnsupportedEpochError(Exception):
+    """The platform epoch is neither 1970 nor 2000."""
+
+
 def time():
     NTP_QUERY = bytearray(48)
     NTP_QUERY[0] = 0x23
@@ -20,10 +28,10 @@ def time():
     finally:
         s.close()
     if len(msg) < 48:
-        raise OSError(-1)
+        raise NTPError(-1)
     val = struct.unpack("!I", msg[40:44])[0]
     if not (msg[1] and val):
-        raise OSError(-1)
+        raise NTPError(-1)
 
     # 2024-01-01 00:00:00 converted to an NTP timestamp
     MIN_NTP_TIMESTAMP = 3913056000
@@ -58,7 +66,7 @@ def time():
         # (date(1970, 1, 1) - date(1900, 1, 1)).days * 24*60*60
         NTP_DELTA = 2208988800
     else:
-        raise Exception("Unsupported epoch: {}".format(EPOCH_YEAR))
+        raise UnsupportedEpochError("Unsupported epoch: {}".format(EPOCH_YEAR))
 
     return val - NTP_DELTA
 
