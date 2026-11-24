@@ -1,5 +1,4 @@
 # enum_usage.py
-# version="1.5.2"
 
 from enum import Enum, IntEnum, StrEnum
 
@@ -146,7 +145,7 @@ print(Status.dump())                      # StrEnum('Status', {'DONE': 'done', '
 # # StrEnum Functional API
 # # ==============================================================================
 # HttpCode = StrEnum("HttpCode", "OK NOT_FOUND INTERNAL_ERROR")
-# 
+#
 # print("\n--- StrEnum Functional API ---")
 # print(HttpCode.OK.value)                  # ok
 # print(HttpCode.NOT_FOUND == "not_found")  # True

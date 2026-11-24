@@ -1,5 +1,4 @@
 # enum_mini_usage.py
-# version="1.5.1"
 
 from enum_mini import Enum
 

@@ -1,5 +1,4 @@
 # CPy.py
-# version="1.5.2"
 
 import sys
 
