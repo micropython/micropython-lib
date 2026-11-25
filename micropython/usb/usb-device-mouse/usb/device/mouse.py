@@ -4,6 +4,7 @@
 from micropython import const
 import struct
 import machine
+import time
 
 from usb.device.hid import HIDInterface
 
@@ -23,7 +24,7 @@ class MouseInterface(HIDInterface):
         self._r = False  # Right button
         self._buf = bytearray(3)
 
-    def send_report(self, dx=0, dy=0):
+    def send_report(self, dx=0, dy=0, timeout_ms=100):
         b = 0
         if self._l:
             b |= 1 << 0
@@ -35,11 +36,19 @@ class MouseInterface(HIDInterface):
         # Wait for any pending report to be sent to the host
         # before updating contents of _buf.
         #
+        # Give up after timeout_ms like HIDInterface.send_report(), otherwise a
+        # host that never reads the endpoint (a boot keyboard-only environment,
+        # for instance) would keep the first report pending and block every
+        # later call. Returns False without touching _buf in that case.
+        #
         # This loop can be removed if you don't care about possibly missing a
         # transient report, the final report buffer contents will always be the
         # last one sent to the host (it just might lose one of the ones in the
         # middle).
+        deadline = time.ticks_add(time.ticks_ms(), timeout_ms)
         while self.busy():
+            if time.ticks_diff(deadline, time.ticks_ms()) <= 0:
+                return False
             machine.idle()
 
         struct.pack_into("Bbb", self._buf, 0, b, dx, dy)

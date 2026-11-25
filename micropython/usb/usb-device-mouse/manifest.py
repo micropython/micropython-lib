@@ -1,3 +1,3 @@
-metadata(version="0.1.0")
+metadata(version="0.2.0")
 require("usb-device-hid")
 package("usb")
