@@ -1,3 +1,3 @@
-metadata(version="0.2.0")
+metadata(version="0.3.0")
 require("usb-device")
 package("usb")
